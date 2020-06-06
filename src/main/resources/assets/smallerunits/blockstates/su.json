@@ -1,7 +1,5 @@
 {
-  "variants": {
-    "normal": {
-      "model": "smallerunits:smallerunit"
+    "variants": {
+        "": { "model": "smallerunits:block/su" }
     }
-  }
 }
