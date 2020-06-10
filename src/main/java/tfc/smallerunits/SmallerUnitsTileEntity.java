@@ -5,8 +5,10 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.BlockPos;
 import tfc.smallerunits.Registry.Deferred;
 import tfc.smallerunits.Utils.FakeWorld;
+import tfc.smallerunits.Utils.SmallUnit;
 
 import javax.annotation.Nullable;
 
@@ -18,9 +20,15 @@ public class SmallerUnitsTileEntity extends TileEntity {
 		containedWorld=new FakeWorld(4,this);
 	}
 	
+	boolean isEnchanted=false;
+	boolean useManual=false;
+	
 	@Override
 	public void read(CompoundNBT compound) {
-		super.read(compound);
+//		if (!this.serializeNBT().equals(compound)) {
+//			System.out.println(compound);
+//			System.out.println(this.serializeNBT());
+			super.read(compound);
 //		try {
 //			if (Minecraft.getInstance().world.isRemote) {
 //				String s=compound.toString().substring(compound.toString().indexOf("upb:")+4);
@@ -33,6 +41,17 @@ public class SmallerUnitsTileEntity extends TileEntity {
 //		} catch (Throwable err) {
 			containedWorld=new FakeWorld(compound.getInt("upb"),this);
 			containedWorld.fromString(compound.getString("world"));
+			for (SmallUnit unit:containedWorld.unitHashMap.values()) {
+//				if ("x1y1z1".equals("x"+unit.x+"y"+unit.y+"z"+unit.z))
+//				System.out.println(("x"+unit.x+"y"+unit.y+"z"+unit.z));
+//				if (compound.contains("x"+unit.x+"y"+unit.y+"z"+unit.z)) {
+				try {
+//					System.out.println(unit.te);
+					containedWorld.setTileEntity(new BlockPos(unit.x,unit.y,unit.z),unit.readTileEntity(compound.getCompound("tile_entities").getCompound("x"+unit.x+"y"+unit.y+"z"+unit.z)));
+				} catch (Exception err) {}
+//				}
+			}
+//		}
 //		}
 	}
 	
@@ -42,6 +61,17 @@ public class SmallerUnitsTileEntity extends TileEntity {
 		if (containedWorld!=null) {
 			compound.putString("world",containedWorld.toString());
 			compound.putInt("upb",containedWorld.upb);
+			CompoundNBT tileEntities=new CompoundNBT();
+			for (SmallUnit unit:containedWorld.unitHashMap.values()) {
+				try {
+					if (containedWorld.getTileEntity(new BlockPos(unit.x,unit.y,unit.z))!=null) {
+						tileEntities.put(""+("x"+unit.x+"y"+unit.y+"z"+unit.z),containedWorld.getTileEntity(new BlockPos(unit.x,unit.y,unit.z)).serializeNBT());
+					}
+				} catch (Exception err) {
+				
+				}
+			}
+			compound.put("tile_entities",tileEntities);
 		}
 		return compound;
 	}
@@ -75,7 +105,9 @@ public class SmallerUnitsTileEntity extends TileEntity {
 	@Nullable
 	@Override
 	public SUpdateTileEntityPacket getUpdatePacket() {
-		return new SUpdateTileEntityPacket(this.pos, 1, this.serializeNBT());
+//		System.out.println(this.serializeNBT().getCompound("tile_entities"));
+		CompoundNBT nbt=this.serializeNBT();
+		return new SUpdateTileEntityPacket(this.pos, 1, nbt);
 	}
 	
 	@Override

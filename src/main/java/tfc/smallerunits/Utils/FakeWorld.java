@@ -3,12 +3,10 @@ package tfc.smallerunits.Utils;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.RedstoneWireBlock;
+import net.minecraft.block.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.IFluidState;
@@ -18,13 +16,15 @@ import net.minecraft.particles.IParticleData;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.tags.NetworkTagManager;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.*;
+import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.palette.UpgradeData;
 import net.minecraft.world.*;
 import net.minecraft.world.biome.Biome;
@@ -40,10 +40,17 @@ import net.minecraft.world.lighting.WorldLightManager;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.WorldInfo;
+import org.apache.logging.log4j.Level;
+import tfc.smallerunits.Registry.Deferred;
+//import tfc.smallerunits.Registry.ModEventRegistry;
+import tfc.smallerunits.Registry.ModEventRegistry;
 import tfc.smallerunits.SmallerUnitsTileEntity;
+import tfc.smallerunits.Smallerunits;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -52,6 +59,11 @@ public class FakeWorld extends World implements IWorld {
 	public HashMap<BlockPos,SmallUnit> unitHashMap=new HashMap<>();
 	public int upb; //units per block
 	public SmallerUnitsTileEntity owner;
+	
+	@Override
+	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
+		unitHashMap.get(pos).te=tileEntityIn;
+	}
 	
 	@Override
 	public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
@@ -67,7 +79,6 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void playMovingSound(@Nullable PlayerEntity playerIn, Entity entityIn, SoundEvent eventIn, SoundCategory categoryIn, float volume, float pitch) {
-	
 	}
 	
 	@Nullable
@@ -84,7 +95,6 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void registerMapData(MapData mapDataIn) {
-	
 	}
 	
 	@Override
@@ -94,7 +104,6 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void sendBlockBreakProgress(int breakerId, BlockPos pos, int progress) {
-	
 	}
 	
 	@Override
@@ -128,36 +137,155 @@ public class FakeWorld extends World implements IWorld {
 		}
 	}
 	
+	@Override
+	public IChunk getChunk(int chunkX, int chunkZ, ChunkStatus requiredStatus) {
+		return getChunk(chunkX,chunkZ,requiredStatus,false);
+	}
+	
 	public void tick(ServerWorld realWorld) {
-//		System.out.println("h");
-		ArrayList<BlockPos> tickedBlocks=new ArrayList<>();
-		for (BlockPos pos:tickList.ticklist.keySet()) {
-			Long time=tickList.ticklist.get(pos);
-			if (time<new Date().getTime()) {
-				try {
-					this.getBlockState(pos).tick(new FakeServerWorld(realWorld),pos,new Random());
-					tickedBlocks.add(pos);
-				} catch (Exception err) {}
+		new FakeServerWorld(realWorld,this);
+		try {
+//			BlockPos randomPos=new BlockPos(new Random().nextInt(16/2)*16,(new Random().nextInt(255/16/2)+2)*16,new Random().nextInt(16/2)*16);
+			BlockPos randomPos=new BlockPos((1/2)*16,((1/2)+2)*16,(1/2)*16);
+			ServerWorld sworld=realWorld.getServer().getWorld(Objects.requireNonNull(DimensionType.byName(new ResourceLocation("smallerunits", "susimulator"))));
+			for (int x=0;x<upb;x++) {
+				for (int y=0;y<upb;y++) {
+					for (int z=0;z<upb;z++) {
+						sworld.setBlockState(randomPos.add(new BlockPos(x,y,z)),Blocks.STONE.getDefaultState(),64);
+						sworld.setBlockState(randomPos.add(new BlockPos(x,y,z)),this.getBlockState(new BlockPos(x,y,z)),64);
+						try {
+							if (this.getTileEntity(new BlockPos(x,y,z))!=null) {
+								TileEntity te=this.getTileEntity(new BlockPos(x,y,z));
+//								te.setWorldAndPos(sworld,randomPos.add(new BlockPos(x,y,z)));
+								sworld.setTileEntity(randomPos.add(new BlockPos(x,y,z)),te);
+							}
+						} catch (Exception err) {}
+						if (!sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))).equals(sworld.getBlockState(randomPos.add(new BlockPos(x,y,z)))))
+						sworld.onBlockStateChange(randomPos.add(new BlockPos(x,y,z)),Blocks.AIR.getDefaultState(),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
+					}
+				}
+			}
+			try {
+				if (false) {
+					sworld.tick(()->true);
+				}
+					sworld.getPendingBlockTicks().tick();
+			} catch (Exception err) {}
+			try {
+				for (int x=0;x<upb;x++) {
+					for (int y = 0; y < upb; y++) {
+						for (int z = 0; z < upb; z++) {
+							try {
+								TileEntity te=this.getTileEntity((new BlockPos(x,y,z)));
+								try {
+									try {
+										if (this.getTileEntity(new BlockPos(x,y,z)) instanceof ITickableTileEntity) {
+											((ITickableTileEntity)te).tick();
+										}
+									} catch (Exception err) {}
+//									sworld.getBlockState(randomPos.add(x,y,z)).tick(sworld,randomPos.add(x,y,z),rand);
+									this.setBlockState(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
+									te.setWorldAndPos(this,new BlockPos(x,y,z));
+								} catch (Exception err) {
+									this.setBlockState(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
+								}
+								this.setTileEntity(new BlockPos(x,y,z),te);
+							} catch (Exception err) {}
+//						System.out.println(this.getBlockState(new BlockPos(x,y,z)));
+						}
+					}
+				}
+			} catch (Exception err) {}
+			for (int x=0;x<upb;x++) {
+				for (int y = 0; y < upb; y++) {
+					for (int z = 0; z < upb; z++) {
+						sworld.setBlockState(randomPos.add(new BlockPos(x,y,z)),Blocks.GOLD_BLOCK.getDefaultState());
+					}
+				}
+			}
+		} catch (Exception err) {}
+	}
+	
+	@Override
+	public int getLightValue(BlockPos pos) {
+		return getLight(pos);
+	}
+	
+	public int getSkyLightValue(BlockPos pos) {
+		return (owner.getWorld()!=null)?owner.getWorld().getLightFor(LightType.SKY,owner.getPos()):15;
+	}
+	
+	public int getBlockLightValue(BlockPos pos) {
+		float light=15;
+		BlockPos pos1=owner.getPos();
+		if (owner.getWorld()!=null) {
+			light=0;
+			for (Direction dir:Direction.values()) {
+				light=Math.max(light,owner.getWorld().getLightFor(LightType.BLOCK,owner.getPos().offset(dir)));
 			}
 		}
-		int e=0;
-		for (BlockPos pos:blockUpdateList.ticklist.keySet()) {
-			try {
-				this.getBlockState(pos).onNeighborChange(this,pos,blockUpdateList.updatorlist.get(e));
-				this.getBlockState(pos).observedNeighborChange(this,pos,this.getBlockState(blockUpdateList.updatorlist.get(e)).getBlock(),blockUpdateList.updatorlist.get(e));
-			} catch (Exception err) {}
-			e++;
-		}
-		this.blockUpdateList.updatorlist.clear();
-		this.blockUpdateList.ticklist.clear();
-		this.blockUpdateList.blocklist.clear();
-		tickedBlocks.forEach((blockPos)->this.tickList.unscheduleTick(blockPos));
-		tickBlockEntities();
+		return (int)light;
+	}
+	
+	@Override
+	public float getCelestialAngle(float partialTicks) {
+		return owner.getWorld().getCelestialAngle(partialTicks);
+	}
+	
+	@Override
+	public int getMaxLightLevel() {
+		return (owner.getWorld()!=null)?owner.getWorld().getMaxLightLevel():15;
+	}
+	
+	@Override
+	public int getLight(BlockPos pos) {
+		return getLightFor(LightType.BLOCK,pos)|getLightFor(LightType.SKY,pos);
+	}
+	
+	@Override
+	public int getNeighborAwareLightSubtracted(BlockPos pos, int amount) {
+		return getLight(pos)-amount;
+	}
+	
+	@Override
+	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
+		return (owner.getWorld()!=null)?(lightTypeIn.equals(LightType.SKY)?getSkyLightValue(blockPosIn):getBlockLightValue(blockPosIn)):15;
+	}
+	
+	@Override
+	public int getLightSubtracted(BlockPos blockPosIn, int amount) {
+		return getLight(blockPosIn)-amount;
+	}
+	
+	@Override
+	public <T extends Entity> List<T> getEntitiesWithinAABB(@Nullable EntityType<T> type, AxisAlignedBB boundingBox, Predicate<? super T> predicate) {
+		return owner.getWorld().getEntitiesWithinAABB(type,boundingBox.shrink(upb).offset(owner.getPos()),predicate);
+	}
+	
+	@Override
+	public <T extends Entity> List<T> getEntitiesWithinAABB(Class<? extends T> p_217357_1_, AxisAlignedBB p_217357_2_) {
+		return owner.getWorld().getEntitiesWithinAABB(p_217357_1_,p_217357_2_.shrink(upb).offset(owner.getPos()));
 	}
 	
 	@Override
 	public void tickBlockEntities() {
 		super.tickBlockEntities();
+	}
+	
+	@Override
+	public boolean addTileEntity(TileEntity tile) {
+		unitHashMap.get(tile.getPos()).te=tile;
+		return true;
+	}
+	
+	@Override
+	public void addTileEntities(Collection<TileEntity> tileEntityCollection) {
+		tileEntityCollection.forEach((tile)->unitHashMap.get(tile.getPos()).te=tile);
+	}
+	
+	@Override
+	public void removeTileEntity(BlockPos pos) {
+		unitHashMap.get(pos).te=null;
 	}
 	
 	public static class FakeTickList implements ITickList<Block> {
@@ -175,9 +303,8 @@ public class FakeWorld extends World implements IWorld {
 		
 		@Override
 		public void scheduleTick(BlockPos pos, Block itemIn, int scheduledTime, TickPriority priority) {
-			ticklist.put(pos,(long)scheduledTime+new Date().getTime());
+			ticklist.put(pos,(long)(scheduledTime/100)+new Date().getTime());
 			blocklist.put(pos,itemIn);
-//			System.out.println(scheduledTime+new Date().getTime());
 		}
 		
 		public void unscheduleTick(BlockPos pos) {
@@ -278,7 +405,7 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public World getWorld() {
-		return null;
+		return this;
 	}
 	
 	@Override
@@ -310,12 +437,14 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public BlockPos getSpawnPoint() {
-		return null;
+		return new BlockPos(0,0,0);
 	}
 	
 	@Override
 	public void playSound(@Nullable PlayerEntity player, BlockPos pos, SoundEvent soundIn, SoundCategory category, float volume, float pitch) {
-		player.world.playSound(player,pos,soundIn,category,volume,pitch);
+		try {
+			player.world.playSound(player,pos,soundIn,category,volume,pitch);
+		} catch (Throwable err) {}
 	}
 	
 	@Override
@@ -324,7 +453,9 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
-		player.world.playEvent(player,type,pos,data);
+		try {
+			player.world.playEvent(player,type,pos,data);
+		} catch (Throwable err) {}
 	}
 	
 	@Override
@@ -340,7 +471,10 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
-		return unitHashMap.get(pos).s;
+		if (unitHashMap.containsKey(pos)) {
+			return unitHashMap.get(pos).s;
+		}
+		return Blocks.AIR.getDefaultState();
 	}
 	
 	@Override
@@ -366,7 +500,18 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public IFluidState getFluidState(BlockPos pos) {
-		return unitHashMap.get(pos).s.getFluidState();
+		if (unitHashMap.containsKey(pos)) return unitHashMap.get(pos).s.getFluidState();
+		else return Blocks.WATER.getDefaultState().getFluidState();
+	}
+	
+	@Override
+	public boolean checkNoEntityCollision(@Nullable Entity entityIn, VoxelShape shape) {
+		return true;
+	}
+	
+	@Override
+	public boolean checkNoEntityCollision(Entity p_226668_1_) {
+		return true;
 	}
 	
 	@Override
@@ -397,6 +542,9 @@ public class FakeWorld extends World implements IWorld {
 					unitHashMap.replace(pos,unit);
 				} else {
 					unitHashMap.put(pos,unit);
+				}
+				if (state.equals(Blocks.AIR.getDefaultState())) {
+					unitHashMap.remove(pos);
 				}
 				for (Direction dir:Direction.values()) {
 					this.getBlockState(pos.offset(dir)).onNeighborChange(world,pos.offset(dir),pos);
@@ -554,7 +702,10 @@ public class FakeWorld extends World implements IWorld {
 			
 			@Override
 			public BlockState getBlockState(BlockPos pos) {
-				return unitHashMap.get(pos).s;
+				if (unitHashMap.containsKey(pos)) {
+					return unitHashMap.get(pos).s;
+				}
+				return Blocks.AIR.getDefaultState();
 			}
 			
 			@Override
@@ -599,7 +750,7 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public int getSkylightSubtracted() {
-		return 0;
+		return getMaxLightLevel();
 	}
 	
 	@Override
@@ -616,7 +767,7 @@ public class FakeWorld extends World implements IWorld {
 	public boolean isRemote() {
 		try {
 			return Minecraft.getInstance().world.isRemote;
-		} catch (Exception err) {}
+		} catch (Throwable err) {}
 		return false;
 	}
 	
@@ -639,15 +790,11 @@ public class FakeWorld extends World implements IWorld {
 	public boolean setBlockState(BlockPos pos, BlockState newState, int flags) {
 		try {
 			this.getBlockState(pos).onReplaced(this,pos,newState,false);
-		} catch (Exception err) {}
+		} catch (Throwable err) {}
 		try {
 			newState.onBlockAdded(this,pos,getBlockState(pos),false);
-		} catch (Exception err) {}
+		} catch (Throwable err) {}
 		getChunk(0,0,null,true).setBlockState(pos,newState,false);
-		try {
-			tickList.unscheduleTick(pos);
-		} catch (Exception err) {}
-		tickList.scheduleTick(pos,newState.getBlock(),(newState.getBlock().tickRate(this)*2000));
 		return true;
 	}
 	

@@ -16,6 +16,8 @@ public class SmallerUnitsITSER extends ItemStackTileEntityRenderer {
 		super.render(itemStackIn, matrixStackIn, bufferIn, combinedLightIn, combinedOverlayIn);
 		
 		SmallerUnitsTileEntity tileEntity=new SmallerUnitsTileEntity();
+		tileEntity.isEnchanted=itemStackIn.hasEffect();
+		tileEntity.useManual=true;
 		try {
 			tileEntity.read(itemStackIn.getOrCreateTag().getCompound("BlockEntityTag"));
 		} catch (Exception err) {}

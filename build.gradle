@@ -93,4 +93,5 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.15.2-31.2.8'
 
     runtimeOnly fg.deobf("curse.maven:gullivern:2967385")
+    runtimeOnly fg.deobf("curse.maven:refined-storage:2966220")
 }

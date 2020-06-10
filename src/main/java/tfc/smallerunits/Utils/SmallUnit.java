@@ -4,9 +4,17 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ITileEntityProvider;
+import net.minecraft.command.arguments.NBTPathArgument;
+import net.minecraft.data.NBTToSNBTConverter;
+import net.minecraft.nbt.*;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.text.NBTTextComponent;
+import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.registries.ForgeRegistries;
+
+import java.io.DataInput;
 
 public class SmallUnit {
 	public int x;
@@ -27,8 +35,9 @@ public class SmallUnit {
 	public void createTileEntity(FakeWorld fakeWorld) {
 		if (s instanceof ITileEntityProvider) {
 			((ITileEntityProvider)s.getBlock()).createNewTileEntity(fakeWorld);
+		} else {
+			s.getBlock().createTileEntity(s,fakeWorld);
 		}
-		s.getBlock().createTileEntity(s,fakeWorld);
 	}
 	
 	public static SmallUnit fromString(String s,int upb) {
@@ -58,26 +67,33 @@ public class SmallUnit {
 						if (sta.equals(Blocks.PISTON.getDefaultState())) {
 							sta=block.getDefaultState();
 						}
-					} catch (Exception err) {
+					} catch (Throwable err) {
 						sta=block.getDefaultState();
 					}
-				} else if (num>=4) {
 				}
-			} catch (Exception err) {}
+			} catch (Throwable err) {
+			}
 			num++;
 		}
 		return new SmallUnit(x,y,z,upb,sta);
 	}
 	
+	public TileEntity readTileEntity(CompoundNBT nbt) {
+		TileEntity te=ForgeRegistries.TILE_ENTITIES.getValue(new ResourceLocation(nbt.getString("id"))).create();
+		te.read(nbt);
+		this.te=te;
+		return te;
+	}
+	
 	@Override
 	public String toString() {
 		try {
-			try {
-				return ""+(x+','+y+','+z+','+s.toString().replace(',','|')+','+te.serializeNBT());
-			} catch (Exception err) {
-				return ""+(x+","+y+","+z+","+s.toString().replace(',','|')+","+"\"\"");
-			}
-		} catch (Exception err) {
+//			try {
+//				return ""+(x+','+y+','+z+','+s.toString().replace(',','|')+','+"\""+te.serializeNBT().toString()+"\"");
+//			} catch (Exception err) {
+				return ""+(x+","+y+","+z+","+s.toString().replace(',','|')+","+"\"{}\"");
+//			}
+		} catch (Throwable err) {
 			return "null";
 		}
 	}
