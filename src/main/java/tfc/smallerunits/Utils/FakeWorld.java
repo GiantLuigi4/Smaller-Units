@@ -1,5 +1,6 @@
 package tfc.smallerunits.Utils;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
@@ -7,6 +8,7 @@ import net.minecraft.block.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.IFluidState;
@@ -30,6 +32,7 @@ import net.minecraft.world.*;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeContainer;
 import net.minecraft.world.biome.BiomeManager;
+import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.chunk.*;
 import net.minecraft.world.dimension.Dimension;
@@ -44,6 +47,7 @@ import org.apache.logging.log4j.Level;
 import tfc.smallerunits.Registry.Deferred;
 //import tfc.smallerunits.Registry.ModEventRegistry;
 import tfc.smallerunits.Registry.ModEventRegistry;
+import tfc.smallerunits.SmallerUnitBlock;
 import tfc.smallerunits.SmallerUnitsTileEntity;
 import tfc.smallerunits.Smallerunits;
 
@@ -62,7 +66,9 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
-		unitHashMap.get(pos).te=tileEntityIn;
+		if (unitHashMap.containsKey(pos)) {
+			unitHashMap.get(pos).te=tileEntityIn;
+		}
 	}
 	
 	@Override
@@ -143,67 +149,63 @@ public class FakeWorld extends World implements IWorld {
 	}
 	
 	public void tick(ServerWorld realWorld) {
-		new FakeServerWorld(realWorld,this);
 		try {
 //			BlockPos randomPos=new BlockPos(new Random().nextInt(16/2)*16,(new Random().nextInt(255/16/2)+2)*16,new Random().nextInt(16/2)*16);
 			BlockPos randomPos=new BlockPos((1/2)*16,((1/2)+2)*16,(1/2)*16);
 			ServerWorld sworld=realWorld.getServer().getWorld(Objects.requireNonNull(DimensionType.byName(new ResourceLocation("smallerunits", "susimulator"))));
-			for (int x=0;x<upb;x++) {
-				for (int y=0;y<upb;y++) {
-					for (int z=0;z<upb;z++) {
-						sworld.setBlockState(randomPos.add(new BlockPos(x,y,z)),Blocks.STONE.getDefaultState(),64);
-						sworld.setBlockState(randomPos.add(new BlockPos(x,y,z)),this.getBlockState(new BlockPos(x,y,z)),64);
-						try {
-							if (this.getTileEntity(new BlockPos(x,y,z))!=null) {
-								TileEntity te=this.getTileEntity(new BlockPos(x,y,z));
-//								te.setWorldAndPos(sworld,randomPos.add(new BlockPos(x,y,z)));
-								sworld.setTileEntity(randomPos.add(new BlockPos(x,y,z)),te);
-							}
-						} catch (Exception err) {}
-						if (!sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))).equals(sworld.getBlockState(randomPos.add(new BlockPos(x,y,z)))))
-						sworld.onBlockStateChange(randomPos.add(new BlockPos(x,y,z)),Blocks.AIR.getDefaultState(),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
-					}
-				}
+			for (BlockPos pos:unitHashMap.keySet()) {
+				sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
+//				if (!sworld.getBlockState(randomPos.add(pos)).equals(sworld.getBlockState(randomPos.add(pos))))
+//					sworld.onBlockStateChange(randomPos.add(pos),Blocks.AIR.getDefaultState(),sworld.getBlockState(randomPos.add(pos)));
 			}
-			try {
-				if (false) {
-					sworld.tick(()->true);
-				}
-					sworld.getPendingBlockTicks().tick();
-			} catch (Exception err) {}
+			for (BlockPos pos:unitHashMap.keySet()) {
+				sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
+//				if (!sworld.getBlockState(randomPos.add(pos)).equals(sworld.getBlockState(randomPos.add(pos))))
+//					sworld.onBlockStateChange(randomPos.add(pos),Blocks.AIR.getDefaultState(),sworld.getBlockState(randomPos.add(pos)));
+			}
+//			tickList.ticklist.keySet().forEach((pos)->sworld.getPendingBlockTicks().scheduleTick(pos,tickList.blocklist.get(pos),tickList.ticklist.get(pos).intValue()));
+			sworld.getChunkProvider().getChunk(0,0,true);
+			sworld.getChunkProvider().getChunk(0,-1,true);
+			sworld.getChunkProvider().getChunk(-1,-1,true);
+			sworld.getChunkProvider().getChunk(-1,0,true);
+//			try{if(false)sworld.tick(()->true);if(false)sworld.getPendingBlockTicks().tick();}catch(Throwable ignored){}
 			try {
 				for (int x=0;x<upb;x++) {
 					for (int y = 0; y < upb; y++) {
 						for (int z = 0; z < upb; z++) {
-							try {
-								TileEntity te=this.getTileEntity((new BlockPos(x,y,z)));
-								try {
-									try {
-										if (this.getTileEntity(new BlockPos(x,y,z)) instanceof ITickableTileEntity) {
-											((ITickableTileEntity)te).tick();
-										}
-									} catch (Exception err) {}
-//									sworld.getBlockState(randomPos.add(x,y,z)).tick(sworld,randomPos.add(x,y,z),rand);
-									this.setBlockState(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
-									te.setWorldAndPos(this,new BlockPos(x,y,z));
-								} catch (Exception err) {
-									this.setBlockState(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
-								}
-								this.setTileEntity(new BlockPos(x,y,z),te);
-							} catch (Exception err) {}
-//						System.out.println(this.getBlockState(new BlockPos(x,y,z)));
+							if (!(sworld.getBlockState(randomPos.add(x,y,z)).getBlock() instanceof SmallerUnitBlock))
+							sworld.getBlockState(randomPos.add(x,y,z)).tick(sworld,randomPos.add(x,y,z),rand);
+							TileEntity te=this.getTileEntity(new BlockPos(x,y,z));
+							if(te==null)te=sworld.getTileEntity(randomPos.add(new BlockPos(x,y,z)));
+							this.setBlockState(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
+							if (te!=null) {
+								te.setWorldAndPos(this,new BlockPos(x,y,z));
+								if(te instanceof ITickableTileEntity)((ITickableTileEntity)te).tick();
+							}
+							this.setTileEntity(new BlockPos(x,y,z),te);
 						}
 					}
 				}
-			} catch (Exception err) {}
-			for (int x=0;x<upb;x++) {
-				for (int y = 0; y < upb; y++) {
-					for (int z = 0; z < upb; z++) {
-						sworld.setBlockState(randomPos.add(new BlockPos(x,y,z)),Blocks.GOLD_BLOCK.getDefaultState());
-					}
-				}
+			} catch (Throwable err) {
+				StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
+				for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
+				System.out.println(stack.toString());
 			}
-		} catch (Exception err) {}
+			for (BlockPos pos:unitHashMap.keySet()) {
+				sworld.setBlockState(randomPos.add(pos),Blocks.AIR.getDefaultState(),64);
+				sworld.getEntitiesWithinAABB(ItemEntity.class,new AxisAlignedBB(randomPos.getX()+pos.getX(),randomPos.getY()+pos.getY(),randomPos.getZ()+pos.getZ(),randomPos.getX()+pos.getX()+1,randomPos.getY()+pos.getY()+1,randomPos.getZ()+pos.getZ()+1)).forEach((e)->e.remove());
+			}
+		} catch (Throwable ignored) {}
+	}
+	
+	@Override
+	public List<Entity> getEntitiesWithinAABBExcludingEntity(@Nullable Entity entityIn, AxisAlignedBB bb) {
+		return ImmutableList.of();
+	}
+	
+	@Override
+	public Biome getBiome(BlockPos p_226691_1_) {
+		return Biomes.THE_VOID;
 	}
 	
 	@Override
@@ -221,7 +223,7 @@ public class FakeWorld extends World implements IWorld {
 		if (owner.getWorld()!=null) {
 			light=0;
 			for (Direction dir:Direction.values()) {
-				light=Math.max(light,owner.getWorld().getLightFor(LightType.BLOCK,owner.getPos().offset(dir)));
+				light=Math.max(light,owner.getWorld().getLightFor(LightType.BLOCK,pos1.offset(dir)));
 			}
 		}
 		return (int)light;
@@ -460,13 +462,18 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public WorldBorder getWorldBorder() {
-		return null;
+		
+		WorldBorder border=new WorldBorder();
+		border.setCenter(upb/2f,upb/2f);
+		border.setSize(upb*2);
+		return border;
 	}
 	
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-		return unitHashMap.get(pos).te;
+		if (unitHashMap.containsKey(pos)) return unitHashMap.get(pos).te;
+		else return null;
 	}
 	
 	@Override
@@ -538,16 +545,25 @@ public class FakeWorld extends World implements IWorld {
 			@Override
 			public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
 				SmallUnit unit=new SmallUnit(pos.getX(),pos.getY(),pos.getZ(),upb,state);
-				if (unitHashMap.containsKey(pos)) {
-					unitHashMap.replace(pos,unit);
-				} else {
-					unitHashMap.put(pos,unit);
-				}
-				if (state.equals(Blocks.AIR.getDefaultState())) {
-					unitHashMap.remove(pos);
-				}
-				for (Direction dir:Direction.values()) {
-					this.getBlockState(pos.offset(dir)).onNeighborChange(world,pos.offset(dir),pos);
+				try {
+					if (world.getTileEntity(pos)!=null) {
+						unit.te=world.getTileEntity(pos);
+					}
+					if (unitHashMap.containsKey(pos)) {
+						unitHashMap.replace(pos,unit);
+					} else {
+						unitHashMap.put(pos,unit);
+					}
+					if (state.equals(Blocks.AIR.getDefaultState())) {
+						unitHashMap.remove(pos);
+					}
+					for (Direction dir:Direction.values()) {
+						this.getBlockState(pos.offset(dir)).onNeighborChange(world,pos.offset(dir),pos);
+					}
+				} catch (Throwable err) {
+					StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
+					for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
+					System.out.println(stack.toString());
 				}
 				return state;
 			}
@@ -790,10 +806,10 @@ public class FakeWorld extends World implements IWorld {
 	public boolean setBlockState(BlockPos pos, BlockState newState, int flags) {
 		try {
 			this.getBlockState(pos).onReplaced(this,pos,newState,false);
-		} catch (Throwable err) {}
+		} catch (Throwable ignored) {}
 		try {
 			newState.onBlockAdded(this,pos,getBlockState(pos),false);
-		} catch (Throwable err) {}
+		} catch (Throwable ignored) {}
 		getChunk(0,0,null,true).setBlockState(pos,newState,false);
 		return true;
 	}

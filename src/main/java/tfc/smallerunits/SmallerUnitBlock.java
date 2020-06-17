@@ -256,20 +256,19 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 									stop.scale(te.containedWorld.upb),
 									loc.offset(hit.getFace().getOpposite())
 							));
-							System.out.println(result);
-							System.out.println(start);
-							System.out.println(stop);
-							System.out.println(loc.offset(hit.getFace().getOpposite()));
+//							System.out.println(result);
+//							System.out.println(start);
+//							System.out.println(stop);
+//							System.out.println(loc.offset(hit.getFace().getOpposite()));
 							if (result!=null) {
 								try {
 									result=result.withFace(hit.getFace());
-//									System.out.println(result.getPos());
-//									System.out.println(result.getFace());
-									System.out.println(fakePlayer.getHeldItem(handIn).onItemUse(new ItemUseContext(fakePlayer,handIn,result)));
+									fakePlayer.getHeldItem(handIn).onItemUse(new ItemUseContext(fakePlayer,handIn,result));
 								} catch (Throwable err) {
-									StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
-									for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
-									Smallerunits.LOGGER.log(Level.INFO, stack.toString());
+									StringBuilder stack=new StringBuilder("\n"+err.toString()+"("+err.getMessage()+")");
+									for (StackTraceElement element:err.getStackTrace())stack.append(element.toString()).append("\n");
+									System.out.println(stack.toString());
+									System.out.println(result);
 								}
 							}
 							if (te.containedWorld.getBlockState(loc).equals(Blocks.AIR.getDefaultState())) {
@@ -278,7 +277,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						}
 					}
 				}
-			} catch (Exception err) {
+			} catch (Throwable err) {
 				if (!Block.getBlockFromItem(player.getHeldItem(handIn).getItem()).getDefaultState().equals(Blocks.AIR.getDefaultState())) {
 					BlockState clickedState=te.containedWorld.getBlockState(loc.offset(hit.getFace().getOpposite()));
 					VoxelShape shape=clickedState.getShape(te.containedWorld,loc.offset(hit.getFace().getOpposite()));
@@ -292,11 +291,15 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					try {
 						if (result!=null) player.getHeldItem(handIn).onItemUse(new ItemUseContext(player,handIn,result));
 						else te.containedWorld.setBlockState(loc,heldState.updatePostPlacement(hit.getFace(),heldState,te.containedWorld,loc,loc),0);
-					} catch (Throwable ignored) {}
+					} catch (Throwable ignored) {
+						StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
+						for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
+						System.out.println(stack.toString());
+					}
 				}
 				StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
 				for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
-				Smallerunits.LOGGER.log(Level.INFO, stack.toString());
+				System.out.println(stack.toString());
 			}
 			try {
 				TileEntity tileEntity=te.containedWorld.getBlockState(loc).createTileEntity(te.containedWorld);
@@ -307,13 +310,13 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					}
 					te.containedWorld.setTileEntity(loc,tileEntity);
 				}
-			} catch (Exception err2) {}
+			} catch (Throwable err2) {}
 			te.markDirty();
 			worldIn.notifyBlockUpdate(pos,state,state,0);
-		} catch (Exception err) {
+		} catch (Throwable err) {
 			StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
 			for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
-			Smallerunits.LOGGER.log(Level.INFO, stack.toString());
+			System.out.println(stack.toString());
 		}
 		return ActionResultType.SUCCESS;
 	}

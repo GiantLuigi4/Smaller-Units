@@ -45,7 +45,7 @@ public class SmallUnit {
 		int x=0;
 		int y=0;
 		int z=0;
-		BlockState sta=Blocks.PISTON.getDefaultState();
+		BlockState sta=Blocks.AIR.getDefaultState();
 		for (String s1:s.split(",")) {
 			try {
 				if (num==0) {
@@ -64,7 +64,7 @@ public class SmallUnit {
 								sta=((BlockState)obj);
 							}
 						}
-						if (sta.equals(Blocks.PISTON.getDefaultState())) {
+						if (sta.equals(Blocks.AIR.getDefaultState())) {
 							sta=block.getDefaultState();
 						}
 					} catch (Throwable err) {
