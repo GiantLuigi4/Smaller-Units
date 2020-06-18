@@ -77,8 +77,10 @@ public class FakeWorld extends World implements IWorld {
 	@Override
 	public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
 		oldState.onReplaced(this,pos,newState,((flags&4)==4));
-		for (Direction dir:Direction.values())
+		for (Direction dir:Direction.values()) {
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+			this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),oldState.getBlock(),pos,false);
+		}
 	}
 	
 	@Override
@@ -172,9 +174,8 @@ public class FakeWorld extends World implements IWorld {
 					newState.neighborChanged(this,pos,oldState.getBlock(),pos,isMoving);
 					for (Direction dir:Direction.values()) {
 						this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),newState.getBlock(),pos,isMoving);
-//						this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+						this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
 						this.getBlockState(pos.offset(dir)).observedNeighborChange(this,pos.offset(dir),oldState.getBlock(),pos);
-//						this.tickList.scheduleTick(pos.offset(dir),this.getBlockState(pos.offset(dir)).getBlock(),this.getBlockState(pos.offset(dir)).getBlock().tickRate(this)/10);
 					}
 				}
 				newUnit=unitHashMap.containsKey(pos)?unitHashMap.get(pos):SmallUnit.fromString("0",upb);
@@ -196,7 +197,9 @@ public class FakeWorld extends World implements IWorld {
 						this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),newState.getBlock(),pos,false);
 						this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
 						this.getBlockState(pos.offset(dir)).observedNeighborChange(this,pos.offset(dir),oldState.getBlock(),pos);
-//						this.tickList.scheduleTick(pos.offset(dir),this.getBlockState(pos.offset(dir)).getBlock(),this.getBlockState(pos.offset(dir)).getBlock().tickRate(this)/10);
+						if (!this.tickList.ticklist.containsKey(pos.offset(dir))) {
+							this.tickList.scheduleTick(pos.offset(dir),this.getBlockState(pos.offset(dir)).getBlock(),this.getBlockState(pos.offset(dir)).getBlock().tickRate(this)/10);
+						}
 					}
 				}
 				if (lastUnitsHashMap.containsKey(pos))
@@ -229,6 +232,8 @@ public class FakeWorld extends World implements IWorld {
 							this.setTileEntity(new BlockPos(x,y,z),te);
 							if (te!=null)
 							te.setWorldAndPos(sworld,new BlockPos(x,y,z));
+							sworld.setBlockState(randomPos.add(x,y,z),this.getBlockState(new BlockPos(x,y,z)),64);
+							for (Direction dir:Direction.values())sworld.setBlockState(randomPos.add(x,y,z).offset(dir),this.getBlockState(new BlockPos(x,y,z).offset(dir)),64);
 						}
 					}
 				}
@@ -238,7 +243,9 @@ public class FakeWorld extends World implements IWorld {
 				System.out.println(stack.toString());
 			}
 			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END,sworld));
-			for (BlockPos pos:unitHashMap.keySet()) {
+			for (BlockPos pos:lastUnitsHashMap.keySet()) {
+				if (sworld.getBlockState(pos)!=Blocks.AIR.getDefaultState())
+				this.setBlockState(pos,sworld.getBlockState(randomPos.add(pos)));
 				sworld.setBlockState(randomPos.add(pos),Blocks.AIR.getDefaultState(),64);
 				sworld.getEntitiesWithinAABB(ItemEntity.class,new AxisAlignedBB(randomPos.getX()+pos.getX(),randomPos.getY()+pos.getY(),randomPos.getZ()+pos.getZ(),randomPos.getX()+pos.getX()+1,randomPos.getY()+pos.getY()+1,randomPos.getZ()+pos.getZ()+1)).forEach((e)->e.remove());
 			}
@@ -500,6 +507,7 @@ public class FakeWorld extends World implements IWorld {
 	public void notifyNeighbors(BlockPos pos, Block blockIn) {
 		for (Direction dir:Direction.values()) {
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+			this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),blockIn,pos,false);
 		}
 	}
 	
@@ -556,14 +564,18 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void notifyNeighborsOfStateChange(BlockPos pos, Block blockIn) {
-		for (Direction dir:Direction.values())
+		for (Direction dir:Direction.values()) {
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+			this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),blockIn,pos,false);
+		}
 	}
 	
 	@Override
 	public void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, Direction skipSide) {
-		for (Direction dir:Direction.values()) if (!dir.equals(skipSide))
+		for (Direction dir:Direction.values()) if (!dir.equals(skipSide)) {
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+			this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),blockType,pos,false);
+		}
 	}
 	
 	@Override
@@ -618,8 +630,11 @@ public class FakeWorld extends World implements IWorld {
 						unitHashMap.put(pos,unit);
 					if (state.equals(Blocks.AIR.getDefaultState()))
 						unitHashMap.remove(pos);
-					for (Direction dir:Direction.values())
+					for (Direction dir:Direction.values()) {
 						this.getBlockState(pos.offset(dir)).onNeighborChange(world,pos.offset(dir),pos);
+//						this.getBlockState(pos.offset(dir)).neighborChanged(world,pos.offset(dir),state.getBlock(),pos,false);
+						this.getBlockState(pos.offset(dir)).observedNeighborChange(world,pos.offset(dir),this.getBlockState(pos).getBlock(),pos);
+					}
 				} catch (Throwable err) {
 					StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
 					for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
@@ -828,17 +843,21 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public boolean removeBlock(BlockPos pos, boolean isMoving) {
-		unitHashMap.remove(pos);
-		for (Direction dir:Direction.values())
+		for (Direction dir:Direction.values()) {
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+			this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),this.getBlockState(pos).getBlock(),pos,false);
+		}
+		unitHashMap.remove(pos);
 		return true;
 	}
 	
 	@Override
 	public boolean destroyBlock(BlockPos p_225521_1_, boolean p_225521_2_, @Nullable Entity p_225521_3_) {
 		unitHashMap.remove(p_225521_1_);
-		for (Direction dir:Direction.values())
+		for (Direction dir:Direction.values()) {
 			this.getBlockState(p_225521_1_.offset(dir)).onNeighborChange(this,p_225521_1_.offset(dir),p_225521_1_);
+			this.getBlockState(p_225521_1_.offset(dir)).neighborChanged(this,p_225521_1_.offset(dir),this.getBlockState(p_225521_1_).getBlock(),p_225521_1_,false);
+		}
 		return true;
 	}
 	

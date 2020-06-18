@@ -87,14 +87,19 @@ public class SmallerUnitTESR extends TileEntityRenderer<SmallerUnitsTileEntity> 
 						for (Direction dir:Direction.values())
 							if (
 									(!tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)).isSolidSide(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z).offset(dir),dir))||
-											(!(RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))).equals(RenderType.getSolid()))))
-								if (RenderTypeLookup.getRenderType(state).equals((RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))))))
-									if (!state.equals(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))))
-										if (!(RenderTypeLookup.getRenderType(state).equals(RenderType.getTranslucent())&&
-												tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)).isSolidSide(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z).offset(dir),dir)))
-											qds.addAll(mdl.getQuads(state,dir,new Random(new BlockPos(unit.x,unit.y,unit.z).toLong())));
-								else
-									qds.addAll(mdl.getQuads(state,dir,new Random(new BlockPos(unit.x,unit.y,unit.z).toLong())));
+											(!(RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))).equals(RenderType.getSolid())))) {
+								if (RenderTypeLookup.getRenderType(state).equals((RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x, unit.y, unit.z).offset(dir)))))) {
+									if (!state.equals(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x, unit.y, unit.z).offset(dir)))) {
+										if (RenderTypeLookup.getRenderType(state).equals(RenderType.getTranslucent()) &&
+												tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x, unit.y, unit.z).offset(dir)).isSolidSide(tileEntityIn.containedWorld, new BlockPos(unit.x, unit.y, unit.z).offset(dir), dir)) {
+										} else {
+											qds.addAll(mdl.getQuads(state, dir, new Random(new BlockPos(unit.x, unit.y, unit.z).toLong())));
+										}
+									}
+								} else {
+									qds.addAll(mdl.getQuads(state, dir, new Random(new BlockPos(unit.x, unit.y, unit.z).toLong())));
+								}
+							}
 						qds.addAll(mdl.getQuads(state,null,new Random(new BlockPos(unit.x,unit.y,unit.z).toLong())));
 //						if (true||state.getShape(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z)).equals(VoxelShapes.create(0,0,0,1,1,1))&&tileEntityIn.useManual) {
 //							Minecraft.getInstance().getItemRenderer().renderQuads(matrixStackIn,bufferIn.getBuffer(RenderTypeLookup.getRenderType(state)),qds,new ItemStack(Item.getItemFromBlock(state.getBlock())),light, combinedOverlayIn);

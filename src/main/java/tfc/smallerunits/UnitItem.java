@@ -26,6 +26,16 @@ public class UnitItem extends BlockItem {
 		if (group.equals(Deferred.group)) {
 			items.add(stack);
 		}
+		for (String s:Group.strings) {
+			ItemStack stack2=new ItemStack(Deferred.UNITITEM.get());
+			CompoundNBT nbt=new CompoundNBT();
+			nbt.putString("world",s);
+			nbt.putInt("upb",8);
+			stack2.getOrCreateTag().put("BlockEntityTag",nbt);
+			if (group.equals(Deferred.group)) {
+				items.add(stack2);
+			}
+		}
 		super.fillItemGroup(group, items);
 	}
 
