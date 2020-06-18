@@ -43,6 +43,9 @@ import net.minecraft.world.lighting.WorldLightManager;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.MapData;
 import net.minecraft.world.storage.WorldInfo;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.fml.LogicalSide;
 import org.apache.logging.log4j.Level;
 import tfc.smallerunits.Registry.Deferred;
 //import tfc.smallerunits.Registry.ModEventRegistry;
@@ -61,22 +64,21 @@ import java.util.stream.Stream;
 
 public class FakeWorld extends World implements IWorld {
 	public HashMap<BlockPos,SmallUnit> unitHashMap=new HashMap<>();
+	public HashMap<BlockPos,SmallUnit> lastUnitsHashMap=new HashMap<>();
 	public int upb; //units per block
 	public SmallerUnitsTileEntity owner;
 	
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
-		if (unitHashMap.containsKey(pos)) {
+		if (unitHashMap.containsKey(pos))
 			unitHashMap.get(pos).te=tileEntityIn;
-		}
 	}
 	
 	@Override
 	public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
 		oldState.onReplaced(this,pos,newState,((flags&4)==4));
-		for (Direction dir:Direction.values()) {
+		for (Direction dir:Direction.values())
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
-		}
 	}
 	
 	@Override
@@ -100,17 +102,16 @@ public class FakeWorld extends World implements IWorld {
 	}
 	
 	@Override
-	public void registerMapData(MapData mapDataIn) {
-	}
+	public void registerMapData(MapData mapDataIn) {}
 	
 	@Override
 	public int getNextMapId() {
 		return 0;
 	}
 	
+	//TODO
 	@Override
-	public void sendBlockBreakProgress(int breakerId, BlockPos pos, int progress) {
-	}
+	public void sendBlockBreakProgress(int breakerId, BlockPos pos, int progress) {}
 	
 	@Override
 	public Scoreboard getScoreboard() {
@@ -151,30 +152,73 @@ public class FakeWorld extends World implements IWorld {
 	public void tick(ServerWorld realWorld) {
 		try {
 //			BlockPos randomPos=new BlockPos(new Random().nextInt(16/2)*16,(new Random().nextInt(255/16/2)+2)*16,new Random().nextInt(16/2)*16);
+			time++;
 			BlockPos randomPos=new BlockPos((1/2)*16,((1/2)+2)*16,(1/2)*16);
 			ServerWorld sworld=realWorld.getServer().getWorld(Objects.requireNonNull(DimensionType.byName(new ResourceLocation("smallerunits", "susimulator"))));
-			for (BlockPos pos:unitHashMap.keySet()) {
-				sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
-//				if (!sworld.getBlockState(randomPos.add(pos)).equals(sworld.getBlockState(randomPos.add(pos))))
-//					sworld.onBlockStateChange(randomPos.add(pos),Blocks.AIR.getDefaultState(),sworld.getBlockState(randomPos.add(pos)));
-			}
-			for (BlockPos pos:unitHashMap.keySet()) {
-				sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
-//				if (!sworld.getBlockState(randomPos.add(pos)).equals(sworld.getBlockState(randomPos.add(pos))))
-//					sworld.onBlockStateChange(randomPos.add(pos),Blocks.AIR.getDefaultState(),sworld.getBlockState(randomPos.add(pos)));
-			}
-//			tickList.ticklist.keySet().forEach((pos)->sworld.getPendingBlockTicks().scheduleTick(pos,tickList.blocklist.get(pos),tickList.ticklist.get(pos).intValue()));
 			sworld.getChunkProvider().getChunk(0,0,true);
 			sworld.getChunkProvider().getChunk(0,-1,true);
 			sworld.getChunkProvider().getChunk(-1,-1,true);
 			sworld.getChunkProvider().getChunk(-1,0,true);
-//			try{if(false)sworld.tick(()->true);if(false)sworld.getPendingBlockTicks().tick();}catch(Throwable ignored){}
+			for (BlockPos pos:lastUnitsHashMap.keySet()) {
+				SmallUnit newUnit=unitHashMap.containsKey(pos)?unitHashMap.get(pos):SmallUnit.fromString("0",upb);
+				sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
+				BlockState oldState=lastUnitsHashMap.containsKey(pos)?lastUnitsHashMap.get(pos).s:Blocks.AIR.getDefaultState();
+				BlockState newState=this.getBlockState(pos);
+				if (!oldState.equals(newState)) {
+					boolean isMoving=newState.getBlock() instanceof MovingPistonBlock||oldState.getBlock() instanceof MovingPistonBlock;
+					this.onBlockStateChange(randomPos.add(pos),oldState,newState);
+					newState.onBlockAdded(this,pos,oldState,isMoving);
+					newState.onNeighborChange(this,pos,pos);
+					newState.neighborChanged(this,pos,oldState.getBlock(),pos,isMoving);
+					for (Direction dir:Direction.values()) {
+						this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),newState.getBlock(),pos,isMoving);
+//						this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+						this.getBlockState(pos.offset(dir)).observedNeighborChange(this,pos.offset(dir),oldState.getBlock(),pos);
+//						this.tickList.scheduleTick(pos.offset(dir),this.getBlockState(pos.offset(dir)).getBlock(),this.getBlockState(pos.offset(dir)).getBlock().tickRate(this)/10);
+					}
+				}
+				newUnit=unitHashMap.containsKey(pos)?unitHashMap.get(pos):SmallUnit.fromString("0",upb);
+				if (lastUnitsHashMap.containsKey(pos))
+					lastUnitsHashMap.replace(pos,newUnit);
+				else
+					lastUnitsHashMap.put(pos,newUnit);
+			}
+			for (BlockPos pos:unitHashMap.keySet()) {
+				BlockState oldState=lastUnitsHashMap.containsKey(pos)?lastUnitsHashMap.get(pos).s:Blocks.AIR.getDefaultState();
+				BlockState newState=this.getBlockState(pos);
+				if (!oldState.equals(newState)) {
+					sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
+					this.onBlockStateChange(randomPos.add(pos),oldState,newState);
+					newState.onBlockAdded(this,pos,oldState,false);
+					newState.onNeighborChange(this,pos,pos);
+					newState.neighborChanged(this,pos,oldState.getBlock(),pos,false);
+					for (Direction dir:Direction.values()) {
+						this.getBlockState(pos.offset(dir)).neighborChanged(this,pos.offset(dir),newState.getBlock(),pos,false);
+						this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
+						this.getBlockState(pos.offset(dir)).observedNeighborChange(this,pos.offset(dir),oldState.getBlock(),pos);
+//						this.tickList.scheduleTick(pos.offset(dir),this.getBlockState(pos.offset(dir)).getBlock(),this.getBlockState(pos.offset(dir)).getBlock().tickRate(this)/10);
+					}
+				}
+				if (lastUnitsHashMap.containsKey(pos))
+					lastUnitsHashMap.replace(pos,unitHashMap.get(pos));
+				else
+					lastUnitsHashMap.put(pos,unitHashMap.get(pos));
+			}
+			for (BlockPos pos:unitHashMap.keySet()) {
+				sworld.setBlockState(randomPos.add(pos),this.getBlockState(pos),64);
+			}
+			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START,sworld));
+//			tickList.ticklist.keySet().forEach((pos)->sworld.getPendingBlockTicks().scheduleTick(pos,tickList.blocklist.get(pos),tickList.ticklist.get(pos).intValue()));
+//			try{if(true)sworld.tick(()->true);if(true)sworld.getPendingBlockTicks().tick();}catch(Throwable ignored){}
 			try {
 				for (int x=0;x<upb;x++) {
 					for (int y = 0; y < upb; y++) {
 						for (int z = 0; z < upb; z++) {
 							if (!(sworld.getBlockState(randomPos.add(x,y,z)).getBlock() instanceof SmallerUnitBlock))
-							sworld.getBlockState(randomPos.add(x,y,z)).tick(sworld,randomPos.add(x,y,z),rand);
+								if (tickList.isTickPending(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(x,y,z)).getBlock())) {
+									sworld.getBlockState(randomPos.add(x,y,z)).tick(sworld,randomPos.add(x,y,z),rand);
+									tickList.unscheduleTick(new BlockPos(x,y,z));
+								}
 							TileEntity te=this.getTileEntity(new BlockPos(x,y,z));
 							if(te==null)te=sworld.getTileEntity(randomPos.add(new BlockPos(x,y,z)));
 							this.setBlockState(new BlockPos(x,y,z),sworld.getBlockState(randomPos.add(new BlockPos(x,y,z))));
@@ -183,6 +227,8 @@ public class FakeWorld extends World implements IWorld {
 								if(te instanceof ITickableTileEntity)((ITickableTileEntity)te).tick();
 							}
 							this.setTileEntity(new BlockPos(x,y,z),te);
+							if (te!=null)
+							te.setWorldAndPos(sworld,new BlockPos(x,y,z));
 						}
 					}
 				}
@@ -191,6 +237,7 @@ public class FakeWorld extends World implements IWorld {
 				for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
 				System.out.println(stack.toString());
 			}
+			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END,sworld));
 			for (BlockPos pos:unitHashMap.keySet()) {
 				sworld.setBlockState(randomPos.add(pos),Blocks.AIR.getDefaultState(),64);
 				sworld.getEntitiesWithinAABB(ItemEntity.class,new AxisAlignedBB(randomPos.getX()+pos.getX(),randomPos.getY()+pos.getY(),randomPos.getZ()+pos.getZ(),randomPos.getX()+pos.getX()+1,randomPos.getY()+pos.getY()+1,randomPos.getZ()+pos.getZ()+1)).forEach((e)->e.remove());
@@ -290,29 +337,42 @@ public class FakeWorld extends World implements IWorld {
 		unitHashMap.get(pos).te=null;
 	}
 	
+	public int time=0;
+	
 	public static class FakeTickList implements ITickList<Block> {
 		public HashMap<BlockPos,Long> ticklist=new HashMap<>();
 		public ArrayList<BlockPos> updatorlist=new ArrayList<>();
 		public HashMap<BlockPos,Block> blocklist=new HashMap<>();
+		FakeWorld world;
+		
+		public FakeTickList(FakeWorld world) {
+			this.world = world;
+		}
+		
 		@Override
 		public boolean isTickScheduled(BlockPos pos, Block itemIn) {
-			if (blocklist.get(pos).equals(itemIn)) {
+			if (blocklist.containsKey(pos)&&blocklist.get(pos).equals(itemIn))
 				return ticklist.containsKey(pos);
-			} else {
-				return false;
-			}
+			return false;
 		}
 		
 		@Override
 		public void scheduleTick(BlockPos pos, Block itemIn, int scheduledTime, TickPriority priority) {
-			ticklist.put(pos,(long)(scheduledTime/100)+new Date().getTime());
-			blocklist.put(pos,itemIn);
+			if (!itemIn.getDefaultState().isAir()) {
+//				System.out.println(scheduledTime);
+//				System.out.println(itemIn);
+//				System.out.println(world.time+scheduledTime);
+				ticklist.put(pos,world.time+(long)scheduledTime);
+				blocklist.put(pos,itemIn);
+			}
 		}
 		
 		public void unscheduleTick(BlockPos pos) {
 			try {
-				ticklist.remove(pos);
-				blocklist.remove(pos);
+				while (ticklist.containsKey(pos))
+					ticklist.remove(pos);
+				while (blocklist.containsKey(pos))
+					blocklist.remove(pos);
 			} catch (Exception err) {}
 		}
 		
@@ -322,8 +382,14 @@ public class FakeWorld extends World implements IWorld {
 		}
 		
 		@Override
+		public void scheduleTick(BlockPos pos, Block itemIn, int scheduledTime) {
+			this.scheduleTick(pos,itemIn,scheduledTime,TickPriority.NORMAL);
+		}
+		
+		@Override
 		public boolean isTickPending(BlockPos pos, Block obj) {
-			return ticklist.containsKey(pos);
+//			System.out.println(ticklist.containsKey(pos)&&ticklist.get(pos).intValue()<=world.time);
+			return ticklist.containsKey(pos)&&ticklist.get(pos).intValue()<=world.time;
 		}
 		
 		@Override
@@ -335,8 +401,8 @@ public class FakeWorld extends World implements IWorld {
 		}
 	}
 	
-	FakeTickList tickList= new FakeTickList();
-	FakeTickList blockUpdateList= new FakeTickList();
+	FakeTickList tickList= new FakeTickList(this);
+	FakeTickList blockUpdateList= new FakeTickList(this);
 	
 	public FakeWorld(int upb, SmallerUnitsTileEntity owner) {
 		super(new WorldInfo() {
@@ -462,7 +528,6 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public WorldBorder getWorldBorder() {
-		
 		WorldBorder border=new WorldBorder();
 		border.setCenter(upb/2f,upb/2f);
 		border.setSize(upb*2);
@@ -491,18 +556,14 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public void notifyNeighborsOfStateChange(BlockPos pos, Block blockIn) {
-		for (Direction dir:Direction.values()) {
+		for (Direction dir:Direction.values())
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
-		}
 	}
 	
 	@Override
 	public void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, Direction skipSide) {
-		for (Direction dir:Direction.values()) {
-			if (!dir.equals(skipSide)) {
-				this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
-			}
-		}
+		for (Direction dir:Direction.values()) if (!dir.equals(skipSide))
+			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
 	}
 	
 	@Override
@@ -546,25 +607,25 @@ public class FakeWorld extends World implements IWorld {
 			public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
 				SmallUnit unit=new SmallUnit(pos.getX(),pos.getY(),pos.getZ(),upb,state);
 				try {
-					if (world.getTileEntity(pos)!=null) {
+					if (world.getTileEntity(pos)!=null)
 						unit.te=world.getTileEntity(pos);
-					}
-					if (unitHashMap.containsKey(pos)) {
+					try {
+						this.getBlockState(pos).onReplaced(world,pos,state,false);
+					} catch (Throwable ignored) {}
+					if (unitHashMap.containsKey(pos))
 						unitHashMap.replace(pos,unit);
-					} else {
+					else
 						unitHashMap.put(pos,unit);
-					}
-					if (state.equals(Blocks.AIR.getDefaultState())) {
+					if (state.equals(Blocks.AIR.getDefaultState()))
 						unitHashMap.remove(pos);
-					}
-					for (Direction dir:Direction.values()) {
+					for (Direction dir:Direction.values())
 						this.getBlockState(pos.offset(dir)).onNeighborChange(world,pos.offset(dir),pos);
-					}
 				} catch (Throwable err) {
 					StringBuilder stack=new StringBuilder("\n"+err.toString() + "(" + err.getMessage() + ")");
 					for (StackTraceElement element:err.getStackTrace()) stack.append(element.toString()).append("\n");
 					System.out.println(stack.toString());
 				}
+				state.onBlockAdded(world,pos,state,isMoving);
 				return state;
 			}
 			
@@ -572,11 +633,8 @@ public class FakeWorld extends World implements IWorld {
 			public void addTileEntity(BlockPos pos, TileEntity tileEntityIn) {
 				unitHashMap.get(pos).te=tileEntityIn;
 			}
-			
 			@Override
-			public void addEntity(Entity entityIn) {
-			}
-			
+			public void addEntity(Entity entityIn) {}
 			@Override
 			public Set<BlockPos> getTileEntitiesPos() {
 				ArrayList<BlockPos> poses=new ArrayList<>();
@@ -587,175 +645,135 @@ public class FakeWorld extends World implements IWorld {
 				}
 				return ImmutableSet.copyOf(poses);
 			}
-			
 			@Override
 			public ChunkSection[] getSections() {
 				return new ChunkSection[0];
 			}
-			
 			@Override
 			public Collection<Map.Entry<Heightmap.Type, Heightmap>> getHeightmaps() {
 				return null;
 			}
-			
 			@Override
-			public void setHeightmap(Heightmap.Type type, long[] data) {
-			}
-			
+			public void setHeightmap(Heightmap.Type type, long[] data) {}
 			@Override
 			public Heightmap getHeightmap(Heightmap.Type typeIn) {
 				return null;
 			}
-			
 			@Override
 			public int getTopBlockY(Heightmap.Type heightmapType, int x, int z) {
 				return 0;
 			}
-			
 			@Override
 			public ChunkPos getPos() {
 				return new ChunkPos(0,0);
 			}
-			
 			@Override
-			public void setLastSaveTime(long saveTime) {
-			}
-			
+			public void setLastSaveTime(long saveTime) {}
 			@Override
 			public Map<String, StructureStart> getStructureStarts() {
 				return null;
 			}
-			
 			@Override
 			public void setStructureStarts(Map<String, StructureStart> structureStartsIn) {
 			}
-			
 			@Nullable
 			@Override
 			public BiomeContainer getBiomes() {
 				return null;
 			}
-			
 			@Override
 			public void setModified(boolean modified) {
 			}
-			
 			@Override
 			public boolean isModified() {
 				return false;
 			}
-			
 			@Override
 			public ChunkStatus getStatus() {
 				return null;
 			}
-			
 			@Override
 			public void removeTileEntity(BlockPos pos) {
 				unitHashMap.get(pos).te=null;
 			}
-			
 			@Override
 			public ShortList[] getPackedPositions() {
 				return new ShortList[0];
 			}
-			
 			@Nullable
 			@Override
 			public CompoundNBT getDeferredTileEntity(BlockPos pos) {
 				return unitHashMap.get(pos).te.serializeNBT();
 			}
-			
 			@Nullable
 			@Override
 			public CompoundNBT getTileEntityNBT(BlockPos pos) {
 				return unitHashMap.get(pos).te.serializeNBT();
 			}
-			
 			@Override
 			public Stream<BlockPos> getLightSources() {
 				return null;
 			}
-			
 			@Override
 			public ITickList<Block> getBlocksToBeTicked() {
-				return tickList;
+				return world.getPendingBlockTicks();
 			}
-			
 			@Override
 			public ITickList<Fluid> getFluidsToBeTicked() {
 				return null;
 			}
-			
 			@Override
 			public UpgradeData getUpgradeData() {
 				return null;
 			}
-			
 			@Override
 			public void setInhabitedTime(long newInhabitedTime) {
 			}
-			
 			@Override
 			public long getInhabitedTime() {
 				return 0;
 			}
-			
 			@Override
 			public boolean hasLight() {
 				return false;
 			}
-			
 			@Override
 			public void setLight(boolean lightCorrectIn) {
 			}
-			
 			@Nullable
 			@Override
 			public TileEntity getTileEntity(BlockPos pos) {
 				return unitHashMap.get(pos).te;
 			}
-			
 			@Override
 			public BlockState getBlockState(BlockPos pos) {
-				if (unitHashMap.containsKey(pos)) {
+				if (unitHashMap.containsKey(pos))
 					return unitHashMap.get(pos).s;
-				}
 				return Blocks.AIR.getDefaultState();
 			}
-			
 			@Override
 			public IFluidState getFluidState(BlockPos pos) {
 				return unitHashMap.get(pos).s.getFluidState();
 			}
-			
 			@Nullable
 			@Override
 			public StructureStart getStructureStart(String stucture) {
 				return null;
 			}
-			
 			@Override
-			public void putStructureStart(String structureIn, StructureStart structureStartIn) {
-			}
-			
+			public void putStructureStart(String structureIn, StructureStart structureStartIn) {}
 			@Override
 			public LongSet getStructureReferences(String structureIn) {
 				return null;
 			}
-			
 			@Override
-			public void addStructureReference(String strucutre, long reference) {
-			}
-			
+			public void addStructureReference(String strucutre, long reference) {}
 			@Override
 			public Map<String, LongSet> getStructureReferences() {
 				return null;
 			}
-			
 			@Override
-			public void setStructureReferences(Map<String, LongSet> p_201606_1_) {
-			}
+			public void setStructureReferences(Map<String, LongSet> p_201606_1_) {}
 		};
 	}
 	
@@ -783,7 +801,7 @@ public class FakeWorld extends World implements IWorld {
 	public boolean isRemote() {
 		try {
 			return Minecraft.getInstance().world.isRemote;
-		} catch (Throwable err) {}
+		} catch (Throwable ignored) {}
 		return false;
 	}
 	
@@ -804,12 +822,6 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public boolean setBlockState(BlockPos pos, BlockState newState, int flags) {
-		try {
-			this.getBlockState(pos).onReplaced(this,pos,newState,false);
-		} catch (Throwable ignored) {}
-		try {
-			newState.onBlockAdded(this,pos,getBlockState(pos),false);
-		} catch (Throwable ignored) {}
 		getChunk(0,0,null,true).setBlockState(pos,newState,false);
 		return true;
 	}
@@ -817,18 +829,16 @@ public class FakeWorld extends World implements IWorld {
 	@Override
 	public boolean removeBlock(BlockPos pos, boolean isMoving) {
 		unitHashMap.remove(pos);
-		for (Direction dir:Direction.values()) {
+		for (Direction dir:Direction.values())
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this,pos.offset(dir),pos);
-		}
 		return true;
 	}
 	
 	@Override
 	public boolean destroyBlock(BlockPos p_225521_1_, boolean p_225521_2_, @Nullable Entity p_225521_3_) {
 		unitHashMap.remove(p_225521_1_);
-		for (Direction dir:Direction.values()) {
+		for (Direction dir:Direction.values())
 			this.getBlockState(p_225521_1_.offset(dir)).onNeighborChange(this,p_225521_1_.offset(dir),p_225521_1_);
-		}
 		return true;
 	}
 	

@@ -73,7 +73,7 @@ public class SmallerUnitTESR extends TileEntityRenderer<SmallerUnitsTileEntity> 
 							TileEntity renderTE=tileEntityIn.containedWorld.getTileEntity(new BlockPos(unit.x,unit.y,unit.z));
 							renderTE.setWorldAndPos(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z));
 							if (TileEntityRendererDispatcher.instance.getRenderer(renderTE)!=null)TileEntityRendererDispatcher.instance.getRenderer(renderTE).render(renderTE,partialTicks,matrixStackIn,bufferIn,light,combinedOverlayIn);
-						} catch (NullPointerException err) {} catch (Throwable err) {
+						} catch (NullPointerException ignored) {} catch (Throwable err) {
 							StringBuilder errmsg= new StringBuilder("\n");errmsg.append(err.toString()).append('\n');
 							for(StackTraceElement element:err.getStackTrace())errmsg.append(element.toString()).append('\n');
 							System.out.println(errmsg.toString());
@@ -84,23 +84,17 @@ public class SmallerUnitTESR extends TileEntityRenderer<SmallerUnitsTileEntity> 
 					if (state.getRenderType().equals(BlockRenderType.MODEL)) {
 						ArrayList<BakedQuad> qds=new ArrayList<>();
 						IBakedModel mdl=Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelShapes().getModel(state);
-						for (Direction dir:Direction.values()) {
+						for (Direction dir:Direction.values())
 							if (
 									(!tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)).isSolidSide(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z).offset(dir),dir))||
-											(!(RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))).equals(RenderType.getSolid())))) {
-								if (RenderTypeLookup.getRenderType(state).equals((RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)))))) {
-									if (!state.equals(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)))) {
-										if (RenderTypeLookup.getRenderType(state).equals(RenderType.getTranslucent())&&
-												tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)).isSolidSide(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z).offset(dir),dir)) {
-										} else {
+											(!(RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))).equals(RenderType.getSolid()))))
+								if (RenderTypeLookup.getRenderType(state).equals((RenderTypeLookup.getRenderType(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))))))
+									if (!state.equals(tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir))))
+										if (!(RenderTypeLookup.getRenderType(state).equals(RenderType.getTranslucent())&&
+												tileEntityIn.containedWorld.getBlockState(new BlockPos(unit.x,unit.y,unit.z).offset(dir)).isSolidSide(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z).offset(dir),dir)))
 											qds.addAll(mdl.getQuads(state,dir,new Random(new BlockPos(unit.x,unit.y,unit.z).toLong())));
-										}
-									}
-								} else {
+								else
 									qds.addAll(mdl.getQuads(state,dir,new Random(new BlockPos(unit.x,unit.y,unit.z).toLong())));
-								}
-							}
-						}
 						qds.addAll(mdl.getQuads(state,null,new Random(new BlockPos(unit.x,unit.y,unit.z).toLong())));
 //						if (true||state.getShape(tileEntityIn.containedWorld,new BlockPos(unit.x,unit.y,unit.z)).equals(VoxelShapes.create(0,0,0,1,1,1))&&tileEntityIn.useManual) {
 //							Minecraft.getInstance().getItemRenderer().renderQuads(matrixStackIn,bufferIn.getBuffer(RenderTypeLookup.getRenderType(state)),qds,new ItemStack(Item.getItemFromBlock(state.getBlock())),light, combinedOverlayIn);

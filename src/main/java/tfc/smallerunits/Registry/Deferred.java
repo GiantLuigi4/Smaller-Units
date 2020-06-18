@@ -39,7 +39,7 @@ public class Deferred {
 	
 	public static final DeferredRegister<Item> ITEMS = new DeferredRegister<>(ForgeRegistries.ITEMS, "smallerunits");
 	//	public static final RegistryObject<Item> UNITITEM = ITEMS.register("su", ()->new BlockItem(UNIT.get(),((Supplier<Item.Properties>)()->{try{return(new Properties().rarity(Rarity.create("su",TextFormatting.GREEN)));}catch(NoSuchMethodError err){return(new Item.Properties().rarity(Rarity.create("su",TextFormatting.GREEN)));}}).get()));
-	public static final RegistryObject<Item> UNITITEM = ITEMS.register("su", ()->new UnitItem(UNIT.get(),new Item.Properties().rarity(Rarity.create("su",TextFormatting.GREEN)).setISTER(()->SmallerUnitsITSER::new).group(group)));
+	public static final RegistryObject<Item> UNITITEM = ITEMS.register("su", ()->new UnitItem(UNIT.get(),new Item.Properties().rarity(Rarity.create("su",TextFormatting.GREEN)).setISTER(()->SmallerUnitsITSER::new)));
 	
 	public static final DeferredRegister<TileEntityType<?>> TILE_ENTITIES = new DeferredRegister<>(ForgeRegistries.TILE_ENTITIES, "smallerunits");
 	public static final RegistryObject<TileEntityType<SmallerUnitsTileEntity>> TILE_ENTITY = TILE_ENTITIES.register("sute", () -> TileEntityType.Builder.create(SmallerUnitsTileEntity::new, UNIT.get()).build(null));
