@@ -3,6 +3,7 @@ package tfc.smallerunits;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.Vector3d;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.IFluidState;
@@ -11,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.IBooleanFunction;
@@ -28,6 +30,7 @@ import tfc.smallerunits.Utils.FakePlayer;
 import tfc.smallerunits.Utils.SmallUnit;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -46,25 +49,31 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	@Override
 	public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
 		VoxelShape shape = Block.makeCuboidShape(0, 0, 0, 0, 0, 0);
+		
 		if (context != null) {
 			Entity entity = context.getEntity();
 			AxisAlignedBB bb1 = null;
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) worldIn.getTileEntity(pos);
+			
 			if (entity != null && te != null) {
 				bb1 = entity.getCollisionBox(entity);
+				
 				if (bb1 == null) bb1 = entity.getCollisionBoundingBox();
 				if (bb1 == null) bb1 = entity.getBoundingBox();
+				
 				bb1 = bb1.offset(new Vec3d(pos).scale(-1));
 				float expand = 0.2125f;
 				expand = Math.max(expand, entity.getCollisionBorderSize() * expand);
 				bb1 = bb1.grow(expand, expand, expand);
 				bb1 = bb1.grow(entity.getCollisionBorderSize());
 			}
+			
 			AxisAlignedBB finalBb = bb1;
 			if (te != null)
 				for (SmallUnit u : te.containedWorld.unitHashMap.values()) {
 					VoxelShape shape1 = u.s.getCollisionShape(te.containedWorld, new BlockPos(u.x, u.y, u.z));
 					AtomicBoolean collides = new AtomicBoolean(false);
+					
 					if (entity != null) shape1.toBoundingBoxList().forEach((b) -> {
 						if (b != null) {
 							b = new AxisAlignedBB(
@@ -76,15 +85,18 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						}
 					});
 					else collides.set(true);
+					
 					if (!shape1.isEmpty() && collides.get() && !u.s.isAir())
 						if (te.containedWorld.upb == 0)
 							te.containedWorld.upb = 4;
+						
 					for (AxisAlignedBB bb : shape1.toBoundingBoxList())
 						if (entity != null) {
 							bb = new AxisAlignedBB(
 									bb.minX / te.containedWorld.upb, bb.minY / te.containedWorld.upb, bb.minZ / te.containedWorld.upb,
 									bb.maxX / te.containedWorld.upb, bb.maxY / te.containedWorld.upb, bb.maxZ / te.containedWorld.upb
 							).offset(u.x / (float) te.containedWorld.upb, u.y / (float) te.containedWorld.upb, u.z / (float) te.containedWorld.upb);
+							
 							if (checkCollision.apply(bb, bb1) || (bb.intersects(bb1) || bb.contains(bb1.getCenter()) || bb1.contains(bb.getCenter()) || context.func_216378_a(shape1, pos, true)))
 								shape = VoxelShapes.combine(shape, VoxelShapes.create(bb), IBooleanFunction.OR);
 						} else
@@ -95,11 +107,14 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 		} else {
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) worldIn.getTileEntity(pos);
+			
 			if (te != null)
 				for (SmallUnit u : te.containedWorld.unitHashMap.values()) {
 					if (te.containedWorld.upb == 0)
 						te.containedWorld.upb = 4;
+					
 					VoxelShape shape1 = u.s.getCollisionShape(te.containedWorld, new BlockPos(u.x, u.y, u.z));
+					
 					if (!shape1.isEmpty() && !u.s.isAir()) for (AxisAlignedBB bb : shape1.toBoundingBoxList())
 						shape = VoxelShapes.combine(shape, VoxelShapes.create(
 								bb.minX / te.containedWorld.upb, bb.minY / te.containedWorld.upb, bb.minZ / te.containedWorld.upb,
@@ -107,6 +122,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						).withOffset(u.x / (float) te.containedWorld.upb, u.y / (float) te.containedWorld.upb, u.z / (float) te.containedWorld.upb), IBooleanFunction.OR);
 				}
 		}
+		
 		return shape;
 	}
 	
@@ -139,6 +155,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			});
 		} catch (Throwable err) {
 			VoxelShape shape = Block.makeCuboidShape(0, 0, 0, 0, 0, 0);
+			
 			try {
 				SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) worldIn.getTileEntity(pos);
 				for (SmallUnit u : te.containedWorld.unitHashMap.values()) {
@@ -146,6 +163,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						if (te.containedWorld.upb == 0) {
 							te.containedWorld.upb = 4;
 						}
+						
 						shape = VoxelShapes.combine(shape, VoxelShapes.create(
 								bb.minX / te.containedWorld.upb, bb.minY / te.containedWorld.upb, bb.minZ / te.containedWorld.upb,
 								bb.maxX / te.containedWorld.upb, bb.maxY / te.containedWorld.upb, bb.maxZ / te.containedWorld.upb
@@ -154,9 +172,11 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			} catch (Throwable ignored) {
 			}
+			
 			if (shape.isEmpty()) {
 				return VoxelShapes.create(0, 0, 0, 1, 1, 1);
 			}
+			
 			return shape;
 		}
 	}
@@ -169,6 +189,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	public VoxelShape getSelectedShape(IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
 		if (context.getEntity() != null)
 			try {
+				VoxelShape defaultShape = Block.makeCuboidShape(0, 0, 0, 0.01, 0.01, 0.01);
 				VoxelShape returnVal = Block.makeCuboidShape(0, 0, 0, 0.01, 0.01, 0.01);
 				double distanceBest = 999999;
 				Vec3d start = context.getEntity().getEyePosition(0);
@@ -200,6 +221,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 									
 									if (newBox.offset(pos).rayTrace(start, stop).isPresent()) {
 										double thisDist = newBox.offset(pos).rayTrace(start, stop).get().distanceTo(start);
+										
 										if (thisDist < bestDist) {
 											bestDist = thisDist;
 										}
@@ -217,11 +239,81 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						} catch (Exception ignored) {
 						}
 					}
+					
+					if (returnVal.toString().equals(defaultShape.toString())) {
+						for (Direction off : Direction.values()) {
+							VoxelShape shape = worldIn.getBlockState(pos.offset(off)).getShape(worldIn,pos);
+							VoxelShape shapeReturn = VoxelShapes.create(0,0,0,0,0,0);
+							
+							try {
+								for (AxisAlignedBB bb : shape.toBoundingBoxList()) {
+									AxisAlignedBB newBox = new AxisAlignedBB(
+											bb.minX, bb.minY, bb.minZ,
+											bb.maxX, bb.maxY, bb.maxZ
+									);
+									Optional<Vec3d> result = newBox.offset(pos.offset(off)).rayTrace(start, stop);
+							
+									if (result.isPresent()) {
+										newBox = new AxisAlignedBB(
+												bb.minX / te.containedWorld.upb, bb.minY / te.containedWorld.upb, bb.minZ / te.containedWorld.upb,
+												bb.maxX / te.containedWorld.upb, bb.maxY / te.containedWorld.upb, bb.maxZ / te.containedWorld.upb
+										);
+										
+										try {
+											VoxelShape shapeBox = VoxelShapes.create(newBox)
+													.withOffset(off.getXOffset() / (float) te.containedWorld.upb, off.getYOffset() / (float) te.containedWorld.upb, off.getZOffset() / (float) te.containedWorld.upb)
+													.withOffset(-off.getXOffset() * (1f / te.containedWorld.upb), -off.getYOffset() * (1f / te.containedWorld.upb), -off.getZOffset() * (1f / te.containedWorld.upb));
+											
+											Vec3d posA = result.get().subtract(pos.getX(), pos.getY(), pos.getZ());
+											
+											posA = new Vec3d(
+													((float) ((int) (posA.x * te.containedWorld.upb)) / te.containedWorld.upb),
+													((float) ((int) (posA.y * te.containedWorld.upb)) / te.containedWorld.upb),
+													((float) ((int) (posA.z * te.containedWorld.upb)) / te.containedWorld.upb)
+											);
+											
+											if (off.getXOffset() != 0) {
+												posA = new Vec3d(
+														off.getXOffset() == 1 ? 0 : 1 - (1f / te.containedWorld.upb),
+														posA.y,
+														posA.z
+												);
+											} else if (off.getYOffset() != 0) {
+												posA = new Vec3d(
+														posA.x,
+														off.getYOffset() == 1 ? 0 : 1 - (1f / te.containedWorld.upb),
+														posA.z
+												);
+											} else if (off.getZOffset() != 0) {
+												posA = new Vec3d(
+														posA.x,
+														posA.y,
+														off.getZOffset() == 1 ? 0 : 1 - (1f / te.containedWorld.upb)
+												);
+											}
+											
+											shapeBox = shapeBox.withOffset(posA.getX(), posA.getY(), posA.getZ());
+											
+											shapeReturn = VoxelShapes.combine(shapeReturn, shapeBox, IBooleanFunction.OR);
+										} catch (Throwable err) {
+											err.printStackTrace();
+										}
+										
+										return shapeReturn.withOffset(off.getXOffset(), off.getYOffset(), off.getZOffset());
+									}
+								}
+							} catch (Throwable err) {
+								err.printStackTrace();
+							}
+							
+							if (!shapeReturn.isEmpty())
+								return shapeReturn;
+						}
+						
+						returnVal = Block.makeCuboidShape(0, 0, 0, 0.01, 0.01, 0.01);
+					}
 				}
 				
-				if (returnVal.isEmpty()) {
-					returnVal = VoxelShapes.combine(returnVal, Block.makeCuboidShape(0, 0, 0, 0.01, 0.01, 0.01), IBooleanFunction.OR);
-				}
 				return returnVal;
 			} catch (Exception ignored) {
 			}
@@ -280,7 +372,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					blockpos = blockpos.subtract(1, 0, 0);
 				else if (blockpos.getZ() % 1 == 0)
 					blockpos = blockpos.subtract(0, 0, 1);
-				
+			
 			BlockPos loc = new BlockPos(blockpos);
 			
 			try {
@@ -366,8 +458,10 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 							te.containedWorld.setBlockState(loc, heldState.updatePostPlacement(hit.getFace(), heldState, te.containedWorld, loc, loc), 0);
 					} catch (Throwable ignored) {
 						StringBuilder stack = new StringBuilder("\n" + err.toString() + "(" + err.getMessage() + ")");
+						
 						for (StackTraceElement element : err.getStackTrace())
 							stack.append(element.toString()).append("\n");
+						
 						System.out.println(stack.toString());
 					}
 				}
@@ -394,7 +488,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			worldIn.notifyBlockUpdate(pos, state, state, 0);
 		} catch (Throwable err) {
 			StringBuilder stack = new StringBuilder("\n" + err.toString() + "(" + err.getMessage() + ")");
+		
 			for (StackTraceElement element : err.getStackTrace()) stack.append(element.toString()).append("\n");
+		
 			System.out.println(stack.toString());
 		}
 		
@@ -403,28 +499,33 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	@Override
 	public boolean removedByPlayer(BlockState state, World world, BlockPos pos, PlayerEntity player, boolean willHarvest, IFluidState fluid) {
-		if (world.isRemote) {
-			return false;
-		}
-		try {
+		TileEntity teUncasted = world.getTileEntity(pos);
+		if (teUncasted instanceof SmallerUnitsTileEntity) {
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) world.getTileEntity(pos);
+			
+			if (te.containedWorld.unitHashMap.isEmpty()) return true;
+			
+			if (world.isRemote) return false;
+			
 			BlockRayTraceResult hit = this.getRaytraceShape(state, world, pos).rayTrace(player.getEyePosition(0).subtract(player.getLookVec()), player.getEyePosition(0).add(player.getLookVec().scale(8)), pos);
 			Vec3d blockpos = hit.getHitVec().subtract(new Vec3d(pos)).scale(te.containedWorld.upb);
-			if (!hit.getFace().getDirectionVec().toString().contains("-")) {
-				if (blockpos.getY() % 1 == 0) {
+			
+			if (!hit.getFace().getDirectionVec().toString().contains("-"))
+				if (blockpos.getY() % 1 == 0)
 					blockpos = blockpos.subtract(0, 1, 0);
-				} else if (blockpos.getX() % 1 == 0) {
+				else if (blockpos.getX() % 1 == 0)
 					blockpos = blockpos.subtract(1, 0, 0);
-				} else if (blockpos.getZ() % 1 == 0) {
+				else if (blockpos.getZ() % 1 == 0)
 					blockpos = blockpos.subtract(0, 0, 1);
-				}
-			}
+			
 			BlockPos loc = new BlockPos(blockpos);
 			te.containedWorld.setBlockState(loc, Blocks.AIR.getDefaultState(), 0);
 			world.notifyBlockUpdate(pos, state, state, 0);
-		} catch (Throwable ignored) {
+			
+			return false;
 		}
-		return false;
+		
+		return true;
 	}
 	
 	@Nullable
