@@ -39,6 +39,7 @@ import java.util.function.IntSupplier;
 
 public class FakeServerWorld extends ServerMultiWorld {
 	FakeWorld owner;
+	
 	public FakeServerWorld(ServerWorld realWorld, FakeWorld owner) {
 		super(realWorld, realWorld.getServer(), (p) -> {
 		}, new SaveHandler(null, "", null, realWorld.getServer().getDataFixer()), DimensionType.OVERWORLD, realWorld.getProfiler(), new IChunkStatusListener() {
@@ -57,7 +58,7 @@ public class FakeServerWorld extends ServerMultiWorld {
 			
 			}
 		});
-		this.owner=owner;
+		this.owner = owner;
 	}
 	
 	@Override
@@ -67,57 +68,57 @@ public class FakeServerWorld extends ServerMultiWorld {
 	
 	@Override
 	public Chunk getChunk(int chunkX, int chunkZ) {
-		return owner.getChunkAt(new BlockPos(chunkX,0,chunkZ));
+		return owner.getChunkAt(new BlockPos(chunkX, 0, chunkZ));
 	}
 	
 	@Override
 	public IChunk getChunk(int x, int z, ChunkStatus requiredStatus, boolean nonnull) {
-		return owner.getChunk(new BlockPos(x,0,z));
+		return owner.getChunk(new BlockPos(x, 0, z));
 	}
 	
 	@Override
 	public boolean setBlockState(BlockPos pos, BlockState newState, int flags) {
-		return owner.setBlockState(pos,newState,flags);
+		return owner.setBlockState(pos, newState, flags);
 	}
 	
 	@Override
 	public void markAndNotifyBlock(BlockPos pos, @Nullable Chunk chunk, BlockState blockstate, BlockState newState, int flags) {
-		owner.markAndNotifyBlock(pos,chunk,blockstate,newState,flags);
+		owner.markAndNotifyBlock(pos, chunk, blockstate, newState, flags);
 	}
 	
 	@Override
 	public boolean removeBlock(BlockPos pos, boolean isMoving) {
-		return owner.removeBlock(pos,isMoving);
+		return owner.removeBlock(pos, isMoving);
 	}
 	
 	@Override
 	public boolean destroyBlock(BlockPos p_225521_1_, boolean p_225521_2_, @Nullable Entity p_225521_3_) {
-		return owner.destroyBlock(p_225521_1_,p_225521_2_,p_225521_3_);
+		return owner.destroyBlock(p_225521_1_, p_225521_2_, p_225521_3_);
 	}
 	
 	@Override
 	public boolean setBlockState(BlockPos pos, BlockState state) {
-		return owner.setBlockState(pos,state);
+		return owner.setBlockState(pos, state);
 	}
 	
 	@Override
 	public void notifyNeighbors(BlockPos pos, Block blockIn) {
-		owner.notifyNeighbors(pos,blockIn);
+		owner.notifyNeighbors(pos, blockIn);
 	}
 	
 	@Override
 	public void notifyNeighborsOfStateChange(BlockPos pos, Block blockIn) {
-		owner.notifyNeighborsOfStateChange(pos,blockIn);
+		owner.notifyNeighborsOfStateChange(pos, blockIn);
 	}
 	
 	@Override
 	public void notifyNeighborsOfStateExcept(BlockPos pos, Block blockType, Direction skipSide) {
-		owner.notifyNeighborsOfStateExcept(pos,blockType,skipSide);
+		owner.notifyNeighborsOfStateExcept(pos, blockType, skipSide);
 	}
 	
 	@Override
 	public void neighborChanged(BlockPos pos, Block blockIn, BlockPos fromPos) {
-		owner.neighborChanged(pos,blockIn,fromPos);
+		owner.neighborChanged(pos, blockIn, fromPos);
 	}
 	
 	@Override
@@ -138,7 +139,7 @@ public class FakeServerWorld extends ServerMultiWorld {
 	
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
-		owner.setTileEntity(pos,tileEntityIn);
+		owner.setTileEntity(pos, tileEntityIn);
 	}
 	
 	@Override
@@ -148,7 +149,7 @@ public class FakeServerWorld extends ServerMultiWorld {
 	
 	@Override
 	public IChunk getChunk(int chunkX, int chunkZ, ChunkStatus requiredStatus) {
-		return owner.getChunk(chunkX,chunkZ,requiredStatus);
+		return owner.getChunk(chunkX, chunkZ, requiredStatus);
 	}
 	
 	@Override

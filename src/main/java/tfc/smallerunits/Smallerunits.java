@@ -19,7 +19,7 @@ public class Smallerunits {
 	public static final Logger LOGGER = LogManager.getLogger();
 	
 	public Smallerunits() {
-		IEventBus bus=FMLJavaModLoadingContext.get().getModEventBus();
+		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
 		
@@ -32,9 +32,6 @@ public class Smallerunits {
 	}
 	
 	private void setup(final FMLCommonSetupEvent event) {
-		// some preinit code
-		LOGGER.info("HELLO FROM PREINIT");
-		LOGGER.info("DIRT BLOCK >> {}", Blocks.DIRT.getRegistryName());
 	}
 	
 	private void doClientStuff(final FMLClientSetupEvent event) {

@@ -33,7 +33,7 @@ public class SUSimulatorWorld extends Dimension {
 	@Nonnull
 	@Override
 	public ChunkGenerator<?> createChunkGenerator() {
-		Set<Biome> biomes= ImmutableSet.of(
+		Set<Biome> biomes = ImmutableSet.of(
 				Biomes.THE_VOID
 		);
 		return new ChunkGenerator<GenerationSettings>(this.getWorld(), new BiomeProvider(biomes) {
@@ -41,7 +41,7 @@ public class SUSimulatorWorld extends Dimension {
 			public Biome getNoiseBiome(int x, int y, int z) {
 				return Biomes.THE_VOID;
 			}
-		},new GenerationSettings()) {
+		}, new GenerationSettings()) {
 			@Override
 			public void generateSurface(WorldGenRegion p_225551_1_, IChunk p_225551_2_) {
 			
@@ -105,9 +105,9 @@ public class SUSimulatorWorld extends Dimension {
 	
 	@Override
 	public float calculateCelestialAngle(long worldTime, float partialTicks) {
-		double d0 = MathHelper.frac((double)worldTime / 2400.0D - 0.25D);
+		double d0 = MathHelper.frac((double) worldTime / 2400.0D - 0.25D);
 		double d1 = 0.5D - Math.cos(d0 * Math.PI) / 2.0D;
-		return (float)(d0 * 2.0D + d1) / 3.0F;
+		return (float) (d0 * 2.0D + d1) / 3.0F;
 	}
 	
 	@Override
@@ -118,7 +118,7 @@ public class SUSimulatorWorld extends Dimension {
 	@Nonnull
 	@Override
 	public Vec3d getFogColor(float celestialAngle, float partialTicks) {
-		return new Vec3d(0,0,0);
+		return new Vec3d(0, 0, 0);
 	}
 	
 	@Override
@@ -149,12 +149,11 @@ public class SUSimulatorWorld extends Dimension {
 	
 	@Override
 	public boolean canMineBlock(PlayerEntity player, BlockPos pos) {
-		return super.canMineBlock(player,pos);
+		return super.canMineBlock(player, pos);
 	}
 	
 	@Override
 	public boolean shouldMapSpin(String entity, double x, double z, double rotation) {
-		return super.shouldMapSpin(entity,x,z,rotation);
+		return super.shouldMapSpin(entity, x, z, rotation);
 	}
 }
-

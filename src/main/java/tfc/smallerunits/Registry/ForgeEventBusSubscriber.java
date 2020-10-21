@@ -14,11 +14,11 @@ import tfc.smallerunits.Smallerunits;
 @Mod.EventBusSubscriber(modid = "smallerunits", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ForgeEventBusSubscriber {
 	
-	static ResourceLocation location=new ResourceLocation("smallerunits","susimulator");
+	static ResourceLocation location = new ResourceLocation("smallerunits", "susimulator");
 	
 	@SubscribeEvent
 	public static void onRegisterDimensionsEvent(final RegisterDimensionsEvent event) {
-		Smallerunits.LOGGER.log(Level.INFO,"hello from forge dimension registry");
+		Smallerunits.LOGGER.log(Level.INFO, "hello from forge dimension registry");
 		if (DimensionType.byName(location) == null) {
 			System.out.println("register dimension");
 			ModEventRegistry.DIMENSION = DimensionManager.registerDimension(location, ModEventRegistry.DIMHOLDER, new PacketBuffer(Unpooled.buffer()), true);
@@ -26,4 +26,3 @@ public class ForgeEventBusSubscriber {
 		}
 	}
 }
-

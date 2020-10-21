@@ -7,14 +7,15 @@ import net.minecraft.world.GameType;
 import net.minecraft.world.World;
 
 public class FakePlayer extends PlayerEntity {
-	GameType gameType=GameType.SURVIVAL;
+	GameType gameType = GameType.SURVIVAL;
+	
 	public FakePlayer(World worldIn, GameProfile gameProfileIn) {
 		super(worldIn, gameProfileIn);
 	}
 	
 	@Override
 	public void setGameType(GameType gameType) {
-		this.gameType=gameType;
+		this.gameType = gameType;
 	}
 	
 	@Override

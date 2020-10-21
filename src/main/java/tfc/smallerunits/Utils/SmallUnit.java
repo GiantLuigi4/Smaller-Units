@@ -34,54 +34,54 @@ public class SmallUnit {
 	
 	public void createTileEntity(FakeWorld fakeWorld) {
 		if (s instanceof ITileEntityProvider) {
-			((ITileEntityProvider)s.getBlock()).createNewTileEntity(fakeWorld);
+			((ITileEntityProvider) s.getBlock()).createNewTileEntity(fakeWorld);
 		} else {
-			s.getBlock().createTileEntity(s,fakeWorld);
+			s.getBlock().createTileEntity(s, fakeWorld);
 		}
 	}
 	
-	public static SmallUnit fromString(String s,int upb) {
-		int num=0;
-		int x=0;
-		int y=0;
-		int z=0;
-		BlockState sta=Blocks.AIR.getDefaultState();
-		for (String s1:s.split(",")) {
+	public static SmallUnit fromString(String s, int upb) {
+		int num = 0;
+		int x = 0;
+		int y = 0;
+		int z = 0;
+		BlockState sta = Blocks.AIR.getDefaultState();
+		for (String s1 : s.split(",")) {
 			try {
-				if (num==0) {
-					x=Integer.parseInt(s1.replace(",",""));
-				} else if (num==1) {
-					y=Integer.parseInt(s1.replace(",",""));
-				} else if (num==2) {
-					z=Integer.parseInt(s1.replace(",",""));
+				if (num == 0) {
+					x = Integer.parseInt(s1.replace(",", ""));
+				} else if (num == 1) {
+					y = Integer.parseInt(s1.replace(",", ""));
+				} else if (num == 2) {
+					z = Integer.parseInt(s1.replace(",", ""));
 				} else if (num == 3) {
-					String blockS=s1.substring("Block{".length(),s1.indexOf("}"));
+					String blockS = s1.substring("Block{".length(), s1.indexOf("}"));
 					Block block = Registry.BLOCK.getOrDefault(new ResourceLocation(blockS));
 					try {
-						String state=s1.substring(("Block{"+blockS+"}").length());
-						for (Object obj:block.getStateContainer().getValidStates().toArray()) {
-							if (obj.toString().equals((block)+(""+(state.replace('|',','))))) {
-								sta=((BlockState)obj);
+						String state = s1.substring(("Block{" + blockS + "}").length());
+						for (Object obj : block.getStateContainer().getValidStates().toArray()) {
+							if (obj.toString().equals((block) + ("" + (state.replace('|', ','))))) {
+								sta = ((BlockState) obj);
 							}
 						}
 						if (sta.equals(Blocks.AIR.getDefaultState())) {
-							sta=block.getDefaultState();
+							sta = block.getDefaultState();
 						}
 					} catch (Throwable err) {
-						sta=block.getDefaultState();
+						sta = block.getDefaultState();
 					}
 				}
 			} catch (Throwable err) {
 			}
 			num++;
 		}
-		return new SmallUnit(x,y,z,upb,sta);
+		return new SmallUnit(x, y, z, upb, sta);
 	}
 	
 	public TileEntity readTileEntity(CompoundNBT nbt) {
-		TileEntity te=ForgeRegistries.TILE_ENTITIES.getValue(new ResourceLocation(nbt.getString("id"))).create();
+		TileEntity te = ForgeRegistries.TILE_ENTITIES.getValue(new ResourceLocation(nbt.getString("id"))).create();
 		te.read(nbt);
-		this.te=te;
+		this.te = te;
 		return te;
 	}
 	
@@ -91,7 +91,7 @@ public class SmallUnit {
 //			try {
 //				return ""+(x+','+y+','+z+','+s.toString().replace(',','|')+','+"\""+te.serializeNBT().toString()+"\"");
 //			} catch (Exception err) {
-				return ""+(x+","+y+","+z+","+s.toString().replace(',','|')+","+"\"{}\"");
+			return "" + (x + "," + y + "," + z + "," + s.toString().replace(',', '|') + "," + "\"{}\"");
 //			}
 		} catch (Throwable err) {
 			return "null";
