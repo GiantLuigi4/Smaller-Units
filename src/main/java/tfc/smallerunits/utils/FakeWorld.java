@@ -137,7 +137,9 @@ public class FakeWorld extends World implements IWorld {
 	public void fromString(String s) {
 		for (String s1 : s.split(";")) {
 			SmallUnit unit = SmallUnit.fromString(s1, unitsPerBlock);
-			unitHashMap.put(new BlockPos(unit.x, unit.y, unit.z), unit);
+			if (unit!=null) {
+				unitHashMap.put(new BlockPos(unit.x, unit.y, unit.z), unit);
+			}
 		}
 	}
 	

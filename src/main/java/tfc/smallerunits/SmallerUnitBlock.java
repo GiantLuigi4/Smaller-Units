@@ -3,16 +3,20 @@ package tfc.smallerunits;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
+import net.minecraft.command.impl.LootCommand;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.IFluidState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ItemUseContext;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.IBooleanFunction;
 import net.minecraft.util.math.shapes.ISelectionContext;
@@ -23,12 +27,15 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.loot.*;
 import net.minecraftforge.common.ToolType;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.FakePlayer;
 import tfc.smallerunits.utils.SmallUnit;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,6 +49,48 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				.harvestLevel(0)
 				.harvestTool(ToolType.PICKAXE)
 		);
+	}
+	
+	@Override
+	public float getBlockHardness(BlockState blockState, IBlockReader worldIn, BlockPos pos) {
+		return super.getBlockHardness(blockState,worldIn,pos);
+	}
+	
+	@Override
+	public float getPlayerRelativeBlockHardness(BlockState state, PlayerEntity player, IBlockReader worldIn, BlockPos pos) {
+		VoxelShape shape = getSelectedShape(worldIn, pos, new ISelectionContext() {
+			@Override
+			public boolean func_225581_b_() {
+				return false;
+			}
+			
+			@Override
+			public boolean func_216378_a(VoxelShape shape, BlockPos pos, boolean p_216378_3_) {
+				return true;
+			}
+			
+			@Override
+			public boolean hasItem(Item itemIn) {
+				return false;
+			}
+			
+			@Nullable
+			@Override
+			public Entity getEntity() {
+				return player;
+			}
+		});
+		
+		TileEntity uncastedTE = worldIn.getTileEntity(pos);
+		
+		if (uncastedTE instanceof SmallerUnitsTileEntity) {
+			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) uncastedTE;
+			Vec3d posBreak = shape.getBoundingBox().getCenter().scale(te.containedWorld.unitsPerBlock);
+			BlockState stateRemove = te.containedWorld.getBlockState(new BlockPos(posBreak));
+			return 1f / ((1f / (stateRemove.getPlayerRelativeBlockHardness(player, te.containedWorld, new BlockPos(posBreak)))) / te.containedWorld.unitsPerBlock);
+		}
+		
+		return 1f;
 	}
 	
 	@Override
@@ -358,6 +407,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	@Override
 	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
 		if (worldIn.isRemote) return ActionResultType.SUCCESS;
+		if (player.getHeldItem(handIn).getItem().equals(Deferred.UNIT)) return ActionResultType.PASS;
 		try {
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) worldIn.getTileEntity(pos);
 			Vec3d blockpos = hit.getHitVec().subtract(new Vec3d(pos)).scale(te.containedWorld.unitsPerBlock);
@@ -420,6 +470,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 								try {
 									result = result.withFace(hit.getFace());
 									fakePlayer.getHeldItem(handIn).onItemUse(new ItemUseContext(fakePlayer, handIn, result));
+									if (!player.isCreative())
+										player.getHeldItem(handIn).shrink(1);
 								} catch (Throwable err) {
 									StringBuilder stack = new StringBuilder("\n" + err.toString() + "(" + err.getMessage() + ")");
 									
@@ -433,6 +485,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 							
 							if (te.containedWorld.getBlockState(loc).equals(Blocks.AIR.getDefaultState())) {
 								te.containedWorld.setBlockState(loc, heldState);
+								if (!player.isCreative())
+									player.getHeldItem(handIn).shrink(1);
 							}
 						}
 					}
@@ -450,10 +504,15 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					));
 					
 					try {
-						if (result != null)
+						if (result != null) {
 							player.getHeldItem(handIn).onItemUse(new ItemUseContext(player, handIn, result));
-						else
+							if (!player.isCreative())
+								player.getHeldItem(handIn).shrink(1);
+						} else {
 							te.containedWorld.setBlockState(loc, heldState.updatePostPlacement(hit.getFace(), heldState, te.containedWorld, loc, loc), 0);
+							if (!player.isCreative())
+								player.getHeldItem(handIn).shrink(1);
+						}
 					} catch (Throwable ignored) {
 						StringBuilder stack = new StringBuilder("\n" + err.toString() + "(" + err.getMessage() + ")");
 						
@@ -501,11 +560,22 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (teUncasted instanceof SmallerUnitsTileEntity) {
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) world.getTileEntity(pos);
 			
-			if (te.containedWorld.unitHashMap.isEmpty()) {
-				return true;
-			}
-			
 			if (world.isRemote) return false;
+
+			if (te.containedWorld.unitHashMap.isEmpty()) {
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
+				if (!player.isCreative()) {
+					ItemStack stack = new ItemStack(Deferred.UNITITEM.get());
+					if (!stack.getOrCreateTag().contains("BlockEntityTag")) {
+						CompoundNBT tag = new CompoundNBT();
+						stack.getOrCreateTag().put("BlockEntityTag", tag);
+					}
+					stack.getOrCreateTag().getCompound("BlockEntityTag").putString("world", "");
+					ItemEntity entity = new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), stack);
+					world.addEntity(entity);
+				}
+				return false;
+			}
 			
 			BlockRayTraceResult hit = this.getRaytraceShape(state, world, pos).rayTrace(player.getEyePosition(0).subtract(player.getLookVec()), player.getEyePosition(0).add(player.getLookVec().scale(8)), pos);
 			Vec3d blockpos = hit.getHitVec().subtract(new Vec3d(pos)).scale(te.containedWorld.unitsPerBlock);
@@ -519,6 +589,38 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					blockpos = blockpos.subtract(0, 0, 1);
 			
 			BlockPos loc = new BlockPos(blockpos);
+			BlockState removed = te.containedWorld.getBlockState(loc);
+			
+			try {
+				if (world instanceof ServerWorld) {
+					Collection<ItemStack> stackCollection;
+					ResourceLocation resourcelocation = removed.getBlock().getLootTable();
+					if (resourcelocation == LootTables.EMPTY) {
+						stackCollection = Collections.emptyList();
+					} else {
+						LootContext.Builder lootcontext$builder =
+								(new LootContext.Builder((ServerWorld)world))
+										.withParameter(LootParameters.POSITION, pos)
+										.withParameter(LootParameters.BLOCK_STATE, state)
+										.withNullableParameter(LootParameters.BLOCK_ENTITY, te.containedWorld.getTileEntity(loc))
+										.withNullableParameter(LootParameters.THIS_ENTITY, player)
+										.withParameter(LootParameters.TOOL, player.getHeldItem(Hand.MAIN_HAND));
+						
+						LootContext lootcontext = lootcontext$builder.build(LootParameterSets.BLOCK);
+						ServerWorld serverworld = lootcontext.getWorld();
+						LootTable loottable = serverworld.getServer().getLootTableManager().getLootTableFromLocation(resourcelocation);
+						stackCollection = loottable.generate(lootcontext);
+					}
+					for (ItemStack stack : stackCollection) {
+						if (!player.isCreative()) {
+							ItemEntity entity = new ItemEntity(world, pos.getX(), pos.getY(), pos.getZ(), stack);
+							world.addEntity(entity);
+						}
+					}
+				}
+			} catch (Throwable ignored) {
+			}
+			
 			te.containedWorld.setBlockState(loc, Blocks.AIR.getDefaultState(), 0);
 			world.notifyBlockUpdate(pos, state, state, 0);
 			

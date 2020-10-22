@@ -35,6 +35,9 @@ public class SmallUnit {
 	}
 	
 	public static SmallUnit fromString(String s, int upb) {
+		if (s.equals("")) {
+			return null;
+		}
 		int num = 0;
 		int x = 0;
 		int y = 0;
