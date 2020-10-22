@@ -461,21 +461,21 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			try {
 				BlockState clickedState;
 				VoxelShape shape;
-				if (loc.getX() > (te.containedWorld.unitsPerBlock - 1) || loc.getX() <= 0d) {
+				if (loc.getX() > (te.containedWorld.unitsPerBlock - 1) || blockpos.getX() <= 0.0d) {
 					clickedState = worldIn.getBlockState(new BlockPos(pos.add(loc.getX() > 1 ? 1 : -1, 0, 0)));
 					if (loc.getX() > 1)
 						loc = loc.add(-1, 0, 0);
 					else
 						loc = loc.add(1, 0, 0);
 					shape = clickedState.getShape(te.containedWorld, loc);
-				} else if (loc.getZ() > (te.containedWorld.unitsPerBlock - 1) || loc.getZ() <= 0d) {
+				} else if (loc.getZ() > (te.containedWorld.unitsPerBlock - 1) || blockpos.getZ() <= 0.0d) {
 					clickedState = worldIn.getBlockState(new BlockPos(pos.add(0, 0, loc.getZ() > 1 ? 1 : -1)));
 					if (loc.getZ() > 1)
 						loc = loc.add(0, 0, -1);
 					else
 						loc = loc.add(0, 0, 1);
 					shape = clickedState.getShape(te.containedWorld, loc);
-				} else if (loc.getY() > (te.containedWorld.unitsPerBlock - 1) || loc.getY() <= 0d) {
+				} else if (loc.getY() > (te.containedWorld.unitsPerBlock - 1) || blockpos.getY() <= 0.0d) {
 					clickedState = worldIn.getBlockState(new BlockPos(pos.add(0, loc.getY() > 1 ? 1 : -1, 0)));
 					if (loc.getY() > 1)
 						loc = loc.add(0, -1, 0);
