@@ -53,7 +53,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	@Override
 	public float getBlockHardness(BlockState blockState, IBlockReader worldIn, BlockPos pos) {
-		return super.getBlockHardness(blockState,worldIn,pos);
+		return super.getBlockHardness(blockState, worldIn, pos);
 	}
 	
 	@Override
@@ -71,7 +71,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			
 			@Override
 			public boolean hasItem(Item itemIn) {
-				return false;
+				return player.getHeldItem(Hand.MAIN_HAND).equals(itemIn);
 			}
 			
 			@Nullable
@@ -136,7 +136,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					if (!shape1.isEmpty() && collides.get() && !u.heldState.isAir())
 						if (te.containedWorld.unitsPerBlock == 0)
 							te.containedWorld.unitsPerBlock = 4;
-						
+					
 					for (AxisAlignedBB bb : shape1.toBoundingBoxList())
 						if (entity != null) {
 							bb = new AxisAlignedBB(
@@ -289,8 +289,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					
 					if (returnVal.toString().equals(defaultShape.toString())) {
 						for (Direction off : Direction.values()) {
-							VoxelShape shape = worldIn.getBlockState(pos.offset(off)).getShape(worldIn,pos);
-							VoxelShape shapeReturn = VoxelShapes.create(0,0,0,0,0,0);
+							VoxelShape shape = worldIn.getBlockState(pos.offset(off)).getShape(worldIn, pos);
+							VoxelShape shapeReturn = VoxelShapes.create(0, 0, 0, 0, 0, 0);
 							
 							try {
 								for (AxisAlignedBB bb : shape.toBoundingBoxList()) {
@@ -299,7 +299,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 											bb.maxX, bb.maxY, bb.maxZ
 									);
 									Optional<Vec3d> result = newBox.offset(pos.offset(off)).rayTrace(start, stop);
-							
+									
 									if (result.isPresent()) {
 										newBox = new AxisAlignedBB(
 												bb.minX / te.containedWorld.unitsPerBlock, bb.minY / te.containedWorld.unitsPerBlock, bb.minZ / te.containedWorld.unitsPerBlock,
@@ -321,21 +321,21 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 											
 											if (off.getXOffset() != 0) {
 												posA = new Vec3d(
-														off.getXOffset() == 1 ? 0 : 1 - (1f / te.containedWorld.unitsPerBlock),
+														off.getXOffset() == 1 ? 0 : 1 - ((1f / te.containedWorld.unitsPerBlock)),
 														posA.y,
 														posA.z
 												);
 											} else if (off.getYOffset() != 0) {
 												posA = new Vec3d(
 														posA.x,
-														off.getYOffset() == 1 ? 0 : 1 - (1f / te.containedWorld.unitsPerBlock),
+														off.getYOffset() == 1 ? 0 : 1 - ((1f / te.containedWorld.unitsPerBlock)),
 														posA.z
 												);
 											} else if (off.getZOffset() != 0) {
 												posA = new Vec3d(
 														posA.x,
 														posA.y,
-														off.getZOffset() == 1 ? 0 : 1 - (1f / te.containedWorld.unitsPerBlock)
+														off.getZOffset() == 1 ? 0 : 1 - ((1f / te.containedWorld.unitsPerBlock))
 												);
 											}
 											
@@ -410,16 +410,46 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (player.getHeldItem(handIn).getItem().equals(Deferred.UNIT)) return ActionResultType.PASS;
 		try {
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) worldIn.getTileEntity(pos);
-			Vec3d blockpos = hit.getHitVec().subtract(new Vec3d(pos)).scale(te.containedWorld.unitsPerBlock);
 			BlockState heldState = Block.getBlockFromItem(player.getHeldItem(handIn).getItem()).getDefaultState();
 			
-			if (!hit.getFace().getDirectionVec().toString().contains("-"))
-				if (blockpos.getY() % 1 == 0)
-					blockpos = blockpos.subtract(0, 1, 0);
-				else if (blockpos.getX() % 1 == 0)
-					blockpos = blockpos.subtract(1, 0, 0);
-				else if (blockpos.getZ() % 1 == 0)
-					blockpos = blockpos.subtract(0, 0, 1);
+			VoxelShape shapeSel = getSelectedShape(worldIn, pos, new ISelectionContext() {
+				@Override
+				public boolean func_225581_b_() {
+					return false;
+				}
+				
+				@Override
+				public boolean func_216378_a(VoxelShape shape, BlockPos pos, boolean p_216378_3_) {
+					return false;
+				}
+				
+				@Override
+				public boolean hasItem(Item itemIn) {
+					return player.getHeldItem(handIn).equals(itemIn);
+				}
+				
+				@Nullable
+				@Override
+				public Entity getEntity() {
+					return player;
+				}
+			});
+			
+			Vec3d blockpos;
+//			blockpos = hit.getHitVec().subtract(new Vec3d(pos)).scale(te.containedWorld.unitsPerBlock);
+//			try {
+				blockpos = shapeSel.getBoundingBox().getCenter().scale(te.containedWorld.unitsPerBlock);
+//			} catch (Throwable ignored) {
+//			}
+			System.out.println(blockpos);
+
+//			if (!hit.getFace().getDirectionVec().toString().contains("-"))
+//				if (blockpos.getY() % 1 == 0)
+//					blockpos = blockpos.subtract(0, 1, 0);
+//				else if (blockpos.getX() % 1 == 0)
+//					blockpos = blockpos.subtract(1, 0, 0);
+//				else if (blockpos.getZ() % 1 == 0)
+//					blockpos = blockpos.subtract(0, 0, 1);
 			
 			BlockPos loc = new BlockPos(blockpos);
 			
@@ -429,10 +459,36 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			}
 			
 			try {
-				BlockState clickedState = te.containedWorld.getBlockState(loc);
-				VoxelShape shape = clickedState.getShape(te.containedWorld, loc);
+				BlockState clickedState;
+				VoxelShape shape;
+				if (loc.getX() > (te.containedWorld.unitsPerBlock - 1) || loc.getX() <= 0d) {
+					clickedState = worldIn.getBlockState(new BlockPos(pos.add(loc.getX() > 1 ? 1 : -1, 0, 0)));
+					if (loc.getX() > 1)
+						loc = loc.add(-1, 0, 0);
+					else
+						loc = loc.add(1, 0, 0);
+					shape = clickedState.getShape(te.containedWorld, loc);
+				} else if (loc.getZ() > (te.containedWorld.unitsPerBlock - 1) || loc.getZ() <= 0d) {
+					clickedState = worldIn.getBlockState(new BlockPos(pos.add(0, 0, loc.getZ() > 1 ? 1 : -1)));
+					if (loc.getZ() > 1)
+						loc = loc.add(0, 0, -1);
+					else
+						loc = loc.add(0, 0, 1);
+					shape = clickedState.getShape(te.containedWorld, loc);
+				} else if (loc.getY() > (te.containedWorld.unitsPerBlock - 1) || loc.getY() <= 0d) {
+					clickedState = worldIn.getBlockState(new BlockPos(pos.add(0, loc.getY() > 1 ? 1 : -1, 0)));
+					if (loc.getY() > 1)
+						loc = loc.add(0, -1, 0);
+					else
+						loc = loc.add(0, 1, 0);
+					shape = clickedState.getShape(te.containedWorld, loc);
+				} else {
+					clickedState = te.containedWorld.getBlockState(loc);
+					shape = clickedState.getShape(te.containedWorld, loc);
+				}
 				if (!shape.isEmpty()) {
-					if (clickedState.getBlock().onBlockActivated(clickedState, te.containedWorld, loc, player, handIn, hit).equals(ActionResultType.PASS)) {
+					ActionResultType type =clickedState.getBlock().onBlockActivated(clickedState, te.containedWorld, loc, player, handIn, hit);
+					if (type.equals(ActionResultType.FAIL) || type.equals(ActionResultType.PASS)) {
 						if (!Block.getBlockFromItem(player.getHeldItem(handIn).getItem()).getDefaultState().equals(Blocks.AIR.getDefaultState())) {
 							loc = loc.offset(hit.getFace());
 							FakePlayer fakePlayer = new FakePlayer(te.containedWorld, player.getGameProfile());
@@ -545,9 +601,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			worldIn.notifyBlockUpdate(pos, state, state, 0);
 		} catch (Throwable err) {
 			StringBuilder stack = new StringBuilder("\n" + err.toString() + "(" + err.getMessage() + ")");
-		
+			
 			for (StackTraceElement element : err.getStackTrace()) stack.append(element.toString()).append("\n");
-		
+			
 			System.out.println(stack.toString());
 		}
 		
@@ -561,7 +617,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			SmallerUnitsTileEntity te = (SmallerUnitsTileEntity) world.getTileEntity(pos);
 			
 			if (world.isRemote) return false;
-
+			
 			if (te.containedWorld.unitHashMap.isEmpty()) {
 				world.setBlockState(pos, Blocks.AIR.getDefaultState());
 				if (!player.isCreative()) {
@@ -599,7 +655,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						stackCollection = Collections.emptyList();
 					} else {
 						LootContext.Builder lootcontext$builder =
-								(new LootContext.Builder((ServerWorld)world))
+								(new LootContext.Builder((ServerWorld) world))
 										.withParameter(LootParameters.POSITION, pos)
 										.withParameter(LootParameters.BLOCK_STATE, state)
 										.withNullableParameter(LootParameters.BLOCK_ENTITY, te.containedWorld.getTileEntity(loc))
