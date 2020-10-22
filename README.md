@@ -1,7 +1,7 @@
 # Smaller-Units
 A rewrite of little blocks
 
-**View it on the curseforge page!** https://www.curseforge.com/minecraft/mc-mods/smaller-units
+[**View it on the curseforge page!**](https://www.curseforge.com/minecraft/mc-mods/smaller-units)
 
 # Info
 I should probably note that I did not use code from the original mod
@@ -22,7 +22,7 @@ Yes, that is why I post mods to curse forge.
 
 **Is there somewhere I can talk to the dev(s) in realtime?**
 
-Yes, https://discord.gg/qFEBSsm
+Yes, [here’s my modding Discord.](https://discord.gg/qFEBSsm)
 
 **Why not just wait for someone else to port it or let slimevoid do it themselves?**
 
