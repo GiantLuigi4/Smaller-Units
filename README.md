@@ -8,6 +8,8 @@ I should probably note that I did not use code from the original mod
 
 I have no plans to backport to anything from 1.12.2 or lower, but I might do a rewrite of the 1.12 version, as there’s still a ton of mods that have not portrd and I had made a bad version of su there
 
+Also, I am disappointed by how few people seem to know about the original little blocks mod.
+
 # Fact And Question: 
 
 (Questions I see people asking)
