@@ -438,7 +438,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			Vec3d blockpos;
 //			blockpos = hit.getHitVec().subtract(new Vec3d(pos)).scale(te.containedWorld.unitsPerBlock);
 //			try {
-				blockpos = shapeSel.getBoundingBox().getCenter().scale(te.containedWorld.unitsPerBlock);
+			blockpos = shapeSel.getBoundingBox().getCenter().scale(te.containedWorld.unitsPerBlock);
 //			} catch (Throwable ignored) {
 //			}
 			System.out.println(blockpos);
@@ -487,7 +487,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					shape = clickedState.getShape(te.containedWorld, loc);
 				}
 				if (!shape.isEmpty()) {
-					ActionResultType type =clickedState.getBlock().onBlockActivated(clickedState, te.containedWorld, loc, player, handIn, hit);
+					ActionResultType type = clickedState.getBlock().onBlockActivated(clickedState, te.containedWorld, loc, player, handIn, hit);
 					if (type.equals(ActionResultType.FAIL) || type.equals(ActionResultType.PASS)) {
 						if (!Block.getBlockFromItem(player.getHeldItem(handIn).getItem()).getDefaultState().equals(Blocks.AIR.getDefaultState())) {
 							loc = loc.offset(hit.getFace());
