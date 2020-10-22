@@ -1,6 +1,8 @@
 # Smaller-Units
 A rewrite of little blocks
 
+**View it on the curseforge page!** https://www.curseforge.com/minecraft/mc-mods/smaller-units
+
 # Info
 I should probably note that I did not use code from the original mod
 
@@ -27,4 +29,3 @@ Yes, https://discord.gg/qFEBSsm
 A) I realized nobody else was gonna port it
 
 B) Slimevoid seems to have fallen appart
-
