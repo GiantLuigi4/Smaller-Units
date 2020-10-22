@@ -6,9 +6,9 @@ import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
-import tfc.smallerunits.Registry.Deferred;
-import tfc.smallerunits.Utils.FakeWorld;
-import tfc.smallerunits.Utils.SmallUnit;
+import tfc.smallerunits.registry.Deferred;
+import tfc.smallerunits.utils.FakeWorld;
+import tfc.smallerunits.utils.SmallUnit;
 
 import javax.annotation.Nullable;
 
@@ -61,7 +61,7 @@ public class SmallerUnitsTileEntity extends TileEntity {
 		super.write(compound);
 		if (containedWorld != null) {
 			compound.putString("world", containedWorld.toString());
-			compound.putInt("upb", containedWorld.upb);
+			compound.putInt("upb", containedWorld.unitsPerBlock);
 			CompoundNBT tileEntities = new CompoundNBT();
 			for (SmallUnit unit : containedWorld.unitHashMap.values()) {
 				try {

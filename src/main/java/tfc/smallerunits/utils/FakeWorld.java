@@ -1,4 +1,4 @@
-package tfc.smallerunits.Utils;
+package tfc.smallerunits.utils;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -20,7 +20,6 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.tags.NetworkTagManager;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
@@ -46,18 +45,12 @@ import net.minecraft.world.storage.WorldInfo;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.LogicalSide;
-import org.apache.logging.log4j.Level;
-import tfc.smallerunits.Registry.Deferred;
 //import tfc.smallerunits.Registry.ModEventRegistry;
-import tfc.smallerunits.Registry.ModEventRegistry;
 import tfc.smallerunits.SmallerUnitBlock;
 import tfc.smallerunits.SmallerUnitsTileEntity;
-import tfc.smallerunits.Smallerunits;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -65,13 +58,13 @@ import java.util.stream.Stream;
 public class FakeWorld extends World implements IWorld {
 	public HashMap<BlockPos, SmallUnit> unitHashMap = new HashMap<>();
 	public HashMap<BlockPos, SmallUnit> lastUnitsHashMap = new HashMap<>();
-	public int upb; //units per block
+	public int unitsPerBlock;
 	public SmallerUnitsTileEntity owner;
 	
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
 		if (unitHashMap.containsKey(pos))
-			unitHashMap.get(pos).te = tileEntityIn;
+			unitHashMap.get(pos).tileEntity = tileEntityIn;
 	}
 	
 	@Override
@@ -143,7 +136,7 @@ public class FakeWorld extends World implements IWorld {
 	
 	public void fromString(String s) {
 		for (String s1 : s.split(";")) {
-			SmallUnit unit = SmallUnit.fromString(s1, upb);
+			SmallUnit unit = SmallUnit.fromString(s1, unitsPerBlock);
 			unitHashMap.put(new BlockPos(unit.x, unit.y, unit.z), unit);
 		}
 	}
@@ -164,9 +157,9 @@ public class FakeWorld extends World implements IWorld {
 			sworld.getChunkProvider().getChunk(-1, -1, true);
 			sworld.getChunkProvider().getChunk(-1, 0, true);
 			for (BlockPos pos : lastUnitsHashMap.keySet()) {
-				SmallUnit newUnit = unitHashMap.containsKey(pos) ? unitHashMap.get(pos) : SmallUnit.fromString("0", upb);
+				SmallUnit newUnit = unitHashMap.containsKey(pos) ? unitHashMap.get(pos) : SmallUnit.fromString("0", unitsPerBlock);
 				sworld.setBlockState(randomPos.add(pos), this.getBlockState(pos), 64);
-				BlockState oldState = lastUnitsHashMap.containsKey(pos) ? lastUnitsHashMap.get(pos).s : Blocks.AIR.getDefaultState();
+				BlockState oldState = lastUnitsHashMap.containsKey(pos) ? lastUnitsHashMap.get(pos).heldState : Blocks.AIR.getDefaultState();
 				BlockState newState = this.getBlockState(pos);
 				if (!oldState.equals(newState)) {
 					boolean isMoving = newState.getBlock() instanceof MovingPistonBlock || oldState.getBlock() instanceof MovingPistonBlock;
@@ -180,14 +173,14 @@ public class FakeWorld extends World implements IWorld {
 						this.getBlockState(pos.offset(dir)).observedNeighborChange(this, pos.offset(dir), oldState.getBlock(), pos);
 					}
 				}
-				newUnit = unitHashMap.containsKey(pos) ? unitHashMap.get(pos) : SmallUnit.fromString("0", upb);
+				newUnit = unitHashMap.containsKey(pos) ? unitHashMap.get(pos) : SmallUnit.fromString("0", unitsPerBlock);
 				if (lastUnitsHashMap.containsKey(pos))
 					lastUnitsHashMap.replace(pos, newUnit);
 				else
 					lastUnitsHashMap.put(pos, newUnit);
 			}
 			for (BlockPos pos : unitHashMap.keySet()) {
-				BlockState oldState = lastUnitsHashMap.containsKey(pos) ? lastUnitsHashMap.get(pos).s : Blocks.AIR.getDefaultState();
+				BlockState oldState = lastUnitsHashMap.containsKey(pos) ? lastUnitsHashMap.get(pos).heldState : Blocks.AIR.getDefaultState();
 				BlockState newState = this.getBlockState(pos);
 				if (!oldState.equals(newState)) {
 					sworld.setBlockState(randomPos.add(pos), this.getBlockState(pos), 64);
@@ -216,9 +209,9 @@ public class FakeWorld extends World implements IWorld {
 //			tickList.ticklist.keySet().forEach((pos)->sworld.getPendingBlockTicks().scheduleTick(pos,tickList.blocklist.get(pos),tickList.ticklist.get(pos).intValue()));
 //			try{if(true)sworld.tick(()->true);if(true)sworld.getPendingBlockTicks().tick();}catch(Throwable ignored){}
 			try {
-				for (int x = 0; x < upb; x++) {
-					for (int y = 0; y < upb; y++) {
-						for (int z = 0; z < upb; z++) {
+				for (int x = 0; x < unitsPerBlock; x++) {
+					for (int y = 0; y < unitsPerBlock; y++) {
+						for (int z = 0; z < unitsPerBlock; z++) {
 							if (!(sworld.getBlockState(randomPos.add(x, y, z)).getBlock() instanceof SmallerUnitBlock))
 								if (tickList.isTickPending(new BlockPos(x, y, z), sworld.getBlockState(randomPos.add(x, y, z)).getBlock())) {
 									sworld.getBlockState(randomPos.add(x, y, z)).tick(sworld, randomPos.add(x, y, z), rand);
@@ -319,12 +312,12 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public <T extends Entity> List<T> getEntitiesWithinAABB(@Nullable EntityType<T> type, AxisAlignedBB boundingBox, Predicate<? super T> predicate) {
-		return owner.getWorld().getEntitiesWithinAABB(type, boundingBox.shrink(upb).offset(owner.getPos()), predicate);
+		return owner.getWorld().getEntitiesWithinAABB(type, boundingBox.shrink(unitsPerBlock).offset(owner.getPos()), predicate);
 	}
 	
 	@Override
 	public <T extends Entity> List<T> getEntitiesWithinAABB(Class<? extends T> p_217357_1_, AxisAlignedBB p_217357_2_) {
-		return owner.getWorld().getEntitiesWithinAABB(p_217357_1_, p_217357_2_.shrink(upb).offset(owner.getPos()));
+		return owner.getWorld().getEntitiesWithinAABB(p_217357_1_, p_217357_2_.shrink(unitsPerBlock).offset(owner.getPos()));
 	}
 	
 	@Override
@@ -334,18 +327,18 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public boolean addTileEntity(TileEntity tile) {
-		unitHashMap.get(tile.getPos()).te = tile;
+		unitHashMap.get(tile.getPos()).tileEntity = tile;
 		return true;
 	}
 	
 	@Override
 	public void addTileEntities(Collection<TileEntity> tileEntityCollection) {
-		tileEntityCollection.forEach((tile) -> unitHashMap.get(tile.getPos()).te = tile);
+		tileEntityCollection.forEach((tile) -> unitHashMap.get(tile.getPos()).tileEntity = tile);
 	}
 	
 	@Override
 	public void removeTileEntity(BlockPos pos) {
-		unitHashMap.get(pos).te = null;
+		unitHashMap.get(pos).tileEntity = null;
 	}
 	
 	public int time = 0;
@@ -416,7 +409,7 @@ public class FakeWorld extends World implements IWorld {
 	FakeTickList tickList = new FakeTickList(this);
 	FakeTickList blockUpdateList = new FakeTickList(this);
 	
-	public FakeWorld(int upb, SmallerUnitsTileEntity owner) {
+	public FakeWorld(int unitsPerBlock, SmallerUnitsTileEntity owner) {
 		super(new WorldInfo() {
 		}, DimensionType.OVERWORLD, (world, dimension) -> null, new IProfiler() {
 			@Override
@@ -464,7 +457,7 @@ public class FakeWorld extends World implements IWorld {
 			
 			}
 		}, false);
-		this.upb = upb;
+		this.unitsPerBlock = unitsPerBlock;
 		this.owner = owner;
 	}
 	
@@ -545,22 +538,22 @@ public class FakeWorld extends World implements IWorld {
 	@Override
 	public WorldBorder getWorldBorder() {
 		WorldBorder border = new WorldBorder();
-		border.setCenter(upb / 2f, upb / 2f);
-		border.setSize(upb * 2);
+		border.setCenter(unitsPerBlock / 2f, unitsPerBlock / 2f);
+		border.setSize(unitsPerBlock * 2);
 		return border;
 	}
 	
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-		if (unitHashMap.containsKey(pos)) return unitHashMap.get(pos).te;
+		if (unitHashMap.containsKey(pos)) return unitHashMap.get(pos).tileEntity;
 		else return null;
 	}
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		if (unitHashMap.containsKey(pos)) {
-			return unitHashMap.get(pos).s;
+			return unitHashMap.get(pos).heldState;
 		}
 		return Blocks.AIR.getDefaultState();
 	}
@@ -589,7 +582,7 @@ public class FakeWorld extends World implements IWorld {
 	
 	@Override
 	public IFluidState getFluidState(BlockPos pos) {
-		if (unitHashMap.containsKey(pos)) return unitHashMap.get(pos).s.getFluidState();
+		if (unitHashMap.containsKey(pos)) return unitHashMap.get(pos).heldState.getFluidState();
 		else return Blocks.WATER.getDefaultState().getFluidState();
 	}
 	
@@ -626,10 +619,10 @@ public class FakeWorld extends World implements IWorld {
 			@Nullable
 			@Override
 			public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-				SmallUnit unit = new SmallUnit(pos.getX(), pos.getY(), pos.getZ(), upb, state);
+				SmallUnit unit = new SmallUnit(pos.getX(), pos.getY(), pos.getZ(), unitsPerBlock, state);
 				try {
 					if (world.getTileEntity(pos) != null)
-						unit.te = world.getTileEntity(pos);
+						unit.tileEntity = world.getTileEntity(pos);
 					try {
 						this.getBlockState(pos).onReplaced(world, pos, state, false);
 					} catch (Throwable ignored) {
@@ -656,7 +649,7 @@ public class FakeWorld extends World implements IWorld {
 			
 			@Override
 			public void addTileEntity(BlockPos pos, TileEntity tileEntityIn) {
-				unitHashMap.get(pos).te = tileEntityIn;
+				unitHashMap.get(pos).tileEntity = tileEntityIn;
 			}
 			
 			@Override
@@ -667,7 +660,7 @@ public class FakeWorld extends World implements IWorld {
 			public Set<BlockPos> getTileEntitiesPos() {
 				ArrayList<BlockPos> poses = new ArrayList<>();
 				for (SmallUnit unit : unitHashMap.values()) {
-					if (unit.te != null) {
+					if (unit.tileEntity != null) {
 						poses.add(new BlockPos(unit.x, unit.y, unit.z));
 					}
 				}
@@ -738,7 +731,7 @@ public class FakeWorld extends World implements IWorld {
 			
 			@Override
 			public void removeTileEntity(BlockPos pos) {
-				unitHashMap.get(pos).te = null;
+				unitHashMap.get(pos).tileEntity = null;
 			}
 			
 			@Override
@@ -749,13 +742,13 @@ public class FakeWorld extends World implements IWorld {
 			@Nullable
 			@Override
 			public CompoundNBT getDeferredTileEntity(BlockPos pos) {
-				return unitHashMap.get(pos).te.serializeNBT();
+				return unitHashMap.get(pos).tileEntity.serializeNBT();
 			}
 			
 			@Nullable
 			@Override
 			public CompoundNBT getTileEntityNBT(BlockPos pos) {
-				return unitHashMap.get(pos).te.serializeNBT();
+				return unitHashMap.get(pos).tileEntity.serializeNBT();
 			}
 			
 			@Override
@@ -799,19 +792,19 @@ public class FakeWorld extends World implements IWorld {
 			@Nullable
 			@Override
 			public TileEntity getTileEntity(BlockPos pos) {
-				return unitHashMap.get(pos).te;
+				return unitHashMap.get(pos).tileEntity;
 			}
 			
 			@Override
 			public BlockState getBlockState(BlockPos pos) {
 				if (unitHashMap.containsKey(pos))
-					return unitHashMap.get(pos).s;
+					return unitHashMap.get(pos).heldState;
 				return Blocks.AIR.getDefaultState();
 			}
 			
 			@Override
 			public IFluidState getFluidState(BlockPos pos) {
-				return unitHashMap.get(pos).s.getFluidState();
+				return unitHashMap.get(pos).heldState.getFluidState();
 			}
 			
 			@Nullable

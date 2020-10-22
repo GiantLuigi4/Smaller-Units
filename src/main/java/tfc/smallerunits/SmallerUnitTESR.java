@@ -5,21 +5,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.model.BakedQuad;
 import net.minecraft.client.renderer.model.IBakedModel;
-import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.tileentity.*;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.crash.ReportedException;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.fluid.IFluidState;
-import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.tileentity.*;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -27,13 +20,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.world.LightType;
-import net.minecraft.world.World;
-import net.minecraft.world.lighting.WorldLightManager;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import org.apache.logging.log4j.Level;
-import tfc.smallerunits.Utils.SmallUnit;
+import tfc.smallerunits.utils.SmallUnit;
 
 import java.util.*;
 
@@ -65,7 +53,7 @@ public class SmallerUnitTESR extends TileEntityRenderer<SmallerUnitsTileEntity> 
 			matrixStackIn.scale(1f / sc, 1f / sc, 1f / sc);
 			for (SmallUnit unit : units) {
 				matrixStackIn.push();
-				BlockState state = unit.s;
+				BlockState state = unit.heldState;
 				matrixStackIn.translate(unit.x, unit.y, unit.z);
 				int light = tileEntityIn.hasWorld() ? LightTexture.packLight(tileEntityIn.containedWorld.getBlockLightValue(new BlockPos(unit.x, unit.y, unit.z)), tileEntityIn.containedWorld.getSkyLightValue(new BlockPos(unit.x, unit.y, unit.z))) : combinedLightIn;
 				if (state.getRenderType().equals(BlockRenderType.MODEL) || state.getRenderType().equals(BlockRenderType.ENTITYBLOCK_ANIMATED) || state.getRenderType().equals(BlockRenderType.INVISIBLE))

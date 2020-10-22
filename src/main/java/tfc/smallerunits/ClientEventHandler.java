@@ -3,7 +3,7 @@ package tfc.smallerunits;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import tfc.smallerunits.Registry.Deferred;
+import tfc.smallerunits.registry.Deferred;
 
 public class ClientEventHandler {
 	public static void doStuff() {

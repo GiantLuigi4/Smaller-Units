@@ -1,4 +1,4 @@
-package tfc.smallerunits.Utils;
+package tfc.smallerunits.utils;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.entity.player.PlayerEntity;

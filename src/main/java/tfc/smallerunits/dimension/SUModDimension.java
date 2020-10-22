@@ -1,4 +1,4 @@
-package tfc.smallerunits.Dimension;
+package tfc.smallerunits.dimension;
 
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.Dimension;

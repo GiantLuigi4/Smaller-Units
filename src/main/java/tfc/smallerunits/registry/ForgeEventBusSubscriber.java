@@ -1,4 +1,4 @@
-package tfc.smallerunits.Registry;
+package tfc.smallerunits.registry;
 
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.PacketBuffer;

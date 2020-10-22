@@ -1,42 +1,36 @@
-package tfc.smallerunits.Utils;
+package tfc.smallerunits.utils;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ITileEntityProvider;
-import net.minecraft.command.arguments.NBTPathArgument;
-import net.minecraft.data.NBTToSNBTConverter;
 import net.minecraft.nbt.*;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.text.NBTTextComponent;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.registries.ForgeRegistries;
-
-import java.io.DataInput;
 
 public class SmallUnit {
 	public int x;
 	public int y;
 	public int z;
-	public int upb; //units per block
-	public BlockState s; //state
-	public TileEntity te; //TileEntity
+	public int unitsPerBlock;
+	public BlockState heldState;
+	public TileEntity tileEntity;
 	
-	public SmallUnit(int x, int y, int z, int upb, BlockState s) {
+	public SmallUnit(int x, int y, int z, int unitsPerBlock, BlockState heldState) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.upb = upb;
-		this.s = s;
+		this.unitsPerBlock = unitsPerBlock;
+		this.heldState = heldState;
 	}
 	
 	public void createTileEntity(FakeWorld fakeWorld) {
-		if (s instanceof ITileEntityProvider) {
-			((ITileEntityProvider) s.getBlock()).createNewTileEntity(fakeWorld);
+		if (heldState instanceof ITileEntityProvider) {
+			((ITileEntityProvider) heldState.getBlock()).createNewTileEntity(fakeWorld);
 		} else {
-			s.getBlock().createTileEntity(s, fakeWorld);
+			heldState.getBlock().createTileEntity(heldState, fakeWorld);
 		}
 	}
 	
@@ -81,7 +75,7 @@ public class SmallUnit {
 	public TileEntity readTileEntity(CompoundNBT nbt) {
 		TileEntity te = ForgeRegistries.TILE_ENTITIES.getValue(new ResourceLocation(nbt.getString("id"))).create();
 		te.read(nbt);
-		this.te = te;
+		this.tileEntity = te;
 		return te;
 	}
 	
@@ -91,7 +85,7 @@ public class SmallUnit {
 //			try {
 //				return ""+(x+','+y+','+z+','+s.toString().replace(',','|')+','+"\""+te.serializeNBT().toString()+"\"");
 //			} catch (Exception err) {
-			return "" + (x + "," + y + "," + z + "," + s.toString().replace(',', '|') + "," + "\"{}\"");
+			return "" + (x + "," + y + "," + z + "," + heldState.toString().replace(',', '|') + "," + "\"{}\"");
 //			}
 		} catch (Throwable err) {
 			return "null";

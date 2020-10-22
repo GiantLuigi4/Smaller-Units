@@ -1,4 +1,4 @@
-package tfc.smallerunits.Dimension;
+package tfc.smallerunits.dimension;
 
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.client.renderer.Vector3f;

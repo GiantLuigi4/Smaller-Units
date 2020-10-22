@@ -8,7 +8,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
-import tfc.smallerunits.Registry.Deferred;
+import tfc.smallerunits.registry.Deferred;
 
 public class UnitItem extends BlockItem {
 	public UnitItem(Block blockIn, Properties builder) {
