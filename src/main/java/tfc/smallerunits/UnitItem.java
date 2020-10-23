@@ -20,7 +20,7 @@ public class UnitItem extends BlockItem {
 	public void fillItemGroup(ItemGroup group, NonNullList<ItemStack> items) {
 		ItemStack stack = new ItemStack(Deferred.UNITITEM.get());
 		CompoundNBT defaultNBT = new CompoundNBT();
-		defaultNBT.putString("world", "0,0,0,Block{minecraft:stone}");
+		defaultNBT.putString("world", "0,0,0,Block{minecraft:glass}");
 		defaultNBT.putInt("upb", 4);
 		stack.getOrCreateTag().put("BlockEntityTag", defaultNBT);
 		if (group.equals(Deferred.group)) {
