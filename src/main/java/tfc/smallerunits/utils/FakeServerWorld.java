@@ -5,6 +5,9 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.IFluidState;
+import net.minecraft.profiler.IProfiler;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
@@ -18,31 +21,17 @@ import net.minecraft.world.server.ServerMultiWorld;
 import net.minecraft.world.server.ServerTickList;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.storage.SaveHandler;
+import net.minecraft.world.storage.WorldInfo;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.Executor;
+import java.util.function.BooleanSupplier;
 
-public class FakeServerWorld extends ServerMultiWorld {
-	FakeWorld owner;
+public class FakeServerWorld extends ServerWorld {
+	protected FakeWorld owner;
 	
-	public FakeServerWorld(ServerWorld realWorld, FakeWorld owner) {
-		super(realWorld, realWorld.getServer(), (p) -> {
-		}, new SaveHandler(null, "", null, realWorld.getServer().getDataFixer()), DimensionType.OVERWORLD, realWorld.getProfiler(), new IChunkStatusListener() {
-			@Override
-			public void start(ChunkPos center) {
-			
-			}
-			
-			@Override
-			public void statusChanged(ChunkPos chunkPosition, @Nullable ChunkStatus newStatus) {
-			
-			}
-			
-			@Override
-			public void stop() {
-			
-			}
-		});
-		this.owner = owner;
+	public FakeServerWorld(MinecraftServer serverIn, Executor executorIn, SaveHandler saveHandlerIn, WorldInfo worldInfoIn, DimensionType dimType, IProfiler profilerIn, IChunkStatusListener listenerIn) {
+		super(serverIn, executorIn, saveHandlerIn, worldInfoIn, dimType, profilerIn, listenerIn);
 	}
 	
 	@Override
@@ -108,6 +97,27 @@ public class FakeServerWorld extends ServerMultiWorld {
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		return owner.getBlockState(pos);
+	}
+	
+	@Override
+	public void tick(BooleanSupplier hasTimeLeft) {
+		for (SmallUnit unit : owner.unitHashMap.values()) {
+			this.getPendingBlockTicks().scheduleTick(
+					new BlockPos(unit.x,unit.y,unit.z),unit.heldState.getBlock(),1
+			);
+			this.setTileEntity(new BlockPos(unit.x,unit.y,unit.z),unit.tileEntity);
+			this.setBlockState(new BlockPos(unit.x,unit.y,unit.z),unit.heldState);
+			unit.heldState.tick(this,new BlockPos(unit.x,unit.y,unit.z),rand);
+			if (unit.tileEntity != null) {
+				TileEntity te = unit.tileEntity;
+				te.setWorldAndPos(this,new BlockPos(unit.x,unit.y,unit.z));
+				if (te instanceof ITickableTileEntity) {
+					((ITickableTileEntity) te).tick();
+				}
+				unit.tileEntity=te;
+			}
+		}
+		super.tick(hasTimeLeft);
 	}
 	
 	@Override

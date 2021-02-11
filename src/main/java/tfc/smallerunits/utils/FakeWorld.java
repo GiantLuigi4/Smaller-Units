@@ -46,10 +46,12 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.LogicalSide;
 //import tfc.smallerunits.Registry.ModEventRegistry;
+import sun.misc.Unsafe;
 import tfc.smallerunits.SmallerUnitBlock;
 import tfc.smallerunits.SmallerUnitsTileEntity;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -74,6 +76,24 @@ public class FakeWorld extends World implements IWorld {
 			this.getBlockState(pos.offset(dir)).onNeighborChange(this, pos.offset(dir), pos);
 			this.getBlockState(pos.offset(dir)).neighborChanged(this, pos.offset(dir), oldState.getBlock(), pos, false);
 		}
+	}
+	
+	private FakeServerWorld serverWorld = null;
+	
+	public FakeServerWorld getServerVersion() {
+		try {
+			if (serverWorld == null) {
+				Class<?> theUnsafeClass = Unsafe.class;
+				Field unsafeField = theUnsafeClass.getDeclaredField("theUnsafe");
+				unsafeField.setAccessible(true);
+				Unsafe unsafe = (Unsafe)unsafeField.get(null);
+				
+				serverWorld = (FakeServerWorld)unsafe.allocateInstance(FakeServerWorld.class);
+				serverWorld.owner = this;
+			}
+		} catch (Throwable ignored) {
+		}
+		return serverWorld;
 	}
 	
 	@Override

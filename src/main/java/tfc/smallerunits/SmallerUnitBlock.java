@@ -3,7 +3,6 @@ package tfc.smallerunits;
 import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
-import net.minecraft.command.impl.LootCommand;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -392,8 +391,13 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	@Override
 	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
 		super.tick(state, worldIn, pos, rand);
-		if (worldIn.getTileEntity(pos) != null && worldIn.getTileEntity(pos) instanceof SmallerUnitsTileEntity)
-			((SmallerUnitsTileEntity) worldIn.getTileEntity(pos)).containedWorld.tick(worldIn);
+		try {
+			if (worldIn.getTileEntity(pos) != null && worldIn.getTileEntity(pos) instanceof SmallerUnitsTileEntity) {
+				((SmallerUnitsTileEntity) worldIn.getTileEntity(pos)).containedWorld.getServerVersion().tick(()->true);
+//				((SmallerUnitsTileEntity) worldIn.getTileEntity(pos)).containedWorld.tick(worldIn);
+			}
+		} catch (Throwable ignored) {
+		}
 		worldIn.notifyBlockUpdate(pos, state, state, 0);
 		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.EXTREMELY_HIGH);
 	}
@@ -540,7 +544,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 							}
 							
 							if (te.containedWorld.getBlockState(loc).equals(Blocks.AIR.getDefaultState())) {
-								te.containedWorld.setBlockState(loc, heldState);
+								te.containedWorld.getServerVersion().setBlockState(loc, heldState);
 								if (!player.isCreative())
 									player.getHeldItem(handIn).shrink(1);
 							}
@@ -565,7 +569,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 							if (!player.isCreative())
 								player.getHeldItem(handIn).shrink(1);
 						} else {
-							te.containedWorld.setBlockState(loc, heldState.updatePostPlacement(hit.getFace(), heldState, te.containedWorld, loc, loc), 0);
+							te.containedWorld.getServerVersion().setBlockState(loc, heldState.updatePostPlacement(hit.getFace(), heldState, te.containedWorld, loc, loc), 0);
 							if (!player.isCreative())
 								player.getHeldItem(handIn).shrink(1);
 						}
@@ -677,7 +681,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			} catch (Throwable ignored) {
 			}
 			
-			te.containedWorld.setBlockState(loc, Blocks.AIR.getDefaultState(), 0);
+			te.containedWorld.getServerVersion().setBlockState(loc, Blocks.AIR.getDefaultState(), 0);
 			world.notifyBlockUpdate(pos, state, state, 0);
 			
 			return false;
