@@ -25,7 +25,6 @@ public class Smallerunits {
 		Deferred.BLOCKS.register(bus);
 		Deferred.TILE_ENTITIES.register(bus);
 		Deferred.ITEMS.register(bus);
-		Deferred.DIMENSIONS.register(bus);
 		
 		MinecraftForge.EVENT_BUS.register(this);
 	}
