@@ -10,6 +10,7 @@ import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import tfc.smallerunits.Group;
+import tfc.smallerunits.SmallerUnitISTER;
 import tfc.smallerunits.UnitItem;
 import tfc.smallerunits.block.SmallerUnitBlock;
 import tfc.smallerunits.block.UnitTileEntity;
@@ -23,7 +24,7 @@ public class Deferred {
 	
 	public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, "smallerunits");
 	public static final RegistryObject<Item> UNITITEM = ITEMS.register("su", () -> new UnitItem(UNIT.get(), new Item.Properties().rarity(Rarity.create("su", TextFormatting.GREEN))
-//			.setISTER(() -> SmallerUnitsITSER::new)
+			.setISTER(() -> SmallerUnitISTER::new)
 	));
 	
 	public static final DeferredRegister<TileEntityType<?>> TILE_ENTITIES = DeferredRegister.create(ForgeRegistries.TILE_ENTITIES, "smallerunits");

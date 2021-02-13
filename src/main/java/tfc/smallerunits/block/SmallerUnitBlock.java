@@ -1,16 +1,12 @@
 package tfc.smallerunits.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.TrapDoorBlock;
+import net.minecraft.block.*;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.Fluids;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.item.*;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Direction;
@@ -27,10 +23,13 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.common.ForgeMod;
-import tfc.smallerunits.utils.Unit;
+import tfc.smallerunits.utils.SmallUnit;
+import tfc.smallerunits.utils.UnitRaytraceContext;
+import tfc.smallerunits.utils.UnitRaytraceHelper;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Optional;
 
 public class SmallerUnitBlock extends Block {
@@ -83,79 +82,139 @@ public class SmallerUnitBlock extends Block {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		Vector3d pos;
-		{
-			RayTraceResult result = hit;
-			Vector3d pos1 = result.getHitVec().subtract(new Vector3d(worldPos.getX(), worldPos.getY(), worldPos.getZ())).scale(tileEntity.unitsPerBlock);
-			pos = new Vector3d(pos1.x, pos1.y, pos1.z);
-			pos = invRound(pos);
-		}
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
 		
-		BlockPos hitPos = new BlockPos(
-				Math.floor(pos.x),
-				Math.floor(pos.y),
-				Math.floor(pos.z)
-		);
-		if (
-				(
-						hit.getFace() == Direction.DOWN ||
-								hit.getFace() == Direction.NORTH ||
-								hit.getFace() == Direction.WEST ||
-								pos.x < 0 ||
-								pos.y < 0 ||
-								pos.z < 0
-				) && (
-						Math.abs(pos.x) % 1 <= 0.001 ||
-								Math.abs(pos.y) % 1 <= 0.001 ||
-								Math.abs(pos.z) % 1 <= 0.001 ||
-								Math.abs(pos.x) % 1 >= 0.999 ||
-								Math.abs(pos.y) % 1 >= 0.999 ||
-								Math.abs(pos.z) % 1 >= 0.999
-						)
-		) {
-			hitPos = hitPos.offset(hit.getFace());
+		if (raytraceContext.shapeHit.isEmpty()) {
+			Vector3d pos;
+			{
+				RayTraceResult result = hit;
+				Vector3d pos1 = result.getHitVec().subtract(new Vector3d(worldPos.getX(), worldPos.getY(), worldPos.getZ())).scale(tileEntity.unitsPerBlock);
+				pos = new Vector3d(pos1.x, pos1.y, pos1.z);
+				pos = invRound(pos);
+			}
+			
+			BlockPos hitPos = new BlockPos(
+					Math.floor(pos.x),
+					Math.floor(pos.y),
+					Math.floor(pos.z)
+			);
+			
+			raytraceContext.posHit = hitPos;
 		}
-		
-		System.out.println(pos.getY());
 		
 		ItemStack stack = player.getHeldItem(handIn);
 		
-		ActionResultType resultType = tileEntity.world.getBlockState(hitPos.offset(hit.getFace().getOpposite())).onBlockActivated(tileEntity.world,player,handIn,
+		tileEntity.world.getBlockState(raytraceContext.posHit.offset(hit.getFace().getOpposite())).onBlockClicked(
+				tileEntity.world, raytraceContext.posHit.offset(hit.getFace().getOpposite()), player
+		);
+		
+		ActionResultType resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(hit.getFace().getOpposite())).onBlockActivated(tileEntity.world, player, handIn,
 				new BlockRayTraceResult(
-						hit.getHitVec().subtract(worldPos.getX(),worldPos.getY(),worldPos.getZ()).scale(tileEntity.unitsPerBlock),
-						hit.getFace(), hitPos.offset(hit.getFace().getOpposite()), hit.isInside()
+						hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock),
+						hit.getFace(), raytraceContext.posHit.offset(hit.getFace().getOpposite()), hit.isInside()
 				)
 		);
-
-		if (resultType.isSuccessOrConsume()) return resultType;
+		
+		if (resultType.isSuccessOrConsume()) {
+			tileEntity.markDirty();
+			worldIn.markChunkDirty(worldPos, tileEntity);
+			
+			return resultType;
+		}
 		
 		if (stack.getItem() instanceof BlockItem) {
+			if (worldIn.isRemote) return ActionResultType.SUCCESS;
+			
 			BlockItem item = (BlockItem) stack.getItem();
-			tileEntity.world.setBlockState(hitPos,
-					item.getBlock().getStateForPlacement(
-							new BlockItemUseContext(
-									new ItemUseContext(
-											player, handIn,
-											new BlockRayTraceResult(
-													hit.getHitVec().subtract(worldPos.getX(),worldPos.getY(),worldPos.getZ()).scale(tileEntity.unitsPerBlock),
-													hit.getFace(), hitPos, hit.isInside()
-											)
+			BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace());
+			BlockState statePlace = item.getBlock().getStateForPlacement(
+					new BlockItemUseContext(
+							tileEntity.world,
+							player, handIn,
+									stack,
+									new BlockRayTraceResult(
+											raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
+											hit.getFace(), posOffset, hit.isInside()
 									)
-							)));
+					));
+			if (statePlace != null) {
+				BlockState oldState = tileEntity.world.getBlockState(posOffset);
+				tileEntity.world.setBlockState(posOffset,
+						statePlace
+				);
+				statePlace.onBlockAdded(tileEntity.world, posOffset, oldState, false);
+				for (Direction value : Direction.values()) {
+					if (value.getAxis().isHorizontal()) {
+						tileEntity.world.getBlockState(posOffset.offset(value))
+								.updatePostPlacement(
+										hit.getFace(),
+										statePlace, tileEntity.world,
+										posOffset.offset(value),
+										new BlockPos(0, 0, 0).offset(value)
+								);
+					}
+				}
+			}
+			
 			tileEntity.markDirty();
+			worldIn.notifyBlockUpdate(worldPos, state, state, 3);
+		} else if (stack.getItem() instanceof BucketItem) {
+			if (worldIn.isRemote) return ActionResultType.SUCCESS;
+			
+			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
+			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+			if (clicked.getBlock() instanceof IWaterLoggable) {
+				IWaterLoggable waterLoggableBlock = (IWaterLoggable)clicked.getBlock();
+				if (waterLoggableBlock.canContainFluid(tileEntity.world,raytraceContext.posHit,clicked,fluid)) {
+					waterLoggableBlock.receiveFluid(tileEntity.world,raytraceContext.posHit,clicked,fluid.getDefaultState());
+					
+					tileEntity.markDirty();
+					worldIn.notifyBlockUpdate(worldPos, state, state, 3);
+				}
+			}
 		}
 		
 		return ActionResultType.SUCCESS;
-//		return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
+	}
+	
+	@Override
+	public boolean removedByPlayer(BlockState state, World worldIn, BlockPos worldPos, PlayerEntity player, boolean willHarvest, FluidState fluid) {
+		if (worldIn.isRemote)
+			return false;
+		
+		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
+		if (!(tileEntityUncasted instanceof UnitTileEntity))
+			return true;
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
+		
+		BlockPos hitPos;
+		if (raytraceContext.shapeHit.isEmpty()) return false;
+		else hitPos = raytraceContext.posHit;
+		
+		tileEntity.world.removeBlock(hitPos, false);
+		
+		tileEntity.markDirty();
+		worldIn.notifyBlockUpdate(worldPos, state, state, 3);
+		
+		return false;
 	}
 	
 	@Override
 	public VoxelShape getRayTraceShape(BlockState state, IBlockReader reader, BlockPos pos, ISelectionContext context) {
-		VoxelShape shape = VoxelShapes.empty();
+		VoxelShape shape;
 		
 		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
 		
 		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity)) return super.getShape(state,reader,pos,context);
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		shape = UnitRaytraceHelper.raytraceBlock(tileEntity,context.getEntity(),true,pos,Optional.of(context)).shapeHit;
+		
+		if (!shape.isEmpty()) return shape;
 		
 		Vector3d start = context.getEntity().getEyePosition(0);
 		double reach = 8;
@@ -165,41 +224,12 @@ public class SmallerUnitBlock extends Block {
 		Vector3d look = context.getEntity().getLookVec().scale(reach);
 		Vector3d end = context.getEntity().getEyePosition(0).add(look);
 		
-		double bestDist = Double.POSITIVE_INFINITY;
-		
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
-		
-		for (Unit unit : tileEntity.world.blockMap.values()) {
-			VoxelShape shape1 = unit.state.getShape(tileEntity.world, unit.pos, context);
-			ArrayList<AxisAlignedBB> aabbs = shrink(shape1, tileEntity.unitsPerBlock);
-			
-			for (AxisAlignedBB axisAlignedBB : aabbs) {
-				axisAlignedBB = axisAlignedBB.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, unit.pos.getY() / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
-				axisAlignedBB = axisAlignedBB.offset(pos.getX(),pos.getY(),pos.getZ());
-				
-				Optional<Vector3d> intercept = axisAlignedBB.rayTrace(start, end);
-				if (!intercept.isPresent()) continue;
-				
-				double dist = intercept.get().distanceTo(start);
-				if (dist > bestDist) continue;
-				
-				bestDist = dist;
-				VoxelShape theShape = VoxelShapes.empty();
-				
-				for (AxisAlignedBB axisAlignedBB1 : aabbs) {
-					axisAlignedBB1 = axisAlignedBB1.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, unit.pos.getY() / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
-					theShape = VoxelShapes.or(theShape, VoxelShapes.create(axisAlignedBB1));
-				}
-				
-				shape = theShape;
-			}
-		}
-		
-		if (!shape.isEmpty()) return shape;
-		
 		for (Direction dir : Direction.values()) {
 			BlockPos pos1 = pos.offset(dir);
 			BlockState state1 = reader.getBlockState(pos1);
+			
+			if (state1.getBlock() instanceof SmallerUnitBlock) break;
+			
 			VoxelShape raytraceShape = state1.getRaytraceShape(reader, pos, context);
 			boolean isHit = false;
 			
@@ -237,6 +267,52 @@ public class SmallerUnitBlock extends Block {
 		if (shape.isEmpty()) return super.getRayTraceShape(state, reader, pos, context);
 		
 		return shape;
+	}
+	
+	public static final VoxelShape virtuallyEmptyShape = VoxelShapes.create(0, 0, 0, 0.001f, 0.001f, 0.001f);
+	
+	@Override
+	public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
+		return getCollisionShape(state,worldIn,pos);
+	}
+	
+	public static final HashMap<CompoundNBT, VoxelShape> shapeMap = new HashMap<>();
+	
+	@Override
+	public VoxelShape getCollisionShape(BlockState state, IBlockReader reader, BlockPos pos) {
+		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
+		if (!(tileEntityUncasted instanceof UnitTileEntity)) return virtuallyEmptyShape;
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		CompoundNBT nbt = tileEntity.serializeNBT();
+		
+		nbt.remove("x");
+		nbt.remove("y");
+		nbt.remove("z");
+		nbt.remove("id");
+		nbt.remove("ForgeData");
+		nbt.remove("ForgeCaps");
+		
+		if (!shapeMap.containsKey(nbt)) {
+			VoxelShape shape = VoxelShapes.empty();
+			
+			for (SmallUnit value : tileEntity.world.blockMap.values()) {
+				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.world, value.pos);
+				VoxelShape shape2 = VoxelShapes.empty();
+				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
+					shape2 = VoxelShapes.or(shape2, VoxelShapes.create(axisAlignedBB));
+				}
+				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, value.pos.getY() / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+				shape = VoxelShapes.or(shape, shape2);
+			}
+			
+			if (shape.isEmpty()) return virtuallyEmptyShape;
+			
+			shapeMap.put(nbt,shape);
+			return shape;
+		} else {
+			return shapeMap.get(nbt);
+		}
 	}
 	
 	public BlockPos getHit(RayTraceResult result, BlockPos worldPos, int scale) {

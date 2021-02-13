@@ -5,17 +5,17 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 
-public class Unit {
+public class SmallUnit {
 	public BlockPos pos;
 	public BlockState state;
 	public TileEntity tileEntity;
 	
-	public Unit(BlockPos pos, BlockState state) {
+	public SmallUnit(BlockPos pos, BlockState state) {
 		this.pos = pos;
 		this.state = state;
 	}
 	
-	public Unit(BlockPos pos, BlockState state, TileEntity tileEntity) {
+	public SmallUnit(BlockPos pos, BlockState state, TileEntity tileEntity) {
 		this.pos = pos;
 		this.state = state;
 		this.tileEntity = tileEntity;

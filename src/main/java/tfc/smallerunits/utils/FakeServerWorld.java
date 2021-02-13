@@ -1,20 +1,25 @@
 package tfc.smallerunits.utils;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.FluidState;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.network.play.server.SPlaySoundEventPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.RegistryKey;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
-import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Blockreader;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldSettings;
+import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
@@ -22,13 +27,12 @@ import net.minecraft.world.chunk.IChunkLightProvider;
 import net.minecraft.world.chunk.listener.IChunkStatusListener;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.lighting.WorldLightManager;
-import net.minecraft.world.server.ChunkManager;
+import net.minecraft.world.server.ServerTickList;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraft.world.spawner.ISpecialSpawner;
 import net.minecraft.world.storage.IServerWorldInfo;
 import net.minecraft.world.storage.SaveFormat;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.storage.ServerWorldInfo;
 import tfc.smallerunits.block.UnitTileEntity;
 
 import javax.annotation.Nullable;
@@ -66,15 +70,60 @@ public class FakeServerWorld extends ServerWorld {
 					},
 					true, true
 			);
+			
+			//MC code
+			pendingBlockTicks = new ServerTickList<>(this, (p_205341_0_) -> {
+				return p_205341_0_ == null || p_205341_0_.getDefaultState().isAir();
+			}, Registry.BLOCK::getKey, this::tickBlock);
+			pendingFluidTicks = new ServerTickList<>(this, (p_205774_0_) -> {
+				return p_205774_0_ == null || p_205774_0_ == Fluids.EMPTY;
+			}, Registry.FLUID::getKey, this::tickFluid);
 		}
 	}
 	
 	@Override
-	public BlockState getBlockState(BlockPos pos) {
-		return blockMap.getOrDefault(pos, new Unit(pos, Blocks.AIR.getDefaultState())).state;
+	public long getGameTime() {
+		return owner.getWorld().getGameTime();
 	}
 	
-	public HashMap<BlockPos, Unit> blockMap;
+	@Override
+	public long getDayTime() {
+		return owner.getWorld().getDayTime();
+	}
+	
+	@Override
+	public boolean isDaytime() {
+		return owner.getWorld().isDaytime();
+	}
+	
+	@Override
+	public boolean isNightTime() {
+		return owner.world.isNightTime();
+	}
+	
+	@Override
+	//TODO: make this account for tiny blocks blocking the way
+	public boolean canSeeSky(BlockPos blockPosIn) {
+		return owner.getWorld().canSeeSky(owner.getPos());
+	}
+	
+	@Override
+	public boolean canBlockSeeSky(BlockPos pos) {
+		return canSeeSky(pos);
+	}
+	
+	@Override
+	public BlockState getBlockState(BlockPos pos) {
+		return blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).state;
+	}
+	
+	@Override
+	//TODO: make this linearly interpolate through neighboring biomes
+	public Biome getBiome(BlockPos pos) {
+		return owner.getWorld().getBiome(pos);
+	}
+	
+	public HashMap<BlockPos, SmallUnit> blockMap;
 	public ArrayList<BlockPos> tileEntityPoses;
 	
 	private IChunk chunk;
@@ -137,5 +186,20 @@ public class FakeServerWorld extends ServerWorld {
 		chunk.setBlockState(pos, state, false);
 		lightManager.checkBlock(pos);
 		return true;
+	}
+	
+	@Override
+	public FluidState getFluidState(BlockPos pos) {
+		return getBlockState(pos).getFluidState();
+	}
+	
+	@Override
+	public ServerTickList<Block> getPendingBlockTicks() {
+		return super.getPendingBlockTicks();
+	}
+	
+	@Override
+	public ServerTickList<Fluid> getPendingFluidTicks() {
+		return super.getPendingFluidTicks();
 	}
 }

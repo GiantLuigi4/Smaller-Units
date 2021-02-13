@@ -37,13 +37,13 @@ public class FakeChunk implements IChunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-		owner.blockMap.put(pos, new Unit(pos, state));
+		owner.blockMap.put(pos, new SmallUnit(pos, state));
 		return state;
 	}
 	
 	@Override
 	public void addTileEntity(BlockPos pos, TileEntity tileEntityIn) {
-		Unit unit = owner.blockMap.get(pos);
+		SmallUnit unit = owner.blockMap.get(pos);
 		owner.tileEntityPoses.add(pos);
 		unit.tileEntity = tileEntityIn;
 	}
@@ -161,7 +161,7 @@ public class FakeChunk implements IChunk {
 	@Override
 	public Stream<BlockPos> getLightSources() {
 		ArrayList<BlockPos> posArrayList = new ArrayList<>();
-		for (Unit value : owner.blockMap.values()) {
+		for (SmallUnit value : owner.blockMap.values()) {
 			if (value.state.getLightValue() > 1) {
 				posArrayList.add(value.pos);
 			}

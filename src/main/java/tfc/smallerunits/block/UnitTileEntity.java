@@ -1,10 +1,13 @@
 package tfc.smallerunits.block;
 
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.shapes.VoxelShapes;
 import sun.misc.Unsafe;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.FakeServerWorld;
@@ -43,9 +46,14 @@ public class UnitTileEntity extends TileEntity {
 	}
 	
 	@Override
+	public AxisAlignedBB getRenderBoundingBox() {
+		return new AxisAlignedBB(getPos().getX(), getPos().getY(), getPos().getZ(), getPos().getX() + 1, getPos().getY() + 1, getPos().getZ() + 1);
+	}
+	
+	@Override
 	public void read(BlockState state, CompoundNBT nbt) {
 		super.read(state, nbt);
-		this.unitsPerBlock = nbt.getInt("upb");
+		this.unitsPerBlock = Math.max(nbt.getInt("upb"),1);
 		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"));
 		this.world.blockMap = pallet.posUnitMap;
 	}
@@ -54,7 +62,7 @@ public class UnitTileEntity extends TileEntity {
 	public CompoundNBT write(CompoundNBT compound) {
 		UnitPallet unitPallet = new UnitPallet(world.blockMap.values());
 		compound.put("containedUnits", unitPallet.nbt);
-		compound.putInt("upb", unitsPerBlock);
+		compound.putInt("upb", Math.max(1,unitsPerBlock));
 		return super.write(compound);
 	}
 	
