@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "package": "com.tfc.smallerunits.mixins",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "smaller_units.refmap.json",
+  "client": ["ContainerAccessor", "ContainerMixin", "ContainerMixin2", "PlayerEntityMixin", "ServerPlayerEntityMixin"],
+  "mixins": [
+  ],
+  "injectors": {
+	"defaultRequire": 1
+  },
+  "minVersion": "0.8"
+}

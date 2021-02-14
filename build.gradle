@@ -4,8 +4,10 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
         jcenter()
         mavenCentral()
+        maven { url 'https://dist.creeper.host/Sponge/maven' }
     }
     dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
         classpath "com.wynprice.cursemaven:CurseMaven:2.1.4"
     }
@@ -43,6 +45,8 @@ minecraft {
             // Recommended logging level for the console
             property 'forge.logging.console.level', 'debug'
 
+            arg "-mixin.config=smaller_units.mixins.json"
+
             mods {
                 smallerunits {
                     source sourceSets.main
@@ -58,6 +62,8 @@ minecraft {
 
             // Recommended logging level for the console
             property 'forge.logging.console.level', 'debug'
+
+            arg "-mixin.config=smaller_units.mixins.json"
 
             mods {
                 smallerunits {
@@ -86,13 +92,34 @@ minecraft {
     }
 }
 
+repositories {
+    maven {url='https://dist.creeper.host/Sponge/maven'}
+}
+
 dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
+
+    compile 'org.spongepowered:mixin:0.8'
 }
+
+apply plugin: 'org.spongepowered.mixin'
 
 minecraft {
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+}
+
+mixin {
+    add sourceSets.main, "smaller_units.refmap.json"
+}
+
+jar {
+    manifest {
+        attributes([
+                // Existing properties here
+                "MixinConfigs": "smaller_units.mixins.json"
+        ])
+    }
 }

@@ -1,32 +1,31 @@
-package tfc.smallerunits;
+package com.tfc.smallerunits;
 
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.mojang.datafixers.util.Pair;
+import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.utils.SmallUnit;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.*;
-import net.minecraft.client.renderer.model.BakedQuad;
-import net.minecraft.client.renderer.model.IBakedModel;
+import net.minecraft.client.renderer.BufferBuilder;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.client.settings.AmbientOcclusionStatus;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Matrix3f;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.math.vector.Vector3f;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import org.lwjgl.opengl.GL11;
-import tfc.smallerunits.block.UnitTileEntity;
-import tfc.smallerunits.utils.SmallUnit;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Random;
 
 public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	public SmallerUnitsTESR(TileEntityRendererDispatcher rendererDispatcherIn) {
@@ -57,17 +56,19 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //		if (!bufferCache.containsKey(nbt)) {
 //			HashMap<RenderType, Pair<BufferBuilder, IVertexBuilder>> builders = new HashMap<>();
 			HashMap<RenderType, Pair<BufferBuilder, IVertexBuilder>> buildersFluid = new HashMap<>();
-			
-			{
-				MatrixStack src = matrixStackIn;
+		
+		{
+			MatrixStack src = matrixStackIn;
 //				matrixStackIn = new MatrixStack();
-				matrixStackIn.push();
-				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-				
-				for (SmallUnit value : tileEntityIn.world.blockMap.values()) {
-					RenderType type = RenderTypeLookup.getChunkRenderType(value.state);
-					IVertexBuilder builder;
-					
+			matrixStackIn.push();
+			matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+			
+			matrixStackIn.translate(0, -64, 0);
+			
+			for (SmallUnit value : tileEntityIn.world.blockMap.values()) {
+				RenderType type = RenderTypeLookup.getChunkRenderType(value.state);
+				IVertexBuilder builder;
+
 //					if (!builders.containsKey(type)) {
 //						BufferBuilder buffer = new BufferBuilder(13853);
 //						buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
@@ -114,20 +115,28 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 								builder1, value.state.getFluidState()
 						);
 					}
-					
-					matrixStackIn.pop();
+				
+				TileEntity te = value.tileEntity;
+				if (te != null) {
+					TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(te);
+					if (renderer != null)
+						renderer.render(te, partialTicks, matrixStackIn, bufferIn, combinedLightIn, combinedOverlayIn);
 				}
 				
-				MatrixStack finalMatrixStackIn = matrixStackIn;
-				buildersFluid.forEach((type, bufferBuilderIVertexBuilderPair) -> {
-					bufferBuilderIVertexBuilderPair.getFirst().finishDrawing();
-					
-					finalMatrixStackIn.push();
-					VertexBuffer buffer = new VertexBuffer(DefaultVertexFormats.BLOCK);
-					buffer.upload(bufferBuilderIVertexBuilderPair.getFirst());
-					buffer.bindBuffer();
-					type.setupRenderState();
-					DefaultVertexFormats.BLOCK.setupBufferState(0L);
+				matrixStackIn.pop();
+			}
+			
+			matrixStackIn.translate(0, 64, 0);
+			MatrixStack finalMatrixStackIn = matrixStackIn;
+			buildersFluid.forEach((type, bufferBuilderIVertexBuilderPair) -> {
+				bufferBuilderIVertexBuilderPair.getFirst().finishDrawing();
+				
+				finalMatrixStackIn.push();
+				VertexBuffer buffer = new VertexBuffer(DefaultVertexFormats.BLOCK);
+				buffer.upload(bufferBuilderIVertexBuilderPair.getFirst());
+				buffer.bindBuffer();
+				type.setupRenderState();
+				DefaultVertexFormats.BLOCK.setupBufferState(0L);
 					buffer.draw(finalMatrixStackIn.getLast().getMatrix(), GL11.GL_QUADS);
 					
 					VertexBuffer.unbindBuffer();

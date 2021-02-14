@@ -1,4 +1,4 @@
-package tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils;
 
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.VoxelShape;

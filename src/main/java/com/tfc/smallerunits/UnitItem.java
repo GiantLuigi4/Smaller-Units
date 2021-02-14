@@ -1,5 +1,6 @@
-package tfc.smallerunits;
+package com.tfc.smallerunits;
 
+import com.tfc.smallerunits.registry.Deferred;
 import net.minecraft.block.Block;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.BlockItem;
@@ -8,7 +9,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.NonNullList;
 import net.minecraft.world.World;
-import tfc.smallerunits.registry.Deferred;
 
 public class UnitItem extends BlockItem {
 	public UnitItem(Block blockIn, Properties builder) {

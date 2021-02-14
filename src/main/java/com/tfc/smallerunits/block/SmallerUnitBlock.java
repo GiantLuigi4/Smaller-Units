@@ -1,11 +1,18 @@
-package tfc.smallerunits.block;
+package com.tfc.smallerunits.block;
 
+import com.tfc.smallerunits.helpers.ContainerMixinHelper;
+import com.tfc.smallerunits.utils.SmallUnit;
+import com.tfc.smallerunits.utils.UnitRaytraceContext;
+import com.tfc.smallerunits.utils.UnitRaytraceHelper;
 import net.minecraft.block.*;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.item.*;
+import net.minecraft.item.BlockItem;
+import net.minecraft.item.BlockItemUseContext;
+import net.minecraft.item.BucketItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
@@ -21,16 +28,13 @@ import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
+import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.ForgeMod;
-import tfc.smallerunits.utils.SmallUnit;
-import tfc.smallerunits.utils.UnitRaytraceContext;
-import tfc.smallerunits.utils.UnitRaytraceHelper;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 
 public class SmallerUnitBlock extends Block {
 	public SmallerUnitBlock() {
@@ -95,12 +99,14 @@ public class SmallerUnitBlock extends Block {
 			
 			BlockPos hitPos = new BlockPos(
 					Math.floor(pos.x),
-					Math.floor(pos.y),
+					Math.floor(pos.y) + 64,
 					Math.floor(pos.z)
 			);
 			
 			raytraceContext.posHit = hitPos;
 		}
+		
+		raytraceContext.posHit = raytraceContext.posHit.offset(hit.getFace());
 		
 		ItemStack stack = player.getHeldItem(handIn);
 		
@@ -119,57 +125,91 @@ public class SmallerUnitBlock extends Block {
 			tileEntity.markDirty();
 			worldIn.markChunkDirty(worldPos, tileEntity);
 			
+			if (player.openContainer != null)
+				ContainerMixinHelper.setNaturallyClosable(player.openContainer, false);
+			
 			return resultType;
 		}
+		
+		raytraceContext.posHit = raytraceContext.posHit.offset(hit.getFace().getOpposite());
 		
 		if (stack.getItem() instanceof BlockItem) {
 			if (worldIn.isRemote) return ActionResultType.SUCCESS;
 			
 			BlockItem item = (BlockItem) stack.getItem();
+			
+			if (item.getBlock() instanceof SmallerUnitBlock) return ActionResultType.CONSUME;
+			
 			BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace());
 			BlockState statePlace = item.getBlock().getStateForPlacement(
 					new BlockItemUseContext(
 							tileEntity.world,
 							player, handIn,
-									stack,
-									new BlockRayTraceResult(
-											raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
-											hit.getFace(), posOffset, hit.isInside()
-									)
+							stack,
+							new BlockRayTraceResult(
+									raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
+									hit.getFace(), posOffset, hit.isInside()
+							)
 					));
 			if (statePlace != null) {
-				BlockState oldState = tileEntity.world.getBlockState(posOffset);
-				tileEntity.world.setBlockState(posOffset,
-						statePlace
-				);
-				statePlace.onBlockAdded(tileEntity.world, posOffset, oldState, false);
-				for (Direction value : Direction.values()) {
-					if (value.getAxis().isHorizontal()) {
-						tileEntity.world.getBlockState(posOffset.offset(value))
-								.updatePostPlacement(
-										hit.getFace(),
-										statePlace, tileEntity.world,
-										posOffset.offset(value),
-										new BlockPos(0, 0, 0).offset(value)
-								);
+				tileEntity.world.setBlockState(posOffset, statePlace);
+				statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
+				
+				if (statePlace.getBlock() instanceof ITileEntityProvider) {
+					tileEntity.world.setTileEntity(posOffset, ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world));
+					
+					if (stack.hasTag()) {
+						CompoundNBT nbt = stack.getOrCreateTag();
+						if (nbt.contains("BlockEntityTag")) {
+							nbt = nbt.getCompound("BlockEntityTag");
+							tileEntity.read(statePlace, nbt);
+						}
+					}
+				} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
+					tileEntity.world.setTileEntity(posOffset, statePlace.getBlock().createTileEntity(statePlace, tileEntity.world));
+					
+					if (stack.hasTag()) {
+						CompoundNBT nbt = stack.getOrCreateTag();
+						if (nbt.contains("BlockEntityTag")) {
+							nbt = nbt.getCompound("BlockEntityTag");
+							tileEntity.read(statePlace, nbt);
+						}
 					}
 				}
+
+//				statePlace.onBlockAdded(tileEntity.world, posOffset, oldState, false);
+//				for (Direction value : Direction.values()) {
+//					tileEntity.world.setBlockState(posOffset.offset(value),
+//							tileEntity.world.getBlockState(posOffset.offset(value))
+//									.updatePostPlacement(
+//											value.getOpposite(),
+//											statePlace, tileEntity.world,
+//											posOffset.offset(value),
+//											new BlockPos(0, 0, 0).offset(value)
+//									));
+//					tileEntity.world.getBlockState(posOffset.offset(value))
+//							.onNeighborChange(
+//									tileEntity.world,
+//									posOffset,
+//									posOffset.offset(value)
+//							);
+//				}
 			}
-			
-			tileEntity.markDirty();
-			worldIn.notifyBlockUpdate(worldPos, state, state, 3);
 		} else if (stack.getItem() instanceof BucketItem) {
 			if (worldIn.isRemote) return ActionResultType.SUCCESS;
 			
 			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
 			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
 			if (clicked.getBlock() instanceof IWaterLoggable) {
-				IWaterLoggable waterLoggableBlock = (IWaterLoggable)clicked.getBlock();
-				if (waterLoggableBlock.canContainFluid(tileEntity.world,raytraceContext.posHit,clicked,fluid)) {
-					waterLoggableBlock.receiveFluid(tileEntity.world,raytraceContext.posHit,clicked,fluid.getDefaultState());
-					
-					tileEntity.markDirty();
-					worldIn.notifyBlockUpdate(worldPos, state, state, 3);
+				IWaterLoggable waterLoggableBlock = (IWaterLoggable) clicked.getBlock();
+				if (waterLoggableBlock.canContainFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid)) {
+					waterLoggableBlock.receiveFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid.getDefaultState());
+				}
+			} else {
+				BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace());
+				if (tileEntity.world.getBlockState(posOffset).isAir(tileEntity.world, posOffset)) {
+					tileEntity.world.setBlockState(posOffset, fluid.getDefaultState().getBlockState());
+					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
 				}
 			}
 		}
@@ -196,10 +236,24 @@ public class SmallerUnitBlock extends Block {
 		
 		tileEntity.world.removeBlock(hitPos, false);
 		
-		tileEntity.markDirty();
-		worldIn.notifyBlockUpdate(worldPos, state, state, 3);
-		
 		return false;
+	}
+	
+	@Override
+	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {
+		super.onBlockAdded(state, worldIn, pos, oldState, isMoving);
+		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
+	}
+	
+	@Override
+	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
+		super.tick(state, worldIn, pos, rand);
+		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
+		TileEntity tileEntity = worldIn.getTileEntity(pos);
+		if (!(tileEntity instanceof UnitTileEntity)) return;
+		long start = new Date().getTime();
+		if (((UnitTileEntity) tileEntity).world != null)
+			((UnitTileEntity) tileEntity).world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
 	}
 	
 	@Override
@@ -208,7 +262,8 @@ public class SmallerUnitBlock extends Block {
 		
 		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
 		
-		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity)) return super.getShape(state,reader,pos,context);
+		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity))
+			return super.getShape(state, reader, pos, context);
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
@@ -292,6 +347,7 @@ public class SmallerUnitBlock extends Block {
 		nbt.remove("id");
 		nbt.remove("ForgeData");
 		nbt.remove("ForgeCaps");
+		nbt.remove("ticks");
 		
 		if (!shapeMap.containsKey(nbt)) {
 			VoxelShape shape = VoxelShapes.empty();
@@ -302,7 +358,7 @@ public class SmallerUnitBlock extends Block {
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
 					shape2 = VoxelShapes.or(shape2, VoxelShapes.create(axisAlignedBB));
 				}
-				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, value.pos.getY() / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
 				shape = VoxelShapes.or(shape, shape2);
 			}
 			

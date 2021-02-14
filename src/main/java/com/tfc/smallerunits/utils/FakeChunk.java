@@ -1,4 +1,4 @@
-package tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -205,7 +206,7 @@ public class FakeChunk implements IChunk {
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-		return owner.blockMap.get(pos).tileEntity;
+		return owner.blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
 	}
 	
 	@Override

@@ -1,6 +1,10 @@
-package tfc.smallerunits.registry;
+package com.tfc.smallerunits.registry;
 
-import com.mojang.datafixers.types.Type;
+import com.tfc.smallerunits.Group;
+import com.tfc.smallerunits.SmallerUnitISTER;
+import com.tfc.smallerunits.UnitItem;
+import com.tfc.smallerunits.block.SmallerUnitBlock;
+import com.tfc.smallerunits.block.UnitTileEntity;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.Rarity;
@@ -9,11 +13,6 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import tfc.smallerunits.Group;
-import tfc.smallerunits.SmallerUnitISTER;
-import tfc.smallerunits.UnitItem;
-import tfc.smallerunits.block.SmallerUnitBlock;
-import tfc.smallerunits.block.UnitTileEntity;
 
 public class Deferred {
 	public static final Group group = new Group("Smaller Units");

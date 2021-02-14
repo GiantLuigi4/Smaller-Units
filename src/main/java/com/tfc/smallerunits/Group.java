@@ -1,10 +1,10 @@
-package tfc.smallerunits;
+package com.tfc.smallerunits;
 
+import com.tfc.smallerunits.registry.Deferred;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.NonNullList;
-import tfc.smallerunits.registry.Deferred;
 
 import java.util.Random;
 

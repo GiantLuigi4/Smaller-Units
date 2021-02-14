@@ -1,5 +1,6 @@
-package tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils;
 
+import com.tfc.smallerunits.block.UnitTileEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -10,7 +11,6 @@ import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.common.ForgeMod;
-import tfc.smallerunits.block.UnitTileEntity;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -40,7 +40,7 @@ public class UnitRaytraceHelper {
 			ArrayList<AxisAlignedBB> aabbs = shrink(shape1, tileEntity.unitsPerBlock);
 			
 			for (AxisAlignedBB axisAlignedBB : aabbs) {
-				axisAlignedBB = axisAlignedBB.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, unit.pos.getY() / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
+				axisAlignedBB = axisAlignedBB.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
 				axisAlignedBB = axisAlignedBB.offset(pos.getX(), pos.getY(), pos.getZ());
 				
 				Optional<Vector3d> intercept = axisAlignedBB.rayTrace(start, end);
@@ -53,7 +53,7 @@ public class UnitRaytraceHelper {
 				VoxelShape theShape = VoxelShapes.empty();
 				
 				for (AxisAlignedBB axisAlignedBB1 : aabbs) {
-					axisAlignedBB1 = axisAlignedBB1.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, unit.pos.getY() / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
+					axisAlignedBB1 = axisAlignedBB1.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
 					theShape = VoxelShapes.or(theShape, VoxelShapes.create(axisAlignedBB1));
 				}
 				
