@@ -16,7 +16,7 @@ Also, I am disappointed by how few people seem to know about the original little
 
 **Will this be better than little blocks?**
 
-No.
+Maybe.
 
 **Can I use this in my modpacks?**
 
@@ -32,14 +32,6 @@ A) I realized nobody else was gonna port it
 
 B) Slimevoid seems to have fallen appart
 
-**Why 1.15 and not 1.16**
-
-1.16 changed a lot about world gen and dimension registry, so porting is currently not possible for me due to how I simulate the small units.
-
 **Is this survival ready?**
 
 *Shrugs.*
-
-**How do I craft a small unit?**
-
-Currently, just throw a glass into your crafting grid, and you'll get one as well as a free stone bc bugs.
