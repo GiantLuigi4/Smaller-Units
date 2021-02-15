@@ -395,7 +395,9 @@ public class FakeServerWorld extends ServerWorld {
 			int oldLight = old.getLightValue(this, pos);
 			int oldOpacity = old.getOpacity(this, pos);
 			
-			state.onBlockAdded(this, pos, old, false);
+			if (!state.getFluidState().isEmpty()) {
+				state.onBlockAdded(this, pos, old, false);
+			}
 			
 			BlockState blockstate = chunk.setBlockState(pos, state, (flags & 64) != 0);
 			if (blockstate == null) {

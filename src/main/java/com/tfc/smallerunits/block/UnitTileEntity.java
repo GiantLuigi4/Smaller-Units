@@ -69,7 +69,7 @@ public class UnitTileEntity extends TileEntity {
 				BlockPos pos = new BlockPos(tick.getInt("x"), tick.getInt("y"), tick.getInt("z"));
 				long time = tick.getInt("time");
 				int priority = tick.getInt("priority");
-				world.getPendingBlockTicks().scheduleTick(pos, world.getBlockState(pos).getBlock(), (int) time, TickPriority.getPriority(priority));
+				world.getPendingBlockTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getBlock(), (int) time, TickPriority.getPriority(priority));
 			}
 			ListNBT fluidTickList = ticks.getList("fluidTicks", Constants.NBT.TAG_COMPOUND);
 			for (INBT inbt : fluidTickList) {
@@ -77,7 +77,7 @@ public class UnitTileEntity extends TileEntity {
 				BlockPos pos = new BlockPos(tick.getInt("x"), tick.getInt("y"), tick.getInt("z"));
 				long time = tick.getInt("time");
 				int priority = tick.getInt("priority");
-				world.getPendingFluidTicks().scheduleTick(pos, world.getBlockState(pos).getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
+				world.getPendingFluidTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
 			}
 		}
 	}
