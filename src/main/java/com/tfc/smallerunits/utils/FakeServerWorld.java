@@ -19,22 +19,19 @@ import net.minecraft.network.play.server.SPlaySoundEventPacket;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
+import net.minecraft.util.concurrent.DelegatedTaskExecutor;
+import net.minecraft.util.concurrent.ITaskExecutor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.world.DimensionType;
-import net.minecraft.world.GameRules;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.world.*;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeContainer;
 import net.minecraft.world.border.WorldBorder;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.chunk.IChunkLightProvider;
+import net.minecraft.world.chunk.*;
 import net.minecraft.world.chunk.listener.IChunkStatusListener;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.lighting.WorldLightManager;
@@ -42,6 +39,7 @@ import net.minecraft.world.raid.RaidManager;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerTickList;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraft.world.spawner.ISpecialSpawner;
 import net.minecraft.world.storage.IServerWorldInfo;
 import net.minecraft.world.storage.SaveFormat;
@@ -117,7 +115,12 @@ public class FakeServerWorld extends ServerWorld {
 			tileEntityPoses = new ArrayList<>();
 			chunk = new FakeChunk(this);
 			FakeServerWorld world = this;
-			lightManager = new WorldLightManager(
+			field_241102_C_ = FakeServerChunkProvider.getProvider(this);
+			DelegatedTaskExecutor<Runnable> delegatedtaskexecutor1 = DelegatedTaskExecutor.create(Runnable::run, "light");
+			ITaskExecutor<Unit> unitExecutor = ITaskExecutor.inline("idk", unit -> {
+			});
+			ITaskExecutor<ChunkTaskPriorityQueueSorter.FunctionEntry<Runnable>> itaskexecutor = ITaskExecutor.inline("su_world", (entry) -> entry.task.apply(unitExecutor).run());
+			lightManager = new ServerWorldLightManager(
 					new IChunkLightProvider() {
 						@Nullable
 						@Override
@@ -130,7 +133,8 @@ public class FakeServerWorld extends ServerWorld {
 							return world;
 						}
 					},
-					true, true
+					this.getChunkProvider().chunkManager,
+					true, delegatedtaskexecutor1, itaskexecutor
 			);
 			
 			//MC code
@@ -146,7 +150,6 @@ public class FakeServerWorld extends ServerWorld {
 			blankProfiler = new Profiler(() -> 0, () -> 0, false);
 			profiler = () -> blankProfiler;
 			worldBorder = border;
-			field_241102_C_ = FakeServerChunkProvider.getProvider(this);
 			isFirstTick = true;
 			blockEventQueue = new ObjectLinkedOpenHashSet<>();
 			players = new ArrayList<>();
@@ -297,19 +300,24 @@ public class FakeServerWorld extends ServerWorld {
 		blankProfiler.startTick();
 		super.tick(hasTimeLeft);
 		blankProfiler.endTick();
+		
+		//Random Ticks
+		for (int i = 0; i < Math.max(1, owner.unitsPerBlock / 8); i++) {
+			int x = rand.nextInt(owner.unitsPerBlock);
+			int y = rand.nextInt(owner.unitsPerBlock);
+			int z = rand.nextInt(owner.unitsPerBlock);
+			BlockPos randTickPos = new BlockPos(x, y, z);
+			BlockState state = getBlockState(randTickPos);
+			if (state.ticksRandomly()) {
+				state.randomTick(this, randTickPos, rand);
+			}
+		}
+		
 		ArrayList<TileEntity> toRemove = new ArrayList<>();
 		for (SmallUnit unit : tileEntityChanges) {
-//			if (unit.oldTE != null) {
-//				tickableTileEntities.remove(unit.oldTE);
-//				loadedTileEntityList.remove(unit.oldTE);
-//			}
 			if (unit.tileEntity != null) {
-//				for (TileEntity tileEntity : loadedTileEntityList) {
-//					if (tileEntity.getPos().equals(unit.tileEntity.getPos())) {
-//						toRemove.add(tileEntity);
-//					}
-//				}
-				if (!tickableTileEntities.contains(unit.tileEntity)) tickableTileEntities.add(unit.tileEntity);
+				if (!tickableTileEntities.contains(unit.tileEntity) && unit.tileEntity instanceof ITickableTileEntity)
+					tickableTileEntities.add(unit.tileEntity);
 				if (!loadedTileEntityList.contains(unit.tileEntity)) loadedTileEntityList.add(unit.tileEntity);
 			}
 			unit.oldTE = unit.tileEntity;
@@ -322,6 +330,25 @@ public class FakeServerWorld extends ServerWorld {
 		loadedTileEntityList.removeAll(toRemove);
 		tickableTileEntities.removeAll(toRemove);
 		tileEntityChanges.clear();
+	}
+	
+	@Override
+	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
+		return lightManager.getLightEngine(lightTypeIn).getLightFor(blockPosIn);
+	}
+	
+	@Override
+	public int getLightSubtracted(BlockPos blockPosIn, int amount) {
+		return lightManager.getLightSubtracted(blockPosIn, amount);
+	}
+	
+	@Override
+	public int getLightValue(BlockPos pos) {
+		return
+				Math.max(
+						lightManager.getLightEngine(LightType.BLOCK).getLightFor(pos),
+						lightManager.getLightEngine(LightType.SKY).getLightFor(pos)
+				);
 	}
 	
 	@Override
