@@ -1,5 +1,6 @@
 package com.tfc.smallerunits.utils;
 
+import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
@@ -18,12 +19,8 @@ import net.minecraft.network.play.server.SPlaySoundEventPacket;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ObjectIntIdentityMap;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.util.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.Registry;
@@ -89,6 +86,7 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
 		SmallUnit unit = blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState()));
+		if (unit.tileEntity != null) loadedTileEntityList.remove(tileEntityIn);
 		if (tileEntityIn.getType().isValidBlock(unit.state.getBlock())) {
 			unit.tileEntity = tileEntityIn;
 			tileEntityIn.setWorldAndPos(this, pos);
@@ -205,22 +203,74 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		int y = pos.getY() - 64;
-		if (pos.getX() == -1 || y == -1 || pos.getZ() == -1) {
-			//TODO: correct offsets for positive
-			BlockState westState = owner.getWorld().getBlockState(owner.getPos().add(pos.getX() == -1 ? pos.getX() : 0, y == -1 ? y : 0, pos.getZ() == -1 ? pos.getZ() : 0));
-			if (westState.isAir()) return Blocks.AIR.getDefaultState();
+		if (
+				pos.getX() < 0 ||
+						pos.getX() > owner.unitsPerBlock - 1 ||
+						pos.getZ() < 0 ||
+						pos.getZ() > owner.unitsPerBlock - 1 ||
+						y < 0 ||
+						y > owner.unitsPerBlock - 1
+		) {
+			BlockPos westPos = owner.getPos();
+			if (pos.getX() < 0)
+				westPos = westPos.offset(Direction.EAST, (int) Math.floor((1f / owner.unitsPerBlock) * pos.getX()));
+			else if (pos.getX() > owner.unitsPerBlock - 1)
+				westPos = westPos.offset(Direction.EAST, (int) Math.ceil((1f / owner.unitsPerBlock) * pos.getX()));
+			if (pos.getZ() < 0)
+				westPos = westPos.offset(Direction.SOUTH, (int) Math.floor((1f / owner.unitsPerBlock) * pos.getZ()));
+			else if (pos.getZ() > owner.unitsPerBlock - 1)
+				westPos = westPos.offset(Direction.SOUTH, (int) Math.ceil((1f / owner.unitsPerBlock) * pos.getZ()));
+			if (y < 0)
+				westPos = westPos.offset(Direction.UP, (int) Math.floor((1f / owner.unitsPerBlock) * y));
+			else if (y > owner.unitsPerBlock - 1)
+				westPos = westPos.offset(Direction.UP, (int) Math.ceil((1f / owner.unitsPerBlock) * y));
+			BlockState westState = owner.getWorld().getBlockState(westPos);
+			if (westState.getBlock() instanceof SmallerUnitBlock) {
+				TileEntity westTE = owner.getWorld().getTileEntity(westPos);
+				if (westTE instanceof UnitTileEntity) {
+					if (((UnitTileEntity) westTE).unitsPerBlock == owner.unitsPerBlock) {
+						BlockPos pos1 = new BlockPos(pos.getX(), y + 64, pos.getZ());
+						if (pos.getX() < 0)
+							pos1 = new BlockPos((owner.unitsPerBlock - Math.abs(pos.getX() % owner.unitsPerBlock)), pos1.getY(), pos1.getZ());
+						else if (pos.getX() > owner.unitsPerBlock - 1)
+							pos1 = new BlockPos((Math.abs(pos.getX() % (owner.unitsPerBlock - 1))), pos1.getY(), pos1.getZ());
+						if (y < 0)
+							pos1 = new BlockPos(pos1.getX(), (owner.unitsPerBlock - Math.abs(y % owner.unitsPerBlock)) + 64, pos1.getZ());
+						if (y > owner.unitsPerBlock - 1)
+							pos1 = new BlockPos(pos1.getX(), (Math.abs(y % (owner.unitsPerBlock - 1))) + 64, pos1.getZ());
+						if (pos.getZ() < 0)
+							pos1 = new BlockPos(pos1.getX(), pos1.getY(), (owner.unitsPerBlock - Math.abs(pos.getZ() % owner.unitsPerBlock)));
+						else if (pos.getZ() > owner.unitsPerBlock - 1)
+							pos1 = new BlockPos(pos1.getX(), pos1.getY(), (Math.abs(pos.getZ() % (owner.unitsPerBlock - 1))));
+						return ((UnitTileEntity) westTE).world.getBlockState(pos1);
+					}
+				}
+			}
+		} else if (pos.getX() == -1 || y == -1 || pos.getZ() == -1 || pos.getX() == owner.unitsPerBlock || y == owner.unitsPerBlock || pos.getZ() == owner.unitsPerBlock) {
+			BlockPos westPos = owner.getPos().add(
+					pos.getX() == -1 ? pos.getX() : (pos.getX() == owner.unitsPerBlock ? 1 : 0),
+					y == -1 ? y : (y == owner.unitsPerBlock ? 1 : 0),
+					pos.getZ() == -1 ? pos.getZ() : (pos.getZ() == owner.unitsPerBlock ? 1 : 0)
+			);
+			BlockState westState = owner.getWorld().getBlockState(westPos);
+			if (
+					(
+							!westState.isSolid() ||
+									westState.isTransparent() ||
+									!westState.isNormalCube(this, westPos)
+					) &&
+							!westState.equals(Deferred.UNIT.get().getDefaultState())
+			)
+				return Blocks.AIR.getDefaultState();
 				//TODO: make neighboring units be acknowledged
-			else if (westState.equals(Deferred.UNIT.get().getDefaultState())) return Blocks.BEDROCK.getDefaultState();
-			else return Blocks.BEDROCK.getDefaultState();
-		} else if (pos.getX() == owner.unitsPerBlock || y == owner.unitsPerBlock || pos.getZ() == owner.unitsPerBlock) {
-			//TODO: correct offsets for positive and negative (I'd assume)
-			BlockState westState = owner.getWorld().getBlockState(owner.getPos().add(pos.getX() == owner.unitsPerBlock ? 1 : 0, y == owner.unitsPerBlock ? 1 : 0, pos.getZ() == owner.unitsPerBlock ? 1 : 0));
-			if (westState.isAir()) return Blocks.AIR.getDefaultState();
-				//TODO: make neighboring units be acknowledged
-			else if (westState.equals(Deferred.UNIT.get().getDefaultState())) return Blocks.BEDROCK.getDefaultState();
-			else return Blocks.BEDROCK.getDefaultState();
+			else if (!westState.equals(Deferred.UNIT.get().getDefaultState()))
+				return Blocks.BEDROCK.getDefaultState();
 		}
 		return blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).state;
+	}
+	
+	@Override
+	public void func_241123_a_(boolean p_241123_1_, boolean p_241123_2_) {
 	}
 	
 	@Override
@@ -247,12 +297,31 @@ public class FakeServerWorld extends ServerWorld {
 		blankProfiler.startTick();
 		super.tick(hasTimeLeft);
 		blankProfiler.endTick();
+		ArrayList<TileEntity> toRemove = new ArrayList<>();
 		for (SmallUnit unit : tileEntityChanges) {
-			if (unit.tileEntity != null)
-				if (unit.tileEntity instanceof ITickableTileEntity) tickableTileEntities.add(unit.tileEntity);
-				else tickableTileEntities.remove(unit.oldTE);
+//			if (unit.oldTE != null) {
+//				tickableTileEntities.remove(unit.oldTE);
+//				loadedTileEntityList.remove(unit.oldTE);
+//			}
+			if (unit.tileEntity != null) {
+//				for (TileEntity tileEntity : loadedTileEntityList) {
+//					if (tileEntity.getPos().equals(unit.tileEntity.getPos())) {
+//						toRemove.add(tileEntity);
+//					}
+//				}
+				if (!tickableTileEntities.contains(unit.tileEntity)) tickableTileEntities.add(unit.tileEntity);
+				if (!loadedTileEntityList.contains(unit.tileEntity)) loadedTileEntityList.add(unit.tileEntity);
+			}
 			unit.oldTE = unit.tileEntity;
 		}
+		for (TileEntity tileEntity : loadedTileEntityList) {
+			if (!tileEntity.getType().isValidBlock(getBlockState(tileEntity.getPos()).getBlock())) {
+				toRemove.add(tileEntity);
+			}
+		}
+		loadedTileEntityList.removeAll(toRemove);
+		tickableTileEntities.removeAll(toRemove);
+		tileEntityChanges.clear();
 	}
 	
 	@Override
@@ -324,22 +393,27 @@ public class FakeServerWorld extends ServerWorld {
 				BlockState blockstate1 = this.getBlockState(pos);
 				if ((flags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getOpacity(this, pos) != oldOpacity || blockstate1.getLightValue(this, pos) != oldLight || blockstate1.isTransparent() || blockstate.isTransparent())) {
 					this.getProfiler().startSection("queueCheckLight");
-					this.getChunkProvider().getLightManager().checkBlock(pos);
+					try {
+						this.getChunkProvider().getLightManager().checkBlock(pos);
+					} catch (Throwable ignored) {
+					}
 					this.getProfiler().endSection();
 				}
 				
-				if (blockSnapshot == null) { // Don't notify clients or update physics while capturing blockstates
-					this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
-				}
-				if (te != null) {
-					setTileEntity(pos, te);
-				}
+				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
+//				if (te != null) {
+//					setTileEntity(pos, te);
+//				}
 				
 				if (!state.getFluidState().isEmpty()) {
 					if (state.getFluidState().getBlockState().equals(state.getBlockState())) {
 						Fluid fluid = state.getFluidState().getFluid();
 						getPendingFluidTicks().scheduleTick(pos, fluid, fluid.getTickRate(this));
 					}
+				}
+				
+				if (state.equals(Blocks.AIR.getDefaultState())) {
+					this.blockMap.remove(pos);
 				}
 				
 				return true;

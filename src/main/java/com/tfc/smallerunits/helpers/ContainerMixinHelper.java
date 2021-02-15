@@ -1,6 +1,5 @@
 package com.tfc.smallerunits.helpers;
 
-import com.tfc.smallerunits.mixins.ContainerAccessor;
 import net.minecraft.inventory.container.Container;
 
 import java.lang.reflect.Method;
