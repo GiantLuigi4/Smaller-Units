@@ -119,8 +119,11 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				TileEntity te = value.tileEntity;
 				if (te != null) {
 					TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(te);
-					if (renderer != null)
-						renderer.render(te, partialTicks, matrixStackIn, bufferIn, combinedLightIn, combinedOverlayIn);
+					try {
+						if (renderer != null)
+							renderer.render(te, partialTicks, matrixStackIn, bufferIn, combinedLightIn, combinedOverlayIn);
+					} catch (Throwable ignored) {
+					}
 				}
 				
 				matrixStackIn.pop();

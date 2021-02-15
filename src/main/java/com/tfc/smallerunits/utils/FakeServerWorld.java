@@ -10,10 +10,12 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
+import net.minecraft.item.crafting.RecipeManager;
 import net.minecraft.network.play.server.SPlaySoundEventPacket;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
@@ -231,6 +233,11 @@ public class FakeServerWorld extends ServerWorld {
 	}
 	
 	@Override
+	public RecipeManager getRecipeManager() {
+		return owner.getWorld().getRecipeManager();
+	}
+	
+	@Override
 	public void func_241123_a_(boolean p_241123_1_, boolean p_241123_2_) {
 	}
 	
@@ -321,24 +328,43 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public void playSound(@Nullable PlayerEntity player, double x, double y, double z, SoundEvent soundIn, SoundCategory category, float volume, float pitch) {
-		owner.getWorld().playSound(player, owner.getPos().getX() + (x / (float) owner.unitsPerBlock), owner.getPos().getY() + (y / (float) owner.unitsPerBlock), owner.getPos().getZ() + (z / (float) owner.unitsPerBlock), soundIn, category, volume / owner.unitsPerBlock, pitch);
+		owner.getWorld().playSound(player, owner.getPos().getX() + (x / (float) owner.unitsPerBlock), owner.getPos().getY() + ((y - 64) / (float) owner.unitsPerBlock), owner.getPos().getZ() + (z / (float) owner.unitsPerBlock), soundIn, category, (volume / owner.unitsPerBlock), pitch);
 	}
 	
 	@Override
 	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
+		this.isRemote = owner.getWorld().isRemote;
 		if (!isRemote) {
-			owner.getWorld().getServer().getPlayerList()
+			owner
+					.getWorld()
+					.getServer()
+					.getPlayerList()
 					.sendToAllNearExcept(
 							player,
 							(double) owner.getPos().getX() + (pos.getX() / (float) owner.unitsPerBlock),
-							(double) owner.getPos().getY() + (pos.getY() / (float) owner.unitsPerBlock),
+							(double) owner.getPos().getY() + ((pos.getY()) / (float) owner.unitsPerBlock),
 							(double) owner.getPos().getZ() + (pos.getZ() / (float) owner.unitsPerBlock),
-							64.0D, owner.getWorld().getDimensionKey(),
+							(64.0D), owner.getWorld().getDimensionKey(),
 							new SPlaySoundEventPacket(type, pos, data, false)
 					);
 		} else {
 			owner.getWorld().playEvent(player, type, owner.getPos(), data);
 		}
+	}
+	
+	@Override
+	public void playMovingSound(@Nullable PlayerEntity playerIn, Entity entityIn, SoundEvent eventIn, SoundCategory categoryIn, float volume, float pitch) {
+		playSound(playerIn, entityIn.getPositionVec().x, entityIn.getPositionVec().y, entityIn.getPositionVec().z, eventIn, categoryIn, volume, pitch);
+	}
+	
+	@Override
+	public void playSound(double x, double y, double z, SoundEvent soundIn, SoundCategory category, float volume, float pitch, boolean distanceDelay) {
+		this.playSound(null, x, y, z, soundIn, category, volume, pitch);
+	}
+	
+	@Override
+	public void playSound(@Nullable PlayerEntity player, BlockPos pos, SoundEvent soundIn, SoundCategory category, float volume, float pitch) {
+		playSound(player, pos.getX(), pos.getY(), pos.getZ(), soundIn, category, volume, pitch);
 	}
 	
 	@Nullable
@@ -395,10 +421,6 @@ public class FakeServerWorld extends ServerWorld {
 			int oldLight = old.getLightValue(this, pos);
 			int oldOpacity = old.getOpacity(this, pos);
 			
-			if (!state.getFluidState().isEmpty()) {
-				state.onBlockAdded(this, pos, old, false);
-			}
-			
 			BlockState blockstate = chunk.setBlockState(pos, state, (flags & 64) != 0);
 			if (blockstate == null) {
 				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
@@ -422,6 +444,10 @@ public class FakeServerWorld extends ServerWorld {
 						}
 						getPendingFluidTicks().scheduleTick(pos, fluid, fluid.getTickRate(this));
 					}
+				}
+				
+				if (state.getBlockState().equals(state.getFluidState().getBlockState())) {
+					state.onBlockAdded(this, pos, old, false);
 				}
 				
 				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);

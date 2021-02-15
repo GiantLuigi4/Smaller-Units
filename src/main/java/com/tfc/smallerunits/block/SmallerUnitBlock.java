@@ -263,6 +263,11 @@ public class SmallerUnitBlock extends Block {
 					value.pos = context.posInFakeWorld;
 					((UnitTileEntity) te).world.blockMap.putIfAbsent(value.pos, value);
 					tileEntity1.world.blockMap.remove(blockPos);
+					
+					tileEntity.markDirty();
+					te.markDirty();
+					worldIn.notifyBlockUpdate(tileEntity.getPos(), state, state, 3);
+					worldIn.notifyBlockUpdate(te.getPos(), state, state, 3);
 				}
 			}
 			long start = new Date().getTime();
