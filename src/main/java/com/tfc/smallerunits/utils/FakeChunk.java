@@ -38,7 +38,11 @@ public class FakeChunk implements IChunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-		owner.blockMap.put(pos, new SmallUnit(pos, state));
+		if (owner.blockMap.containsKey(pos)) {
+			owner.blockMap.get(pos).state = state;
+		} else {
+			owner.blockMap.put(pos, new SmallUnit(pos, state));
+		}
 		return state;
 	}
 	
