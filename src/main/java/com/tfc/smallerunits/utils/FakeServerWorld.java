@@ -1,6 +1,5 @@
 package com.tfc.smallerunits.utils;
 
-import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
@@ -83,6 +82,17 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
+		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
+		if (context.stateInRealWorld != null) {
+			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+				if (!context.posInRealWorld.equals(this.owner.getPos())) {
+					if (context.teInRealWorld != null) {
+						((UnitTileEntity) context.teInRealWorld).world.setTileEntity(context.posInFakeWorld, tileEntityIn);
+						return;
+					}
+				}
+			}
+		}
 		SmallUnit unit = blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState()));
 		if (unit.tileEntity != null) loadedTileEntityList.remove(tileEntityIn);
 		if (tileEntityIn.getType().isValidBlock(unit.state.getBlock())) {
@@ -205,69 +215,17 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
-		int y = pos.getY() - 64;
-		if (
-				pos.getX() < 0 ||
-						pos.getX() > owner.unitsPerBlock - 1 ||
-						pos.getZ() < 0 ||
-						pos.getZ() > owner.unitsPerBlock - 1 ||
-						y < 0 ||
-						y > owner.unitsPerBlock - 1
-		) {
-			BlockPos westPos = owner.getPos();
-			if (pos.getX() < 0)
-				westPos = westPos.offset(Direction.EAST, (int) Math.floor((1f / owner.unitsPerBlock) * pos.getX()));
-			else if (pos.getX() > owner.unitsPerBlock - 1)
-				westPos = westPos.offset(Direction.EAST, (int) Math.ceil((1f / owner.unitsPerBlock) * pos.getX()));
-			if (pos.getZ() < 0)
-				westPos = westPos.offset(Direction.SOUTH, (int) Math.floor((1f / owner.unitsPerBlock) * pos.getZ()));
-			else if (pos.getZ() > owner.unitsPerBlock - 1)
-				westPos = westPos.offset(Direction.SOUTH, (int) Math.ceil((1f / owner.unitsPerBlock) * pos.getZ()));
-			if (y < 0)
-				westPos = westPos.offset(Direction.UP, (int) Math.floor((1f / owner.unitsPerBlock) * y));
-			else if (y > owner.unitsPerBlock - 1)
-				westPos = westPos.offset(Direction.UP, (int) Math.ceil((1f / owner.unitsPerBlock) * y));
-			BlockState westState = owner.getWorld().getBlockState(westPos);
-			if (westState.getBlock() instanceof SmallerUnitBlock) {
-				TileEntity westTE = owner.getWorld().getTileEntity(westPos);
-				if (westTE instanceof UnitTileEntity) {
-					if (((UnitTileEntity) westTE).unitsPerBlock == owner.unitsPerBlock) {
-						BlockPos pos1 = new BlockPos(pos.getX(), y + 64, pos.getZ());
-						if (pos.getX() < 0)
-							pos1 = new BlockPos((owner.unitsPerBlock - Math.abs(pos.getX() % owner.unitsPerBlock)), pos1.getY(), pos1.getZ());
-						else if (pos.getX() > owner.unitsPerBlock - 1)
-							pos1 = new BlockPos((Math.abs(pos.getX() % (owner.unitsPerBlock - 1))), pos1.getY(), pos1.getZ());
-						if (y < 0)
-							pos1 = new BlockPos(pos1.getX(), (owner.unitsPerBlock - Math.abs(y % owner.unitsPerBlock)) + 64, pos1.getZ());
-						if (y > owner.unitsPerBlock - 1)
-							pos1 = new BlockPos(pos1.getX(), (Math.abs(y % (owner.unitsPerBlock - 1))) + 64, pos1.getZ());
-						if (pos.getZ() < 0)
-							pos1 = new BlockPos(pos1.getX(), pos1.getY(), (owner.unitsPerBlock - Math.abs(pos.getZ() % owner.unitsPerBlock)));
-						else if (pos.getZ() > owner.unitsPerBlock - 1)
-							pos1 = new BlockPos(pos1.getX(), pos1.getY(), (Math.abs(pos.getZ() % (owner.unitsPerBlock - 1))));
-						return ((UnitTileEntity) westTE).world.getBlockState(pos1);
-					}
+		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
+		if (context.stateInRealWorld != null) {
+			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+				if (!context.posInRealWorld.equals(this.owner.getPos())) {
+					return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld);
 				}
-			}
-		} else if (pos.getX() == -1 || y == -1 || pos.getZ() == -1 || pos.getX() == owner.unitsPerBlock || y == owner.unitsPerBlock || pos.getZ() == owner.unitsPerBlock) {
-			BlockPos westPos = owner.getPos().add(
-					pos.getX() == -1 ? pos.getX() : (pos.getX() == owner.unitsPerBlock ? 1 : 0),
-					y == -1 ? y : (y == owner.unitsPerBlock ? 1 : 0),
-					pos.getZ() == -1 ? pos.getZ() : (pos.getZ() == owner.unitsPerBlock ? 1 : 0)
-			);
-			BlockState westState = owner.getWorld().getBlockState(westPos);
-			if (
-					(
-							!westState.isSolid() ||
-									westState.isTransparent() ||
-									!westState.isNormalCube(this, westPos)
-					) &&
-							!westState.equals(Deferred.UNIT.get().getDefaultState())
-			)
-				return Blocks.AIR.getDefaultState();
-				//TODO: make neighboring units be acknowledged
-			else if (!westState.equals(Deferred.UNIT.get().getDefaultState()))
+			} else if (context.stateInRealWorld.equals(Blocks.BEDROCK.getDefaultState())) {
 				return Blocks.BEDROCK.getDefaultState();
+			} else if (context.stateInRealWorld.equals(Blocks.BARRIER.getDefaultState())) {
+				return Blocks.BARRIER.getDefaultState();
+			}
 		}
 		return blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).state;
 	}
@@ -284,7 +242,6 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public IChunk getChunk(int x, int z, ChunkStatus requiredStatus, boolean nonnull) {
-		this.isRemote = this.owner.getWorld().isRemote;
 		return chunk;
 	}
 	
@@ -296,6 +253,7 @@ public class FakeServerWorld extends ServerWorld {
 			dimensionType = owner.world.dimensionType;
 			isFirstTick = false;
 			server = owner.getWorld().getServer();
+			this.isRemote = this.owner.getWorld().isRemote;
 		}
 		blankProfiler.startTick();
 		super.tick(hasTimeLeft);
@@ -358,19 +316,16 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public WorldLightManager getLightManager() {
-		this.isRemote = this.owner.getWorld().isRemote;
 		return lightManager;
 	}
 	
 	@Override
 	public void playSound(@Nullable PlayerEntity player, double x, double y, double z, SoundEvent soundIn, SoundCategory category, float volume, float pitch) {
-		this.isRemote = this.owner.getWorld().isRemote;
 		owner.getWorld().playSound(player, owner.getPos().getX() + (x / (float) owner.unitsPerBlock), owner.getPos().getY() + (y / (float) owner.unitsPerBlock), owner.getPos().getZ() + (z / (float) owner.unitsPerBlock), soundIn, category, volume / owner.unitsPerBlock, pitch);
 	}
 	
 	@Override
 	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
-		this.isRemote = this.owner.getWorld().isRemote;
 		if (!isRemote) {
 			owner.getWorld().getServer().getPlayerList()
 					.sendToAllNearExcept(
@@ -389,15 +344,43 @@ public class FakeServerWorld extends ServerWorld {
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-		return chunk.getTileEntity(pos);
+//		return chunk.getTileEntity(pos);
+		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
+		if (context.stateInRealWorld != null) {
+			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+				if (!context.posInRealWorld.equals(this.owner.getPos())) {
+					if (context.teInRealWorld != null) {
+						return ((UnitTileEntity) context.teInRealWorld).world.getTileEntity(context.posInFakeWorld);
+					}
+				}
+			}
+		}
+		return blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
 	}
 	
 	@Override
 	public boolean setBlockState(BlockPos pos, BlockState state, int flags, int recursionLeft) {
+		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
+		if (recursionLeft < 0) return false;
+		if (context.stateInRealWorld != null) {
+			if (!context.posInRealWorld.equals(owner.getPos())) {
+				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (!context.posInRealWorld.equals(this.owner.getPos())) {
+						return ((UnitTileEntity) context.teInRealWorld).world.setBlockState(context.posInFakeWorld, state, flags, recursionLeft - 1);
+					}
+					return false;
+				} else if (context.stateInRealWorld.isAir(owner.getWorld(), context.posInRealWorld)) {
+					owner.getWorld().setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
+					UnitTileEntity tileEntity = new UnitTileEntity();
+					owner.getWorld().setTileEntity(context.posInRealWorld, tileEntity);
+					tileEntity.unitsPerBlock = this.owner.unitsPerBlock;
+				}
+			}
+		}
+		
 		owner.markDirty();
 		owner.getWorld().notifyBlockUpdate(owner.getPos(), state, state, 3);
 		
-		TileEntity te = getTileEntity(pos);
 		{
 			IChunk chunk = this.chunk;
 			
@@ -411,6 +394,8 @@ public class FakeServerWorld extends ServerWorld {
 			BlockState old = getBlockState(pos);
 			int oldLight = old.getLightValue(this, pos);
 			int oldOpacity = old.getOpacity(this, pos);
+			
+			state.onBlockAdded(this, pos, old, false);
 			
 			BlockState blockstate = chunk.setBlockState(pos, state, (flags & 64) != 0);
 			if (blockstate == null) {
@@ -427,17 +412,17 @@ public class FakeServerWorld extends ServerWorld {
 					this.getProfiler().endSection();
 				}
 				
-				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
-//				if (te != null) {
-//					setTileEntity(pos, te);
-//				}
-				
 				if (!state.getFluidState().isEmpty()) {
 					if (state.getFluidState().getBlockState().equals(state.getBlockState())) {
 						Fluid fluid = state.getFluidState().getFluid();
+						for (Direction dir : Direction.values()) {
+							this.getBlockState(pos.offset(dir)).neighborChanged(this, pos.offset(dir), state.getBlock(), pos, false);
+						}
 						getPendingFluidTicks().scheduleTick(pos, fluid, fluid.getTickRate(this));
 					}
 				}
+				
+				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
 				
 				if (state.equals(Blocks.AIR.getDefaultState())) {
 					this.blockMap.remove(pos);

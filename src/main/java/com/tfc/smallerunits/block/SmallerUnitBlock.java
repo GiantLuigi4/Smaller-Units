@@ -1,6 +1,7 @@
 package com.tfc.smallerunits.block;
 
 import com.tfc.smallerunits.helpers.ContainerMixinHelper;
+import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitRaytraceContext;
 import com.tfc.smallerunits.utils.UnitRaytraceHelper;
@@ -9,10 +10,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.BucketItem;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ActionResultType;
@@ -152,48 +150,32 @@ public class SmallerUnitBlock extends Block {
 							)
 					));
 			if (statePlace != null) {
-				tileEntity.world.setBlockState(posOffset, statePlace);
-				statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
-				
-				if (statePlace.getBlock() instanceof ITileEntityProvider) {
-					tileEntity.world.setTileEntity(posOffset, ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world));
+				if (statePlace.isValidPosition(tileEntity.world, posOffset)) {
+					tileEntity.world.setBlockState(posOffset, statePlace);
+					statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
 					
-					if (stack.hasTag()) {
-						CompoundNBT nbt = stack.getOrCreateTag();
-						if (nbt.contains("BlockEntityTag")) {
-							nbt = nbt.getCompound("BlockEntityTag");
-							tileEntity.read(statePlace, nbt);
+					if (statePlace.getBlock() instanceof ITileEntityProvider) {
+						tileEntity.world.setTileEntity(posOffset, ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world));
+						
+						if (stack.hasTag()) {
+							CompoundNBT nbt = stack.getOrCreateTag();
+							if (nbt.contains("BlockEntityTag")) {
+								nbt = nbt.getCompound("BlockEntityTag");
+								tileEntity.read(statePlace, nbt);
+							}
 						}
-					}
-				} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
-					tileEntity.world.setTileEntity(posOffset, statePlace.getBlock().createTileEntity(statePlace, tileEntity.world));
-					
-					if (stack.hasTag()) {
-						CompoundNBT nbt = stack.getOrCreateTag();
-						if (nbt.contains("BlockEntityTag")) {
-							nbt = nbt.getCompound("BlockEntityTag");
-							tileEntity.read(statePlace, nbt);
+					} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
+						tileEntity.world.setTileEntity(posOffset, statePlace.getBlock().createTileEntity(statePlace, tileEntity.world));
+						
+						if (stack.hasTag()) {
+							CompoundNBT nbt = stack.getOrCreateTag();
+							if (nbt.contains("BlockEntityTag")) {
+								nbt = nbt.getCompound("BlockEntityTag");
+								tileEntity.read(statePlace, nbt);
+							}
 						}
 					}
 				}
-
-//				statePlace.onBlockAdded(tileEntity.world, posOffset, oldState, false);
-//				for (Direction value : Direction.values()) {
-//					tileEntity.world.setBlockState(posOffset.offset(value),
-//							tileEntity.world.getBlockState(posOffset.offset(value))
-//									.updatePostPlacement(
-//											value.getOpposite(),
-//											statePlace, tileEntity.world,
-//											posOffset.offset(value),
-//											new BlockPos(0, 0, 0).offset(value)
-//									));
-//					tileEntity.world.getBlockState(posOffset.offset(value))
-//							.onNeighborChange(
-//									tileEntity.world,
-//									posOffset,
-//									posOffset.offset(value)
-//							);
-//				}
 			}
 		} else if (stack.getItem() instanceof BucketItem) {
 			if (worldIn.isRemote) return ActionResultType.SUCCESS;
@@ -211,6 +193,11 @@ public class SmallerUnitBlock extends Block {
 					tileEntity.world.setBlockState(posOffset, fluid.getDefaultState().getBlockState());
 					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
 				}
+			}
+		} else if (stack.getItem() instanceof BoneMealItem) {
+			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+			if (clicked.getBlock() instanceof IGrowable) {
+				((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
 			}
 		}
 		
@@ -251,9 +238,36 @@ public class SmallerUnitBlock extends Block {
 		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
 		TileEntity tileEntity = worldIn.getTileEntity(pos);
 		if (!(tileEntity instanceof UnitTileEntity)) return;
-		long start = new Date().getTime();
-		if (((UnitTileEntity) tileEntity).world != null)
-			((UnitTileEntity) tileEntity).world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
+		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
+		if (tileEntity1.world != null) {
+			ArrayList<SmallUnit> toMove = new ArrayList<>();
+			for (SmallUnit value : tileEntity1.world.blockMap.values()) {
+				BlockPos blockPos = value.pos;
+				int y = value.pos.getY() - 64;
+				if (
+						blockPos.getX() < 0 ||
+								blockPos.getX() > tileEntity1.unitsPerBlock - 1 ||
+								blockPos.getZ() < 0 ||
+								blockPos.getZ() > tileEntity1.unitsPerBlock - 1 ||
+								y < 0 ||
+								y > tileEntity1.unitsPerBlock - 1
+				) {
+					toMove.add(value);
+				}
+			}
+			for (SmallUnit value : toMove) {
+				BlockPos blockPos = value.pos;
+				ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).world, value.pos);
+				TileEntity te = context.teInRealWorld;
+				if (te instanceof UnitTileEntity) {
+					value.pos = context.posInFakeWorld;
+					((UnitTileEntity) te).world.blockMap.putIfAbsent(value.pos, value);
+					tileEntity1.world.blockMap.remove(blockPos);
+				}
+			}
+			long start = new Date().getTime();
+			tileEntity1.world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
+		}
 	}
 	
 	@Override
@@ -362,9 +376,9 @@ public class SmallerUnitBlock extends Block {
 				shape = VoxelShapes.or(shape, shape2);
 			}
 			
-			if (shape.isEmpty()) return virtuallyEmptyShape;
+			if (shape.isEmpty()) return shape;
 			
-			shapeMap.put(nbt,shape);
+			shapeMap.put(nbt, shape);
 			return shape;
 		} else {
 			return shapeMap.get(nbt);

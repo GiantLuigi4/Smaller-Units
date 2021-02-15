@@ -6,7 +6,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -200,7 +199,12 @@ public class FakeChunk implements IChunk {
 	
 	@Override
 	public boolean hasLight() {
-		return false;
+		return true;
+	}
+	
+	@Override
+	public int getLightValue(BlockPos pos) {
+		return owner.getLightValue(pos);
 	}
 	
 	@Override
@@ -210,17 +214,17 @@ public class FakeChunk implements IChunk {
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-		return owner.blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
+		return owner.getTileEntity(pos);
 	}
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
-		return owner.blockMap.get(pos).state;
+		return owner.getBlockState(pos);
 	}
 	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
-		return owner.blockMap.get(pos).state.getFluidState();
+		return owner.getFluidState(pos);
 	}
 	
 	@Nullable
