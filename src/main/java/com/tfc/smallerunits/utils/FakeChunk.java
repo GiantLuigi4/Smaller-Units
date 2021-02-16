@@ -63,7 +63,18 @@ public class FakeChunk implements IChunk {
 	
 	@Override
 	public ChunkSection[] getSections() {
-		return new ChunkSection[0];
+		ArrayList<ChunkSection> sections = new ArrayList<>();
+		for (int i = 64; i < 64 + 16; i++) {
+			sections.add(
+					new ChunkSection(
+							i,
+							(short) (owner.owner.unitsPerBlock * owner.owner.unitsPerBlock),
+							(short) (owner.owner.unitsPerBlock * owner.owner.unitsPerBlock),
+							(short) (owner.owner.unitsPerBlock * owner.owner.unitsPerBlock)
+					)
+			);
+		}
+		return sections.toArray(new ChunkSection[0]);
 	}
 	
 	@Override

@@ -45,7 +45,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //			}
 //		}
 //		bufferCache.clear();
-		
+
 //		nbt.remove("x");
 //		nbt.remove("y");
 //		nbt.remove("z");
@@ -55,7 +55,10 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //
 //		if (!bufferCache.containsKey(nbt)) {
 //			HashMap<RenderType, Pair<BufferBuilder, IVertexBuilder>> builders = new HashMap<>();
-			HashMap<RenderType, Pair<BufferBuilder, IVertexBuilder>> buildersFluid = new HashMap<>();
+		
+		tileEntityIn.world.lightManager.tick(100, false, true);
+		
+		HashMap<RenderType, Pair<BufferBuilder, IVertexBuilder>> buildersFluid = new HashMap<>();
 		
 		{
 			MatrixStack src = matrixStackIn;
@@ -77,44 +80,44 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //					} else {
 //						builder = builders.get(type).getSecond();
 //					}
+				
+				builder = bufferIn.getBuffer(type);
+				
+				matrixStackIn.push();
+				matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
+				
+				if (Minecraft.getInstance().gameSettings.ambientOcclusionStatus.equals(AmbientOcclusionStatus.MAX)) {
+					Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelSmooth(
+							tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
+							value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
+							value.pos.toLong(), combinedOverlayIn, EmptyModelData.INSTANCE
+					);
+				} else {
+					Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelFlat(
+							tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
+							value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
+							value.pos.toLong(), combinedOverlayIn, EmptyModelData.INSTANCE
+					);
+				}
+				
+				if (!value.state.getFluidState().isEmpty()) {
+					RenderType type1 = RenderTypeLookup.getRenderType(value.state.getFluidState());
+					IVertexBuilder builder1;
 					
-					builder = bufferIn.getBuffer(type);
-					
-					matrixStackIn.push();
-					matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
-					
-					if (Minecraft.getInstance().gameSettings.ambientOcclusionStatus.equals(AmbientOcclusionStatus.MAX)) {
-						Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelSmooth(
-								tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
-								value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
-								value.pos.toLong(), combinedOverlayIn, EmptyModelData.INSTANCE
-						);
+					if (!buildersFluid.containsKey(type1)) {
+						BufferBuilder buffer = new BufferBuilder(13853);
+						buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+						builder1 = buffer.getVertexBuilder();
+						buildersFluid.put(type1, Pair.of(buffer, builder1));
 					} else {
-						Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelFlat(
-								tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
-								value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
-								value.pos.toLong(), combinedOverlayIn, EmptyModelData.INSTANCE
-						);
+						builder1 = buildersFluid.get(type1).getSecond();
 					}
 					
-					if (!value.state.getFluidState().isEmpty()) {
-						RenderType type1 = RenderTypeLookup.getRenderType(value.state.getFluidState());
-						IVertexBuilder builder1;
-						
-						if (!buildersFluid.containsKey(type1)) {
-							BufferBuilder buffer = new BufferBuilder(13853);
-							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-							builder1 = buffer.getVertexBuilder();
-							buildersFluid.put(type1, Pair.of(buffer, builder1));
-						} else {
-							builder1 = buildersFluid.get(type1).getSecond();
-						}
-						
-						Minecraft.getInstance().getBlockRendererDispatcher().fluidRenderer.render(
-								tileEntityIn.world, value.pos,
-								builder1, value.state.getFluidState()
-						);
-					}
+					Minecraft.getInstance().getBlockRendererDispatcher().fluidRenderer.render(
+							tileEntityIn.world, value.pos,
+							builder1, value.state.getFluidState()
+					);
+				}
 				
 				TileEntity te = value.tileEntity;
 				if (te != null) {
@@ -140,21 +143,21 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				buffer.bindBuffer();
 				type.setupRenderState();
 				DefaultVertexFormats.BLOCK.setupBufferState(0L);
-					buffer.draw(finalMatrixStackIn.getLast().getMatrix(), GL11.GL_QUADS);
-					
-					VertexBuffer.unbindBuffer();
-					RenderSystem.clearCurrentColor();
-					type.clearRenderState();
-					buffer.close();
-					finalMatrixStackIn.pop();
-				});
+				buffer.draw(finalMatrixStackIn.getLast().getMatrix(), GL11.GL_QUADS);
 				
-				matrixStackIn.pop();
-				matrixStackIn = src;
-			}
+				VertexBuffer.unbindBuffer();
+				RenderSystem.clearCurrentColor();
+				type.clearRenderState();
+				buffer.close();
+				finalMatrixStackIn.pop();
+			});
 			
+			matrixStackIn.pop();
+			matrixStackIn = src;
+		}
+
 //			ArrayList<BufferStorage> buffers = new ArrayList<>();
-			
+
 //			builders.forEach((type, bufferBuilderPair) -> {
 //				VertexBuffer buffer = new VertexBuffer(DefaultVertexFormats.BLOCK);
 //				bufferBuilderPair.getFirst().finishDrawing();
@@ -164,7 +167,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //				storage.terrainBuffer = Optional.of(buffer);
 //				buffers.add(storage);
 //			});
-			
+
 //			buildersFluid.forEach((type, bufferBuilderPair) -> {
 //				BufferStorage storage = null;
 //				boolean hasStorage = false;
@@ -184,10 +187,10 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //				storage.fluidBuffer = Optional.of(buffer);
 //				if (!hasStorage) buffers.add(storage);
 //			});
-			
+
 //			bufferCache.put(nbt, buffers);
-		}
-		
+	}
+
 //		ArrayList<BufferStorage> buffers = bufferCache.get(nbt);
 //
 //		for (BufferStorage typeBufferPair : buffers) {

@@ -4,9 +4,11 @@ import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.util.concurrent.ITaskExecutor;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.TicketManager;
+import net.minecraft.world.server.TicketType;
 import org.antlr.v4.runtime.misc.Array2DHashSet;
 
 import javax.annotation.Nullable;
@@ -49,7 +51,10 @@ public class FakeTicketManager extends TicketManager {
 		this.field_219385_m = chunktaskpriorityqueuesorter.func_219087_a(itaskexecutor, true);
 		this.field_219386_n = chunktaskpriorityqueuesorter.func_219091_a(itaskexecutor);
 		this.field_219388_p = p_i50707_2_;
-		
+	}
+	
+	@Override
+	public <T> void releaseWithLevel(TicketType<T> type, ChunkPos pos, int level, T value) {
 	}
 	
 	@Override

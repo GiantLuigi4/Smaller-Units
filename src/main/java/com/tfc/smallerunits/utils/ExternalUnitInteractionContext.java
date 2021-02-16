@@ -69,7 +69,7 @@ public class ExternalUnitInteractionContext {
 					} else {
 						posInFakeWorld = pos;
 						posInRealWorld = westPos;
-						stateInRealWorld = Blocks.BEDROCK.getDefaultState();
+						stateInRealWorld = Blocks.BARRIER.getDefaultState();
 						teInRealWorld = world.owner.getWorld().getTileEntity(westPos);
 					}
 				} else {

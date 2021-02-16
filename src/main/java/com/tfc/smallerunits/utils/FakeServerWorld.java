@@ -10,6 +10,7 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
@@ -40,7 +41,6 @@ import net.minecraft.world.raid.RaidManager;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerTickList;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraft.world.spawner.ISpecialSpawner;
 import net.minecraft.world.storage.IServerWorldInfo;
 import net.minecraft.world.storage.SaveFormat;
@@ -97,7 +97,7 @@ public class FakeServerWorld extends ServerWorld {
 		}
 		SmallUnit unit = blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState()));
 		if (unit.tileEntity != null) loadedTileEntityList.remove(tileEntityIn);
-		if (tileEntityIn.getType().isValidBlock(unit.state.getBlock())) {
+		if (tileEntityIn != null && tileEntityIn.getType().isValidBlock(unit.state.getBlock())) {
 			unit.tileEntity = tileEntityIn;
 			tileEntityIn.setWorldAndPos(this, pos);
 			loadedTileEntityList.add(unit.tileEntity);
@@ -132,7 +132,7 @@ public class FakeServerWorld extends ServerWorld {
 			ITaskExecutor<Unit> unitExecutor = ITaskExecutor.inline("idk", unit -> {
 			});
 			ITaskExecutor<ChunkTaskPriorityQueueSorter.FunctionEntry<Runnable>> itaskexecutor = ITaskExecutor.inline("su_world", (entry) -> entry.task.apply(unitExecutor).run());
-			lightManager = new ServerWorldLightManager(
+			lightManager = new FakeLightingManager(
 					new IChunkLightProvider() {
 						@Nullable
 						@Override
@@ -146,7 +146,8 @@ public class FakeServerWorld extends ServerWorld {
 						}
 					},
 					this.getChunkProvider().chunkManager,
-					true, delegatedtaskexecutor1, itaskexecutor
+					true, delegatedtaskexecutor1, itaskexecutor,
+					this
 			);
 			
 			//MC code
@@ -181,7 +182,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public long getGameTime() {
-		return owner.getWorld().getGameTime();
+		return owner.getWorld() == null ? 0 : owner.getWorld().getGameTime();
 	}
 	
 	@Override
@@ -255,23 +256,26 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public void tick(BooleanSupplier hasTimeLeft) {
 		if (isFirstTick) {
+			dimension = owner.getWorld().dimension;
+			dimensionType = owner.getWorld().dimensionType;
 			raids = new RaidManager(this);
-			dimension = owner.world.dimension;
-			dimensionType = owner.world.dimensionType;
 			isFirstTick = false;
 			server = owner.getWorld().getServer();
 			this.isRemote = this.owner.getWorld().isRemote;
 		}
+		
+		lightManager.tick(100, false, true);
+		
 		blankProfiler.startTick();
 		super.tick(hasTimeLeft);
 		blankProfiler.endTick();
 		
 		//Random Ticks
-		for (int i = 0; i < Math.max(1, owner.unitsPerBlock / 8); i++) {
+		for (int i = 0; i < Math.max(1, owner.unitsPerBlock / 4) * owner.world.getGameRules().getInt(GameRules.RANDOM_TICK_SPEED); i++) {
 			int x = rand.nextInt(owner.unitsPerBlock);
 			int y = rand.nextInt(owner.unitsPerBlock);
 			int z = rand.nextInt(owner.unitsPerBlock);
-			BlockPos randTickPos = new BlockPos(x, y, z);
+			BlockPos randTickPos = new BlockPos(x, y + 64, z);
 			BlockState state = getBlockState(randTickPos);
 			if (state.ticksRandomly()) {
 				state.randomTick(this, randTickPos, rand);
@@ -299,20 +303,33 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
-		return lightManager.getLightEngine(lightTypeIn).getLightFor(blockPosIn);
+		if (lightTypeIn.equals(LightType.BLOCK)) {
+			return Math.max(
+					((FakeLightingManager) lightManager).getBlockLight(blockPosIn.offset(Direction.DOWN, 64)),
+					owner.getWorld().getLightFor(lightTypeIn, owner.getPos())
+			);
+		} else {
+			return Math.max(
+					lightManager.getLightEngine(lightTypeIn).getLightFor(blockPosIn),
+					owner.getWorld().getLightFor(lightTypeIn, owner.getPos())
+			);
+		}
 	}
 	
 	@Override
 	public int getLightSubtracted(BlockPos blockPosIn, int amount) {
-		return lightManager.getLightSubtracted(blockPosIn, amount);
+		return Math.max(
+				lightManager.getLightSubtracted(blockPosIn, amount),
+				owner.getWorld().getLightSubtracted(owner.getPos(), amount)
+		);
 	}
 	
 	@Override
 	public int getLightValue(BlockPos pos) {
 		return
 				Math.max(
-						lightManager.getLightEngine(LightType.BLOCK).getLightFor(pos),
-						lightManager.getLightEngine(LightType.SKY).getLightFor(pos)
+						getLightFor(LightType.BLOCK, pos),
+						getLightFor(LightType.SKY, pos)
 				);
 	}
 	
@@ -429,10 +446,7 @@ public class FakeServerWorld extends ServerWorld {
 				BlockState blockstate1 = this.getBlockState(pos);
 				if ((flags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getOpacity(this, pos) != oldOpacity || blockstate1.getLightValue(this, pos) != oldLight || blockstate1.isTransparent() || blockstate.isTransparent())) {
 					this.getProfiler().startSection("queueCheckLight");
-					try {
-						this.getChunkProvider().getLightManager().checkBlock(pos);
-					} catch (Throwable ignored) {
-					}
+					lightManager.checkBlock(pos);
 					this.getProfiler().endSection();
 				}
 				
@@ -455,6 +469,21 @@ public class FakeServerWorld extends ServerWorld {
 				if (state.equals(Blocks.AIR.getDefaultState())) {
 					this.blockMap.remove(pos);
 				}
+				
+				{
+					BlockState statePlace = state;
+					UnitTileEntity tileEntity = owner;
+					if (statePlace.getBlock() instanceof ITileEntityProvider) {
+						TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
+						tileEntity.world.setTileEntity(pos, te);
+					} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
+						TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
+						tileEntity.world.setTileEntity(pos, te);
+					}
+				}
+				
+				int newLight = state.getLightValue(this, pos);
+				lightManager.blockLight.storage.updateSourceLevel(pos.toLong(), newLight, oldLight > newLight);
 				
 				return true;
 			}
@@ -519,12 +548,26 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public DimensionType getDimensionType() {
-		return owner.getWorld().getDimensionType();
+//		return owner.getWorld().getDimensionType();
+		return super.getDimensionType();
 	}
 	
 	@Override
 	public RegistryKey<World> getDimensionKey() {
 		return owner.getWorld().getDimensionKey();
+	}
+	
+	@Override
+	public boolean addTileEntity(TileEntity tile) {
+		setTileEntity(tile.getPos(), tile);
+		return true;
+	}
+	
+	@Override
+	public void addTileEntities(Collection<TileEntity> tileEntityCollection) {
+		for (TileEntity tileEntity : tileEntityCollection) {
+			addTileEntity(tileEntity);
+		}
 	}
 	
 	@Override
@@ -540,5 +583,11 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public ServerChunkProvider getChunkProvider() {
 		return super.getChunkProvider();
+	}
+	
+	@Override
+	public void playBroadcastSound(int id, BlockPos pos, int data) {
+		//TODO: tiny-ify this
+		owner.getWorld().playBroadcastSound(id, owner.getPos(), data);
 	}
 }

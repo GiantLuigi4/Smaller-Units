@@ -12,6 +12,7 @@ import net.minecraft.world.gen.feature.template.TemplateManager;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ChunkManager;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraft.world.storage.DimensionSavedDataManager;
 import net.minecraft.world.storage.SaveFormat;
 import sun.misc.Unsafe;
@@ -40,11 +41,32 @@ public class FakeChunkManager extends ChunkManager {
 		super(p_i232602_1_, p_i232602_2_, p_i232602_3_, p_i232602_4_, p_i232602_5_, p_i232602_6_, p_i232602_7_, p_i232602_8_, p_i232602_9_, p_i232602_10_, p_i232602_11_, p_i232602_12_);
 	}
 	
+	private static final Thread td = new Thread();
+	private static final ThreadTaskExecutor<Runnable> executor = new ThreadTaskExecutor<Runnable>("a") {
+		@Override
+		protected Runnable wrapTask(Runnable runnable) {
+			return runnable;
+		}
+		
+		@Override
+		protected boolean canRun(Runnable runnable) {
+			return true;
+		}
+		
+		@Override
+		protected Thread getExecutionThread() {
+			return td;
+		}
+	};
+	
 	public void init() {
 		if (!hasInit) {
 			this.entities = new Int2ObjectOpenHashMap<>();
 			try {
 				pointOfInterestManager = (PointOfInterestManager) theUnsafe.allocateInstance(PointOfInterestManager.class);
+				this.ticketManager = new FakeProxyTicketManager(Runnable::run, Runnable::run);
+				this.lightManager = (ServerWorldLightManager) provider.theChunk.getWorld().getLightManager();
+				this.mainThread = executor;
 			} catch (Throwable err) {
 				throw new RuntimeException(err);
 			}
@@ -55,5 +77,11 @@ public class FakeChunkManager extends ChunkManager {
 	@Override
 	protected Iterable<ChunkHolder> getLoadedChunksIterable() {
 		return ImmutableSet.of(((FakeTicketManager) provider.ticketManager).getChunkHolder(0));
+	}
+	
+	public class FakeProxyTicketManager extends ProxyTicketManager {
+		public FakeProxyTicketManager(Executor p_i50469_2_, Executor p_i50469_3_) {
+			super(p_i50469_2_, p_i50469_3_);
+		}
 	}
 }

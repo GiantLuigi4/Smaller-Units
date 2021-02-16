@@ -8,7 +8,6 @@ import com.tfc.smallerunits.utils.UnitRaytraceHelper;
 import net.minecraft.block.*;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
@@ -34,7 +33,7 @@ import net.minecraftforge.common.ForgeMod;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public class SmallerUnitBlock extends Block {
+public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	public SmallerUnitBlock() {
 		super(Properties.from(Blocks.STONE).setOpaque((a, b, c) -> false).notSolid());
 	}
@@ -48,6 +47,14 @@ public class SmallerUnitBlock extends Block {
 	@Override
 	public TileEntity createTileEntity(BlockState state, IBlockReader world) {
 		return new UnitTileEntity();
+	}
+	
+	@Nullable
+	@Override
+	public TileEntity createNewTileEntity(IBlockReader worldIn) {
+		UnitTileEntity te = new UnitTileEntity();
+		te.loadingWorld = worldIn;
+		return te;
 	}
 	
 	@Override
@@ -112,12 +119,11 @@ public class SmallerUnitBlock extends Block {
 				tileEntity.world, raytraceContext.posHit.offset(hit.getFace().getOpposite()), player
 		);
 		
-		ActionResultType resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(hit.getFace().getOpposite())).onBlockActivated(tileEntity.world, player, handIn,
-				new BlockRayTraceResult(
-						hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock),
-						hit.getFace(), raytraceContext.posHit.offset(hit.getFace().getOpposite()), hit.isInside()
-				)
+		BlockRayTraceResult result = new BlockRayTraceResult(
+				hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock).add(0, 64, 0),
+				hit.getFace(), raytraceContext.posHit.offset(hit.getFace().getOpposite()), hit.isInside()
 		);
+		ActionResultType resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(hit.getFace().getOpposite())).onBlockActivated(tileEntity.world, player, handIn, result);
 		
 		if (resultType.isSuccessOrConsume()) {
 			tileEntity.markDirty();
@@ -136,42 +142,40 @@ public class SmallerUnitBlock extends Block {
 			
 			BlockItem item = (BlockItem) stack.getItem();
 			
-			if (item.getBlock() instanceof SmallerUnitBlock) return ActionResultType.CONSUME;
+			if (item.getBlock() instanceof SmallerUnitBlock && !stack.hasTag()) return ActionResultType.CONSUME;
 			
 			BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace());
-			BlockState statePlace = item.getBlock().getStateForPlacement(
-					new BlockItemUseContext(
-							tileEntity.world,
-							player, handIn,
-							stack,
-							new BlockRayTraceResult(
-									raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
-									hit.getFace(), posOffset, hit.isInside()
-							)
-					));
+			
+			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+			BlockItemUseContext context = new BlockItemUseContext(tileEntity.world, player, handIn, stack, result);
+			if (clicked.isReplaceable(context))
+				posOffset = posOffset.offset(hit.getFace().getOpposite());
+			BlockState statePlace = item.getBlock().getStateForPlacement(context);
 			if (statePlace != null) {
 				if (statePlace.isValidPosition(tileEntity.world, posOffset)) {
 					tileEntity.world.setBlockState(posOffset, statePlace);
 					statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
 					
 					if (statePlace.getBlock() instanceof ITileEntityProvider) {
-						tileEntity.world.setTileEntity(posOffset, ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world));
+						TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
+						tileEntity.world.setTileEntity(posOffset, te);
 						
 						if (stack.hasTag()) {
 							CompoundNBT nbt = stack.getOrCreateTag();
 							if (nbt.contains("BlockEntityTag")) {
 								nbt = nbt.getCompound("BlockEntityTag");
-								tileEntity.read(statePlace, nbt);
+								te.read(statePlace, nbt);
 							}
 						}
 					} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
-						tileEntity.world.setTileEntity(posOffset, statePlace.getBlock().createTileEntity(statePlace, tileEntity.world));
+						TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
+						tileEntity.world.setTileEntity(posOffset, te);
 						
 						if (stack.hasTag()) {
 							CompoundNBT nbt = stack.getOrCreateTag();
 							if (nbt.contains("BlockEntityTag")) {
 								nbt = nbt.getCompound("BlockEntityTag");
-								tileEntity.read(statePlace, nbt);
+								te.read(statePlace, nbt);
 							}
 						}
 					}
@@ -180,24 +184,51 @@ public class SmallerUnitBlock extends Block {
 		} else if (stack.getItem() instanceof BucketItem) {
 			if (worldIn.isRemote) return ActionResultType.SUCCESS;
 			
-			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
-			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
-			if (clicked.getBlock() instanceof IWaterLoggable) {
-				IWaterLoggable waterLoggableBlock = (IWaterLoggable) clicked.getBlock();
-				if (waterLoggableBlock.canContainFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid)) {
-					waterLoggableBlock.receiveFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid.getDefaultState());
-				}
-			} else {
-				BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace());
-				if (tileEntity.world.getBlockState(posOffset).isAir(tileEntity.world, posOffset)) {
-					tileEntity.world.setBlockState(posOffset, fluid.getDefaultState().getBlockState());
-					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
-				}
-			}
+			((BucketItem) stack.getItem()).tryPlaceContainedLiquid(
+					player, tileEntity.world, raytraceContext.posHit, result
+			);
+
+//			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
+//			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+//			if (clicked.getBlock() instanceof IWaterLoggable) {
+//				IWaterLoggable waterLoggableBlock = (IWaterLoggable) clicked.getBlock();
+//				if (waterLoggableBlock.canContainFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid)) {
+//					waterLoggableBlock.receiveFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid.getDefaultState());
+//				}
+//			} else {
+//				BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace());
+//				if (tileEntity.world.getBlockState(posOffset).isAir(tileEntity.world, posOffset)) {
+//					tileEntity.world.setBlockState(posOffset, fluid.getDefaultState().getBlockState());
+//					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
+//				}
+//			}
 		} else if (stack.getItem() instanceof BoneMealItem) {
 			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
 			if (clicked.getBlock() instanceof IGrowable) {
-				((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
+				if (((IGrowable) clicked.getBlock()).canGrow(tileEntity.world, raytraceContext.posHit, clicked, worldIn.isRemote)) {
+					if (clicked.getBlock() instanceof BambooBlock) {
+						//TODO: fix properly
+						try {
+							((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
+						} catch (Throwable ignored) {
+						}
+					} else {
+						((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
+					}
+				}
+			}
+		} else {
+			BlockPos posOffset = raytraceContext.posHit.offset(hit.getFace().getOpposite());
+			if (!(worldIn.isRemote && stack.getItem() instanceof DebugStickItem)) {
+				stack.getItem().onItemUse(
+						new BlockItemUseContext(
+								tileEntity.world, player, handIn, stack,
+								new BlockRayTraceResult(
+										raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
+										hit.getFace(), posOffset, hit.isInside()
+								)
+						)
+				);
 			}
 		}
 		
