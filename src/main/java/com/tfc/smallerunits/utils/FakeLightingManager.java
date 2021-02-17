@@ -66,29 +66,38 @@ public class FakeLightingManager extends ServerWorldLightManager {
 			}
 			
 			BlockPos pos = new BlockPos(lastX, lastY, lastZ);
-			if (isInbounds(pos, world.owner.unitsPerBlock)) {
-				BlockState state = world.getBlockState(pos.add(0, 64, 0));
-				int stateLight = state.getLightValue(world, pos.add(0, 64, 0));
-				int max = stateLight;
-				for (Direction dir : Direction.values()) {
-					if (isInbounds(pos.offset(dir), world.owner.unitsPerBlock)) {
-						int amt = lighting[toIndex(pos.offset(dir))];
-						max = Math.max(max, amt - 1);
-					}
-				}
-				if (stateLight == 0) {
-					max -= state.getOpacity(manager.world, pos.add(0, 64, 0));
-				}
-				lighting[toIndex(pos)] = max;
-			} else {
-				lastX = 0;
-				lastY = 0;
-				lastZ = 0;
+			if (testLight(pos, world))
 				break;
-			}
+			pos = new BlockPos((world.owner.unitsPerBlock - 1) - lastX, (world.owner.unitsPerBlock - 1) - lastY, (world.owner.unitsPerBlock - 1) - lastZ);
+			if (testLight(pos, world))
+				break;
 		}
 		return i;
 //		return lightManager.tick(toUpdateCount, updateSkyLight, updateBlockLight);
+	}
+	
+	private boolean testLight(BlockPos pos, FakeServerWorld world) {
+		if (isInbounds(pos, world.owner.unitsPerBlock)) {
+			BlockState state = world.getBlockState(pos.add(0, 64, 0));
+			int stateLight = state.getLightValue(world, pos.add(0, 64, 0));
+			int max = stateLight;
+			for (Direction dir : Direction.values()) {
+				if (isInbounds(pos.offset(dir), world.owner.unitsPerBlock)) {
+					int amt = lighting[toIndex(pos.offset(dir))];
+					max = Math.max(max, amt - 1);
+				}
+			}
+			if (stateLight == 0) {
+				max -= state.getOpacity(manager.world, pos.add(0, 64, 0));
+			}
+			lighting[toIndex(pos)] = (max);
+			return false;
+		} else {
+			lastX = 0;
+			lastY = 0;
+			lastZ = 0;
+			return true;
+		}
 	}
 	
 	public boolean isInbounds(BlockPos pos, int upb) {
@@ -104,8 +113,10 @@ public class FakeLightingManager extends ServerWorldLightManager {
 	}
 	
 	public int getBlockLight(BlockPos pos) {
-		if (isInbounds(pos, ((FakeServerWorld) manager.world).owner.unitsPerBlock))
+		if (isInbounds(pos, ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
+			if (manager.world.isRemote) testLight(pos, (FakeServerWorld) manager.world);
 			return lighting[toIndex(pos)];
+		}
 		return 0;
 	}
 	
