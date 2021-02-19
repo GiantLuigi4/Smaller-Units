@@ -1,13 +1,16 @@
 package com.tfc.smallerunits.block;
 
 import com.tfc.smallerunits.helpers.ContainerMixinHelper;
+import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitRaytraceContext;
 import com.tfc.smallerunits.utils.UnitRaytraceHelper;
 import net.minecraft.block.*;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
@@ -24,6 +27,8 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
@@ -35,7 +40,7 @@ import java.util.*;
 
 public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	public SmallerUnitBlock() {
-		super(Properties.from(Blocks.STONE).setOpaque((a, b, c) -> false).notSolid());
+		super(Properties.from(Blocks.STONE).setOpaque((a, b, c) -> false).notSolid().hardnessAndResistance(1, 1));
 	}
 	
 	@Override
@@ -123,7 +128,21 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock).add(0, 64, 0),
 				hit.getFace(), raytraceContext.posHit.offset(hit.getFace().getOpposite()), hit.isInside()
 		);
-		ActionResultType resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(hit.getFace().getOpposite())).onBlockActivated(tileEntity.world, player, handIn, result);
+		boolean playerIsSleeping = player.isSleeping();
+		Vector3d playerPos = player.getPositionVec();
+		ActionResultType resultType = ActionResultType.FAIL;
+		try {
+			resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(hit.getFace().getOpposite())).onBlockActivated(tileEntity.world, player, handIn, result);
+		} catch (Throwable ignored) {
+		}
+		if (!playerIsSleeping && player.isSleeping()) {
+			player.stopSleepInBed(true, true);
+			if (player instanceof ServerPlayerEntity) {
+				((ServerPlayerEntity) player).connection.setPlayerLocation(playerPos.getX(), playerPos.getY(), playerPos.getZ(), player.rotationYaw, player.rotationPitch);
+			}
+			player.setPosition(playerPos.getX(), playerPos.getY(), playerPos.getY());
+			player.sendStatusMessage(new StringTextComponent("Sorry, but you can't sleep in tiny beds."), true);
+		}
 		
 		if (resultType.isSuccessOrConsume()) {
 			tileEntity.markDirty();
@@ -206,15 +225,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
 			if (clicked.getBlock() instanceof IGrowable) {
 				if (((IGrowable) clicked.getBlock()).canGrow(tileEntity.world, raytraceContext.posHit, clicked, worldIn.isRemote)) {
-					if (clicked.getBlock() instanceof BambooBlock) {
-						//TODO: fix properly
-						try {
-							((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
-						} catch (Throwable ignored) {
-						}
-					} else {
-						((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
-					}
+					((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
 				}
 			}
 		} else {
@@ -236,6 +247,36 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	@Override
+	public float getExplosionResistance(BlockState state, IBlockReader world, BlockPos pos, Explosion explosion) {
+		TileEntity tileEntityUncasted = world.getTileEntity(pos);
+		if (!(tileEntityUncasted instanceof UnitTileEntity))
+			return 0;
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		return tileEntity.world.blockMap.isEmpty() ? 0 : -1;
+	}
+	
+	@Override
+	public float getPlayerRelativeBlockHardness(BlockState state, PlayerEntity player, IBlockReader worldIn, BlockPos pos) {
+		TileEntity tileEntityUncasted = worldIn.getTileEntity(pos);
+		if (!(tileEntityUncasted instanceof UnitTileEntity))
+			return -1;
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, pos, Optional.empty());
+		
+		BlockPos hitPos;
+		if (raytraceContext.shapeHit.isEmpty()) return -1;
+		else hitPos = raytraceContext.posHit;
+		
+		BlockState state1 = tileEntity.world.getBlockState(hitPos);
+		
+		return state1.getPlayerRelativeBlockHardness(player, tileEntity.world, hitPos) / tileEntity.unitsPerBlock;
+	}
+	
+	@Override
 	public boolean removedByPlayer(BlockState state, World worldIn, BlockPos worldPos, PlayerEntity player, boolean willHarvest, FluidState fluid) {
 		if (worldIn.isRemote)
 			return false;
@@ -252,6 +293,13 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (raytraceContext.shapeHit.isEmpty()) return false;
 		else hitPos = raytraceContext.posHit;
 		
+		BlockState state1 = tileEntity.world.getBlockState(hitPos);
+		List<ItemStack> stacks = state1.getBlock().getDrops(state1, tileEntity.world, hitPos, worldIn.getTileEntity(hitPos), player, player.getHeldItem(Hand.MAIN_HAND));
+		for (ItemStack stack : stacks) {
+			ItemEntity entity = new ItemEntity(tileEntity.world, hitPos.getX(), hitPos.getY(), hitPos.getZ(), stack);
+			tileEntity.world.addEntity(entity);
+		}
+		state1.removedByPlayer(tileEntity.world, hitPos, player, true, state1.getFluidState());
 		tileEntity.world.removeBlock(hitPos, false);
 		
 		return false;
@@ -264,6 +312,15 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	@Override
+	public ItemStack getPickBlock(BlockState state, RayTraceResult target, IBlockReader world, BlockPos pos, PlayerEntity player) {
+		return super.getPickBlock(state, target, world, pos, player);
+	}
+	
+	@Override
+	public void animateTick(BlockState stateIn, World worldIn, BlockPos pos, Random rand) {
+	}
+	
+	@Override
 	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
 		super.tick(state, worldIn, pos, rand);
 		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
@@ -271,9 +328,14 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (!(tileEntity instanceof UnitTileEntity)) return;
 		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
 		if (tileEntity1.world != null) {
+			ArrayList<SmallUnit> toRemove = new ArrayList<>();
 			ArrayList<SmallUnit> toMove = new ArrayList<>();
 			for (SmallUnit value : tileEntity1.world.blockMap.values()) {
 				BlockPos blockPos = value.pos;
+				if (value.pos == null) {
+					toRemove.add(value);
+					continue;
+				}
 				int y = value.pos.getY() - 64;
 				if (
 						blockPos.getX() < 0 ||
@@ -286,13 +348,29 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					toMove.add(value);
 				}
 			}
+			for (SmallUnit smallUnit : toRemove) {
+				tileEntity1.world.blockMap.remove(smallUnit.pos);
+			}
 			for (SmallUnit value : toMove) {
 				BlockPos blockPos = value.pos;
 				ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).world, value.pos);
+				if (context.teInRealWorld instanceof UnitTileEntity) {
+					if (((UnitTileEntity) context.teInRealWorld).world.blockMap.isEmpty()) {
+						((UnitTileEntity) context.teInRealWorld).unitsPerBlock = tileEntity1.unitsPerBlock;
+					}
+				}
+				if (context.stateInRealWorld.getBlock().equals(Blocks.AIR)) {
+					UnitTileEntity tileEntity2 = new UnitTileEntity();
+					worldIn.setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
+					worldIn.setTileEntity(context.posInRealWorld, tileEntity2);
+					tileEntity2.isNatural = true;
+					continue;
+				}
 				TileEntity te = context.teInRealWorld;
 				if (te instanceof UnitTileEntity) {
 					value.pos = context.posInFakeWorld;
-					((UnitTileEntity) te).world.blockMap.putIfAbsent(value.pos, value);
+					((UnitTileEntity) te).world.setBlockState(value.pos, value.state, 3, 0);
+					((UnitTileEntity) te).world.setTileEntity(value.pos, value.tileEntity);
 					tileEntity1.world.blockMap.remove(blockPos);
 					
 					tileEntity.markDirty();
@@ -303,6 +381,10 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			}
 			long start = new Date().getTime();
 			tileEntity1.world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
+			
+			if (tileEntity1.isNatural && tileEntity1.world.blockMap.isEmpty()) {
+				worldIn.setBlockState(pos, Blocks.AIR.getDefaultState());
+			}
 		}
 	}
 	

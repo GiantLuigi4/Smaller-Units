@@ -20,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 		CartographyContainer.class,
 		GrindstoneContainer.class,
 		StonecutterContainer.class,
-		DispenserContainer.class
+		DispenserContainer.class,
+		LecternContainer.class,
+		BrewingStandContainer.class
 })
 public class ContainerMixin2 {
 	@Inject(at = @At("HEAD"), method = "canInteractWith(Lnet/minecraft/entity/player/PlayerEntity;)Z", cancellable = true)

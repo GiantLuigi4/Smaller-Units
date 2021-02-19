@@ -34,6 +34,7 @@ public class UnitPallet {
 			
 			posIdMap.put(unit.pos, stateIdMap.get(unit.state));
 			CompoundNBT unitNBT = new CompoundNBT();
+			if (unit == null || unit.pos == null) continue;
 			unitNBT.putInt("x", unit.pos.getX());
 			unitNBT.putInt("y", unit.pos.getY() - 64);
 			unitNBT.putInt("z", unit.pos.getZ());

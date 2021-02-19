@@ -1,6 +1,8 @@
 package com.tfc.smallerunits.block;
 
+import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.registry.Deferred;
+import com.tfc.smallerunits.utils.FakeDimensionSavedData;
 import com.tfc.smallerunits.utils.FakeServerWorld;
 import com.tfc.smallerunits.utils.UnitPallet;
 import net.minecraft.block.Block;
@@ -11,7 +13,9 @@ import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
+import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -19,13 +23,16 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.TickPriority;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import sun.misc.Unsafe;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 
-public class UnitTileEntity extends TileEntity {
+public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	private static final Unsafe theUnsafe;
+	public boolean isNatural = false;
+	public CompoundNBT dataNBT = new CompoundNBT();
 	
 	static {
 		try {
@@ -59,9 +66,85 @@ public class UnitTileEntity extends TileEntity {
 	public IBlockReader loadingWorld;
 	
 	@Override
+	public void tick() {
+//		if (world.isRemote) {
+//		World worldIn = getWorld();
+//		BlockState state = this.getBlockState();
+//			TileEntity tileEntity = worldIn.getTileEntity(pos);
+//			if (!(tileEntity instanceof UnitTileEntity)) return;
+//			UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
+//			if (tileEntity1.world != null) {
+//				ArrayList<SmallUnit> toRemove = new ArrayList<>();
+//				ArrayList<SmallUnit> toMove = new ArrayList<>();
+//				for (SmallUnit value : tileEntity1.world.blockMap.values()) {
+//					BlockPos blockPos = value.pos;
+//					if (value.pos == null) {
+//						toRemove.add(value);
+//						continue;
+//					}
+//					int y = value.pos.getY() - 64;
+//					if (
+//							blockPos.getX() < 0 ||
+//									blockPos.getX() > tileEntity1.unitsPerBlock - 1 ||
+//									blockPos.getZ() < 0 ||
+//									blockPos.getZ() > tileEntity1.unitsPerBlock - 1 ||
+//									y < 0 ||
+//									y > tileEntity1.unitsPerBlock - 1
+//					) {
+//						toMove.add(value);
+//					}
+//				}
+//				for (SmallUnit smallUnit : toRemove) {
+//					tileEntity1.world.blockMap.remove(smallUnit.pos);
+//				}
+//				for (SmallUnit value : toMove) {
+//					BlockPos blockPos = value.pos;
+//					ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).world, value.pos);
+//					if (context.teInRealWorld instanceof UnitTileEntity) {
+//						if (((UnitTileEntity) context.teInRealWorld).world.blockMap.isEmpty()) {
+//							((UnitTileEntity) context.teInRealWorld).unitsPerBlock = tileEntity1.unitsPerBlock;
+//						}
+//					}
+//					if (context.stateInRealWorld.getBlock().equals(Blocks.AIR)) {
+//						UnitTileEntity tileEntity2 = new UnitTileEntity();
+//						worldIn.setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
+//						worldIn.setTileEntity(context.posInRealWorld,tileEntity2);
+//						tileEntity2.isNatural = true;
+//						continue;
+//					}
+//					TileEntity te = context.teInRealWorld;
+//					if (te instanceof UnitTileEntity) {
+//						value.pos = context.posInFakeWorld;
+//						((UnitTileEntity) te).world.setBlockState(value.pos,value.state,3,0);
+//						((UnitTileEntity) te).world.setTileEntity(value.pos,value.tileEntity);
+//						tileEntity1.world.blockMap.remove(blockPos);
+//
+//						tileEntity.markDirty();
+//						te.markDirty();
+//						worldIn.notifyBlockUpdate(tileEntity.getPos(), state, state, 3);
+//						worldIn.notifyBlockUpdate(te.getPos(), state, state, 3);
+//					}
+//				}
+//				long start = new Date().getTime();
+//				tileEntity1.world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
+//
+//				if (tileEntity1.isNatural && tileEntity1.world.blockMap.isEmpty()) {
+//					worldIn.setBlockState(pos,Blocks.AIR.getDefaultState());
+//				}
+//			}
+//		}
+	}
+	
+	@Override
 	public void read(BlockState state, CompoundNBT nbt) {
 		super.read(state, nbt);
-		this.unitsPerBlock = Math.max(nbt.getInt("upb"), 1);
+		if (FMLEnvironment.dist.isClient()) {
+			for (Direction dir : Direction.values()) {
+				SmallerUnitsTESR.bufferCache.remove(this.getPos().offset(dir));
+			}
+			SmallerUnitsTESR.bufferCache.remove(this.getPos());
+		}
+		this.unitsPerBlock = Math.min(Math.max(nbt.getInt("upb"), 1), 256);
 		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), world);
 		this.world.blockMap = pallet.posUnitMap;
 		CompoundNBT ticks = nbt.getCompound("ticks");
@@ -83,6 +166,10 @@ public class UnitTileEntity extends TileEntity {
 				world.getPendingFluidTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
 			}
 		}
+		if (nbt.contains("savedData"))
+			dataNBT = nbt.getCompound("savedData");
+		if (nbt.contains("isNatural"))
+			isNatural = nbt.getBoolean("isNatural");
 	}
 	
 	@Override
@@ -118,6 +205,9 @@ public class UnitTileEntity extends TileEntity {
 			ticks.put("fluidTicks", pendingFluidTicks);
 		}
 		compound.put("ticks", ticks);
+		world.getSavedData().save();
+		compound.put("savedData", ((FakeDimensionSavedData) world.getSavedData()).savedNBT);
+		compound.putBoolean("isNatural", isNatural);
 		return super.write(compound);
 	}
 	
@@ -151,6 +241,7 @@ public class UnitTileEntity extends TileEntity {
 	public CompoundNBT getUpdateTag() {
 		CompoundNBT nbtShare = serializeNBT();
 		nbtShare.remove("ticks");
+		nbtShare.remove("savedData");
 		return nbtShare;
 	}
 }

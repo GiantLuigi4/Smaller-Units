@@ -57,9 +57,11 @@ public class FakeServerChunkProvider extends ServerChunkProvider {
 			((FakeChunkManager) provider.chunkManager).provider = provider;
 			((FakeChunkManager) provider.chunkManager).world = world;
 			((FakeChunkManager) provider.chunkManager).init();
+			provider.savedData = new FakeDimensionSavedData(null, null, () -> world.owner.dataNBT);
 			
 			return provider;
 		} catch (Throwable err) {
+			err.printStackTrace();
 			throw new RuntimeException(err);
 		}
 	}

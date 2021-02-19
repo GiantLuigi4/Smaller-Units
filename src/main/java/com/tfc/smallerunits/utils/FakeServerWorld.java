@@ -216,13 +216,19 @@ public class FakeServerWorld extends ServerWorld {
 		return forcedChunks;
 	}
 	
+	public boolean isRendering = false;
+	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
 		if (context.stateInRealWorld != null) {
 			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 				if (!context.posInRealWorld.equals(this.owner.getPos())) {
-					return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld);
+					if (!isRendering) {
+						return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld);
+					} else {
+						return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld).getFluidState().getBlockState();
+					}
 				}
 			} else if (context.stateInRealWorld.equals(Blocks.BEDROCK.getDefaultState())) {
 				return Blocks.BEDROCK.getDefaultState();
@@ -264,7 +270,34 @@ public class FakeServerWorld extends ServerWorld {
 			this.isRemote = this.owner.getWorld().isRemote;
 		}
 		
-		lightManager.tick(100, false, true);
+		if (this.isRemote) {
+			for (SmallUnit value : this.blockMap.values()) {
+				if (value.tileEntity instanceof ITickableTileEntity)
+					((ITickableTileEntity) value.tileEntity).tick();
+			}
+			return;
+		}
+		
+		for (SmallUnit value : blockMap.values()) {
+			if (value.tileEntity != null) {
+				if (!loadedTileEntityList.contains(value.tileEntity)) {
+					loadedTileEntityList.add(value.tileEntity);
+					tileEntityChanges.add(value);
+				}
+				
+				if (isRemote) {
+					if (value.tileEntity instanceof ITickableTileEntity) {
+						try {
+							((ITickableTileEntity) value.tileEntity).tick();
+						} catch (Throwable ignored) {
+						}
+					}
+				}
+			}
+		}
+		
+		if (!this.isRemote)
+			lightManager.tick(100, false, true);
 		
 		blankProfiler.startTick();
 		super.tick(hasTimeLeft);
@@ -302,7 +335,31 @@ public class FakeServerWorld extends ServerWorld {
 	}
 	
 	@Override
+	public Difficulty getDifficulty() {
+		return owner.getWorld().getDifficulty();
+	}
+	
+	@Override
+	public void sendQueuedBlockEvents() {
+		if (this.isRemote) return;
+		super.sendQueuedBlockEvents();
+	}
+	
+	@Override
 	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
+		if (lightTypeIn.equals(LightType.BLOCK)) {
+			ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, blockPosIn);
+			if (context.stateInRealWorld != null) {
+				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (!context.posInRealWorld.equals(this.owner.getPos())) {
+						if (context.teInRealWorld != null) {
+							return ((UnitTileEntity) context.teInRealWorld).world.getLightFor(lightTypeIn, context.posInFakeWorld);
+						}
+					}
+				}
+			}
+		}
+		
 		if (lightTypeIn.equals(LightType.BLOCK)) {
 			return Math.max(
 					((FakeLightingManager) lightManager).getBlockLight(blockPosIn.offset(Direction.DOWN, 64)),
@@ -387,7 +444,6 @@ public class FakeServerWorld extends ServerWorld {
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-//		return chunk.getTileEntity(pos);
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
 		if (context.stateInRealWorld != null) {
 			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
@@ -413,10 +469,10 @@ public class FakeServerWorld extends ServerWorld {
 					}
 					return false;
 				} else if (context.stateInRealWorld.isAir(owner.getWorld(), context.posInRealWorld)) {
-					owner.getWorld().setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
-					UnitTileEntity tileEntity = new UnitTileEntity();
-					owner.getWorld().setTileEntity(context.posInRealWorld, tileEntity);
-					tileEntity.unitsPerBlock = this.owner.unitsPerBlock;
+//					owner.getWorld().setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
+//					UnitTileEntity tileEntity = new UnitTileEntity();
+//					owner.getWorld().setTileEntity(context.posInRealWorld, tileEntity);
+//					tileEntity.unitsPerBlock = this.owner.unitsPerBlock;
 				}
 			}
 		}
@@ -453,33 +509,36 @@ public class FakeServerWorld extends ServerWorld {
 				if (!state.getFluidState().isEmpty()) {
 					if (state.getFluidState().getBlockState().equals(state.getBlockState())) {
 						Fluid fluid = state.getFluidState().getFluid();
-						for (Direction dir : Direction.values()) {
-							this.getBlockState(pos.offset(dir)).neighborChanged(this, pos.offset(dir), state.getBlock(), pos, false);
-						}
+//						for (Direction dir : Direction.values()) {
+//							this.getBlockState(pos.offset(dir)).neighborChanged(this, pos.offset(dir), state.getBlock(), pos, false);
+//						}
+						this.dimensionType = owner.getWorld().dimensionType;
 						getPendingFluidTicks().scheduleTick(pos, fluid, fluid.getTickRate(this));
 					}
 				}
-				
-				if (state.getBlockState().equals(state.getFluidState().getBlockState())) {
+
+//				if (state.getBlockState().equals(state.getFluidState().getBlockState())) {
+				if (old.getBlock() != state.getBlock()) {
 					state.onBlockAdded(this, pos, old, false);
+					
+					{
+						BlockState statePlace = state;
+						UnitTileEntity tileEntity = owner;
+						if (statePlace.getBlock() instanceof ITileEntityProvider) {
+							TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
+							tileEntity.world.setTileEntity(pos, te);
+						} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
+							TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
+							tileEntity.world.setTileEntity(pos, te);
+						}
+					}
 				}
+//				}
 				
 				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
 				
 				if (state.equals(Blocks.AIR.getDefaultState())) {
 					this.blockMap.remove(pos);
-				}
-				
-				{
-					BlockState statePlace = state;
-					UnitTileEntity tileEntity = owner;
-					if (statePlace.getBlock() instanceof ITileEntityProvider) {
-						TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
-						tileEntity.world.setTileEntity(pos, te);
-					} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
-						TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
-						tileEntity.world.setTileEntity(pos, te);
-					}
 				}
 				
 				int newLight = state.getLightValue(this, pos);
@@ -488,6 +547,32 @@ public class FakeServerWorld extends ServerWorld {
 				return true;
 			}
 		}
+	}
+	
+	@Override
+	public DifficultyInstance getDifficultyForLocation(BlockPos pos) {
+		return owner.getWorld().getDifficultyForLocation(owner.getPos());
+	}
+	
+	//TODO: fix properly
+	@Override
+	public Explosion createExplosion(@Nullable Entity exploder, @Nullable DamageSource damageSource, @Nullable ExplosionContext context, double x, double y, double z, float size, boolean causesFire, Explosion.Mode mode) {
+		try {
+			return super.createExplosion(exploder, damageSource, context, x, y, z, size, causesFire, mode);
+		} catch (Throwable ignored) {
+			return new Explosion(this, exploder, x, y, z, size, causesFire, mode);
+		}
+	}
+	
+	@Override
+	public boolean addEntity(Entity entityIn) {
+		entityIn.teleportKeepLoaded(
+				owner.getPos().getX() + entityIn.getPositionVec().getX() / owner.unitsPerBlock,
+				owner.getPos().getY() + ((entityIn.getPositionVec().getY() - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + entityIn.getPositionVec().getZ() / owner.unitsPerBlock
+		);
+		entityIn.setWorld(owner.getWorld());
+		return owner.getWorld().addEntity(entityIn);
 	}
 	
 	public void markAndNotifyBlock(BlockPos pos, @Nullable IChunk chunk, BlockState blockstate, BlockState state, int flags, int recursionLeft) {
@@ -526,6 +611,16 @@ public class FakeServerWorld extends ServerWorld {
 		}
 	}
 	
+	//TODO: fix properly
+	@Override
+	public boolean destroyBlock(BlockPos pos, boolean dropBlock, @Nullable Entity entity, int recursionLeft) {
+		try {
+			return super.destroyBlock(pos, dropBlock, entity, recursionLeft);
+		} catch (Throwable ignored) {
+			return false;
+		}
+	}
+	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
 		return getBlockState(pos).getFluidState();
@@ -548,8 +643,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public DimensionType getDimensionType() {
-//		return owner.getWorld().getDimensionType();
-		return super.getDimensionType();
+		return dimensionType == null ? owner.getWorld().getDimensionType() : dimensionType;
 	}
 	
 	@Override

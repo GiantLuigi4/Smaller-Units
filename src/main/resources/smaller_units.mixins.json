@@ -4,12 +4,14 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
   "client": [
+	"MinecraftMixin"
+  ],
+  "mixins": [
 	"ContainerMixin",
 	"ContainerMixin2",
 	"PlayerEntityMixin",
-	"ServerPlayerEntityMixin"
-  ],
-  "mixins": [
+	"ServerPlayerEntityMixin",
+	"ServerPlayNetHandlerMixin"
   ],
   "injectors": {
 	"defaultRequire": 1

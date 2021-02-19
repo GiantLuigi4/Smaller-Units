@@ -1,6 +1,7 @@
 package com.tfc.smallerunits.utils.rendering;
 
 import com.google.common.collect.Sets;
+import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.renderer.Atlases;
@@ -12,6 +13,7 @@ import net.minecraft.client.renderer.vertex.VertexFormat;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.vector.Vector4f;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -159,10 +161,9 @@ public class CustomBuffer implements IRenderTypeBuffer {
 	}
 	
 	public static class CustomBufferBuilder extends BufferBuilder {
-		Veprotected ArrayList<IElement>elements =new ArrayList<>();
-		rtex vertex = new Vertex();
-		ivate RenderType
-		type;
+		protected ArrayList<IElement> elements = new ArrayList<>();
+		Vertex vertex = new Vertex();
+		private RenderType type;
 		
 		public CustomBufferBuilder(int bufferSizeIn, RenderType type) {
 			super(bufferSizeIn);
@@ -261,6 +262,7 @@ public class CustomBuffer implements IRenderTypeBuffer {
 		public RenderType type;
 		public BlockPos pos;
 		public Direction face;
+		public MatrixStack matrix = null;
 		
 		public CustomVertexBuilder(RenderType type) {
 			this.type = type;
@@ -280,6 +282,22 @@ public class CustomBuffer implements IRenderTypeBuffer {
 		
 		@Override
 		public IVertexBuilder pos(double x, double y, double z) {
+			if (matrix != null) {
+				Vector4f vec = new Vector4f((float) x, (float) y, (float) z, 0);
+				vec.transform(matrix.getLast().getMatrix());
+//				Vector3f vec = new Vector3f((float)x,(float)y,(float)z);
+//				matrix.getLast().getMatrix().translate(vec);
+				Vector4f offsetVec = new Vector4f(
+						(-(pos.getX() % 16)) + pos.getX(),
+						((-(pos.getY() % 16)) + pos.getY()) - 64,
+						(-(pos.getZ() % 16)) + pos.getZ(),
+						0
+				);
+				offsetVec.transform(matrix.getLast().getMatrix());
+				x = vec.getX() + offsetVec.getX();
+				y = vec.getY() + offsetVec.getY();
+				z = vec.getZ() + offsetVec.getZ();
+			}
 			vertex.x = x;
 			vertex.y = y;
 			vertex.z = z;
@@ -338,7 +356,7 @@ public class CustomBuffer implements IRenderTypeBuffer {
 			vertex.g = (int) (green * 255);
 			vertex.b = (int) (blue * 255);
 			vertex.a = (int) (alpha * 255);
-			return null;
+			return this;
 		}
 	}
 	

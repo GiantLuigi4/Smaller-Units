@@ -1,5 +1,7 @@
 package com.tfc.smallerunits.utils;
 
+import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.registry.Deferred;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.Direction;
 import net.minecraft.util.concurrent.DelegatedTaskExecutor;
@@ -18,6 +20,7 @@ import net.minecraft.world.server.ServerWorldLightManager;
 
 import javax.annotation.Nullable;
 
+//TODO: optimize
 public class FakeLightingManager extends ServerWorldLightManager {
 	private WorldLightManager lightManager;
 	
@@ -76,6 +79,8 @@ public class FakeLightingManager extends ServerWorldLightManager {
 //		return lightManager.tick(toUpdateCount, updateSkyLight, updateBlockLight);
 	}
 	
+	int recursionDepth = 0;
+	
 	private boolean testLight(BlockPos pos, FakeServerWorld world) {
 		if (isInbounds(pos, world.owner.unitsPerBlock)) {
 			BlockState state = world.getBlockState(pos.add(0, 64, 0));
@@ -85,6 +90,24 @@ public class FakeLightingManager extends ServerWorldLightManager {
 				if (isInbounds(pos.offset(dir), world.owner.unitsPerBlock)) {
 					int amt = lighting[toIndex(pos.offset(dir))];
 					max = Math.max(max, amt - 1);
+				} else {
+					ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(world, pos.offset(dir).add(0, 64, 0));
+					if (context.stateInRealWorld != null) {
+						if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+							if (!context.posInRealWorld.equals(world.owner.getPos())) {
+								if (context.teInRealWorld != null) {
+									if (!context.teInRealWorld.equals(world.owner)) {
+										if (recursionDepth < 1) {
+											recursionDepth++;
+											int amt = ((UnitTileEntity) context.teInRealWorld).world.getLightFor(LightType.BLOCK, context.posInFakeWorld);
+											max = Math.max(max, amt - 1);
+											recursionDepth--;
+										}
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 			if (stateLight == 0) {
@@ -116,6 +139,11 @@ public class FakeLightingManager extends ServerWorldLightManager {
 		if (isInbounds(pos, ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
 			if (manager.world.isRemote) testLight(pos, (FakeServerWorld) manager.world);
 			return lighting[toIndex(pos)];
+		}
+		for (Direction value : Direction.values()) {
+			if (isInbounds(pos.offset(value), ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
+				return lighting[toIndex(pos.offset(value))] - 10;
+			}
 		}
 		return 0;
 	}
