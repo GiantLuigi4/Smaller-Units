@@ -1,7 +1,8 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
+import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.Direction;
 import net.minecraft.util.concurrent.DelegatedTaskExecutor;

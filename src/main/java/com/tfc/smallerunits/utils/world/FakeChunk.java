@@ -1,7 +1,8 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.tfc.smallerunits.utils.SmallUnit;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.block.Block;

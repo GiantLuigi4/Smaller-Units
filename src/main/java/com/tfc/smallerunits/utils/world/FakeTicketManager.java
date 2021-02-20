@@ -1,4 +1,4 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;

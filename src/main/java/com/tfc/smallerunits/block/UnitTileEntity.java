@@ -2,9 +2,9 @@ package com.tfc.smallerunits.block;
 
 import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.registry.Deferred;
-import com.tfc.smallerunits.utils.FakeDimensionSavedData;
-import com.tfc.smallerunits.utils.FakeServerWorld;
 import com.tfc.smallerunits.utils.UnitPallet;
+import com.tfc.smallerunits.utils.world.FakeDimensionSavedData;
+import com.tfc.smallerunits.utils.world.FakeServerWorld;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.Fluid;

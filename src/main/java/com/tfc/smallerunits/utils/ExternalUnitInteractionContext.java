@@ -2,13 +2,13 @@ package com.tfc.smallerunits.utils;
 
 import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.utils.world.FakeServerWorld;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
-
-import java.util.function.Supplier;
+import net.minecraft.world.World;
 
 public class ExternalUnitInteractionContext {
 	public BlockPos posInFakeWorld;
@@ -38,39 +38,45 @@ public class ExternalUnitInteractionContext {
 			while (posInFakeWorld.getX() > world.owner.unitsPerBlock - 1 && i < 64) {
 				posInFakeWorld = posInFakeWorld.offset(Direction.WEST, world.owner.unitsPerBlock);
 				westPos = westPos.offset(Direction.EAST, 1);
-				i++;
+//				i++;
 			}
 			i = 0;
 			while (posInFakeWorld.getX() < 0 && i < 64) {
 				posInFakeWorld = posInFakeWorld.offset(Direction.EAST, world.owner.unitsPerBlock);
 				westPos = westPos.offset(Direction.WEST, 1);
-				i++;
+//				i++;
 			}
 			i = 0;
 			while (posInFakeWorld.getZ() > world.owner.unitsPerBlock - 1 && i < 64) {
 				posInFakeWorld = posInFakeWorld.offset(Direction.NORTH, world.owner.unitsPerBlock);
 				westPos = westPos.offset(Direction.SOUTH, 1);
-				i++;
+//				i++;
 			}
 			i = 0;
 			while (posInFakeWorld.getZ() < 0 && i < 64) {
 				posInFakeWorld = posInFakeWorld.offset(Direction.SOUTH, world.owner.unitsPerBlock);
 				westPos = westPos.offset(Direction.NORTH, 1);
-				i++;
+//				i++;
 			}
 			i = 0;
 			while ((posInFakeWorld.getY() - 64) > world.owner.unitsPerBlock - 1 && i < 64) {
 				posInFakeWorld = posInFakeWorld.offset(Direction.DOWN, world.owner.unitsPerBlock);
 				westPos = westPos.offset(Direction.UP, 1);
-				i++;
+//				i++;
 			}
 			i = 0;
 			while ((posInFakeWorld.getY() - 64) < 0 && i < 64) {
 				posInFakeWorld = posInFakeWorld.offset(Direction.UP, world.owner.unitsPerBlock);
 				westPos = westPos.offset(Direction.DOWN, 1);
-				i++;
+//				i++;
 			}
 			BlockState westState = world.owner.getWorld().getBlockState(westPos);
+			if (World.isOutsideBuildHeight(westPos)) {
+				this.posInFakeWorld = posInFakeWorld;
+				posInRealWorld = westPos;
+				stateInRealWorld = Blocks.BARRIER.getDefaultState();
+				teInRealWorld = null;
+			}
 			if (westState.getBlock() instanceof SmallerUnitBlock) {
 				TileEntity westTE = world.owner.getWorld().getTileEntity(westPos);
 				if (westTE instanceof UnitTileEntity) {
@@ -113,12 +119,5 @@ public class ExternalUnitInteractionContext {
 		}
 		this.posInFakeWorld = pos;
 		this.posInRealWorld = world.owner.getPos();
-	}
-	
-	private void runLoopKillable(Supplier<Boolean> condition, Runnable function, int iterations) {
-		int i = 0;
-		while (i < iterations && condition.get()) {
-			function.run();
-		}
 	}
 }

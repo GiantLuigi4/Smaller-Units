@@ -17,6 +17,9 @@ public class ServerPlayNetHandlerMixin {
 	
 	@Inject(at = @At("HEAD"), cancellable = true, method = "processCloseWindow(Lnet/minecraft/network/play/client/CCloseWindowPacket;)V")
 	public void preClose(CCloseWindowPacket packetIn, CallbackInfo ci) {
-		ContainerMixinHelper.setNaturallyClosable(player.openContainer, true);
+		if (!ContainerMixinHelper.getNaturallyClosable(player.openContainer)) {
+			ContainerMixinHelper.setNaturallyClosable(player.openContainer, true);
+			player.closeContainer();
+		}
 	}
 }

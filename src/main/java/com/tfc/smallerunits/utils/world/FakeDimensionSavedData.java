@@ -1,4 +1,4 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import com.mojang.datafixers.DataFixer;
 import net.minecraft.nbt.CompoundNBT;

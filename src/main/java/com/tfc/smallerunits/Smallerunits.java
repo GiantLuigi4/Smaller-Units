@@ -1,6 +1,7 @@
 package com.tfc.smallerunits;
 
 import com.tfc.smallerunits.client.TickHandler;
+import com.tfc.smallerunits.crafting.CraftingRegistry;
 import com.tfc.smallerunits.registry.Deferred;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -27,6 +28,7 @@ public class Smallerunits {
 		Deferred.BLOCKS.register(bus);
 		Deferred.TILE_ENTITIES.register(bus);
 		Deferred.ITEMS.register(bus);
+		CraftingRegistry.recipeSerializers.register(bus);
 		
 		if (FMLEnvironment.dist.isClient()) {
 			MinecraftForge.EVENT_BUS.addListener(TickHandler::onTick);

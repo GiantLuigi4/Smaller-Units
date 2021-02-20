@@ -200,7 +200,6 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 						
 						builder = customBuffer.getBuffer(type);
 						
-						
 						if (Minecraft.getInstance().gameSettings.ambientOcclusionStatus.equals(AmbientOcclusionStatus.MAX)) {
 							Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelSmooth(
 									tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),

@@ -2,6 +2,7 @@ package com.tfc.smallerunits.registry;
 
 import com.tfc.smallerunits.Group;
 import com.tfc.smallerunits.SmallerUnitISTER;
+import com.tfc.smallerunits.TileResizingItem;
 import com.tfc.smallerunits.UnitItem;
 import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
@@ -25,6 +26,8 @@ public class Deferred {
 	public static final RegistryObject<Item> UNITITEM = ITEMS.register("su", () -> new UnitItem(UNIT.get(), new Item.Properties().rarity(Rarity.create("su", TextFormatting.GREEN))
 			.setISTER(() -> SmallerUnitISTER::new)
 	));
+	public static final RegistryObject<Item> SHRINKER = ITEMS.register("su_shrinker", () -> new TileResizingItem(-1));
+	public static final RegistryObject<Item> GROWER = ITEMS.register("su_grower", () -> new TileResizingItem(1));
 	
 	public static final DeferredRegister<TileEntityType<?>> TILE_ENTITIES = DeferredRegister.create(ForgeRegistries.TILE_ENTITIES, "smallerunits");
 	

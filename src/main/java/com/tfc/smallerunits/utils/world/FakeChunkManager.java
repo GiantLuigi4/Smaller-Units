@@ -1,8 +1,12 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.util.concurrent.ThreadTaskExecutor;
 import net.minecraft.village.PointOfInterestManager;
 import net.minecraft.world.chunk.IChunkLightProvider;
@@ -15,10 +19,12 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraft.world.storage.DimensionSavedDataManager;
 import net.minecraft.world.storage.SaveFormat;
+import net.minecraftforge.fml.ModList;
 import sun.misc.Unsafe;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class FakeChunkManager extends ChunkManager {
@@ -69,6 +75,20 @@ public class FakeChunkManager extends ChunkManager {
 				this.mainThread = executor;
 			} catch (Throwable err) {
 				throw new RuntimeException(err);
+			}
+			//TODO: Cubic Chunks Support
+			if (ModList.get().isLoaded("cubicchunks")) {
+				try {
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("visibleCubeMap")), new Long2ObjectLinkedOpenHashMap<>());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("updatingCubeMap")), new Long2ObjectLinkedOpenHashMap<>());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("cubesToDrop")), new LongOpenHashSet());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("cubeEntitiesInLevel")), new LongOpenHashSet());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("pendingCubeUnloads")), new Long2ObjectLinkedOpenHashMap<>());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("tickingGeneratedCubes")), new AtomicInteger());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("cubeTypeCache")), new Long2ByteOpenHashMap());
+					theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("cubeUnloadQueue")), Queues.newConcurrentLinkedQueue());
+				} catch (Throwable ignored) {
+				}
 			}
 			hasInit = true;
 		}

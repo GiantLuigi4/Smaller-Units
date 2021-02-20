@@ -172,6 +172,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			BlockState statePlace = item.getBlock().getStateForPlacement(context);
 			if (statePlace != null) {
 				if (statePlace.isValidPosition(tileEntity.world, posOffset)) {
+					if (!player.isCreative()) stack.shrink(1);
+					
 					tileEntity.world.setBlockState(posOffset, statePlace);
 					statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
 					
@@ -273,7 +275,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		BlockState state1 = tileEntity.world.getBlockState(hitPos);
 		
-		return state1.getPlayerRelativeBlockHardness(player, tileEntity.world, hitPos) / tileEntity.unitsPerBlock;
+		float amt = state1.getPlayerRelativeBlockHardness(player, tileEntity.world, hitPos) * tileEntity.unitsPerBlock;
+		return amt;
 	}
 	
 	@Override

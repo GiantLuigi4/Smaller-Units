@@ -1,4 +1,4 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import net.minecraft.command.TimerCallbackManager;
 import net.minecraft.server.MinecraftServer;

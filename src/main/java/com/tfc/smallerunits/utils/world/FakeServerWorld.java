@@ -1,7 +1,9 @@
-package com.tfc.smallerunits.utils;
+package com.tfc.smallerunits.utils.world;
 
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
+import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
+import com.tfc.smallerunits.utils.SmallUnit;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -13,11 +15,13 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.crafting.RecipeManager;
 import net.minecraft.network.play.server.SPlaySoundEventPacket;
+import net.minecraft.particles.IParticleData;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.server.MinecraftServer;
@@ -151,12 +155,12 @@ public class FakeServerWorld extends ServerWorld {
 			);
 			
 			//MC code
-			pendingBlockTicks = new ServerTickList<>(this, (p_205341_0_) -> {
+			pendingBlockTicks = new FakeServerTickList<>(this, (p_205341_0_) -> {
 				return p_205341_0_ == null || p_205341_0_.getDefaultState().isAir();
-			}, Registry.BLOCK::getKey, this::tickBlock);
-			pendingFluidTicks = new ServerTickList<>(this, (p_205774_0_) -> {
+			}, Registry.BLOCK::getKey, this::tickBlock, true);
+			pendingFluidTicks = new FakeServerTickList<>(this, (p_205774_0_) -> {
 				return p_205774_0_ == null || p_205774_0_ == Fluids.EMPTY;
-			}, Registry.FLUID::getKey, this::tickFluid);
+			}, Registry.FLUID::getKey, this::tickFluid, false);
 			field_241103_E_ = new FakeServerWorldInfo(this);
 			worldInfo = field_241103_E_;
 			rand = new Random();
@@ -345,6 +349,86 @@ public class FakeServerWorld extends ServerWorld {
 		super.sendQueuedBlockEvents();
 	}
 	
+	//TODO: cm integration
+	@Override
+	public <T extends IParticleData> int spawnParticle(T type, double posX, double posY, double posZ, int particleCount, double xOffset, double yOffset, double zOffset, double speed) {
+		if (owner.getWorld() instanceof ServerWorld) {
+			return ((ServerWorld) owner.getWorld()).spawnParticle(type,
+					owner.getPos().getX() + (posX / owner.unitsPerBlock),
+					owner.getPos().getY() + ((posY - 64) / owner.unitsPerBlock),
+					owner.getPos().getZ() + (posZ / owner.unitsPerBlock),
+					particleCount / owner.unitsPerBlock, xOffset / owner.unitsPerBlock, yOffset / owner.unitsPerBlock, zOffset / owner.unitsPerBlock, speed / owner.unitsPerBlock
+			);
+		}
+		return super.spawnParticle(type,
+				owner.getPos().getX() + (posX / owner.unitsPerBlock),
+				owner.getPos().getY() + ((posY - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + (posZ / owner.unitsPerBlock),
+				particleCount / owner.unitsPerBlock, xOffset / owner.unitsPerBlock, yOffset / owner.unitsPerBlock, zOffset / owner.unitsPerBlock, speed / owner.unitsPerBlock
+		);
+	}
+	
+	//TODO: cm integration
+	@Override
+	public <T extends IParticleData> boolean spawnParticle(ServerPlayerEntity player, T type, boolean longDistance, double posX, double posY, double posZ, int particleCount, double xOffset, double yOffset, double zOffset, double speed) {
+		if (owner.getWorld() instanceof ServerWorld) {
+			return ((ServerWorld) owner.getWorld()).spawnParticle(player, type, longDistance,
+					owner.getPos().getX() + (posX / owner.unitsPerBlock),
+					owner.getPos().getY() + ((posY - 64) / owner.unitsPerBlock),
+					owner.getPos().getZ() + (posZ / owner.unitsPerBlock),
+					particleCount / owner.unitsPerBlock, xOffset / owner.unitsPerBlock, yOffset / owner.unitsPerBlock, zOffset / owner.unitsPerBlock, speed / owner.unitsPerBlock
+			);
+		}
+		return super.spawnParticle(
+				player, type, longDistance,
+				owner.getPos().getX() + (posX / owner.unitsPerBlock),
+				owner.getPos().getY() + ((posY - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + (posZ / owner.unitsPerBlock),
+				particleCount / owner.unitsPerBlock, xOffset / owner.unitsPerBlock, yOffset / owner.unitsPerBlock, zOffset / owner.unitsPerBlock, speed / owner.unitsPerBlock
+		);
+	}
+	
+	@Override
+	public void addParticle(IParticleData particleData, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+		owner.getWorld().addParticle(particleData,
+				owner.getPos().getX() + (x / owner.unitsPerBlock),
+				owner.getPos().getY() + ((y - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + (z / owner.unitsPerBlock),
+				xSpeed / owner.unitsPerBlock, ySpeed / owner.unitsPerBlock, zSpeed / owner.unitsPerBlock
+		);
+	}
+	
+	@Override
+	public void addParticle(IParticleData particleData, boolean forceAlwaysRender, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+		owner.getWorld().addParticle(particleData, forceAlwaysRender,
+				owner.getPos().getX() + (x / owner.unitsPerBlock),
+				owner.getPos().getY() + ((y - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + (z / owner.unitsPerBlock),
+				xSpeed / owner.unitsPerBlock, ySpeed / owner.unitsPerBlock, zSpeed / owner.unitsPerBlock
+		);
+	}
+	
+	@Override
+	public void addOptionalParticle(IParticleData particleData, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+		owner.getWorld().addOptionalParticle(particleData,
+				owner.getPos().getX() + (x / owner.unitsPerBlock),
+				owner.getPos().getY() + ((y - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + (z / owner.unitsPerBlock),
+				xSpeed / owner.unitsPerBlock, ySpeed / owner.unitsPerBlock, zSpeed / owner.unitsPerBlock
+//				xSpeed,ySpeed,zSpeed
+		);
+	}
+	
+	@Override
+	public void addOptionalParticle(IParticleData particleData, boolean ignoreRange, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+		owner.getWorld().addOptionalParticle(particleData, ignoreRange,
+				owner.getPos().getX() + (x / owner.unitsPerBlock),
+				owner.getPos().getY() + ((y - 64) / owner.unitsPerBlock),
+				owner.getPos().getZ() + (z / owner.unitsPerBlock),
+				xSpeed / owner.unitsPerBlock, ySpeed / owner.unitsPerBlock, zSpeed / owner.unitsPerBlock
+		);
+	}
+	
 	@Override
 	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
 		if (lightTypeIn.equals(LightType.BLOCK)) {
@@ -405,24 +489,92 @@ public class FakeServerWorld extends ServerWorld {
 		owner.getWorld().playSound(player, owner.getPos().getX() + (x / (float) owner.unitsPerBlock), owner.getPos().getY() + ((y - 64) / (float) owner.unitsPerBlock), owner.getPos().getZ() + (z / (float) owner.unitsPerBlock), soundIn, category, (volume / owner.unitsPerBlock), pitch);
 	}
 	
+	/**
+	 * {@link net.minecraft.client.renderer.WorldRenderer#playEvent}
+	 */
 	@Override
 	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
 		this.isRemote = owner.getWorld().isRemote;
-		if (!isRemote) {
-			owner
-					.getWorld()
-					.getServer()
-					.getPlayerList()
-					.sendToAllNearExcept(
-							player,
-							(double) owner.getPos().getX() + (pos.getX() / (float) owner.unitsPerBlock),
-							(double) owner.getPos().getY() + ((pos.getY()) / (float) owner.unitsPerBlock),
-							(double) owner.getPos().getZ() + (pos.getZ() / (float) owner.unitsPerBlock),
-							(64.0D), owner.getWorld().getDimensionKey(),
-							new SPlaySoundEventPacket(type, pos, data, false)
-					);
-		} else {
-			owner.getWorld().playEvent(player, type, owner.getPos(), data);
+		Random random = rand;
+		switch (type) {
+			case 1000:
+				this.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_DISPENSE, SoundCategory.BLOCKS, 1.0F, 1.2F);
+				break;
+			case 1001:
+				this.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.2F);
+				break;
+			case 1002:
+				this.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_LAUNCH, SoundCategory.BLOCKS, 1.0F, 1.2F);
+				break;
+			//TODO:1003-1004
+			case 1005:
+				this.playSound(null, pos, SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1006:
+				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1007:
+				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1008:
+				this.playSound(null, pos, SoundEvents.BLOCK_FENCE_GATE_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1009:
+				this.playSound(null, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+				break;
+			//TODO:1010
+			case 1011:
+				this.playSound(null, pos, SoundEvents.BLOCK_IRON_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1012:
+				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1013:
+				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1014:
+				this.playSound(null, pos, SoundEvents.BLOCK_FENCE_GATE_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			//TODO: everything else
+//			case 2000:
+//				Direction direction = Direction.byIndex(data);
+//				int j1 = direction.getXOffset();
+//				int j2 = direction.getYOffset();
+//				int k2 = direction.getZOffset();
+//				double d18 = (double) pos.getX() + (double) j1 * 0.6D + 0.5D;
+//				double d24 = (double) pos.getY() + (double) j2 * 0.6D + 0.5D;
+//				double d28 = (double) pos.getZ() + (double) k2 * 0.6D + 0.5D;
+//
+//				for (int i3 = 0; i3 < 10; ++i3) {
+//					double d4 = random.nextDouble() * 0.2D + 0.01D;
+//					double d6 = d18 + (double) j1 * 0.01D + (random.nextDouble() - 0.5D) * (double) k2 * 0.5D;
+//					double d8 = d24 + (double) j2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j2 * 0.5D;
+//					double d30 = d28 + (double) k2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j1 * 0.5D;
+//					double d9 = (double) j1 * d4 + random.nextGaussian() * 0.01D;
+//					double d10 = (double) j2 * d4 + random.nextGaussian() * 0.01D;
+//					double d11 = (double) k2 * d4 + random.nextGaussian() * 0.01D;
+//					if (!isRemote) {
+//						spawnParticle(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 2, 0, 0, 0, 0);
+//					} else {
+//						this.addOptionalParticle(ParticleTypes.SMOKE, d6, d8, d30, d9, d10, d11);
+//					}
+//				}
+//				break;
+			//TODO: everything else else
+			default:
+				if (!isRemote) {
+					owner.getWorld().getServer().getPlayerList()
+							.sendToAllNearExcept(
+									player,
+									(double) owner.getPos().getX() + (pos.getX() / (float) owner.unitsPerBlock),
+									(double) owner.getPos().getY() + (((pos.getY() - 64)) / (float) owner.unitsPerBlock),
+									(double) owner.getPos().getZ() + (pos.getZ() / (float) owner.unitsPerBlock),
+									(64.0D), owner.getWorld().getDimensionKey(),
+									new SPlaySoundEventPacket(type, owner.getPos(), data, false)
+							);
+				} else {
+					owner.getWorld().playEvent(player, type, owner.getPos(), data);
+				}
 		}
 	}
 	
@@ -476,6 +628,9 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
+		if (World.isOutsideBuildHeight(context.posInRealWorld)) {
+			return false;
+		}
 		
 		owner.markDirty();
 		owner.getWorld().notifyBlockUpdate(owner.getPos(), state, state, 3);
@@ -519,7 +674,11 @@ public class FakeServerWorld extends ServerWorld {
 
 //				if (state.getBlockState().equals(state.getFluidState().getBlockState())) {
 				if (old.getBlock() != state.getBlock()) {
-					state.onBlockAdded(this, pos, old, false);
+					try {
+						state.onBlockAdded(this, pos, old, false);
+						//TODO: figure out why LootContext$Builder throws null pointers
+					} catch (NullPointerException ignored) {
+					}
 					
 					{
 						BlockState statePlace = state;
@@ -603,6 +762,14 @@ public class FakeServerWorld extends ServerWorld {
 						state.updateDiagonalNeighbors(this, pos, i, recursionLeft - 1);
 						
 						this.notifyNeighborsOfStateChange(pos, blockstate.getBlock());
+						for (Direction value : Direction.values()) {
+							BlockPos pos1 = pos.offset(value);
+							BlockState state1 = this.getBlockState(pos1);
+							ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos1);
+							if (context.teInRealWorld instanceof UnitTileEntity) {
+								state1.updatePostPlacement(value.getOpposite(), state, ((UnitTileEntity) context.teInRealWorld).world, pos1, pos);
+							}
+						}
 					}
 					
 					this.onBlockStateChange(pos, blockstate, blockstate1);

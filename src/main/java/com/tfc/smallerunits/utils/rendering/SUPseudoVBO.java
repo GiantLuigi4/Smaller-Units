@@ -2,7 +2,7 @@ package com.tfc.smallerunits.utils.rendering;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
-import com.tfc.smallerunits.utils.FakeServerWorld;
+import com.tfc.smallerunits.utils.world.FakeServerWorld;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.LightTexture;
@@ -70,7 +70,7 @@ public class SUPseudoVBO {
 		
 		normal.normalize();
 		normal.setX(-Math.abs(normal.getX()));
-		normal.setY(-Math.abs(normal.getY()));
+		normal.setY((normal.getY()));
 		normal.setZ(-Math.abs(normal.getZ()));
 		
 		drawVertex(vertex1, new Vector3d(normal.getX(), normal.getY(), normal.getZ()), matrixStack, overworldLight, world, builder1, combinedOverlay);
@@ -119,9 +119,12 @@ public class SUPseudoVBO {
 		int blockLight = world.getLightFor(LightType.BLOCK, posLight);
 		int skyLight = world.getLightFor(LightType.SKY, posLight);
 		
-		if (vert.nx != 0 || vert.ny != 1 || vert.nz != 0) {
-			normal = new Vector3d(vert.nx, vert.ny, vert.nz);
+		if (normal.y != 0) {
+			normal = new Vector3d(0, -normal.y, 0);
 		}
+		
+		if (vert.nx != 0 || vert.ny != 1 || vert.nz != 0)
+			normal = new Vector3d(vert.nx, vert.ny, vert.nz);
 		
 		normal = normal.normalize();
 		
@@ -131,6 +134,8 @@ public class SUPseudoVBO {
 		amt = Math.abs(amt);
 		amt /= 2.25;
 		amt = 1 - amt;
+		if (normal.y > 0)
+			amt = amt / 2.15;
 		
 		builder1.addVertex(
 				vector3f.getX(),
