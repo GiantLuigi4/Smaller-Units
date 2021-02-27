@@ -50,6 +50,10 @@ public class CustomBuffer implements IRenderTypeBuffer {
 	
 	@Override
 	public IVertexBuilder getBuffer(RenderType p_getBuffer_1_) {
+//		for (CustomVertexBuilder customVertexBuilder : builders) {
+//			if (customVertexBuilder.type.equals(p_getBuffer_1_))
+//				return customVertexBuilder;
+//		}
 		CustomVertexBuilder builder = new CustomVertexBuilder(p_getBuffer_1_);
 		builder.pos = pos;
 		builder.face = face;

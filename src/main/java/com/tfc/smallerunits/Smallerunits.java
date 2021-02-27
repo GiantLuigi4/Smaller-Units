@@ -1,15 +1,19 @@
 package com.tfc.smallerunits;
 
-import com.tfc.smallerunits.client.TickHandler;
+//import com.tfc.smallerunits.client.TickHandler;
+
 import com.tfc.smallerunits.crafting.CraftingRegistry;
 import com.tfc.smallerunits.registry.Deferred;
+import com.tfc.smallerunits.utils.threecore.SUResizeType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,9 +34,17 @@ public class Smallerunits {
 		Deferred.ITEMS.register(bus);
 		CraftingRegistry.recipeSerializers.register(bus);
 		
-		if (FMLEnvironment.dist.isClient()) {
-			MinecraftForge.EVENT_BUS.addListener(TickHandler::onTick);
+		ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, SmallerUnitsConfig.serverSpec);
+
+//		if (FMLEnvironment.dist.isClient()) {
+//			MinecraftForge.EVENT_BUS.addListener(TickHandler::onTick);
+//		}
+		
+		if (ModList.get().isLoaded("threecore")) {
+			SUResizeType.suSizeChangeTypes.register(bus);
 		}
+		
+		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onSneakClick);
 		
 		MinecraftForge.EVENT_BUS.register(this);
 	}

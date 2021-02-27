@@ -34,6 +34,8 @@ public class FakeServerWorldInfo implements IServerWorldInfo {
 	public IServerWorldInfo getParentInfo() {
 		if (owner instanceof IServerWorldInfo)
 			return (IServerWorldInfo) owner.getWorldInfo();
+		else if (owner != null && owner.owner.getWorld().getWorldInfo() instanceof IServerWorldInfo)
+			return (IServerWorldInfo) owner.owner.getWorld().getWorldInfo();
 		return null;
 	}
 	

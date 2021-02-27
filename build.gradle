@@ -47,6 +47,8 @@ minecraft {
 
             arg "-mixin.config=smaller_units.mixins.json"
 
+            property 'mixin.env.disableRefMap', 'true'
+
             mods {
                 smallerunits {
                     source sourceSets.main
@@ -64,6 +66,8 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             arg "-mixin.config=smaller_units.mixins.json"
+
+            property 'mixin.env.disableRefMap', 'true'
 
             mods {
                 smallerunits {
@@ -101,6 +105,28 @@ dependencies {
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
+
+    implementation fg.deobf('curse.maven:jei-238222:3157864')
+    implementation fg.deobf('curse.maven:carryon-274259:3206755')
+    implementation fg.deobf('curse.maven:storagedrawers-223852:3180569')
+    implementation fg.deobf('curse.maven:quark-243121:3212156')
+    implementation fg.deobf('curse.maven:oddities-301051:3088871')
+    implementation fg.deobf('curse.maven:autoreglib-250363:3128555')
+    implementation fg.deobf('curse.maven:appeng-223794:3185882')
+    implementation fg.deobf('curse.maven:refinedstorage-243076:3196167')
+//    implementation fg.deobf('curse.maven:shrink-426386:3162514')
+    implementation fg.deobf('curse.maven:pymtech-316946:3163217')
+    implementation fg.deobf('curse.maven:threecore-349285:3187033')
+    implementation fg.deobf('curse.maven:compactstorage-223703:3209571')
+    implementation fg.deobf('curse.maven:mekanism-268560:3183270')
+    implementation fg.deobf('curse.maven:fluxnetworks-248020:3174798')
+    implementation fg.deobf('curse.maven:xnet-260912:3140153')
+    implementation fg.deobf('curse.maven:mcjtylib-233105:3194349')
+    implementation fg.deobf('curse.maven:rftoolsbase-326041:3206945')
+    implementation fg.deobf('curse.maven:create-328085:3167531')
+    implementation fg.deobf('curse.maven:botania-225643:3175663')
+    implementation fg.deobf('curse.maven:patchouli-306770:3204037')
+    implementation fg.deobf('curse.maven:curios-309927:3186427')
 
     compile 'org.spongepowered:mixin:0.8'
 }

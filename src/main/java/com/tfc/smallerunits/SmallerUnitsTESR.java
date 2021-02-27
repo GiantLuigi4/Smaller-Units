@@ -4,24 +4,29 @@ package com.tfc.smallerunits;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.mojang.blaze3d.vertex.MatrixApplyingVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.utils.NBTStripper;
 import com.tfc.smallerunits.utils.SmallUnit;
+import com.tfc.smallerunits.utils.UnitRaytraceContext;
+import com.tfc.smallerunits.utils.UnitRaytraceHelper;
 import com.tfc.smallerunits.utils.rendering.CustomBuffer;
 import com.tfc.smallerunits.utils.rendering.SUPseudoVBO;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
+import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.debug.CollisionBoxDebugRenderer;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.model.ModelBakery;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.client.settings.AmbientOcclusionStatus;
+import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
@@ -33,8 +38,13 @@ import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.math.vector.Vector4f;
 import net.minecraft.world.LightType;
 import net.minecraftforge.client.model.data.EmptyModelData;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.util.Optional;
 import java.util.Random;
+import java.util.SortedSet;
 
 public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	public SmallerUnitsTESR(TileEntityRendererDispatcher rendererDispatcherIn) {
@@ -47,6 +57,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	private static final Quaternion quat180X = new Quaternion(180, 0, 0, true);
 	private static final Quaternion quat90Y = new Quaternion(0, 90, 0, true);
 	private int lastGameTime = 0;
+	
+	public static final Logger LOGGER = LogManager.getLogger();
 	
 	public static void renderCube(float r, float g, float b, float x, float y, float z, IVertexBuilder builder, int combinedOverlay, int combinedLight, MatrixStack matrixStack, boolean useNormals) {
 		renderSquare(r, g, b, x, y, z + 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
@@ -138,6 +150,16 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	public void render(UnitTileEntity tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedLightIn, int combinedOverlayIn) {
 		CompoundNBT nbt = tileEntityIn.serializeNBT();
 		
+		if (tileEntityIn.getWorld() == null) return;
+		
+		if (!bufferIn.getClass().equals(IRenderTypeBuffer.Impl.class)) {
+			bufferIn = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+		}
+		
+		tileEntityIn.world.profiler.get().startTick();
+		
+		tileEntityIn.world.animateTick();
+		
 		nbt.remove("x");
 		nbt.remove("y");
 		nbt.remove("z");
@@ -145,6 +167,49 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		nbt.remove("ForgeData");
 		nbt.remove("ForgeCaps");
 		nbt.remove("ticks");
+		nbt.remove("entities");
+		nbt = NBTStripper.stripOfTEData(nbt);
+		
+		for (SortedSet<DestroyBlockProgress> value : Minecraft.getInstance().worldRenderer.damageProgress.values()) {
+			for (DestroyBlockProgress destroyBlockProgress : value) {
+				if (destroyBlockProgress.getPosition().equals(tileEntityIn.getPos())) {
+					int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
+					Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
+					UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(tileEntityIn, entity, false, tileEntityIn.getPos(), Optional.empty());
+					BlockState miningState = tileEntityIn.world.getBlockState(context.posHit);
+					matrixStackIn.push();
+					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+					matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
+					CustomBuffer.CustomVertexBuilder customVertexBuilder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+					IVertexBuilder ivertexbuilder1 = new MatrixApplyingVertexBuilder(customVertexBuilder, matrixStackIn.getLast().getMatrix(), matrixStackIn.getLast().getNormal());
+					Minecraft.getInstance().getBlockRendererDispatcher().renderBlockDamage(miningState, context.posHit, tileEntityIn.world, matrixStackIn, ivertexbuilder1);
+					IVertexBuilder builder1 = bufferIn.getBuffer(customVertexBuilder.type);
+					int index = 0;
+					for (CustomBuffer.Vertex vert : customVertexBuilder.vertices) {
+						int amt = 1;
+//						Vector4f offset = new Vector4f(context.posHit.getX(),context.posHit.getY()-64,context.posHit.getZ(),0);
+//						offset.transform(matrixStackIn);
+						int u = (index == 0 || index == 3) ? 0 : 1;
+						int v = (index == 0 || index == 1) ? 1 : 0;
+						builder1.addVertex(
+								(float) vert.x,
+								(float) vert.y,
+								(float) vert.z,
+								(float) (vert.r * amt) / 255f,
+								(float) (vert.g * amt) / 255f,
+								(float) (vert.b * amt) / 255f,
+								vert.a / 255f,
+								v, u,
+								combinedOverlayIn, combinedLightIn,
+								vert.nx, vert.ny, vert.nz
+						);
+						index++;
+						if (index == 4) index = 0;
+					}
+					matrixStackIn.pop();
+				}
+			}
+		}
 		
 		for (Direction dir : Direction.values()) {
 			BlockState state = tileEntityIn.getWorld().getBlockState(tileEntityIn.getPos().offset(dir));
@@ -264,12 +329,32 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 		for (SmallUnit value : tileEntityIn.world.blockMap.values()) {
 			if (value.tileEntity != null) {
+				tileEntityIn.world.isRemote = true;
 				matrixStackIn.push();
 				matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
 				TileEntity tileEntity = value.tileEntity;
 				TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(tileEntity);
-				if (renderer != null)
-					renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn, LightTexture.packLight(tileEntityIn.world.getLightFor(LightType.BLOCK, value.pos), tileEntityIn.world.getLightFor(LightType.SKY, value.pos)), combinedOverlayIn);
+				int matrixSize = matrixStackIn.stack.size();
+				boolean isExceptionPresent = false;
+				String exceptionAt = "";
+				if (renderer != null) {
+					try {
+						renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn, LightTexture.packLight(tileEntityIn.world.getLightFor(LightType.BLOCK, value.pos), tileEntityIn.world.getLightFor(LightType.SKY, value.pos)), combinedOverlayIn);
+					} catch (Throwable ignored) {
+						isExceptionPresent = true;
+						for (StackTraceElement element : ignored.getStackTrace()) {
+							if (element.getClassName().equals(renderer.getClass().getName())) {
+								exceptionAt = element.getClassName() + "." + element.getMethodName() + "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
+							}
+						}
+					}
+				}
+				if (matrixSize != matrixStackIn.stack.size()) {
+					LOGGER.log(Level.WARN, ("What's going on? Tile Entity renderer for " + tileEntity.getType().getRegistryName() + " missed " + (matrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
+				}
+				while (matrixStackIn.stack.size() != matrixSize) {
+					matrixStackIn.pop();
+				}
 				matrixStackIn.pop();
 			}
 		}
@@ -289,6 +374,45 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			RenderSystem.enableTexture();
 			matrixStackIn.pop();
 		}
+		
+		IRenderTypeBuffer finalBufferIn = bufferIn;
+		matrixStackIn.push();
+		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+		MatrixStack finalMatrixStackIn = matrixStackIn;
+		tileEntityIn.world.entitiesByUuid.forEach((uuid, entity) -> {
+			finalMatrixStackIn.push();
+			finalMatrixStackIn.translate(
+					(entity.getPosX()),
+					(entity.getPositionVec().getY() - 64),
+					(entity.getPositionVec().getZ())
+			);
+			EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) Minecraft.getInstance().getRenderManager().getRenderer(entity);
+			int matrixSize = finalMatrixStackIn.stack.size();
+			boolean isExceptionPresent = false;
+			String exceptionAt = "";
+			if (renderer != null) {
+				try {
+					CollisionBoxDebugRenderer
+					renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, finalBufferIn, combinedLightIn);
+				} catch (Throwable ignored) {
+					isExceptionPresent = true;
+					for (StackTraceElement element : ignored.getStackTrace()) {
+						if (element.getClassName().equals(renderer.getClass().getName())) {
+							exceptionAt = element.getClassName() + "." + element.getMethodName() + "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
+						}
+					}
+				}
+			}
+			if (matrixSize != finalMatrixStackIn.stack.size()) {
+				LOGGER.log(Level.WARN, ("What's going on? Tile Entity renderer for " + entity.getType().getRegistryName() + " missed " + (finalMatrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
+			}
+			while (finalMatrixStackIn.stack.size() != matrixSize) {
+				finalMatrixStackIn.pop();
+			}
+			finalMatrixStackIn.pop();
+		});
+		tileEntityIn.world.profiler.get().endTick();
+		matrixStackIn.pop();
 	}
 	
 	public void renderHalf(MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn) {

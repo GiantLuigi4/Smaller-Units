@@ -2,17 +2,27 @@ package com.tfc.smallerunits;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitPallet;
+import com.tfc.smallerunits.utils.rendering.RenderTypeHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.model.ItemCameraTransforms;
+import net.minecraft.client.renderer.texture.AtlasTexture;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
+import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
+import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Quaternion;
+import net.minecraft.util.math.vector.Vector3f;
 import net.minecraftforge.client.model.data.EmptyModelData;
 
 public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
@@ -20,7 +30,22 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 	public void func_239207_a_(ItemStack stack, ItemCameraTransforms.TransformType p_239207_2_, MatrixStack matrixStack, IRenderTypeBuffer buffer, int combinedLight, int combinedOverlay) {
 		super.func_239207_a_(stack, p_239207_2_, matrixStack, buffer, combinedLight, combinedOverlay);
 		
-		CompoundNBT nbt = stack.getOrCreateTag().getCompound("BlockEntityTag");
+		CompoundNBT nbt;
+		//Carry on compat
+		if (stack.getOrCreateTag().contains("tileData"))
+			nbt = stack.getOrCreateTag().getCompound("tileData");
+		else
+			nbt = stack.getOrCreateTag().getCompound("BlockEntityTag");
+		
+		//More Carryon Compat
+		if (nbt.isEmpty()) {
+			if (p_239207_2_.equals(ItemCameraTransforms.TransformType.NONE)) {
+				ItemStack stack1 = Minecraft.getInstance().player.getHeldItem(Hand.MAIN_HAND);
+				if (stack1.getItem().getRegistryName().equals(new ResourceLocation("carryon:tile_item"))) {
+					nbt = stack1.getOrCreateTag().getCompound("tileData");
+				}
+			}
+		}
 		
 		int unitsPerBlock = nbt.getInt("upb");
 		
@@ -36,6 +61,60 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 					buffer, combinedLight, combinedOverlay,
 					EmptyModelData.INSTANCE
 			);
+			if (!value.state.getFluidState().isEmpty()) {
+				ResourceLocation texture = value.state.getFluidState().getFluid().getAttributes().getFlowingTexture();
+				TextureAtlasSprite texture1 = Minecraft.getInstance().getAtlasSpriteGetter(AtlasTexture.LOCATION_BLOCKS_TEXTURE).apply(texture);
+				RenderType type = RenderTypeLookup.getRenderType(value.state.getFluidState());
+				IVertexBuilder builder = buffer.getBuffer(RenderTypeHelper.getType(type));
+				float flHeight = value.state.getFluidState().getHeight();
+				
+				int color = value.state.getFluidState().getFluid().getAttributes().getColor();
+				
+				RenderSystem.enableRescaleNormal();
+				
+				vert(0, 0, 1, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, 0, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, flHeight, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(0, flHeight, 1, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				
+				vert(0, flHeight, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, flHeight, 0, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, 0, 0, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(0, 0, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				
+				vert(0, 0, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(0, 0, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(0, flHeight, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(0, flHeight, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				
+				vert(1, flHeight, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, flHeight, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, 0, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, 0, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				
+				vert(0, flHeight, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(0, flHeight, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMaxV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, flHeight, 1, combinedLight, combinedOverlay, texture1.getMaxU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				vert(1, flHeight, 0, combinedLight, combinedOverlay, texture1.getMinU(), texture1.getMinV(), 0, 0, 0, builder, matrixStack, color);
+				
+				RenderSystem.disableRescaleNormal();
+			}
+			if (value.tileEntity != null) {
+				matrixStack.push();
+				TileEntity tileEntity = value.tileEntity;
+				TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(tileEntity);
+				int matrixSize = matrixStack.stack.size();
+				if (renderer != null) {
+					try {
+						renderer.render(tileEntity, 0, matrixStack, buffer, combinedLight, combinedOverlay);
+					} catch (Throwable ignored) {
+					}
+				}
+				while (matrixStack.stack.size() != matrixSize) {
+					matrixStack.pop();
+				}
+				matrixStack.pop();
+			}
 //			IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state);
 //			IVertexBuilder builder = buffer.getBuffer(RenderTypeLookup.getChunkRenderType(value.state));
 //			for (Direction direction : Direction.values()) {
@@ -163,5 +242,19 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 		matrixStackIn.scale(1, 1, 0.001f);
 		SmallerUnitsTESR.renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		matrixStackIn.pop();
+	}
+	
+	private void vert(float x, float y, float z, int light, int overlay, float u, float v, float nx, float ny, float nz, IVertexBuilder builder1, MatrixStack matrixStack, int color) {
+		Vector3f vec = SmallerUnitsTESR.translate(matrixStack, x, y, z);
+		float r = ((color >> 16) & 0xFF) / 255f;
+		float g = ((color >> 8) & 0xFF) / 255f;
+		float b = ((color >> 0) & 0xFF) / 255f;
+		builder1.addVertex(
+				vec.getX(), vec.getY(), vec.getZ(),
+				r, g, b, ((color >> 24) & 0xff) / 255f,
+				u, v,
+				light, overlay,
+				nx, ny, nz
+		);
 	}
 }

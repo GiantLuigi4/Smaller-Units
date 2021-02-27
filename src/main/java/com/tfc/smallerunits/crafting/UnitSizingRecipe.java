@@ -1,6 +1,7 @@
 package com.tfc.smallerunits.crafting;
 
 import com.mojang.datafixers.util.Pair;
+import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.TileResizingItem;
 import net.minecraft.inventory.CraftingInventory;
 import net.minecraft.item.ItemStack;
@@ -43,8 +44,10 @@ public class UnitSizingRecipe extends SpecialRecipe {
 		ItemStack stack2 = pair.getSecond();
 		if (stack2 == null || stack2.isEmpty()) return false;
 		int upb = stack1.getOrCreateTag().getCompound("BlockEntityTag").getInt("upb");
-		if (upb == 2 && ((TileResizingItem) stack2.getItem()).getScale() < 0) return false;
-		if (upb >= 16 && ((TileResizingItem) stack2.getItem()).getScale() > 0) return false;
+		if (upb == SmallerUnitsConfig.SERVER.minUPB.get() && ((TileResizingItem) stack2.getItem()).getScale() < 0)
+			return false;
+		if (upb >= SmallerUnitsConfig.SERVER.maxUPB.get() && ((TileResizingItem) stack2.getItem()).getScale() > 0)
+			return false;
 		return true;
 	}
 	

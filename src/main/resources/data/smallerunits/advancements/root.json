@@ -1,0 +1,24 @@
+{
+  "__comment": "Made with TheDestruc7i0n's advancements generator: https://advancements.thedestruc7i0n.ca",
+  "display": {
+	"title": {
+	  "text": "Smaller is better!"
+	},
+	"description": {
+	  "text": "Make a hammer of resizing"
+	},
+	"icon": {
+	  "item": "smallerunits:su_shrinker"
+	},
+	"frame": "goal",
+	"show_toast": true,
+	"announce_to_chat": true,
+	"hidden": false,
+	"background": "minecraft:textures/gui/advancements/backgrounds/stone.png"
+  },
+  "criteria": {
+	"impossible": {
+	  "trigger": "minecraft:impossible"
+	}
+  }
+}

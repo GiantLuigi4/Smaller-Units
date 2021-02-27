@@ -3,6 +3,7 @@ package com.tfc.smallerunits.utils;
 import com.tfc.smallerunits.utils.world.FakeServerWorld;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
@@ -27,6 +28,7 @@ public class UnitPallet {
 		nbt = new CompoundNBT();
 		ListNBT listNbt = new ListNBT();
 		CompoundNBT states = new CompoundNBT();
+		CompoundNBT blocks = new CompoundNBT();
 		
 		for (SmallUnit unit : units) {
 			posUnitMap.put(unit.pos, unit);
@@ -45,20 +47,26 @@ public class UnitPallet {
 				unitNBT.put("tileNBT", unit.tileEntity.serializeNBT());
 			
 			listNbt.add(unitNBT);
-			String state = unit.state.toString();
-			state = state.substring("Block{".length());
-			state = state.replace("}", "");
+			String state = unit.state.getBlockState().toString();
+			if (!state.startsWith("Block{")) {
+				blocks.putString(stateIdMap.get(unit.state).toString(), unit.state.getBlock().getRegistryName().toString());
+			} else {
+				state = state.substring("Block{".length());
+				state = state.replace("}", "");
+			}
 			states.putString(stateIdMap.get(unit.state).toString(), state);
 		}
 		
 		nbt.put("units", listNbt);
 		nbt.put("states", states);
+		nbt.put("blocks", blocks);
 	}
 	
 	public UnitPallet(CompoundNBT nbt, FakeServerWorld world) {
 		this.nbt = nbt;
 		ListNBT listNBT = nbt.getList("units", Constants.NBT.TAG_COMPOUND);
 		CompoundNBT stateIndexMap = nbt.getCompound("states");
+		CompoundNBT blockIndexMap = nbt.getCompound("blocks");
 		
 		for (INBT inbt : listNBT) {
 			CompoundNBT nbt1 = (CompoundNBT) inbt;
@@ -71,7 +79,9 @@ public class UnitPallet {
 			if (end == -1) end = state.length() + 1;
 			String blockName = state;
 			if (state.contains("[")) blockName = (state.substring(0, end));
-			
+			if (blockIndexMap.contains(stateIndex + "")) {
+				blockName = blockIndexMap.getString(stateIndex + "");
+			}
 			Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockName));
 			SmallUnit unit = null;
 			for (BlockState validState : block.getStateContainer().getValidStates()) {
@@ -79,7 +89,15 @@ public class UnitPallet {
 					unit = new SmallUnit(pos, validState);
 					posUnitMap.put(pos, unit);
 					break;
+				} else if (validState.toString().equals(state)) {
+					unit = new SmallUnit(pos, validState);
+					posUnitMap.put(pos, unit);
+					break;
 				}
+			}
+			if (unit == null && block != Blocks.AIR) {
+				unit = new SmallUnit(pos, block.getDefaultState());
+				posUnitMap.put(pos, unit);
 			}
 			
 			if (unit == null) continue;

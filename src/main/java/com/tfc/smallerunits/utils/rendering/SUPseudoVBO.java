@@ -129,6 +129,7 @@ public class SUPseudoVBO {
 		normal = normal.normalize();
 		
 		double amt = normal.dotProduct(new Vector3d(1, 0, 0.5).normalize());
+		
 		if (Double.isNaN(amt))
 			amt = 1;
 		amt = Math.abs(amt);

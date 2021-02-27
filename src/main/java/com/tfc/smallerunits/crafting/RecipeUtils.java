@@ -40,7 +40,8 @@ public class RecipeUtils {
 			else if (stack.getItem() instanceof TileResizingItem) hammer = ((TileResizingItem) stack.getItem());
 			else if (!stack.isEmpty()) return false;
 		}
-		return true;
+		if (hammer == null) return false;
+		return hammer.getScale() > 0 || unitIfPresent != null;
 	}
 	
 	public static Pair<ItemStack, ItemStack> getUnitAndHammer(CraftingInventory inventory) {

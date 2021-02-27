@@ -2,11 +2,18 @@ package com.tfc.smallerunits.block;
 
 import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.registry.Deferred;
+import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitPallet;
 import com.tfc.smallerunits.utils.world.FakeDimensionSavedData;
 import com.tfc.smallerunits.utils.world.FakeServerWorld;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.item.ExperienceOrbEntity;
+import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.projectile.PotionEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
@@ -16,6 +23,7 @@ import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
@@ -24,6 +32,7 @@ import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.TickPriority;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.registries.ForgeRegistries;
 import sun.misc.Unsafe;
 
 import javax.annotation.Nullable;
@@ -67,6 +76,19 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	
 	@Override
 	public void tick() {
+		if (world.isRemote) {
+			for (SmallUnit value : this.world.blockMap.values()) {
+				if (value.tileEntity instanceof ITickableTileEntity) {
+					try {
+						((ITickableTileEntity) value.tileEntity).tick();
+					} catch (Throwable ignored) {
+					}
+				}
+			}
+			for (Entity value : world.entitiesByUuid.values()) {
+				value.tick();
+			}
+		}
 //		if (world.isRemote) {
 //		World worldIn = getWorld();
 //		BlockState state = this.getBlockState();
@@ -155,7 +177,12 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				BlockPos pos = new BlockPos(tick.getInt("x"), tick.getInt("y"), tick.getInt("z"));
 				long time = tick.getInt("time");
 				int priority = tick.getInt("priority");
-				world.getPendingBlockTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getBlock(), (int) time, TickPriority.getPriority(priority));
+				try {
+					if (pos.getY() > 0 && pos.getX() > 0 && pos.getZ() > 0 && pos.getX() < (unitsPerBlock - 1) && (pos.getY() - 64) < (unitsPerBlock - 1) && pos.getZ() < (unitsPerBlock - 1))
+						world.getPendingBlockTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getBlock(), (int) time, TickPriority.getPriority(priority));
+				} catch (Throwable err) {
+					err.printStackTrace();
+				}
 			}
 			ListNBT fluidTickList = ticks.getList("fluidTicks", Constants.NBT.TAG_COMPOUND);
 			for (INBT inbt : fluidTickList) {
@@ -163,13 +190,35 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				BlockPos pos = new BlockPos(tick.getInt("x"), tick.getInt("y"), tick.getInt("z"));
 				long time = tick.getInt("time");
 				int priority = tick.getInt("priority");
-				world.getPendingFluidTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
+				try {
+					world.getPendingFluidTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
+				} catch (Throwable err) {
+					err.printStackTrace();
+				}
 			}
 		}
 		if (nbt.contains("savedData"))
 			dataNBT = nbt.getCompound("savedData");
 		if (nbt.contains("isNatural"))
 			isNatural = nbt.getBoolean("isNatural");
+		CompoundNBT entities = nbt.getCompound("entities");
+		world.entitiesByUuid.clear();
+		world.entitiesById.clear();
+		for (String key : entities.keySet()) {
+			CompoundNBT entityNBT = entities.getCompound(key);
+			EntityType<?> type = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(entityNBT.getString("id")));
+			if (type == null) continue;
+			Entity entity = type.create(world);
+			if (entity == null) continue;
+			entity.deserializeNBT(entityNBT);
+			Entity entityIn = entity;
+			if (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity) {
+				world.addEntity(entityIn);
+			} else {
+				world.entitiesByUuid.put(entity.getUniqueID(), entity);
+				world.entitiesById.put(entity.getEntityId(), entity);
+			}
+		}
 	}
 	
 	@Override
@@ -208,6 +257,13 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		world.getSavedData().save();
 		compound.put("savedData", ((FakeDimensionSavedData) world.getSavedData()).savedNBT);
 		compound.putBoolean("isNatural", isNatural);
+		CompoundNBT entities = new CompoundNBT();
+		world.entitiesByUuid.forEach((uuid, entity) -> {
+			if (!world.entitiesToRemove.contains(entity)) {
+				entities.put(uuid.toString(), entity.serializeNBT());
+			}
+		});
+		compound.put("entities", entities);
 		return super.write(compound);
 	}
 	

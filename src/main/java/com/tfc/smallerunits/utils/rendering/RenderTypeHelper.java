@@ -11,6 +11,7 @@ public class RenderTypeHelper {
 			input = (Minecraft.getInstance().gameSettings.graphicFanciness.equals(GraphicsFanciness.FABULOUS) || ModList.get().isLoaded("optifine")) ?
 					RenderType.getTranslucentMovingBlock() :
 					RenderType.getTranslucentNoCrumbling();
+//		if (input.equals(RenderType.getSolid())) return RenderType.getEntitySolid(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
 		return input;
 	}
 }

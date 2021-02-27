@@ -1,0 +1,24 @@
+{
+  "__comment": "Made with TheDestruc7i0n's advancements generator: https://advancements.thedestruc7i0n.ca",
+  "display": {
+	"title": {
+	  "text": "Well that's just rude!"
+	},
+	"description": {
+	  "text": "Forcefully set a player's size using a hammer of resizing"
+	},
+	"icon": {
+	  "item": "smallerunits:su_grower"
+	},
+	"frame": "challenge",
+	"show_toast": true,
+	"announce_to_chat": true,
+	"hidden": false
+  },
+  "criteria": {
+	"strike_player": {
+	  "trigger": "minecraft:impossible"
+	}
+  },
+  "parent": "smallerunits:root"
+}
