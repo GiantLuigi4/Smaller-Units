@@ -935,7 +935,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		);
 	}
 	
-	//idk why, but this makes selection work
+	//idk why, but this makes selection work (better)
 	public Vector3d invRound(Vector3d pos) {
 		double x = pos.getX();
 		double y = pos.getY();
