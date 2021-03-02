@@ -97,7 +97,8 @@ minecraft {
 }
 
 repositories {
-    maven {url='https://dist.creeper.host/Sponge/maven'}
+    maven { url "https://dist.creeper.host/Sponge/maven" }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -105,6 +106,8 @@ dependencies {
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
+
+    implementation fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
 
     implementation fg.deobf('curse.maven:jei-238222:3157864')
     implementation fg.deobf('curse.maven:carryon-274259:3206755')
@@ -124,9 +127,10 @@ dependencies {
     implementation fg.deobf('curse.maven:mcjtylib-233105:3194349')
     implementation fg.deobf('curse.maven:rftoolsbase-326041:3206945')
     implementation fg.deobf('curse.maven:create-328085:3167531')
-    implementation fg.deobf('curse.maven:botania-225643:3175663')
+//    implementation fg.deobf('curse.maven:botania-225643:3175663')
     implementation fg.deobf('curse.maven:patchouli-306770:3204037')
     implementation fg.deobf('curse.maven:curios-309927:3186427')
+    implementation fg.deobf('curse.maven:chiselandbits-231095:3176033')
 
     compile 'org.spongepowered:mixin:0.8'
 }

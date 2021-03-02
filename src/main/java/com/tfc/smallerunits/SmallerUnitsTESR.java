@@ -12,6 +12,7 @@ import com.tfc.smallerunits.utils.NBTStripper;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitRaytraceContext;
 import com.tfc.smallerunits.utils.UnitRaytraceHelper;
+import com.tfc.smallerunits.utils.rendering.BufferCache;
 import com.tfc.smallerunits.utils.rendering.CustomBuffer;
 import com.tfc.smallerunits.utils.rendering.SUPseudoVBO;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -19,25 +20,25 @@ import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
-import net.minecraft.client.renderer.debug.CollisionBoxDebugRenderer;
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.client.renderer.model.ModelBakery;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.client.settings.AmbientOcclusionStatus;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Matrix3f;
-import net.minecraft.util.math.vector.Quaternion;
-import net.minecraft.util.math.vector.Vector3f;
-import net.minecraft.util.math.vector.Vector4f;
+import net.minecraft.util.math.vector.*;
 import net.minecraft.world.LightType;
 import net.minecraftforge.client.model.data.EmptyModelData;
+import net.minecraftforge.client.model.data.IDynamicBakedModel;
+import net.minecraftforge.client.model.data.IModelData;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,16 +48,12 @@ import java.util.Random;
 import java.util.SortedSet;
 
 public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
-	public SmallerUnitsTESR(TileEntityRendererDispatcher rendererDispatcherIn) {
-		super(rendererDispatcherIn);
-	}
+	public static SmallerUnitsTESR INSTANCE;
 	
-	public static final Object2ObjectLinkedOpenHashMap<BlockPos, VertexBuffer> bufferCache1 = new Object2ObjectLinkedOpenHashMap<>();
 	public static final Object2ObjectLinkedOpenHashMap<BlockPos, Pair<CompoundNBT, SUPseudoVBO>> bufferCache = new Object2ObjectLinkedOpenHashMap<>();
 	private static final Quaternion quat90X = new Quaternion(90, 0, 0, true);
 	private static final Quaternion quat180X = new Quaternion(180, 0, 0, true);
 	private static final Quaternion quat90Y = new Quaternion(0, 90, 0, true);
-	private int lastGameTime = 0;
 	
 	public static final Logger LOGGER = LogManager.getLogger();
 	
@@ -146,15 +143,22 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		return new Vector3f(vector4f.getX(), vector4f.getY(), vector4f.getZ());
 	}
 	
-	@Override
-	public void render(UnitTileEntity tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedLightIn, int combinedOverlayIn) {
+	public SmallerUnitsTESR(TileEntityRendererDispatcher rendererDispatcherIn) {
+		super(rendererDispatcherIn);
+		INSTANCE = this;
+	}
+	
+	public static void render(UnitTileEntity tileEntityIn, float partialTicks, MatrixStack matrixStackIn, BufferCache bufferIn, int combinedLightIn, int combinedOverlayIn) {
 		CompoundNBT nbt = tileEntityIn.serializeNBT();
 		
 		if (tileEntityIn.getWorld() == null) return;
-		
-		if (!bufferIn.getClass().equals(IRenderTypeBuffer.Impl.class)) {
-			bufferIn = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
-		}
+
+//		if (!bufferIn.getClass().equals(IRenderTypeBuffer.Impl.class)) {
+//			bufferIn = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+//		}
+		MatrixStack oldStack = matrixStackIn;
+		matrixStackIn = new MatrixStack();
+		matrixStackIn.stack.add(oldStack.getLast());
 		
 		tileEntityIn.world.profiler.get().startTick();
 		
@@ -227,13 +231,16 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			);
 		}
 		
-		tileEntityIn.world.lightManager.tick(100, true, true);
+		tileEntityIn.world.lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 
 //		if (!bufferCache.containsKey(nbt)) {
 		if (
 				!bufferCache.containsKey(tileEntityIn.getPos())
-						|| !bufferCache.get(tileEntityIn.getPos()).getFirst().equals(nbt)
+						|| !bufferCache.get(tileEntityIn.getPos()).getFirst().equals(nbt) &&
+						!tileEntityIn.world.blockMap.isEmpty()
 		) {
+			if (bufferCache.containsKey(tileEntityIn.getPos()))
+				bufferCache.get(tileEntityIn.getPos()).getSecond().dispose();
 			bufferCache.remove(tileEntityIn.getPos());
 			
 			tileEntityIn.world.isRendering = true;
@@ -266,16 +273,26 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 						builder = customBuffer.getBuffer(type);
 						
 						if (Minecraft.getInstance().gameSettings.ambientOcclusionStatus.equals(AmbientOcclusionStatus.MAX)) {
+							IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state);
+							IModelData data = EmptyModelData.INSTANCE;
+							if (model instanceof IDynamicBakedModel) {
+								data = model.getModelData(tileEntityIn.world, value.pos, value.state, data);
+							}
 							Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelSmooth(
 									tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
 									value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
-									value.pos.toLong(), combinedOverlayIn, EmptyModelData.INSTANCE
+									value.pos.toLong(), combinedOverlayIn, data
 							);
 						} else {
+							IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state);
+							IModelData data = EmptyModelData.INSTANCE;
+							if (model instanceof IDynamicBakedModel) {
+								data = model.getModelData(tileEntityIn.world, value.pos, value.state, data);
+							}
 							Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelFlat(
 									tileEntityIn.world, Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
 									value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
-									value.pos.toLong(), combinedOverlayIn, EmptyModelData.INSTANCE
+									value.pos.toLong(), combinedOverlayIn, data
 							);
 						}
 					}
@@ -339,7 +356,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				String exceptionAt = "";
 				if (renderer != null) {
 					try {
-						renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn, LightTexture.packLight(tileEntityIn.world.getLightFor(LightType.BLOCK, value.pos), tileEntityIn.world.getLightFor(LightType.SKY, value.pos)), combinedOverlayIn);
+						renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn.getWrapped(), LightTexture.packLight(tileEntityIn.world.getLightFor(LightType.BLOCK, value.pos), tileEntityIn.world.getLightFor(LightType.SKY, value.pos)), combinedOverlayIn);
 					} catch (Throwable ignored) {
 						isExceptionPresent = true;
 						for (StackTraceElement element : ignored.getStackTrace()) {
@@ -374,13 +391,16 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			RenderSystem.enableTexture();
 			matrixStackIn.pop();
 		}
+
+//		matrixStackIn.push();
+//		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 		
-		IRenderTypeBuffer finalBufferIn = bufferIn;
-		matrixStackIn.push();
-		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-		MatrixStack finalMatrixStackIn = matrixStackIn;
-		tileEntityIn.world.entitiesByUuid.forEach((uuid, entity) -> {
+		for (Entity entity : tileEntityIn.world.entitiesByUuid.values()) {
+			MatrixStack finalMatrixStackIn = new MatrixStack();
+			finalMatrixStackIn.stack.add(oldStack.getLast());
+			
 			finalMatrixStackIn.push();
+			finalMatrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 			finalMatrixStackIn.translate(
 					(entity.getPosX()),
 					(entity.getPositionVec().getY() - 64),
@@ -392,8 +412,30 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			String exceptionAt = "";
 			if (renderer != null) {
 				try {
-					CollisionBoxDebugRenderer
-					renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, finalBufferIn, combinedLightIn);
+					if (Minecraft.getInstance().getRenderManager().isDebugBoundingBox()) {
+						IVertexBuilder builder = bufferIn.getBuffer(RenderType.getLines());
+						AxisAlignedBB bb = entity.getBoundingBox();
+						finalMatrixStackIn.push();
+						finalMatrixStackIn.translate(-entity.getPosX(), -entity.getPosY(), -entity.getPosZ());
+						WorldRenderer.drawBoundingBox(finalMatrixStackIn, builder, bb, 1, 1, 1, 1.0F);
+						if (entity instanceof LivingEntity) {
+							bb = new AxisAlignedBB(
+									entity.getEyePosition(partialTicks).x - (entity.getSize(entity.getPose()).width / 2),
+									entity.getEyePosition(partialTicks).y,
+									entity.getEyePosition(partialTicks).z - (entity.getSize(entity.getPose()).width / 2),
+									entity.getEyePosition(partialTicks).x + (entity.getSize(entity.getPose()).width / 2),
+									entity.getEyePosition(partialTicks).y + (entity.getSize(entity.getPose()).height),
+									entity.getEyePosition(partialTicks).z + (entity.getSize(entity.getPose()).width / 2)
+							);
+							WorldRenderer.drawBoundingBox(finalMatrixStackIn, builder, bb, 1, 0, 0, 1.0F);
+						}
+						Vector3d vector3d = entity.getLook(partialTicks);
+						finalMatrixStackIn.pop();
+						Matrix4f matrix4f = finalMatrixStackIn.getLast().getMatrix();
+						builder.pos(matrix4f, 0.0F, entity.getEyeHeight(), 0.0F).color(0, 0, 255, 255).endVertex();
+						builder.pos(matrix4f, (float) (vector3d.x * 2.0D), (float) ((double) entity.getEyeHeight() + vector3d.y * 2.0D), (float) (vector3d.z * 2.0D)).color(0, 0, 255, 255).endVertex();
+					}
+					renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, bufferIn.getWrapped(), combinedLightIn);
 				} catch (Throwable ignored) {
 					isExceptionPresent = true;
 					for (StackTraceElement element : ignored.getStackTrace()) {
@@ -410,12 +452,13 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				finalMatrixStackIn.pop();
 			}
 			finalMatrixStackIn.pop();
-		});
+		}
+		
 		tileEntityIn.world.profiler.get().endTick();
-		matrixStackIn.pop();
+//		oldStack.pop();
 	}
 	
-	public void renderHalf(MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn) {
+	public static void renderHalf(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn) {
 		if (tileEntityIn.isNatural) return;
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
 		matrixStackIn.push();
@@ -435,7 +478,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		matrixStackIn.pop();
 	}
 	
-	public void renderCorner(MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedOverlayIn, int combinedLightIn) {
+	public static void renderCorner(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn) {
 		matrixStackIn.push();
 		matrixStackIn.scale(0.001f, 1, 1);
 		renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
@@ -448,5 +491,12 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		matrixStackIn.scale(1, 1, 0.001f);
 		renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		matrixStackIn.pop();
+	}
+	
+	@Override
+	public void render(UnitTileEntity tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedLightIn, int combinedOverlayIn) {
+		if (!bufferIn.getClass().equals(IRenderTypeBuffer.Impl.class))
+			bufferIn = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+		render(tileEntityIn, partialTicks, matrixStackIn, new BufferCache(bufferIn, matrixStackIn), combinedLightIn, combinedOverlayIn);
 	}
 }

@@ -1,7 +1,9 @@
 package com.tfc.smallerunits.block;
 
 import com.google.common.collect.ImmutableSet;
+import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.helpers.ContainerMixinHelper;
+import com.tfc.smallerunits.helpers.PacketHacksHelper;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.*;
 import com.tfc.smallerunits.utils.world.FakeServerWorld;
@@ -152,243 +154,97 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		return getRenderShape(state, worldIn, pos);
 	}
 	
-	@Override
-	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos worldPos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
-		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
-		if (!(tileEntityUncasted instanceof UnitTileEntity))
-			return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
+	public static VoxelShape getShapeOld(BlockState state, IBlockReader reader, BlockPos pos, ISelectionContext context) {
+		VoxelShape shape;
+		
+		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
+		
+		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity))
+			return Deferred.UNIT.get().getShape(state, reader, pos, context);
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
+		shape = UnitRaytraceHelper.raytraceBlock(tileEntity, context.getEntity(), true, pos, Optional.of(context)).shapeHit;
 		
-		if (raytraceContext.shapeHit.isEmpty()) {
-			Vector3d pos;
-			{
-				RayTraceResult result = hit;
-				Vector3d pos1 = result.getHitVec().subtract(new Vector3d(worldPos.getX(), worldPos.getY(), worldPos.getZ())).scale(tileEntity.unitsPerBlock);
-				pos = new Vector3d(pos1.x, pos1.y, pos1.z);
-				pos = invRound(pos);
+		if (!shape.isEmpty()) return shape;
+		
+		Vector3d start = context.getEntity().getEyePosition(0);
+		double reach = 8;
+		
+		if (context.getEntity() instanceof PlayerEntity)
+			reach = ((LivingEntity) context.getEntity()).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
+		
+		Vector3d look = context.getEntity().getLookVec().scale(reach);
+		Vector3d end = context.getEntity().getEyePosition(0).add(look);
+		
+		for (Direction dir : Direction.values()) {
+			BlockPos pos1 = pos.offset(dir);
+			BlockState state1 = reader.getBlockState(pos1);
+			
+			if (state1.getBlock() instanceof SmallerUnitBlock) continue;
+			
+			VoxelShape raytraceShape = state1.getRaytraceShape(reader, pos, context);
+			boolean isHit = false;
+			
+			Vector3d hit = null;
+			for (AxisAlignedBB axisAlignedBB : raytraceShape.toBoundingBoxList()) {
+				axisAlignedBB = axisAlignedBB.offset(pos1.getX(), pos1.getY(), pos1.getZ());
+				
+				Optional<Vector3d> intercept = axisAlignedBB.rayTrace(start, end);
+				if (!intercept.isPresent()) continue;
+				isHit = true;
+				hit = intercept.get();
 			}
 			
-			BlockPos hitPos = new BlockPos(
-					Math.floor(pos.x),
-					Math.floor(pos.y) + 64,
-					Math.floor(pos.z)
-			);
-			
-			raytraceContext.posHit = hitPos;
+			if (isHit) {
+				VoxelShape shape1 = raytraceShape.withOffset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset());
+				BlockPos pos2 = ((SmallerUnitBlock) Deferred.UNIT.get()).getHit(new BlockRayTraceResult(hit, context.getEntity().getHorizontalFacing(), pos1, false), pos1, tileEntity.unitsPerBlock);
+				pos2 = pos2.offset(dir.getOpposite());
+				
+				if (dir == Direction.DOWN) pos2 = new BlockPos(pos2.getX(), -1, pos2.getZ());
+				else if (dir == Direction.UP) pos2 = new BlockPos(pos2.getX(), tileEntity.unitsPerBlock, pos2.getZ());
+				else if (dir == Direction.WEST) pos2 = new BlockPos(-1, pos2.getY(), pos2.getZ());
+				else if (dir == Direction.EAST) pos2 = new BlockPos(tileEntity.unitsPerBlock, pos2.getY(), pos2.getZ());
+				else if (dir == Direction.NORTH) pos2 = new BlockPos(pos2.getX(), pos2.getY(), -1);
+				else if (dir == Direction.SOUTH)
+					pos2 = new BlockPos(pos2.getX(), pos2.getY(), tileEntity.unitsPerBlock);
+				
+				float minX = pos2.getX() / (float) tileEntity.unitsPerBlock;
+				float maxX = pos2.getX() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
+				float minY = pos2.getY() / (float) tileEntity.unitsPerBlock;
+				float maxY = pos2.getY() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
+				float minZ = pos2.getZ() / (float) tileEntity.unitsPerBlock;
+				float maxZ = pos2.getZ() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
+				
+				float size = 0.001f;
+				if (dir == Direction.UP) maxY = minY + size;
+				else if (dir == Direction.DOWN) minY = maxY - size;
+				else if (dir == Direction.WEST) minX = maxX - size;
+				else if (dir == Direction.EAST) maxX = minX + size;
+				else if (dir == Direction.SOUTH) maxZ = minZ + size;
+				else if (dir == Direction.NORTH) minZ = maxZ - size;
+				
+				return VoxelShapes.combine(shape1, VoxelShapes.create(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ).expand(0.01f, 0.01f, 0.01f).offset(-0.005f, -0.005f, -0.005f)), IBooleanFunction.AND);
+			}
 		}
 		
-		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
-		
-		ItemStack stack = player.getHeldItem(handIn);
-		
-		BlockRayTraceResult result = new BlockRayTraceResult(
-				hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock).add(0, 64, 0),
-				raytraceContext.hitFace.orElse(hit.getFace()), raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite()), hit.isInside()
-		);
-		boolean playerIsSleeping = player.isSleeping();
-		Vector3d playerPos = player.getPositionVec();
-		ActionResultType resultType = ActionResultType.FAIL;
-		World currentWorld = player.world;
-		player.setWorld(tileEntity.world);
-		tileEntity.world.result = new BlockRayTraceResult(
-				raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).subtract(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ()).scale(tileEntity.unitsPerBlock),
-				raytraceContext.hitFace.orElse(Direction.UP),
-				raytraceContext.posHit, true
-		);
-		{
-			Vector3d miniWorldPos = player.getPositionVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ());
-			player.setRawPosition(miniWorldPos.getX(), miniWorldPos.getY(), miniWorldPos.getZ());
-		}
-		try {
-			if (!(player.isSneaking()) || stack.doesSneakBypassUse(worldIn, raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite()), player)) {
-				resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite())).onBlockActivated(tileEntity.world, player, handIn, result);
-			}
-		} catch (Throwable ignored) {
-		}
-		player.setWorld(currentWorld);
-		if (!playerIsSleeping && player.isSleeping()) {
-			player.stopSleepInBed(true, true);
-			if (player instanceof ServerPlayerEntity) {
-				((ServerPlayerEntity) player).connection.setPlayerLocation(playerPos.getX(), playerPos.getY(), playerPos.getZ(), player.rotationYaw, player.rotationPitch);
-			}
-			player.sendStatusMessage(new StringTextComponent("Sorry, but you can't sleep in tiny beds."), true);
-		}
-		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
-		player.recenterBoundingBox();
-		
-		if (resultType.isSuccessOrConsume()) {
-			tileEntity.markDirty();
-			worldIn.markChunkDirty(worldPos, tileEntity);
-			
-			if (player.openContainer != null)
-				ContainerMixinHelper.setNaturallyClosable(player.openContainer, false);
-			
-			return resultType;
-		}
-		
-		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
-		
-		if (stack.getItem() instanceof BlockItem) {
-			if (worldIn.isRemote) return ActionResultType.SUCCESS;
-			
-			BlockItem item = (BlockItem) stack.getItem();
-			
-			if (item.getBlock() instanceof SmallerUnitBlock && stack.getOrCreateTag().getCompound("BlockEntityTag").contains("ContainedUnits"))
-				return ActionResultType.CONSUME;
-//			if (item.getBlock() instanceof SmallerUnitBlock) return ActionResultType.CONSUME;
-			
-			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
-			
-			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
-			BlockItemUseContext context = new BlockItemUseContext(tileEntity.world, player, handIn, stack, result);
-			if (true) {
-				ActionResultType type = item.tryPlace(context);
-				if (type.isSuccessOrConsume()) {
-					BlockState statePlace = item.getBlock().getStateForPlacement(context);
-					
-					SoundType type1 = item.getBlock().getSoundType(statePlace);
-					SoundEvent event = type1.getPlaceSound();
-					tileEntity.world.playSound(
-							null,
-							posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
-							event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
-					);
-					ForgeEventFactory.onBlockPlace(player, BlockSnapshot.create(tileEntity.world.dimension, tileEntity.world, posOffset), raytraceContext.hitFace.orElse(hit.getFace()));
-					return type;
-				}
-			}
-			
-			if (clicked.isReplaceable(context))
-				posOffset = posOffset.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
-			BlockState statePlace = item.getBlock().getStateForPlacement(context);
-			if (statePlace != null) {
-				if (tileEntity.world.getBlockState(posOffset).isReplaceable(context) || clicked.isAir()) {
-					if (statePlace.isValidPosition(tileEntity.world, posOffset)) {
-						if (!player.isCreative()) stack.shrink(1);
-						
-						tileEntity.world.setBlockState(posOffset, statePlace);
-						statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
-						
-						if (!(stack.getItem() instanceof SkullItem)) {
-							if (statePlace.getBlock() instanceof ITileEntityProvider) {
-								TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
-								
-								if (stack.hasTag()) {
-									CompoundNBT nbt = stack.getOrCreateTag();
-									
-									if (nbt.contains("BlockEntityTag")) {
-										nbt = nbt.getCompound("BlockEntityTag");
-										te.read(statePlace, nbt);
-									}
-								}
-								
-								tileEntity.world.setTileEntity(posOffset, te);
-							} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
-								TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
-								
-								if (stack.hasTag()) {
-									CompoundNBT nbt = stack.getOrCreateTag();
-									
-									if (nbt.contains("BlockEntityTag")) {
-										nbt = nbt.getCompound("BlockEntityTag");
-										te.read(statePlace, nbt);
-									}
-								}
-								
-								tileEntity.world.setTileEntity(posOffset, te);
-							}
-						}
-					}
-				}
-			}
-		} else if (stack.getItem() instanceof BucketItem) {
-			if (worldIn.isRemote) return ActionResultType.SUCCESS;
-			
-			UnitRaytraceContext context = UnitRaytraceHelper.raytraceFluid(tileEntity, player, false, worldPos, Optional.empty());
-			if (!context.shapeHit.isEmpty() && ((BucketItem) stack.getItem()).getFluid() == Fluids.EMPTY) {
-				FluidState state1 = tileEntity.world.getFluidState(context.posHit);
-				SoundEvent soundevent = state1.getFluid().getAttributes().getFillSound();
-				if (state1.getFluid() != Fluids.EMPTY) {
-					if (soundevent == null)
-						soundevent = state1.getFluid().isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL;
-//				worldIn.playSound(
-					player.playSound(
-//						null,
-//						worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
-//						worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
-//						worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
-							soundevent, /*SoundCategory.PLAYERS, */1, 1
-					);
-					if (tileEntity.world.getBlockState(context.posHit).getBlock() instanceof IWaterLoggable) {
-						((IWaterLoggable) tileEntity.world.getBlockState(context.posHit).getBlock()).pickupFluid(tileEntity.world, context.posHit, tileEntity.world.getBlockState(context.posHit));
-					} else {
-						tileEntity.world.setBlockState(context.posHit, Blocks.AIR.getDefaultState());
-					}
-					stack.shrink(1);
-					if (stack.getCount() == 0)
-						player.setHeldItem(handIn, new ItemStack(state1.getFluid().getFilledBucket()));
-					else if (!player.addItemStackToInventory(new ItemStack(state1.getFluid().getFilledBucket())))
-						player.dropItem(new ItemStack(state1.getFluid().getFilledBucket()), true);
-				}
-			} else {
-				Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
-				SoundEvent soundevent = fluid.getAttributes().getEmptySound();
-				if (soundevent == null)
-					soundevent = fluid.isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_EMPTY_LAVA : SoundEvents.ITEM_BUCKET_EMPTY;
-//				worldIn.playSound(
-				player.playSound(
-//						null,
-//						worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
-//						worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
-//						worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
-						soundevent, /*SoundCategory.PLAYERS, */1, 1
-				);
-				((BucketItem) stack.getItem()).tryPlaceContainedLiquid(
-						player, tileEntity.world, raytraceContext.posHit, result
-				);
-				player.setHeldItem(handIn, ((BucketItem) stack.getItem()).emptyBucket(stack, player));
-			}
-
-//			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
-//			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
-//			if (clicked.getBlock() instanceof IWaterLoggable) {
-//				IWaterLoggable waterLoggableBlock = (IWaterLoggable) clicked.getBlock();
-//				if (waterLoggableBlock.canContainFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid)) {
-//					waterLoggableBlock.receiveFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid.getDefaultState());
+		if (shape.isEmpty()) {
+//			BlockPos hitPos;
+			if (reader instanceof FakeServerWorld) {
+//				hitPos = new BlockPos(((FakeServerWorld) reader).owner.world.result.getHitVec());
+//				VoxelShape shape1 = VoxelShapes.empty();
+//				BlockState state1 = tileEntity.world.getBlockState(hitPos);
+//				for (AxisAlignedBB axisAlignedBB : shrink(state1.getRaytraceShape(reader, pos, context), tileEntity.unitsPerBlock)) {
+//					shape1 = VoxelShapes.or(VoxelShapes.create(axisAlignedBB));
 //				}
-//			} else {
-//				BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
-//				if (tileEntity.world.getBlockState(posOffset).isAir(tileEntity.world, posOffset)) {
-//					tileEntity.world.setBlockState(posOffset, fluid.getDefaultState().getBlockState());
-//					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
-//				}
-//			}
-		} else if (stack.getItem() instanceof BoneMealItem) {
-			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
-			if (clicked.getBlock() instanceof IGrowable) {
-				if (((IGrowable) clicked.getBlock()).canGrow(tileEntity.world, raytraceContext.posHit, clicked, worldIn.isRemote)) {
-					((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
-				}
-			}
-		} else {
-			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
-			if (!(worldIn.isRemote && stack.getItem() instanceof DebugStickItem)) {
-				stack.getItem().onItemUse(
-						new BlockItemUseContext(
-								tileEntity.world, player, handIn, stack,
-								new BlockRayTraceResult(
-										raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
-										raytraceContext.hitFace.orElse(hit.getFace()), posOffset, hit.isInside()
-								)
-						)
-				);
+//				return shape1;
+				return Deferred.UNIT.get().getCollisionShape(state, reader, pos, context);
 			}
 		}
 		
-		return ActionResultType.SUCCESS;
+		if (shape.isEmpty()) return Deferred.UNIT.get().getCollisionShape(state, reader, pos, context);
+		
+		return VoxelShapes.empty();
 	}
 	
 	@Override
@@ -613,6 +469,269 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	@Override
+	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos worldPos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
+		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
+		if (!(tileEntityUncasted instanceof UnitTileEntity))
+			return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
+		
+		if (raytraceContext.shapeHit.isEmpty()) {
+			Vector3d pos;
+			{
+				RayTraceResult result = hit;
+				Vector3d pos1 = result.getHitVec().subtract(new Vector3d(worldPos.getX(), worldPos.getY(), worldPos.getZ())).scale(tileEntity.unitsPerBlock);
+				pos = new Vector3d(pos1.x, pos1.y, pos1.z);
+				pos = invRound(pos);
+			}
+			
+			BlockPos hitPos = new BlockPos(
+					Math.floor(pos.x),
+					Math.floor(pos.y) + 64,
+					Math.floor(pos.z)
+			);
+			
+			raytraceContext.posHit = hitPos;
+		}
+		
+		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
+		
+		ItemStack stack = player.getHeldItem(handIn);
+		
+		BlockRayTraceResult result = new BlockRayTraceResult(
+				hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock).add(0, 64, 0),
+				raytraceContext.hitFace.orElse(hit.getFace()), raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite()), hit.isInside()
+		);
+		boolean playerIsSleeping = player.isSleeping();
+		ActionResultType resultType = ActionResultType.FAIL;
+		Vector3d playerPos = player.getPositionVec();
+		World currentWorld = player.world;
+		player.setWorld(tileEntity.world);
+		tileEntity.world.result = new BlockRayTraceResult(
+				raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).subtract(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ()).scale(tileEntity.unitsPerBlock),
+				raytraceContext.hitFace.orElse(Direction.UP),
+				raytraceContext.posHit, true
+		);
+		{
+			Vector3d miniWorldPos = player.getPositionVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+			player.setRawPosition(miniWorldPos.getX(), miniWorldPos.getY(), miniWorldPos.getZ());
+		}
+		PacketHacksHelper.unitPos = worldPos;
+		try {
+			if (!(player.isSneaking()) || stack.doesSneakBypassUse(worldIn, raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite()), player)) {
+				resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite())).onBlockActivated(tileEntity.world, player, handIn, result);
+			}
+		} catch (Throwable ignored) {
+			ignored.printStackTrace();
+		}
+		PacketHacksHelper.unitPos = null;
+		if (!playerIsSleeping && player.isSleeping()) {
+			player.stopSleepInBed(true, true);
+			if (player instanceof ServerPlayerEntity) {
+				((ServerPlayerEntity) player).connection.setPlayerLocation(playerPos.getX(), playerPos.getY(), playerPos.getZ(), player.rotationYaw, player.rotationPitch);
+			}
+			player.sendStatusMessage(new StringTextComponent("Sorry, but you can't sleep in tiny beds."), true);
+		}
+		player.setWorld(currentWorld);
+		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+		player.recenterBoundingBox();
+		
+		if (resultType.isSuccessOrConsume()) {
+			tileEntity.markDirty();
+			worldIn.markChunkDirty(worldPos, tileEntity);
+			
+			if (player.openContainer != null)
+				ContainerMixinHelper.setNaturallyClosable(player.openContainer, false);
+			
+			return resultType;
+		}
+		
+		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+		
+		if (stack.getItem() instanceof BlockItem) {
+			if (worldIn.isRemote) return ActionResultType.SUCCESS;
+			
+			BlockItem item = (BlockItem) stack.getItem();
+			
+			if (item.getBlock() instanceof SmallerUnitBlock && stack.getOrCreateTag().getCompound("BlockEntityTag").contains("ContainedUnits"))
+				return ActionResultType.CONSUME;
+//			if (item.getBlock() instanceof SmallerUnitBlock) return ActionResultType.CONSUME;
+			
+			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
+			
+			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+			BlockItemUseContext context = new BlockItemUseContext(tileEntity.world, player, handIn, stack, result);
+			if (true) {
+				player.setWorld(tileEntity.world);
+				PacketHacksHelper.unitPos = worldPos;
+				ActionResultType type = item.onItemUse(context);
+				PacketHacksHelper.unitPos = null;
+				player.setWorld(currentWorld);
+				player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+				player.recenterBoundingBox();
+//				ActionResultType type = item.tryPlace(context);
+				if (type.isSuccessOrConsume()) {
+//					ForgeHooks.onPlaceItemIntoWorld(context);
+					BlockState statePlace = item.getBlock().getStateForPlacement(context);
+					
+					SoundType type1 = item.getBlock().getSoundType(statePlace);
+					SoundEvent event = type1.getPlaceSound();
+					tileEntity.world.playSound(
+							null,
+							posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
+							event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
+					);
+					ForgeEventFactory.onBlockPlace(player, BlockSnapshot.create(tileEntity.world.dimension, tileEntity.world, posOffset), raytraceContext.hitFace.orElse(hit.getFace()));
+					return type;
+				}
+			}
+			
+			if (clicked.isReplaceable(context))
+				posOffset = posOffset.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+			BlockState statePlace = item.getBlock().getStateForPlacement(context);
+			if (statePlace != null) {
+				if (tileEntity.world.getBlockState(posOffset).isReplaceable(context) || clicked.isAir()) {
+					if (statePlace.isValidPosition(tileEntity.world, posOffset)) {
+						if (!player.isCreative()) stack.shrink(1);
+						
+						tileEntity.world.setBlockState(posOffset, statePlace);
+						statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
+						
+						if (!(stack.getItem() instanceof SkullItem)) {
+							if (statePlace.getBlock() instanceof ITileEntityProvider) {
+								TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
+								
+								if (stack.hasTag()) {
+									CompoundNBT nbt = stack.getOrCreateTag();
+									
+									if (nbt.contains("BlockEntityTag")) {
+										nbt = nbt.getCompound("BlockEntityTag");
+										te.read(statePlace, nbt);
+									}
+								}
+								
+								tileEntity.world.setTileEntity(posOffset, te);
+							} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
+								TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
+								
+								if (stack.hasTag()) {
+									CompoundNBT nbt = stack.getOrCreateTag();
+									
+									if (nbt.contains("BlockEntityTag")) {
+										nbt = nbt.getCompound("BlockEntityTag");
+										te.read(statePlace, nbt);
+									}
+								}
+								
+								tileEntity.world.setTileEntity(posOffset, te);
+							}
+						}
+					}
+				}
+			}
+		} else if (stack.getItem() instanceof BucketItem) {
+//			if (worldIn.isRemote) return ActionResultType.SUCCESS;
+			
+			UnitRaytraceContext context = UnitRaytraceHelper.raytraceFluid(tileEntity, player, false, worldPos, Optional.empty());
+			if (!context.shapeHit.isEmpty() && ((BucketItem) stack.getItem()).getFluid() == Fluids.EMPTY) {
+				FluidState state1 = tileEntity.world.getFluidState(context.posHit);
+				SoundEvent soundevent = state1.getFluid().getAttributes().getFillSound();
+				if (state1.getFluid() != Fluids.EMPTY) {
+					if (soundevent == null)
+						soundevent = state1.getFluid().isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL;
+//				worldIn.playSound(
+					player.playSound(
+//						null,
+//						worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
+//						worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
+//						worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
+							soundevent, /*SoundCategory.PLAYERS, */1, 1
+					);
+					if (tileEntity.world.getBlockState(context.posHit).getBlock() instanceof IWaterLoggable) {
+						((IWaterLoggable) tileEntity.world.getBlockState(context.posHit).getBlock()).pickupFluid(tileEntity.world, context.posHit, tileEntity.world.getBlockState(context.posHit));
+					} else {
+						tileEntity.world.setBlockState(context.posHit, Blocks.AIR.getDefaultState());
+					}
+					stack.shrink(1);
+					if (stack.getCount() == 0)
+						player.setHeldItem(handIn, new ItemStack(state1.getFluid().getFilledBucket()));
+					else if (!player.addItemStackToInventory(new ItemStack(state1.getFluid().getFilledBucket())))
+						player.dropItem(new ItemStack(state1.getFluid().getFilledBucket()), true);
+				}
+			} else {
+				Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
+				SoundEvent soundevent = fluid.getAttributes().getEmptySound();
+				if (soundevent == null)
+					soundevent = fluid.isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_EMPTY_LAVA : SoundEvents.ITEM_BUCKET_EMPTY;
+//				worldIn.playSound(
+				player.playSound(
+//						null,
+//						worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
+//						worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
+//						worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
+						soundevent, /*SoundCategory.PLAYERS, */1, 1
+				);
+				((BucketItem) stack.getItem()).tryPlaceContainedLiquid(
+						player, tileEntity.world, raytraceContext.posHit, result
+				);
+				player.setHeldItem(handIn, ((BucketItem) stack.getItem()).emptyBucket(stack, player));
+			}
+
+//			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
+//			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+//			if (clicked.getBlock() instanceof IWaterLoggable) {
+//				IWaterLoggable waterLoggableBlock = (IWaterLoggable) clicked.getBlock();
+//				if (waterLoggableBlock.canContainFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid)) {
+//					waterLoggableBlock.receiveFluid(tileEntity.world, raytraceContext.posHit, clicked, fluid.getDefaultState());
+//				}
+//			} else {
+//				BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
+//				if (tileEntity.world.getBlockState(posOffset).isAir(tileEntity.world, posOffset)) {
+//					tileEntity.world.setBlockState(posOffset, fluid.getDefaultState().getBlockState());
+//					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
+//				}
+//			}
+		} else if (stack.getItem() instanceof BoneMealItem) {
+			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
+			if (clicked.getBlock() instanceof IGrowable) {
+				if (((IGrowable) clicked.getBlock()).canGrow(tileEntity.world, raytraceContext.posHit, clicked, worldIn.isRemote)) {
+					((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
+				}
+			}
+		} else {
+			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+			if (!(stack.getItem() instanceof DebugStickItem)) {
+				player.setWorld(tileEntity.world);
+				player.setRawPosition(
+						(playerPos.getX() - worldPos.getX()) * tileEntity.unitsPerBlock,
+						((playerPos.getY() - worldPos.getY() - player.getEyeHeight()) * tileEntity.unitsPerBlock) + 64,
+						(playerPos.getZ() - worldPos.getZ()) * tileEntity.unitsPerBlock
+				);
+				tileEntity.world.isRemote = worldIn.isRemote;
+				PacketHacksHelper.unitPos = worldPos;
+				stack.getItem().onItemUse(
+						new BlockItemUseContext(
+								tileEntity.world, player, handIn, stack,
+								new BlockRayTraceResult(
+										raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
+										raytraceContext.hitFace.orElse(hit.getFace()), posOffset, hit.isInside()
+								)
+						)
+				);
+				PacketHacksHelper.unitPos = null;
+				player.setWorld(currentWorld);
+				player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+			}
+		}
+		
+		return ActionResultType.SUCCESS;
+	}
+	
+	public static final VoxelShape virtuallyEmptyShape = VoxelShapes.create(0, 0, 0, 0.001f, 0.001f, 0.001f);
+	
+	@Override
 	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
 		super.tick(state, worldIn, pos, rand);
 		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
@@ -641,7 +760,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			}
 			for (SmallUnit smallUnit : toRemove) {
-				tileEntity1.world.blockMap.remove(smallUnit.pos);
+				tileEntity1.world.blockMap.remove(smallUnit.pos.toLong());
 			}
 			for (SmallUnit value : toMove) {
 				BlockPos blockPos = value.pos;
@@ -663,7 +782,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					value.pos = context.posInFakeWorld;
 					((UnitTileEntity) te).world.setBlockState(value.pos, value.state, 3, 0);
 					((UnitTileEntity) te).world.setTileEntity(value.pos, value.tileEntity);
-					tileEntity1.world.blockMap.remove(blockPos);
+					tileEntity1.world.blockMap.remove(blockPos.toLong());
 					
 					tileEntity.markDirty();
 					te.markDirty();
@@ -680,8 +799,6 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		}
 	}
 	
-	public static final VoxelShape virtuallyEmptyShape = VoxelShapes.create(0, 0, 0, 0.001f, 0.001f, 0.001f);
-	
 	@Override
 	public VoxelShape getRayTraceShape(BlockState state, IBlockReader reader, BlockPos pos, ISelectionContext context) {
 		VoxelShape shape;
@@ -693,87 +810,41 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		shape = UnitRaytraceHelper.raytraceBlock(tileEntity, context.getEntity(), true, pos, Optional.of(context)).shapeHit;
-		
-		if (!shape.isEmpty()) return shape;
-		
-		Vector3d start = context.getEntity().getEyePosition(0);
-		double reach = 8;
-		
-		if (context.getEntity() instanceof PlayerEntity)
-			reach = ((LivingEntity) context.getEntity()).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
-		
-		Vector3d look = context.getEntity().getLookVec().scale(reach);
-		Vector3d end = context.getEntity().getEyePosition(0).add(look);
-		
-		for (Direction dir : Direction.values()) {
-			BlockPos pos1 = pos.offset(dir);
-			BlockState state1 = reader.getBlockState(pos1);
-			
-			if (state1.getBlock() instanceof SmallerUnitBlock) continue;
-			
-			VoxelShape raytraceShape = state1.getRaytraceShape(reader, pos, context);
-			boolean isHit = false;
-			
-			Vector3d hit = null;
-			for (AxisAlignedBB axisAlignedBB : raytraceShape.toBoundingBoxList()) {
-				axisAlignedBB = axisAlignedBB.offset(pos1.getX(), pos1.getY(), pos1.getZ());
-				
-				Optional<Vector3d> intercept = axisAlignedBB.rayTrace(start, end);
-				if (!intercept.isPresent()) continue;
-				isHit = true;
-				hit = intercept.get();
+		if (!(reader instanceof World) || !((World) reader).isRemote || SmallerUnitsConfig.CLIENT.useExperimentalSelection.get()) {
+			Minecraft.getInstance().getProfiler().startSection("su_create_raytrace_shape");
+			shape = VoxelShapes.empty();
+			for (SmallUnit value : tileEntity.world.blockMap.values()) {
+				Minecraft.getInstance().getProfiler().startSection("get_shape_for_" + value.state.toString());
+				VoxelShape shape1 = value.state.getRayTraceShape(tileEntity.world, value.pos);
+				if (shape1.isEmpty()) shape1 = value.state.getShape(tileEntity.world, tileEntity.getPos());
+				Minecraft.getInstance().getProfiler().startSection("shrink_shape");
+				VoxelShape shape2 = VoxelShapes.empty();
+				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
+					shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
+				}
+				Minecraft.getInstance().getProfiler().endStartSection("move_shape");
+				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+				Minecraft.getInstance().getProfiler().endStartSection("merge_shape");
+				shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+				Minecraft.getInstance().getProfiler().endSection();
+				Minecraft.getInstance().getProfiler().endSection();
 			}
-			
-			if (isHit) {
-				VoxelShape shape1 = raytraceShape.withOffset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset());
-				BlockPos pos2 = getHit(new BlockRayTraceResult(hit, context.getEntity().getHorizontalFacing(), pos1, false), pos1, tileEntity.unitsPerBlock);
-				pos2 = pos2.offset(dir.getOpposite());
-				
-				if (dir == Direction.DOWN) pos2 = new BlockPos(pos2.getX(), -1, pos2.getZ());
-				else if (dir == Direction.UP) pos2 = new BlockPos(pos2.getX(), tileEntity.unitsPerBlock, pos2.getZ());
-				else if (dir == Direction.WEST) pos2 = new BlockPos(-1, pos2.getY(), pos2.getZ());
-				else if (dir == Direction.EAST) pos2 = new BlockPos(tileEntity.unitsPerBlock, pos2.getY(), pos2.getZ());
-				else if (dir == Direction.NORTH) pos2 = new BlockPos(pos2.getX(), pos2.getY(), -1);
-				else if (dir == Direction.SOUTH)
-					pos2 = new BlockPos(pos2.getX(), pos2.getY(), tileEntity.unitsPerBlock);
-				
-				float minX = pos2.getX() / (float) tileEntity.unitsPerBlock;
-				float maxX = pos2.getX() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
-				float minY = pos2.getY() / (float) tileEntity.unitsPerBlock;
-				float maxY = pos2.getY() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
-				float minZ = pos2.getZ() / (float) tileEntity.unitsPerBlock;
-				float maxZ = pos2.getZ() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
-				
-				float size = 0.001f;
-				if (dir == Direction.UP) maxY = minY + size;
-				else if (dir == Direction.DOWN) minY = maxY - size;
-				else if (dir == Direction.WEST) minX = maxX - size;
-				else if (dir == Direction.EAST) maxX = minX + size;
-				else if (dir == Direction.SOUTH) maxZ = minZ + size;
-				else if (dir == Direction.NORTH) minZ = maxZ - size;
-				
-				return VoxelShapes.combine(shape1, VoxelShapes.create(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ).expand(0.01f, 0.01f, 0.01f).offset(-0.005f, -0.005f, -0.005f)), IBooleanFunction.AND);
+			VoxelShape shape2 = VoxelShapes.empty();
+			for (Direction value : Direction.values()) {
+				BlockPos pos1 = pos.offset(value);
+				BlockState state1 = reader.getBlockState(pos1);
+				if (state1.getBlock() instanceof SmallerUnitBlock) continue;
+				VoxelShape shape1 = state1.getRayTraceShape(reader, pos1);
+				if (shape1.isEmpty()) shape1 = state1.getShape(reader, pos1);
+				shape1 = shape1.withOffset(value.getXOffset(), value.getYOffset(), value.getZOffset());
+				shape2 = VoxelShapes.combine(shape2, shape1, IBooleanFunction.OR);
 			}
+			shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+			Minecraft.getInstance().getProfiler().endSection();
+			return shape;
 		}
 		
-		if (shape.isEmpty()) {
-//			BlockPos hitPos;
-			if (reader instanceof FakeServerWorld) {
-//				hitPos = new BlockPos(((FakeServerWorld) reader).owner.world.result.getHitVec());
-//				VoxelShape shape1 = VoxelShapes.empty();
-//				BlockState state1 = tileEntity.world.getBlockState(hitPos);
-//				for (AxisAlignedBB axisAlignedBB : shrink(state1.getRaytraceShape(reader, pos, context), tileEntity.unitsPerBlock)) {
-//					shape1 = VoxelShapes.or(VoxelShapes.create(axisAlignedBB));
-//				}
-//				return shape1;
-				return getCollisionShape(state, reader, pos, context);
-			}
-		}
-		
-		if (shape.isEmpty()) return super.getRayTraceShape(state, reader, pos, context);
-		
-		return VoxelShapes.empty();
+		return getShapeOld(state, reader, pos, context);
 	}
 	
 	@Override

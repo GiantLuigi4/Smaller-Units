@@ -1,4 +1,4 @@
-package com.tfc.smallerunits;
+package com.tfc.smallerunits.utils.rendering;
 
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.vertex.VertexBuffer;

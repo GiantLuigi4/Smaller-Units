@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
   "client": [
-	"MinecraftMixin"
+	"MinecraftMixin",
+	"TileEntityRendererDispatcherMixin"
   ],
   "mixins": [
 	"ContainerMixin",

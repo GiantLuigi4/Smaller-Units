@@ -1,41 +1,128 @@
 package com.tfc.smallerunits.utils.rendering;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.tfc.smallerunits.SmallerUnitsConfig;
+import com.tfc.smallerunits.utils.world.FakeLightingManager;
 import com.tfc.smallerunits.utils.world.FakeServerWorld;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.renderer.vertex.VertexBuffer;
 import net.minecraft.client.settings.AmbientOcclusionStatus;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.math.vector.Vector4f;
 import net.minecraft.world.LightType;
+import org.lwjgl.opengl.GL11;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Optional;
 
 public class SUPseudoVBO {
 	private final CustomBuffer buffer;
+	
+	Object2ObjectLinkedOpenHashMap<Integer, ArrayList<BufferStorage>> vboCache = new Object2ObjectLinkedOpenHashMap<>();
 	
 	public SUPseudoVBO(CustomBuffer buffer) {
 		this.buffer = buffer;
 	}
 	
-	public void render(IRenderTypeBuffer buffer1, MatrixStack matrixStack, int overworldLight, int combinedOverlay, FakeServerWorld world) {
-		try {
-			for (CustomBuffer.CustomVertexBuilder builder2 : buffer.builders) {
-				IVertexBuilder builder1 = buffer1.getBuffer(RenderTypeHelper.getType(builder2.type));
-				for (int i = 0; i < builder2.vertices.size(); i += 4) {
-					CustomBuffer.Vertex vert = builder2.vertices.get(i);
-					CustomBuffer.Vertex vert1 = builder2.vertices.get(i + 1);
-					CustomBuffer.Vertex vert2 = builder2.vertices.get(i + 2);
-					CustomBuffer.Vertex vert3 = builder2.vertices.get(i + 3);
-					drawFace(
-							vert, vert1, vert2, vert3,
-							matrixStack, overworldLight, world, builder1, combinedOverlay
-					);
+	public void render(BufferCache buffer1, MatrixStack matrixStack, int overworldLight, int combinedOverlay, FakeServerWorld world) {
+		if (((FakeLightingManager) world.lightManager).hasChanged) {
+			dispose();
+			vboCache.clear();
+			((FakeLightingManager) world.lightManager).hasChanged = false;
+		}
+		if (vboCache.containsKey(overworldLight)) {
+			for (BufferStorage storage : vboCache.get(overworldLight)) {
+				VertexBuffer buffer = storage.terrainBuffer.get();
+				RenderType type = RenderTypeHelper.getType(storage.renderType);
+				matrixStack.push();
+				buffer.bindBuffer();
+				type.setupRenderState();
+				DefaultVertexFormats.BLOCK.setupBufferState(0L);
+				RenderSystem.shadeModel(GL11.GL_SMOOTH);
+				buffer.draw(matrixStack.getLast().getMatrix(), GL11.GL_QUADS);
+				VertexBuffer.unbindBuffer();
+				RenderSystem.clearCurrentColor();
+				type.clearRenderState();
+				matrixStack.pop();
+			}
+			return;
+		} else {
+			try {
+				MatrixStack matrixStack1 = new MatrixStack();
+				HashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new HashMap<>();
+				for (CustomBuffer.CustomVertexBuilder builder2 : buffer.builders) {
+					IVertexBuilder builder1;
+					IVertexBuilder builder3 = null;
+					if (!SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+						builder1 = buffer1.getBuffer(RenderTypeHelper.getType(builder2.type));
+					} else {
+						if (!bufferBuilderHashMap.containsKey(builder2.type)) {
+							BufferBuilder builder = new BufferBuilder(83472);
+							builder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+							bufferBuilderHashMap.put(builder2.type, builder);
+						}
+						builder1 = bufferBuilderHashMap.get(builder2.type).getVertexBuilder();
+						builder3 = buffer1.getBuffer(RenderTypeHelper.getType(builder2.type));
+					}
+					
+					for (int i = 0; i < builder2.vertices.size(); i += 4) {
+						CustomBuffer.Vertex vert = builder2.vertices.get(i);
+						CustomBuffer.Vertex vert1 = builder2.vertices.get(i + 1);
+						CustomBuffer.Vertex vert2 = builder2.vertices.get(i + 2);
+						CustomBuffer.Vertex vert3 = builder2.vertices.get(i + 3);
+						if (!SmallerUnitsConfig.CLIENT.useVBOS.get() || builder3 == null) {
+							drawFace(
+									vert, vert1, vert2, vert3,
+									matrixStack, overworldLight, world, builder1, combinedOverlay
+							);
+						} else {
+							drawFace(
+									vert, vert1, vert2, vert3,
+									matrixStack1, overworldLight, world, builder1, combinedOverlay
+							);
+							drawFace(
+									vert, vert1, vert2, vert3,
+									matrixStack, overworldLight, world, builder3, combinedOverlay
+							);
+						}
+					}
+				}
+				if (SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+					ArrayList<BufferStorage> buffers = new ArrayList<>();
+					bufferBuilderHashMap.forEach((type, bufferBuilder) -> {
+						bufferBuilder.finishDrawing();
+						VertexBuffer vbo = new VertexBuffer(DefaultVertexFormats.BLOCK);
+						vbo.upload(bufferBuilder);
+						BufferStorage storage = new BufferStorage();
+						storage.terrainBuffer = Optional.of(vbo);
+						storage.renderType = type;
+						buffers.add(storage);
+					});
+					vboCache.put(overworldLight, buffers);
+				}
+			} catch (Throwable ignored) {
+				ignored.printStackTrace();
+			}
+		}
+	}
+	
+	public void dispose() {
+		for (ArrayList<BufferStorage> value : vboCache.values()) {
+			for (BufferStorage storage : value) {
+				if (storage != null && storage.terrainBuffer.isPresent() && RenderSystem.isOnRenderThread()) {
+					storage.terrainBuffer.ifPresent(VertexBuffer::close);
 				}
 			}
-		} catch (Throwable ignored) {
 		}
 	}
 	

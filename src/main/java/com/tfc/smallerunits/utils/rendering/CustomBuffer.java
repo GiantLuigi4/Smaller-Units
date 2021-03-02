@@ -3,6 +3,7 @@ package com.tfc.smallerunits.utils.rendering;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.tfc.smallerunits.SmallerUnitsConfig;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.renderer.Atlases;
 import net.minecraft.client.renderer.BufferBuilder;
@@ -50,10 +51,12 @@ public class CustomBuffer implements IRenderTypeBuffer {
 	
 	@Override
 	public IVertexBuilder getBuffer(RenderType p_getBuffer_1_) {
-//		for (CustomVertexBuilder customVertexBuilder : builders) {
-//			if (customVertexBuilder.type.equals(p_getBuffer_1_))
-//				return customVertexBuilder;
-//		}
+		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get()) {
+			for (CustomVertexBuilder customVertexBuilder : builders) {
+				if (customVertexBuilder.type.equals(p_getBuffer_1_))
+					return customVertexBuilder;
+			}
+		}
 		CustomVertexBuilder builder = new CustomVertexBuilder(p_getBuffer_1_);
 		builder.pos = pos;
 		builder.face = face;

@@ -14,6 +14,7 @@ import net.minecraft.world.gen.feature.template.TemplateManager;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.server.ServerWorldLightManager;
 import net.minecraft.world.storage.DimensionSavedDataManager;
 import net.minecraft.world.storage.SaveFormat;
 import sun.misc.Unsafe;
@@ -94,6 +95,11 @@ public class FakeServerChunkProvider extends ServerChunkProvider {
 	@Override
 	public int getLoadedChunksCount() {
 		return 100000;
+	}
+	
+	@Override
+	public ServerWorldLightManager getLightManager() {
+		return (ServerWorldLightManager) world.getLightManager();
 	}
 	
 	@Override

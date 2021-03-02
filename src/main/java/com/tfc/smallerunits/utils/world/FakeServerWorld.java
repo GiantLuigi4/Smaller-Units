@@ -1,11 +1,13 @@
 package com.tfc.smallerunits.utils.world;
 
+import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import com.tfc.smallerunits.utils.ResizingUtils;
 import com.tfc.smallerunits.utils.SmallUnit;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -94,15 +96,16 @@ public class FakeServerWorld extends ServerWorld {
 		}
 	}
 	
-	public HashMap<BlockPos, SmallUnit> blockMap;
+	public Long2ObjectLinkedOpenHashMap<SmallUnit> blockMap;
 	public ArrayList<SmallUnit> tileEntityChanges;
 	public ArrayList<BlockPos> tileEntityPoses;
 	public WorldLightManager lightManager;
 	public UnitTileEntity owner;
-	private boolean hasInit = false;
-	private boolean isFirstTick;
-	private IChunk chunk;
-	private Profiler blankProfiler;
+	protected boolean hasInit = false;
+	protected boolean isFirstTick;
+	protected IChunk chunk;
+	protected Profiler blankProfiler;
+	private ArrayList<Entity> entitiesToAddArrayList;
 	
 	public FakeServerWorld(MinecraftServer p_i241885_1_, Executor p_i241885_2_, SaveFormat.LevelSave p_i241885_3_, IServerWorldInfo p_i241885_4_, RegistryKey<World> p_i241885_5_, DimensionType p_i241885_6_, IChunkStatusListener p_i241885_7_, ChunkGenerator p_i241885_8_, boolean p_i241885_9_, long p_i241885_10_, List<ISpecialSpawner> p_i241885_12_, boolean p_i241885_13_) {
 		super(p_i241885_1_, p_i241885_2_, p_i241885_3_, p_i241885_4_, p_i241885_5_, p_i241885_6_, p_i241885_7_, p_i241885_8_, p_i241885_9_, p_i241885_10_, p_i241885_12_, p_i241885_13_);
@@ -119,7 +122,6 @@ public class FakeServerWorld extends ServerWorld {
 	@OnlyIn(Dist.CLIENT)
 //	public void animateTick(IRenderTypeBuffer buffer, float partialTicks) {
 	public void animateTick() {
-		profiler.get().startTick();
 		for (int i = 0; i < 3 * owner.world.getGameRules().getInt(GameRules.RANDOM_TICK_SPEED); i++) {
 			int x = rand.nextInt(16);
 			int y = rand.nextInt(16);
@@ -129,7 +131,6 @@ public class FakeServerWorld extends ServerWorld {
 			BlockState state = getBlockState(randTickPos);
 			state.getBlock().animateTick(state, this, randTickPos, rand);
 		}
-		profiler.get().endTick();
 //		for (Particle particle : particles) {
 //			particle.tick();
 //			particle.renderParticle(buffer.getBuffer(particle.getRenderType()), Minecraft.getInstance().getRenderManager().info, partialTicks);
@@ -149,7 +150,7 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
-		SmallUnit unit = blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState()));
+		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
 		
 		if (unit.tileEntity != null) {
 			unit.tileEntity.remove();
@@ -161,7 +162,7 @@ public class FakeServerWorld extends ServerWorld {
 			tileEntityIn.setWorldAndPos(this, pos);
 			if (tileEntityIn != null) tileEntityIn.validate();
 			loadedTileEntityList.add(unit.tileEntity);
-			if (!blockMap.containsKey(pos)) blockMap.put(pos, unit);
+			if (!blockMap.containsKey(pos.toLong())) blockMap.put(pos.toLong(), unit);
 		} else {
 			if (unit.tileEntity != null)
 				unit.tileEntity.remove();
@@ -211,7 +212,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public void removeTileEntity(BlockPos pos) {
-		SmallUnit unit = blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState()));
+		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
 		loadedTileEntityList.remove(unit.tileEntity);
 		tileEntityChanges.add(unit);
 		if (unit.tileEntity != null)
@@ -231,7 +232,7 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	//TODO: make this linearly interpolate through neighboring biomes
 	public Biome getBiome(BlockPos pos) {
-		return owner.getWorld().getBiome(pos);
+		return owner.getWorld().getBiome(new ExternalUnitInteractionContext(this, pos).posInRealWorld);
 	}
 	
 	@Override
@@ -246,9 +247,9 @@ public class FakeServerWorld extends ServerWorld {
 			this.owner = owner;
 			hasInit = true;
 			field_241102_C_ = null;
-			blockMap = new HashMap<>();
+			blockMap = new Long2ObjectLinkedOpenHashMap<>();
 			tileEntityPoses = new ArrayList<>();
-			chunk = new FakeChunk(this);
+			chunk = new FakeIChunk(this);
 			FakeServerWorld world = this;
 			field_241102_C_ = FakeServerChunkProvider.getProvider(this);
 			DelegatedTaskExecutor<Runnable> delegatedtaskexecutor1 = DelegatedTaskExecutor.create(Runnable::run, "light");
@@ -293,6 +294,7 @@ public class FakeServerWorld extends ServerWorld {
 			entitiesToRemove = new PriorityQueue<>();
 			entitiesByUuid = new Object2ObjectLinkedOpenHashMap<>();
 			entitiesById = new Int2ObjectArrayMap<>();
+			entitiesToAddArrayList = new ArrayList<>();
 			try {
 				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(World.class, "field_147483_b")), Collections.newSetFromMap(new IdentityHashMap<>()));
 				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(ServerWorld.class, "capabilityData")), new WorldCapabilityData("Smaller Units Ticking World Capability Data"));
@@ -310,6 +312,7 @@ public class FakeServerWorld extends ServerWorld {
 			tickableTileEntities = new ArrayList<>();
 			loadedTileEntityList = new ArrayList<>();
 			addedTileEntityList = new ArrayList<>();
+			capturedBlockSnapshots = new java.util.ArrayList<>();
 		}
 	}
 	
@@ -326,18 +329,14 @@ public class FakeServerWorld extends ServerWorld {
 		if (context.stateInRealWorld != null) {
 			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 				if (!context.posInRealWorld.equals(this.owner.getPos())) {
-					if (!isRendering) {
-						return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld);
-					} else {
-						return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld).getFluidState().getBlockState();
-					}
+					return ((UnitTileEntity) context.teInRealWorld).world.getBlockState(context.posInFakeWorld);
 				}
 			} else if (true) {
 				for (Direction value : Direction.values()) {
 					if (context.posInRealWorld.equals(owner.getPos().offset(value))) {
 						if (!(context.teInRealWorld instanceof UnitTileEntity)) {
 							BlockState state = owner.getWorld().getBlockState(context.posInRealWorld);
-							if (state.hasTileEntity()) {
+							if (state.hasTileEntity() || isRendering) {
 								return state;
 							}
 						}
@@ -352,11 +351,12 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
-		return blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).state;
+		return blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).state;
 	}
 	
 	@Override
 	public void tick(BooleanSupplier hasTimeLeft) {
+		owner.getWorld().getProfiler().startSection("su_simulation");
 		if (isFirstTick) {
 			dimension = owner.getWorld().dimension;
 			dimensionType = owner.getWorld().dimensionType;
@@ -367,15 +367,18 @@ public class FakeServerWorld extends ServerWorld {
 		}
 		this.isRemote = this.owner.getWorld().isRemote;
 		
-		for (Entity entity : entitiesToAdd) {
+		owner.getWorld().getProfiler().startSection("iter_add_entities");
+		for (Entity entity : entitiesToAddArrayList) {
+			if (entity == null) continue;
 			entitiesByUuid.put(entity.getUniqueID(), entity);
 			entitiesById.put(entity.getEntityId(), entity);
 			owner.markDirty();
 			owner.getWorld().markChunkDirty(owner.getPos(), owner);
 		}
 		
-		entitiesToAdd.clear();
+		entitiesToAddArrayList.clear();
 		
+		owner.getWorld().getProfiler().endStartSection("iter_remove_entities");
 		for (Entity entity : entitiesToRemove) {
 			entitiesByUuid.remove(entity.getUniqueID(), entity);
 			entitiesById.remove(entity.getEntityId(), entity);
@@ -386,60 +389,71 @@ public class FakeServerWorld extends ServerWorld {
 		entitiesToRemove.clear();
 		
 		if (this.isRemote) {
+			owner.getWorld().getProfiler().endStartSection("client_tick");
 			blankProfiler.startTick();
 			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this));
 			for (SmallUnit value : this.blockMap.values()) {
-				if (value.tileEntity instanceof ITickableTileEntity)
+				if (value.tileEntity instanceof ITickableTileEntity) {
 					((ITickableTileEntity) value.tileEntity).tick();
+				}
 			}
 			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this));
 			blankProfiler.endTick();
+			owner.getWorld().getProfiler().endSection();
+			owner.getWorld().getProfiler().endSection();
 			return;
 		}
 		
 		blankProfiler.startTick();
-		
-		ArrayList<SmallUnit> unitsToRemove = new ArrayList<>();
-		for (SmallUnit value : blockMap.values()) {
-			if (value.tileEntity != null) {
-				if (!loadedTileEntityList.contains(value.tileEntity)) {
-					loadedTileEntityList.add(value.tileEntity);
-					tileEntityChanges.add(value);
-				}
-				
-				if (value.state.equals(Deferred.UNIT.get().getDefaultState())) {
-					unitsToRemove.add(value);
-				}
-				
-				if (isRemote) {
-					if (value.tileEntity instanceof ITickableTileEntity) {
-						try {
-							((ITickableTileEntity) value.tileEntity).tick();
-						} catch (Throwable ignored) {
-						}
-					}
-				}
-			}
-		}
 
 //		for (SmallUnit smallUnit : unitsToRemove) {
 //			setBlockState(smallUnit.pos,Blocks.AIR.getDefaultState());
 //		}
 		
-		if (!this.isRemote)
-			lightManager.tick(100, false, true);
-		
+		owner.getWorld().getProfiler().endStartSection("main_tick");
 		if (!isErrored) {
 			try {
 				MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this));
 				super.tick(hasTimeLeft);
 				MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, this));
 			} catch (Throwable err) {
-				err.printStackTrace();
-				isErrored = true;
+				StringBuilder stacktrace = new StringBuilder(err.toString() + "\n");
+				for (StackTraceElement element : err.getStackTrace()) {
+					stacktrace.append(element.toString()).append("\n");
+				}
+				System.out.println(stacktrace);
+				err = err.getCause();
+				if (err != null) {
+					stacktrace = new StringBuilder(err.toString() + "\n");
+					for (StackTraceElement element : err.getStackTrace()) {
+						stacktrace.append(element.toString()).append("\n");
+					}
+					System.out.println(stacktrace);
+					isErrored = true;
+				}
 			}
 		}
 		
+		owner.getWorld().getProfiler().endStartSection("lighting");
+		if (!this.isRemote)
+			lightManager.tick(SmallerUnitsConfig.SERVER.lightingUpdatesPerTick.get(), false, true);
+
+//		owner.getWorld().getProfiler().endStartSection("");
+//		ArrayList<SmallUnit> unitsToRemove = new ArrayList<>();
+//		for (SmallUnit value : blockMap.values()) {
+//			if (value.tileEntity != null) {
+//				if (!loadedTileEntityList.contains(value.tileEntity)) {
+//					loadedTileEntityList.add(value.tileEntity);
+//					tileEntityChanges.add(value);
+//				}
+//
+//				if (value.state.equals(Deferred.UNIT.get().getDefaultState())) {
+//					unitsToRemove.add(value);
+//				}
+//			}
+//		}
+		
+		owner.getWorld().getProfiler().endStartSection("random_ticks");
 		//Random Ticks
 		for (int i = 0; i < 3 * owner.world.getGameRules().getInt(GameRules.RANDOM_TICK_SPEED); i++) {
 			int x = rand.nextInt(16);
@@ -453,6 +467,7 @@ public class FakeServerWorld extends ServerWorld {
 			}
 		}
 		
+		owner.getWorld().getProfiler().endStartSection("remove_tile_entities");
 		ArrayList<TileEntity> toRemove = new ArrayList<>();
 		
 		for (SmallUnit unit : tileEntityChanges) {
@@ -478,6 +493,32 @@ public class FakeServerWorld extends ServerWorld {
 		tileEntityChanges.clear();
 		
 		blankProfiler.endTick();
+		owner.getWorld().getProfiler().endSection();
+		owner.getWorld().getProfiler().endSection();
+	}
+	
+	@Override
+	public void tickBlockEntities() {
+		IProfiler iprofiler = this.getProfiler();
+		iprofiler.startSection("blockEntities");
+		
+		for (TileEntity tileentity : tickableTileEntities) {
+			if (!tileentity.isRemoved() && tileentity.hasWorld()) {
+				net.minecraftforge.server.timings.TimeTracker.TILE_ENTITY_UPDATE.trackStart(tileentity);
+				iprofiler.startSection(() -> {
+					return String.valueOf(tileentity.getType().getRegistryName());
+				});
+				if (tileentity.getType().isValidBlock(this.getBlockState(tileentity.getPos()).getBlock())) {
+					((ITickableTileEntity) tileentity).tick();
+				} else {
+					tileentity.warnInvalidBlock();
+				}
+				iprofiler.endSection();
+				net.minecraftforge.server.timings.TimeTracker.TILE_ENTITY_UPDATE.trackEnd(tileentity);
+			}
+		}
+		
+		iprofiler.endSection();
 	}
 	
 	@Nullable
@@ -607,7 +648,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public Chunk getChunk(int chunkX, int chunkZ) {
-		return new Chunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()));
+		return new FakeChunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()), this);
 	}
 	
 	@Override
@@ -709,6 +750,12 @@ public class FakeServerWorld extends ServerWorld {
 		}
 	}
 	
+	@Nonnull
+	@Override
+	public MinecraftServer getServer() {
+		return owner.getWorld().getServer();
+	}
+	
 	@Override
 	public void playMovingSound(@Nullable PlayerEntity playerIn, Entity entityIn, SoundEvent eventIn, SoundCategory categoryIn, float volume, float pitch) {
 		playSound(playerIn, entityIn.getPositionVec().x, entityIn.getPositionVec().y, entityIn.getPositionVec().z, eventIn, categoryIn, volume, pitch);
@@ -774,7 +821,7 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
-		TileEntity te = blockMap.getOrDefault(pos, new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
+		TileEntity te = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
 //		if (loadedTileEntityList.contains(te))
 		return te;
 //		return null;
@@ -888,12 +935,18 @@ public class FakeServerWorld extends ServerWorld {
 				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
 				
 				if (state.equals(Blocks.AIR.getDefaultState())) {
-					if (this.getTileEntity(pos) != null) this.getTileEntity(pos).remove();
-					this.blockMap.remove(pos);
+					try {
+						if (this.getTileEntity(pos) != null) this.getTileEntity(pos).remove();
+					} catch (Throwable ignored) {
+					}
+					this.blockMap.remove(pos.toLong());
 				}
 				
-				int newLight = state.getLightValue(this, pos);
-				lightManager.blockLight.storage.updateSourceLevel(pos.toLong(), newLight, oldLight > newLight);
+				try {
+					int newLight = state.getLightValue(this, pos);
+					lightManager.blockLight.storage.updateSourceLevel(pos.toLong(), newLight, oldLight > newLight);
+				} catch (Throwable ignored) {
+				}
 				
 				return true;
 			}
@@ -1013,6 +1066,11 @@ public class FakeServerWorld extends ServerWorld {
 	}
 	
 	@Override
+	public Chunk getChunkAt(BlockPos pos) {
+		return super.getChunkAt(pos);
+	}
+	
+	@Override
 	public void playBroadcastSound(int id, BlockPos pos, int data) {
 		//TODO: tiny-ify this
 		owner.getWorld().playBroadcastSound(id, owner.getPos(), data);
@@ -1020,7 +1078,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public boolean addEntity(Entity entityIn) {
-		if (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity) {
+		if (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity && entityIn instanceof Comparable) {
 			entityIn.teleportKeepLoaded(
 					owner.getPos().getX() + entityIn.getPositionVec().getX() / owner.unitsPerBlock,
 					owner.getPos().getY() + ((entityIn.getPositionVec().getY() - 64) / owner.unitsPerBlock),
@@ -1030,7 +1088,7 @@ public class FakeServerWorld extends ServerWorld {
 			ResizingUtils.resizeForUnit(entityIn, 1f / owner.unitsPerBlock);
 			return owner.getWorld().addEntity(entityIn);
 		} else {
-			entitiesToAdd.add(entityIn);
+			entitiesToAddArrayList.add(entityIn);
 			return true;
 		}
 	}
@@ -1045,5 +1103,10 @@ public class FakeServerWorld extends ServerWorld {
 		if (owner.getWorld().getScoreboard() instanceof ServerScoreboard)
 			return (ServerScoreboard) owner.getWorld().getScoreboard();
 		else return new ServerScoreboard(owner.getWorld().getServer());
+	}
+	
+	@Override
+	public boolean isBlockModifiable(PlayerEntity player, BlockPos pos) {
+		return owner.getWorld().isBlockModifiable(player, owner.getPos());
 	}
 }

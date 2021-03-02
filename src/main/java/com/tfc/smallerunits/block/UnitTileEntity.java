@@ -74,9 +74,11 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	
 	public IBlockReader loadingWorld;
 	
+	
 	@Override
 	public void tick() {
 		if (world.isRemote) {
+			world.profiler.get().startTick();
 			for (SmallUnit value : this.world.blockMap.values()) {
 				if (value.tileEntity instanceof ITickableTileEntity) {
 					try {
@@ -86,7 +88,18 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				}
 			}
 			for (Entity value : world.entitiesByUuid.values()) {
-				value.tick();
+				try {
+					value.tick();
+				} catch (Throwable ignored) {
+				}
+			}
+			world.profiler.get().endTick();
+		} else {
+			for (Entity value : world.entitiesByUuid.values()) {
+				if (value.getDataManager().isDirty()) {
+					this.markDirty();
+					this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
+				}
 			}
 		}
 //		if (world.isRemote) {
@@ -162,13 +175,27 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		super.read(state, nbt);
 		if (FMLEnvironment.dist.isClient()) {
 			for (Direction dir : Direction.values()) {
+				if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos().offset(dir))) {
+					SmallerUnitsTESR.bufferCache.get(this.getPos().offset(dir)).getSecond().dispose();
+				}
 				SmallerUnitsTESR.bufferCache.remove(this.getPos().offset(dir));
+			}
+			if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos())) {
+				SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().dispose();
 			}
 			SmallerUnitsTESR.bufferCache.remove(this.getPos());
 		}
 		this.unitsPerBlock = Math.min(Math.max(nbt.getInt("upb"), 1), 256);
 		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), world);
 		this.world.blockMap = pallet.posUnitMap;
+		for (SmallUnit value : world.blockMap.values()) {
+			if (value.tileEntity == null) continue;
+			if (value.tileEntity instanceof ITickableTileEntity) {
+				world.tickableTileEntities.add(value.tileEntity);
+			}
+			world.tileEntityPoses.add(value.pos);
+			world.loadedTileEntityList.add(value.tileEntity);
+		}
 		CompoundNBT ticks = nbt.getCompound("ticks");
 		{
 			ListNBT blockTickList = ticks.getList("blockTicks", Constants.NBT.TAG_COMPOUND);
@@ -260,7 +287,14 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		CompoundNBT entities = new CompoundNBT();
 		world.entitiesByUuid.forEach((uuid, entity) -> {
 			if (!world.entitiesToRemove.contains(entity)) {
-				entities.put(uuid.toString(), entity.serializeNBT());
+				if (this.getWorld().isRemote) {
+					try {
+						entities.put(uuid.toString(), entity.serializeNBT());
+					} catch (Throwable ignored) {
+					}
+				} else {
+					entities.put(uuid.toString(), entity.serializeNBT());
+				}
 			}
 		});
 		compound.put("entities", entities);

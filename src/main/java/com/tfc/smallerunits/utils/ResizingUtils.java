@@ -27,7 +27,7 @@ public class ResizingUtils {
 		//TODO: chiseled me integration
 		if (ModList.get().isLoaded("threecore")) {
 			entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
-				cap.startSizeChange(SUResizeType.SU_CHANGE_TYPE.get(), amt);
+				cap.setSizeDirectly(SUResizeType.SU_CHANGE_TYPE.get(), amt);
 			});
 		}
 	}

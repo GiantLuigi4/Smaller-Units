@@ -1,13 +1,8 @@
 package com.tfc.smallerunits.utils.world;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.tfc.smallerunits.utils.SmallUnit;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundNBT;
@@ -16,254 +11,98 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.palette.UpgradeData;
 import net.minecraft.world.ITickList;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.BiomeContainer;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.ChunkPrimer;
 import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.gen.Heightmap;
-import net.minecraft.world.gen.feature.structure.Structure;
-import net.minecraft.world.gen.feature.structure.StructureStart;
+import net.minecraft.world.lighting.WorldLightManager;
 
 import javax.annotation.Nullable;
-import java.util.*;
-import java.util.stream.Stream;
+import java.util.Set;
+import java.util.function.Consumer;
 
-public class FakeChunk implements IChunk {
-	public final FakeServerWorld owner;
+public class FakeChunk extends Chunk {
+	private FakeServerWorld world;
 	
-	public FakeChunk(FakeServerWorld owner) {
-		this.owner = owner;
+	public FakeChunk(World worldIn, ChunkPos chunkPosIn, BiomeContainer biomeContainerIn, FakeServerWorld world) {
+		super(worldIn, chunkPosIn, biomeContainerIn);
+		this.world = world;
 	}
 	
-	@Nullable
-	@Override
-	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-		if (owner.blockMap.containsKey(pos)) {
-			owner.blockMap.get(pos).state = state;
-		} else {
-			owner.blockMap.put(pos, new SmallUnit(pos, state));
-		}
-		return state;
+	public FakeChunk(World worldIn, ChunkPos chunkPosIn, BiomeContainer biomeContainerIn, UpgradeData upgradeDataIn, ITickList<Block> tickBlocksIn, ITickList<Fluid> tickFluidsIn, long inhabitedTimeIn, @Nullable ChunkSection[] sectionsIn, @Nullable Consumer<Chunk> postLoadConsumerIn, FakeServerWorld world) {
+		super(worldIn, chunkPosIn, biomeContainerIn, upgradeDataIn, tickBlocksIn, tickFluidsIn, inhabitedTimeIn, sectionsIn, postLoadConsumerIn);
+		this.world = world;
 	}
 	
-	@Override
-	public void addTileEntity(BlockPos pos, TileEntity tileEntityIn) {
-		SmallUnit unit = owner.blockMap.get(pos);
-		owner.tileEntityPoses.add(pos);
-		unit.tileEntity = tileEntityIn;
-	}
-	
-	@Override
-	public void addEntity(Entity entityIn) {
+	public FakeChunk(World worldIn, ChunkPrimer primer, FakeServerWorld world) {
+		super(worldIn, primer);
+		this.world = world;
 	}
 	
 	@Override
 	public Set<BlockPos> getTileEntitiesPos() {
-		return ImmutableSet.copyOf(owner.tileEntityPoses);
-	}
-	
-	@Override
-	public ChunkSection[] getSections() {
-		ArrayList<ChunkSection> sections = new ArrayList<>();
-		for (int i = 64; i < 64 + 16; i++) {
-			sections.add(
-					new ChunkSection(
-							i,
-							(short) (owner.owner.unitsPerBlock * owner.owner.unitsPerBlock),
-							(short) (owner.owner.unitsPerBlock * owner.owner.unitsPerBlock),
-							(short) (owner.owner.unitsPerBlock * owner.owner.unitsPerBlock)
-					)
-			);
-		}
-		return sections.toArray(new ChunkSection[0]);
-	}
-	
-	@Override
-	public Collection<Map.Entry<Heightmap.Type, Heightmap>> getHeightmaps() {
-		return null;
-	}
-	
-	private final HashMap<Heightmap.Type, Heightmap> heightmapHashMap = new HashMap<>();
-	
-	@Override
-	public void setHeightmap(Heightmap.Type type, long[] data) {
-		if (heightmapHashMap.containsKey(type)) {
-			Heightmap map = heightmapHashMap.get(type);
-			map.setDataArray(data);
-		} else {
-			Heightmap map = new Heightmap(this, type);
-			map.setDataArray(data);
-			heightmapHashMap.put(type, map);
-		}
-	}
-	
-	@Override
-	public Heightmap getHeightmap(Heightmap.Type typeIn) {
-		if (heightmapHashMap.containsKey(typeIn)) {
-			return heightmapHashMap.get(typeIn);
-		} else {
-			//TODO
-			return null;
-		}
-	}
-	
-	@Override
-	public int getTopBlockY(Heightmap.Type heightmapType, int x, int z) {
-		return getHeightmap(heightmapType).getHeight(x, z);
-	}
-	
-	@Override
-	public ChunkPos getPos() {
-		return new ChunkPos(new BlockPos(0, 0, 0));
-	}
-	
-	@Override
-	public void setLastSaveTime(long saveTime) {
-	}
-	
-	@Override
-	public Map<Structure<?>, StructureStart<?>> getStructureStarts() {
-		return ImmutableMap.of();
-	}
-	
-	@Override
-	public void setStructureStarts(Map<Structure<?>, StructureStart<?>> structureStartsIn) {
-	}
-	
-	@Nullable
-	@Override
-	public BiomeContainer getBiomes() {
-		return null;
-	}
-	
-	@Override
-	public void setModified(boolean modified) {
-	}
-	
-	@Override
-	public boolean isModified() {
-		return true;
-	}
-	
-	@Override
-	public ChunkStatus getStatus() {
-		return ChunkStatus.FULL;
-	}
-	
-	@Override
-	public void removeTileEntity(BlockPos pos) {
-		owner.tileEntityPoses.remove(pos);
-		owner.blockMap.get(pos).tileEntity = null;
-	}
-	
-	@Override
-	public ShortList[] getPackedPositions() {
-		return new ShortList[0];
-	}
-	
-	@Nullable
-	@Override
-	public CompoundNBT getDeferredTileEntity(BlockPos pos) {
-		return owner.blockMap.get(pos).tileEntity.serializeNBT();
-	}
-	
-	@Nullable
-	@Override
-	public CompoundNBT getTileEntityNBT(BlockPos pos) {
-		return owner.blockMap.get(pos).tileEntity.serializeNBT();
-	}
-	
-	//TODO
-	@Override
-	public Stream<BlockPos> getLightSources() {
-		ArrayList<BlockPos> posArrayList = new ArrayList<>();
-		for (SmallUnit value : owner.blockMap.values()) {
-			if (value.state.getLightValue() > 1) {
-				posArrayList.add(value.pos);
-			}
-		}
-		return Stream.of(posArrayList.toArray(new BlockPos[0]));
-	}
-	
-	@Override
-	public ITickList<Block> getBlocksToBeTicked() {
-		return owner.getPendingBlockTicks();
-	}
-	
-	@Override
-	public ITickList<Fluid> getFluidsToBeTicked() {
-		return owner.getPendingFluidTicks();
-	}
-	
-	@Override
-	public UpgradeData getUpgradeData() {
-		return null;
-	}
-	
-	@Override
-	public void setInhabitedTime(long newInhabitedTime) {
-	}
-	
-	@Override
-	public long getInhabitedTime() {
-		return 0;
-	}
-	
-	@Override
-	public boolean hasLight() {
-		return true;
-	}
-	
-	@Override
-	public int getLightValue(BlockPos pos) {
-		return owner.getLightValue(pos);
-	}
-	
-	@Override
-	public void setLight(boolean lightCorrectIn) {
+		return ImmutableSet.copyOf(world.tileEntityPoses);
 	}
 	
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
-		return owner.getTileEntity(pos);
+		return world.getTileEntity(pos);
 	}
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
-		return owner.getBlockState(pos);
+		return world.getBlockState(pos);
 	}
 	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
-		return owner.getFluidState(pos);
+		return world.getFluidState(pos);
+	}
+	
+	@Override
+	public FluidState getFluidState(int bx, int by, int bz) {
+		return world.getFluidState(new BlockPos(bx, by, bz));
+	}
+	
+	@Override
+	public void addTileEntity(TileEntity tileEntityIn) {
+		world.addTileEntity(tileEntityIn);
+	}
+	
+	@Override
+	public void addTileEntity(BlockPos pos, TileEntity tileEntityIn) {
+		world.setTileEntity(pos, tileEntityIn);
+	}
+	
+	@Override
+	public void addTileEntity(CompoundNBT nbt) {
+		world.chunk.addTileEntity(nbt);
 	}
 	
 	@Nullable
 	@Override
-	public StructureStart<?> func_230342_a_(Structure<?> p_230342_1_) {
-		return null;
+	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
+		world.setBlockState(pos, state);
+		return state;
 	}
 	
+	@Nullable
 	@Override
-	public void func_230344_a_(Structure<?> p_230344_1_, StructureStart<?> p_230344_2_) {
+	public WorldLightManager getWorldLightManager() {
+		return world.lightManager;
 	}
 	
+	@Nullable
 	@Override
-	public LongSet func_230346_b_(Structure<?> p_230346_1_) {
-		return null;
+	public TileEntity getTileEntity(BlockPos pos, CreateEntityType creationMode) {
+		return world.getTileEntity(pos);
 	}
 	
+	@Nullable
 	@Override
-	public void func_230343_a_(Structure<?> p_230343_1_, long p_230343_2_) {
-	}
-	
-	@Override
-	public Map<Structure<?>, LongSet> getStructureReferences() {
-		return null;
-	}
-	
-	@Override
-	public void setStructureReferences(Map<Structure<?>, LongSet> structureReferences) {
+	public CompoundNBT getTileEntityNBT(BlockPos pos) {
+		return getTileEntity(pos).serializeNBT();
 	}
 }

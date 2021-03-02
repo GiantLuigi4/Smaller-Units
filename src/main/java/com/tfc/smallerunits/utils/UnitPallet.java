@@ -1,6 +1,7 @@
 package com.tfc.smallerunits.utils;
 
 import com.tfc.smallerunits.utils.world.FakeServerWorld;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -21,7 +22,7 @@ public class UnitPallet {
 	public final CompoundNBT nbt;
 	public final HashMap<BlockState, Integer> stateIdMap = new HashMap<>();
 	public final HashMap<BlockPos, Integer> posIdMap = new HashMap<>();
-	public final HashMap<BlockPos, SmallUnit> posUnitMap = new HashMap<>();
+	public final Long2ObjectLinkedOpenHashMap<SmallUnit> posUnitMap = new Long2ObjectLinkedOpenHashMap<>();
 	public int lastId = 0;
 	
 	public UnitPallet(Collection<SmallUnit> units) {
@@ -31,7 +32,7 @@ public class UnitPallet {
 		CompoundNBT blocks = new CompoundNBT();
 		
 		for (SmallUnit unit : units) {
-			posUnitMap.put(unit.pos, unit);
+			posUnitMap.put(unit.pos.toLong(), unit);
 			
 			if (!stateIdMap.containsKey(unit.state)) stateIdMap.put(unit.state, lastId++);
 			
@@ -87,17 +88,17 @@ public class UnitPallet {
 			for (BlockState validState : block.getStateContainer().getValidStates()) {
 				if (validState.toString().startsWith("Block{" + state.replace("[", "}["))) {
 					unit = new SmallUnit(pos, validState);
-					posUnitMap.put(pos, unit);
+					posUnitMap.put(pos.toLong(), unit);
 					break;
 				} else if (validState.toString().equals(state)) {
 					unit = new SmallUnit(pos, validState);
-					posUnitMap.put(pos, unit);
+					posUnitMap.put(pos.toLong(), unit);
 					break;
 				}
 			}
 			if (unit == null && block != Blocks.AIR) {
 				unit = new SmallUnit(pos, block.getDefaultState());
-				posUnitMap.put(pos, unit);
+				posUnitMap.put(pos.toLong(), unit);
 			}
 			
 			if (unit == null) continue;

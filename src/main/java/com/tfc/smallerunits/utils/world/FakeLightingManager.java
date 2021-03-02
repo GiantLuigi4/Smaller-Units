@@ -80,6 +80,8 @@ public class FakeLightingManager extends ServerWorldLightManager {
 //		return lightManager.tick(toUpdateCount, updateSkyLight, updateBlockLight);
 	}
 	
+	public boolean hasChanged = false;
+	
 	int recursionDepth = 0;
 	
 	private boolean testLight(BlockPos pos, FakeServerWorld world) {
@@ -113,6 +115,9 @@ public class FakeLightingManager extends ServerWorldLightManager {
 			}
 			if (stateLight == 0) {
 				max -= state.getOpacity(manager.world, pos.add(0, 64, 0));
+			}
+			if (lighting[toIndex(pos)] != (max)) {
+				hasChanged = true;
 			}
 			lighting[toIndex(pos)] = (max);
 			return false;
