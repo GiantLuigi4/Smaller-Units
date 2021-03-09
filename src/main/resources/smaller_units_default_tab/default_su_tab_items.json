@@ -1,0 +1,14 @@
+{
+  "icon": "dsm/crane",
+  "list": [
+	{"file": "luigi/house", "author": "GiantLuigi4", "name": "House"},
+	{"file": "dsm/crane", "author": "Drink Some Milk", "name": "Crane"},
+	{"file": "dsm/sword", "author": "Drink Some Milk", "name": "Sword"},
+	{"file": "dsm/tree", "author": "Drink Some Milk", "name": "Tree"},
+	{"file": "ceo/house", "author": "CEO", "name": "House"},
+	{"file": "ceo/stool", "author": "CEO", "name": "Stool"},
+	{"file": "ceo/table", "author": "CEO", "name": "Table"},
+	{"file": "ceo/grassplain", "author": "CEO", "name": "Grass Plains"},
+	{"file": "ceo/cobblegen", "author": "CEO", "name": "Cobble Generator"}
+  ]
+}

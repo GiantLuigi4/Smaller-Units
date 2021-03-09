@@ -6,11 +6,13 @@ import com.tfc.smallerunits.helpers.ContainerMixinHelper;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.*;
-import com.tfc.smallerunits.utils.world.FakeServerWorld;
+import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import net.minecraft.block.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleManager;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Pose;
@@ -25,6 +27,9 @@ import net.minecraft.item.*;
 import net.minecraft.loot.LootContext;
 import net.minecraft.loot.LootParameters;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.StringNBT;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
@@ -38,13 +43,11 @@ import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.Explosion;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.TickPriority;
-import net.minecraft.world.World;
+import net.minecraft.world.*;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.util.BlockSnapshot;
 import net.minecraftforge.event.ForgeEventFactory;
@@ -224,7 +227,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				else if (dir == Direction.SOUTH) maxZ = minZ + size;
 				else if (dir == Direction.NORTH) minZ = maxZ - size;
 				
-				return VoxelShapes.combine(shape1, VoxelShapes.create(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ).expand(0.01f, 0.01f, 0.01f).offset(-0.005f, -0.005f, -0.005f)), IBooleanFunction.AND);
+				return VoxelShapes.combine(shape1, VoxelShapes.create(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ)
+//						.expand(0.01f, 0.01f, 0.01f).offset(-0.005f, -0.005f, -0.005f)
+				), IBooleanFunction.AND);
 			}
 		}
 		
@@ -255,7 +260,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		return tileEntity.world.blockMap.isEmpty() ? 0 : -1;
+		return tileEntity.getBlockMap().isEmpty() ? 0 : -1;
 	}
 	
 	@Override
@@ -265,11 +270,12 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	@Override
 	public void onBlockExploded(BlockState state, World world, BlockPos pos, Explosion explosion) {
+		if (world.isRemote) return;
 		TileEntity te = world.getTileEntity(pos);
 		if (!(te instanceof UnitTileEntity)) return;
 		UnitTileEntity tileEntity = (UnitTileEntity) te;
 		ArrayList<SmallUnit> toRemove = new ArrayList<>();
-		for (SmallUnit value : tileEntity.world.blockMap.values()) {
+		for (SmallUnit value : tileEntity.getBlockMap().values()) {
 			Vector3d pos1 = new Vector3d(
 					value.pos.getX() / (float) tileEntity.unitsPerBlock,
 					(value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock,
@@ -281,27 +287,27 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			}
 		}
 		for (SmallUnit blockPos : toRemove) {
-			if (blockPos.state.getExplosionResistance(((UnitTileEntity) te).world, blockPos.pos, explosion) < 1200.0F) {
+			if (blockPos.state.getExplosionResistance(((UnitTileEntity) te).getFakeWorld(), blockPos.pos, explosion) < 1200.0F) {
 				BlockState state1 = blockPos.state;
 				
 				List<ItemStack> stacks = state1.getDrops(
-						new LootContext.Builder(tileEntity.world)
+						new LootContext.Builder(tileEntity.worldServer)
 								.withLuck(0)
-								.withRandom(tileEntity.world.rand)
-								.withSeed(tileEntity.world.rand.nextLong())
+								.withRandom(tileEntity.worldServer.rand)
+								.withSeed(tileEntity.worldServer.rand.nextLong())
 								.withParameter(LootParameters.TOOL, ItemStack.EMPTY)
 								.withParameter(LootParameters.field_237457_g_, new Vector3d(blockPos.pos.getX() + 0.5, blockPos.pos.getY() + 0.5, blockPos.pos.getZ() + 0.5))
-								.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.world.getTileEntity(blockPos.pos))
+								.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.worldServer.getTileEntity(blockPos.pos))
 								.withParameter(LootParameters.BLOCK_STATE, state1)
 								.withNullableParameter(LootParameters.THIS_ENTITY, explosion.getExploder())
 				);
 				
 				for (ItemStack stack : stacks) {
-					ItemEntity entity = new ItemEntity(tileEntity.world, blockPos.pos.getX(), blockPos.pos.getY(), blockPos.pos.getZ(), stack);
-					tileEntity.world.addEntity(entity);
+					ItemEntity entity = new ItemEntity(tileEntity.getFakeWorld(), blockPos.pos.getX(), blockPos.pos.getY(), blockPos.pos.getZ(), stack);
+					tileEntity.getFakeWorld().addEntity(entity);
 				}
 				
-				blockPos.state.onBlockExploded(tileEntity.world, blockPos.pos, explosion);
+				blockPos.state.onBlockExploded(tileEntity.getFakeWorld(), blockPos.pos, explosion);
 			}
 		}
 	}
@@ -314,21 +320,24 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		if (tileEntity.world.blockMap.isEmpty()) return 1;
+		if (tileEntity.getBlockMap().isEmpty()) return 1;
 		
 		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, pos, Optional.empty());
 		
 		BlockPos hitPos;
 		if (worldIn instanceof FakeServerWorld) {
-			hitPos = new BlockPos(((FakeServerWorld) worldIn).owner.world.result.getHitVec());
-		} else if (raytraceContext.shapeHit.isEmpty()) {
+			hitPos = new BlockPos(((FakeServerWorld) worldIn).owner.worldServer.result.getHitVec());
+		} else if (raytraceContext.shapeHit == null || raytraceContext.shapeHit.isEmpty()) {
 			(player).resetActiveHand();
 			return 0;
 		} else hitPos = raytraceContext.posHit;
 		
-		BlockState state1 = tileEntity.world.getBlockState(hitPos);
+		BlockState state1 = tileEntity.getFakeWorld().getBlockState(hitPos);
 		
-		float amt = state1.getPlayerRelativeBlockHardness(player, tileEntity.world, hitPos) * tileEntity.unitsPerBlock;
+		float amt = state1.getPlayerRelativeBlockHardness(player, tileEntity.getFakeWorld(), hitPos);
+		System.out.println(1 / amt);
+		amt *= tileEntity.unitsPerBlock;
+		System.out.println(1 / amt);
 		return amt;
 	}
 	
@@ -343,7 +352,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		if (tileEntity.world.blockMap.isEmpty()) {
+		if (tileEntity.getBlockMap().isEmpty()) {
 			ItemStack stack = new ItemStack(Deferred.UNITITEM.get());
 			CompoundNBT nbt = new CompoundNBT();
 			nbt.putInt("upb", tileEntity.unitsPerBlock);
@@ -359,37 +368,103 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (raytraceContext.shapeHit.isEmpty()) return false;
 		else hitPos = raytraceContext.posHit;
 		
-		tileEntity.world.result = new BlockRayTraceResult(
-				raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).subtract(hitPos.getX(), hitPos.getY(), hitPos.getZ()).scale(tileEntity.unitsPerBlock),
-				raytraceContext.hitFace.orElse(Direction.UP),
-				hitPos, true
-		);
+		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(Direction.UP));
+		raytraceContext.vecHit = raytraceContext.vecHit
+				.subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+				.subtract(raytraceContext.posHit.getX() / ((float) tileEntity.unitsPerBlock), (raytraceContext.posHit.getY() - 64) / ((float) tileEntity.unitsPerBlock), raytraceContext.posHit.getZ() / ((float) tileEntity.unitsPerBlock))
+		;
+		raytraceContext.vecHit = raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).add(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ());
+		Direction face = raytraceContext.hitFace.orElse(Direction.UP);
+		raytraceContext.posHit = raytraceContext.posHit.offset(face.getOpposite());
+		tileEntity.setRaytraceResult(new BlockRayTraceResult(
+				raytraceContext.vecHit,
+				face,
+				raytraceContext.posHit,
+				ticksRandomly
+		));
 		
-		BlockState state1 = tileEntity.world.getBlockState(hitPos);
+		BlockState state1 = tileEntity.getFakeWorld().getBlockState(hitPos);
 		
-		if (state1.removedByPlayer(tileEntity.world, hitPos, player, true, state1.getFluidState())) {
+		if (state1.removedByPlayer(tileEntity.getFakeWorld(), hitPos, player, true, state1.getFluidState())) {
 			List<ItemStack> stacks = state1.getDrops(
-					new LootContext.Builder(tileEntity.world)
+					new LootContext.Builder(tileEntity.worldServer)
 							.withLuck(player.getLuck())
-							.withRandom(tileEntity.world.rand)
-							.withSeed(tileEntity.world.rand.nextLong())
+							.withRandom(tileEntity.worldServer.rand)
+							.withSeed(tileEntity.worldServer.rand.nextLong())
 							.withParameter(LootParameters.TOOL, player.getHeldItem(Hand.MAIN_HAND))
 							.withParameter(LootParameters.field_237457_g_, raytraceContext.vecHit)
-							.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.world.getTileEntity(raytraceContext.posHit))
+							.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.worldServer.getTileEntity(raytraceContext.posHit))
 							.withParameter(LootParameters.BLOCK_STATE, state1)
 							.withParameter(LootParameters.THIS_ENTITY, player)
 			);
 			
 			for (ItemStack stack : stacks) {
-				ItemEntity entity = new ItemEntity(tileEntity.world, hitPos.getX(), hitPos.getY(), hitPos.getZ(), stack);
-				tileEntity.world.addEntity(entity);
+				ItemEntity entity = new ItemEntity(tileEntity.getFakeWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ(), stack);
+				tileEntity.getFakeWorld().addEntity(entity);
 			}
 			
-			state1.onReplaced(tileEntity.world, raytraceContext.posHit, Blocks.AIR.getDefaultState(), false);
-			tileEntity.world.removeBlock(hitPos, false);
+			state1.onReplaced(tileEntity.getFakeWorld(), raytraceContext.posHit, Blocks.AIR.getDefaultState(), false);
+			tileEntity.getFakeWorld().removeBlock(hitPos, false);
 		}
 		
 		return false;
+	}
+	
+	public boolean canBeRemoved(PlayerEntity player, World world, UnitTileEntity tileEntity, BlockPos worldPos) {
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
+		
+		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(Direction.UP));
+		raytraceContext.vecHit = raytraceContext.vecHit
+				.subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+				.subtract(raytraceContext.posHit.getX() / ((float) tileEntity.unitsPerBlock), (raytraceContext.posHit.getY() - 64) / ((float) tileEntity.unitsPerBlock), raytraceContext.posHit.getZ() / ((float) tileEntity.unitsPerBlock))
+		;
+		raytraceContext.vecHit = raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).add(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ());
+		Direction face = raytraceContext.hitFace.orElse(Direction.UP);
+		raytraceContext.posHit = raytraceContext.posHit.offset(face.getOpposite());
+		
+		tileEntity.setRaytraceResult(new BlockRayTraceResult(
+				raytraceContext.vecHit,
+				face,
+				raytraceContext.posHit,
+				ticksRandomly
+		));
+		
+		RayTraceResult result = Minecraft.getInstance().objectMouseOver;
+		if (FMLEnvironment.dist.isClient()) {
+			Minecraft.getInstance().objectMouseOver = tileEntity.getResult();
+		}
+		Vector3d playerPos = player.getPositionVec();
+		World currentWorld = player.world;
+		player.setWorld(tileEntity.getFakeWorld());
+		
+		{
+			Vector3d miniWorldPos = player.getPositionVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+			player.setRawPosition(miniWorldPos.getX(), miniWorldPos.getY(), miniWorldPos.getZ());
+		}
+		boolean canRemove = true;
+		
+		if (PacketHacksHelper.unitPos != null) {
+			while (PacketHacksHelper.unitPos != null) {
+				try {
+					Thread.sleep(1);
+				} catch (Throwable ignored) {
+				}
+			}
+		}
+		PacketHacksHelper.unitPos = new BlockPos(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+		canRemove = !player.getHeldItem(Hand.MAIN_HAND).onBlockStartBreak(raytraceContext.posHit, player);
+		PacketHacksHelper.unitPos = null;
+		
+		Minecraft.getInstance().objectMouseOver = result;
+		player.setWorld(currentWorld);
+		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+		player.recenterBoundingBox();
+		
+		if (player.isCreative()) {
+			return canRemove;
+		}
+		
+		return true;
 	}
 	
 	@Override
@@ -401,6 +476,12 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving) {
 		super.onBlockAdded(state, worldIn, pos, oldState, isMoving);
 		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
+		TileEntity te = worldIn.getTileEntity(pos);
+		if (te instanceof UnitTileEntity) {
+			if (!worldIn.isRemote) {
+				((UnitTileEntity) te).createServerWorld();
+			}
+		}
 	}
 	
 	@Override
@@ -440,32 +521,72 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	@Override
 	public ItemStack getPickBlock(BlockState state, RayTraceResult target, IBlockReader world, BlockPos pos, PlayerEntity player) {
-		if (player.isSneaking()) {
-			return super.getPickBlock(state, target, world, pos, player);
-		}
-		
 		TileEntity tileEntityUncasted = world.getTileEntity(pos);
 		if (!(tileEntityUncasted instanceof UnitTileEntity))
 			return super.getPickBlock(state, target, world, pos, player);
+		
+		if (player.isSneaking()) {
+			ItemStack stack = super.getPickBlock(state, target, world, pos, player);
+			if (Screen.hasControlDown()) {
+				CompoundNBT tileNBT = tileEntityUncasted.write(new CompoundNBT());
+				System.out.println(tileNBT);
+				stack.getOrCreateTag().put("BlockEntityTag", tileNBT);
+				CompoundNBT compoundnbt1 = new CompoundNBT();
+				ListNBT listnbt = new ListNBT();
+				listnbt.add(StringNBT.valueOf("\"(+NBT)\""));
+				compoundnbt1.put("Lore", listnbt);
+				stack.setTagInfo("display", compoundnbt1);
+			} else {
+				CompoundNBT scaleNBT = new CompoundNBT();
+				scaleNBT.putInt("upb", ((UnitTileEntity) tileEntityUncasted).unitsPerBlock);
+				stack.getOrCreateTag().put("BlockEntityTag", scaleNBT);
+			}
+			return stack;
+		}
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
 		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, pos, Optional.empty());
 		
 		BlockPos hitPos;
-		if (raytraceContext.shapeHit.isEmpty()) return super.getPickBlock(state, target, world, pos, player);
-		else hitPos = raytraceContext.posHit;
+		if (raytraceContext.shapeHit.isEmpty()) {
+			ItemStack stack = super.getPickBlock(state, target, world, pos, player);
+			if (Screen.hasControlDown()) {
+				CompoundNBT tileNBT = tileEntityUncasted.write(new CompoundNBT());
+				System.out.println(tileNBT);
+				stack.getOrCreateTag().put("BlockEntityTag", tileNBT);
+				CompoundNBT compoundnbt1 = new CompoundNBT();
+				ListNBT listnbt = new ListNBT();
+				listnbt.add(StringNBT.valueOf("\"(+NBT)\""));
+				compoundnbt1.put("Lore", listnbt);
+				stack.setTagInfo("display", compoundnbt1);
+			} else {
+				CompoundNBT scaleNBT = new CompoundNBT();
+				scaleNBT.putInt("upb", ((UnitTileEntity) tileEntityUncasted).unitsPerBlock);
+				stack.getOrCreateTag().put("BlockEntityTag", scaleNBT);
+			}
+			return stack;
+		} else hitPos = raytraceContext.posHit;
 		
-		BlockState state1 = tileEntity.world.getBlockState(hitPos);
+		BlockState state1 = tileEntity.getFakeWorld().getBlockState(hitPos);
 		if (state1.getBlock() instanceof SmallerUnitBlock) {
 			return super.getPickBlock(state, target, world, pos, player);
 		}
 		
+		ItemStack stack;
 		if (target instanceof BlockRayTraceResult) {
-			return state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, ((BlockRayTraceResult) target).getFace(), raytraceContext.posHit, ((BlockRayTraceResult) target).isInside()), world, pos, player);
+			stack = state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, ((BlockRayTraceResult) target).getFace(), raytraceContext.posHit, ((BlockRayTraceResult) target).isInside()), world, pos, player);
 		} else {
-			return state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, Direction.UP, raytraceContext.posHit, false), world, pos, player);
+			stack = state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, Direction.UP, raytraceContext.posHit, false), world, pos, player);
 		}
+		
+		if (Screen.hasControlDown()) {
+			TileEntity te = tileEntity.getFakeWorld().getTileEntity(raytraceContext.posHit);
+			if (te != null) {
+				Minecraft.getInstance().storeTEInStack(stack, te);
+			}
+		}
+		return stack;
 	}
 	
 	@Override
@@ -497,31 +618,55 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		}
 		
 		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
-		
+		boolean isEdge = false;
+		if (raytraceContext.vecHit.equals(new Vector3d(-100, -100, -100))) {
+			raytraceContext.vecHit = hit.getHitVec()
+					.subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+					.add(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+			;
+			if (raytraceContext.hitFace.orElse(hit.getFace()).equals(Direction.UP)) {
+				raytraceContext.vecHit = raytraceContext.vecHit.subtract(0, -(1f / 16) / 4, 0);
+			}
+			raytraceContext.posHit = raytraceContext.posHit.up();
+			isEdge = true;
+		}
+		raytraceContext.vecHit = raytraceContext.vecHit
+				.subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+				.subtract(raytraceContext.posHit.getX() / ((float) tileEntity.unitsPerBlock), (raytraceContext.posHit.getY() - 64) / ((float) tileEntity.unitsPerBlock), raytraceContext.posHit.getZ() / ((float) tileEntity.unitsPerBlock))
+		;
+		raytraceContext.vecHit = raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).add(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ());
+		Direction face = raytraceContext.hitFace.orElse(Direction.UP);
 		ItemStack stack = player.getHeldItem(handIn);
+		raytraceContext.posHit = raytraceContext.posHit.offset(face.getOpposite());
+		tileEntity.setRaytraceResult(new BlockRayTraceResult(
+				raytraceContext.vecHit,
+				face,
+				raytraceContext.posHit,
+				hit.isInside()
+		));
 		
 		BlockRayTraceResult result = new BlockRayTraceResult(
 				hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock).add(0, 64, 0),
-				raytraceContext.hitFace.orElse(hit.getFace()), raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite()), hit.isInside()
+				raytraceContext.hitFace.orElse(hit.getFace()), raytraceContext.posHit, hit.isInside()
 		);
 		boolean playerIsSleeping = player.isSleeping();
 		ActionResultType resultType = ActionResultType.FAIL;
 		Vector3d playerPos = player.getPositionVec();
 		World currentWorld = player.world;
-		player.setWorld(tileEntity.world);
-		tileEntity.world.result = new BlockRayTraceResult(
-				raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).subtract(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ()).scale(tileEntity.unitsPerBlock),
-				raytraceContext.hitFace.orElse(Direction.UP),
-				raytraceContext.posHit, true
-		);
+		player.setWorld(tileEntity.getFakeWorld());
+		if (tileEntity.getFakeWorld().isRemote) {
+			Minecraft.getInstance().world = (ClientWorld) tileEntity.getFakeWorld();
+		}
 		{
 			Vector3d miniWorldPos = player.getPositionVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ());
 			player.setRawPosition(miniWorldPos.getX(), miniWorldPos.getY(), miniWorldPos.getZ());
 		}
 		PacketHacksHelper.unitPos = worldPos;
 		try {
-			if (!(player.isSneaking()) || stack.doesSneakBypassUse(worldIn, raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite()), player)) {
-				resultType = tileEntity.world.getBlockState(raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite())).onBlockActivated(tileEntity.world, player, handIn, result);
+			BlockPos pos = raytraceContext.posHit;
+//			BlockPos pos = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+			if (!(player.isSneaking()) || stack.doesSneakBypassUse(worldIn, pos, player)) {
+				resultType = tileEntity.getFakeWorld().getBlockState(pos).onBlockActivated(tileEntity.getFakeWorld(), player, handIn, result);
 			}
 		} catch (Throwable ignored) {
 			ignored.printStackTrace();
@@ -535,6 +680,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			player.sendStatusMessage(new StringTextComponent("Sorry, but you can't sleep in tiny beds."), true);
 		}
 		player.setWorld(currentWorld);
+		if (tileEntity.getFakeWorld().isRemote) {
+			Minecraft.getInstance().world = (ClientWorld) currentWorld;
+		}
 		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
 		player.recenterBoundingBox();
 		
@@ -549,59 +697,79 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		}
 		
 		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+		if (isEdge) {
+			raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+			tileEntity.setRaytraceResult(new BlockRayTraceResult(
+					raytraceContext.vecHit,
+					face,
+					raytraceContext.posHit,
+					hit.isInside()
+			));
+		}
 		
 		if (stack.getItem() instanceof BlockItem) {
-			if (worldIn.isRemote) return ActionResultType.SUCCESS;
+//			if (worldIn.isRemote) return ActionResultType.SUCCESS;
 			
 			BlockItem item = (BlockItem) stack.getItem();
 			
-			if (item.getBlock() instanceof SmallerUnitBlock && stack.getOrCreateTag().getCompound("BlockEntityTag").contains("ContainedUnits"))
+			if (item.getBlock() instanceof SmallerUnitBlock
+//					&& stack.getOrCreateTag().getCompound("BlockEntityTag").contains("ContainedUnits")
+			)
 				return ActionResultType.CONSUME;
 //			if (item.getBlock() instanceof SmallerUnitBlock) return ActionResultType.CONSUME;
 			
 			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()));
-			
-			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
-			BlockItemUseContext context = new BlockItemUseContext(tileEntity.world, player, handIn, stack, result);
+//			BlockPos posOffset = raytraceContext.posHit;
+			BlockState clicked = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);
+			BlockItemUseContext context = new BlockItemUseContext(tileEntity.getFakeWorld(), player, handIn, stack, result);
+			context.offsetPos = posOffset;
 			if (true) {
-				player.setWorld(tileEntity.world);
+				player.setWorld(tileEntity.getFakeWorld());
 				PacketHacksHelper.unitPos = worldPos;
-				ActionResultType type = item.onItemUse(context);
+				if (worldIn.isRemote && stack.getItem() instanceof SignItem) {
+					return ActionResultType.SUCCESS;
+				}
+//				ActionResultType type = item.onItemUse(context);
+				ActionResultType type = ForgeHooks.onPlaceItemIntoWorld(context);
 				PacketHacksHelper.unitPos = null;
 				player.setWorld(currentWorld);
 				player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
 				player.recenterBoundingBox();
+				if (worldIn.isRemote) return type;
 //				ActionResultType type = item.tryPlace(context);
 				if (type.isSuccessOrConsume()) {
-//					ForgeHooks.onPlaceItemIntoWorld(context);
 					BlockState statePlace = item.getBlock().getStateForPlacement(context);
-					
-					SoundType type1 = item.getBlock().getSoundType(statePlace);
-					SoundEvent event = type1.getPlaceSound();
-					tileEntity.world.playSound(
-							null,
-							posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
-							event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
-					);
-					ForgeEventFactory.onBlockPlace(player, BlockSnapshot.create(tileEntity.world.dimension, tileEntity.world, posOffset), raytraceContext.hitFace.orElse(hit.getFace()));
+					if (statePlace != null) {
+						statePlace.onBlockAdded(tileEntity.getFakeWorld(), context.getPos(), Blocks.AIR.getDefaultState(), false);
+						
+						SoundType type1 = item.getBlock().getSoundType(statePlace);
+						SoundEvent event = type1.getPlaceSound();
+//					tileEntity.world.playSound(
+//							null,
+//							posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
+//							event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
+//					);
+						ForgeEventFactory.onBlockPlace(player, BlockSnapshot.create(tileEntity.getFakeWorld().dimension, tileEntity.getFakeWorld(), posOffset), raytraceContext.hitFace.orElse(hit.getFace()));
+					}
 					return type;
 				}
+				return ActionResultType.PASS;
 			}
 			
 			if (clicked.isReplaceable(context))
 				posOffset = posOffset.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
 			BlockState statePlace = item.getBlock().getStateForPlacement(context);
 			if (statePlace != null) {
-				if (tileEntity.world.getBlockState(posOffset).isReplaceable(context) || clicked.isAir()) {
-					if (statePlace.isValidPosition(tileEntity.world, posOffset)) {
+				if (tileEntity.getFakeWorld().getBlockState(posOffset).isReplaceable(context) || clicked.isAir()) {
+					if (statePlace.isValidPosition(tileEntity.getFakeWorld(), posOffset)) {
 						if (!player.isCreative()) stack.shrink(1);
 						
-						tileEntity.world.setBlockState(posOffset, statePlace);
-						statePlace.getBlock().onBlockPlacedBy(tileEntity.world, posOffset, statePlace, player, stack);
+						tileEntity.getFakeWorld().setBlockState(posOffset, statePlace);
+						statePlace.getBlock().onBlockPlacedBy(tileEntity.getFakeWorld(), posOffset, statePlace, player, stack);
 						
 						if (!(stack.getItem() instanceof SkullItem)) {
 							if (statePlace.getBlock() instanceof ITileEntityProvider) {
-								TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.world);
+								TileEntity te = ((ITileEntityProvider) statePlace.getBlock()).createNewTileEntity(tileEntity.getFakeWorld());
 								
 								if (stack.hasTag()) {
 									CompoundNBT nbt = stack.getOrCreateTag();
@@ -612,9 +780,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 									}
 								}
 								
-								tileEntity.world.setTileEntity(posOffset, te);
+								tileEntity.getFakeWorld().setTileEntity(posOffset, te);
 							} else if (statePlace.getBlock().hasTileEntity(statePlace)) {
-								TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.world);
+								TileEntity te = statePlace.getBlock().createTileEntity(statePlace, tileEntity.getFakeWorld());
 								
 								if (stack.hasTag()) {
 									CompoundNBT nbt = stack.getOrCreateTag();
@@ -625,59 +793,78 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 									}
 								}
 								
-								tileEntity.world.setTileEntity(posOffset, te);
+								tileEntity.getFakeWorld().setTileEntity(posOffset, te);
 							}
 						}
+						
+						return ActionResultType.SUCCESS;
 					}
 				}
 			}
-		} else if (stack.getItem() instanceof BucketItem) {
+		} else {
+			raytraceContext.posHit = raytraceContext.posHit.offset(face);
+			tileEntity.setRaytraceResult(new BlockRayTraceResult(
+					raytraceContext.vecHit,
+					face,
+					raytraceContext.posHit,
+					hit.isInside()
+			));
+			if (stack.getItem() instanceof BucketItem) {
 //			if (worldIn.isRemote) return ActionResultType.SUCCESS;
-			
-			UnitRaytraceContext context = UnitRaytraceHelper.raytraceFluid(tileEntity, player, false, worldPos, Optional.empty());
-			if (!context.shapeHit.isEmpty() && ((BucketItem) stack.getItem()).getFluid() == Fluids.EMPTY) {
-				FluidState state1 = tileEntity.world.getFluidState(context.posHit);
-				SoundEvent soundevent = state1.getFluid().getAttributes().getFillSound();
-				if (state1.getFluid() != Fluids.EMPTY) {
-					if (soundevent == null)
-						soundevent = state1.getFluid().isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL;
-//				worldIn.playSound(
-					player.playSound(
-//						null,
-//						worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
-//						worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
-//						worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
-							soundevent, /*SoundCategory.PLAYERS, */1, 1
-					);
-					if (tileEntity.world.getBlockState(context.posHit).getBlock() instanceof IWaterLoggable) {
-						((IWaterLoggable) tileEntity.world.getBlockState(context.posHit).getBlock()).pickupFluid(tileEntity.world, context.posHit, tileEntity.world.getBlockState(context.posHit));
-					} else {
-						tileEntity.world.setBlockState(context.posHit, Blocks.AIR.getDefaultState());
+				UnitRaytraceContext context = UnitRaytraceHelper.raytraceFluid(tileEntity, player, false, worldPos, Optional.empty());
+				if (!context.shapeHit.isEmpty() && ((BucketItem) stack.getItem()).getFluid() == Fluids.EMPTY) {
+					FluidState state1 = tileEntity.getFakeWorld().getFluidState(context.posHit);
+					SoundEvent soundevent = state1.getFluid().getAttributes().getFillSound();
+					if (state1.getFluid() != Fluids.EMPTY) {
+						if (soundevent == null)
+							soundevent = state1.getFluid().isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL;
+//						worldIn.playSound(
+						player.playSound(
+//								null,
+//								worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
+//								worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
+//								worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
+								soundevent, /*SoundCategory.PLAYERS, */1, 1
+						);
+						if (tileEntity.getFakeWorld().getBlockState(context.posHit).getBlock() instanceof IWaterLoggable) {
+							((IWaterLoggable) tileEntity.getFakeWorld().getBlockState(context.posHit).getBlock()).pickupFluid(tileEntity.getFakeWorld(), context.posHit, tileEntity.getFakeWorld().getBlockState(context.posHit));
+						} else {
+							tileEntity.getFakeWorld().setBlockState(context.posHit, Blocks.AIR.getDefaultState());
+						}
+						stack.shrink(1);
+						if (stack.getCount() == 0)
+							player.setHeldItem(handIn, new ItemStack(state1.getFluid().getFilledBucket()));
+						else if (!player.addItemStackToInventory(new ItemStack(state1.getFluid().getFilledBucket())))
+							player.dropItem(new ItemStack(state1.getFluid().getFilledBucket()), true);
+						return ActionResultType.SUCCESS;
 					}
-					stack.shrink(1);
-					if (stack.getCount() == 0)
-						player.setHeldItem(handIn, new ItemStack(state1.getFluid().getFilledBucket()));
-					else if (!player.addItemStackToInventory(new ItemStack(state1.getFluid().getFilledBucket())))
-						player.dropItem(new ItemStack(state1.getFluid().getFilledBucket()), true);
-				}
-			} else {
-				Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
-				SoundEvent soundevent = fluid.getAttributes().getEmptySound();
-				if (soundevent == null)
-					soundevent = fluid.isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_EMPTY_LAVA : SoundEvents.ITEM_BUCKET_EMPTY;
+				} else {
+					Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
+					if (fluid != Fluids.EMPTY) {
+						SoundEvent soundevent = fluid.getAttributes().getEmptySound();
+						if (soundevent == null)
+							soundevent = fluid.isIn(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_EMPTY_LAVA : SoundEvents.ITEM_BUCKET_EMPTY;
 //				worldIn.playSound(
-				player.playSound(
+						player.playSound(
 //						null,
 //						worldPos.getX() + ((context.posHit.getX()) / tileEntity.unitsPerBlock),
 //						worldPos.getY() + ((context.posHit.getY() - 64) / tileEntity.unitsPerBlock),
 //						worldPos.getZ() + ((context.posHit.getZ()) / tileEntity.unitsPerBlock),
-						soundevent, /*SoundCategory.PLAYERS, */1, 1
-				);
-				((BucketItem) stack.getItem()).tryPlaceContainedLiquid(
-						player, tileEntity.world, raytraceContext.posHit, result
-				);
-				player.setHeldItem(handIn, ((BucketItem) stack.getItem()).emptyBucket(stack, player));
-			}
+								soundevent, /*SoundCategory.PLAYERS, */1, 1
+						);
+						raytraceContext.posHit = new BlockPos(
+								Math.max(-2, raytraceContext.posHit.getX()),
+								Math.max(63, raytraceContext.posHit.getY()),
+								Math.max(-2, raytraceContext.posHit.getZ())
+						);
+						raytraceContext.posHit = raytraceContext.posHit.offset(face);
+						((BucketItem) stack.getItem()).tryPlaceContainedLiquid(
+								player, tileEntity.getFakeWorld(), raytraceContext.posHit, result
+						);
+						player.setHeldItem(handIn, ((BucketItem) stack.getItem()).emptyBucket(stack, player));
+						return ActionResultType.SUCCESS;
+					}
+				}
 
 //			Fluid fluid = ((BucketItem) stack.getItem()).getFluid();
 //			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
@@ -693,40 +880,57 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //					tileEntity.world.getPendingFluidTicks().scheduleTick(posOffset, fluid, fluid.getTickRate(tileEntity.world));
 //				}
 //			}
-		} else if (stack.getItem() instanceof BoneMealItem) {
-			BlockState clicked = tileEntity.world.getBlockState(raytraceContext.posHit);
-			if (clicked.getBlock() instanceof IGrowable) {
-				if (((IGrowable) clicked.getBlock()).canGrow(tileEntity.world, raytraceContext.posHit, clicked, worldIn.isRemote)) {
-					((IGrowable) clicked.getBlock()).grow(tileEntity.world, tileEntity.world.rand, raytraceContext.posHit, clicked);
+			} else if (stack.getItem() instanceof BoneMealItem) {
+				BlockState clicked = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);
+				if (clicked.getBlock() instanceof IGrowable) {
+					if (((IGrowable) clicked.getBlock()).canGrow(tileEntity.getFakeWorld(), raytraceContext.posHit, clicked, worldIn.isRemote)) {
+						if (!worldIn.isRemote)
+							((IGrowable) clicked.getBlock()).grow(tileEntity.worldServer, tileEntity.getFakeWorld().rand, raytraceContext.posHit, clicked);
+						return ActionResultType.SUCCESS;
+					}
 				}
-			}
-		} else {
-			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
-			if (!(stack.getItem() instanceof DebugStickItem)) {
-				player.setWorld(tileEntity.world);
-				player.setRawPosition(
-						(playerPos.getX() - worldPos.getX()) * tileEntity.unitsPerBlock,
-						((playerPos.getY() - worldPos.getY() - player.getEyeHeight()) * tileEntity.unitsPerBlock) + 64,
-						(playerPos.getZ() - worldPos.getZ()) * tileEntity.unitsPerBlock
-				);
-				tileEntity.world.isRemote = worldIn.isRemote;
-				PacketHacksHelper.unitPos = worldPos;
-				stack.getItem().onItemUse(
-						new BlockItemUseContext(
-								tileEntity.world, player, handIn, stack,
-								new BlockRayTraceResult(
-										raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
-										raytraceContext.hitFace.orElse(hit.getFace()), posOffset, hit.isInside()
-								)
-						)
-				);
-				PacketHacksHelper.unitPos = null;
-				player.setWorld(currentWorld);
-				player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+				if (!player.isCreative()) {
+					stack.shrink(1);
+				}
+			} else {
+				BlockPos posOffset = raytraceContext.posHit;
+				if (!(stack.getItem() instanceof DebugStickItem)) {
+					player.setWorld(tileEntity.getFakeWorld());
+					player.setRawPosition(
+							(playerPos.getX() - worldPos.getX()) * tileEntity.unitsPerBlock,
+							((playerPos.getY() - worldPos.getY() - player.getEyeHeight()) * tileEntity.unitsPerBlock) + 64,
+							(playerPos.getZ() - worldPos.getZ()) * tileEntity.unitsPerBlock
+					);
+					tileEntity.getFakeWorld().isRemote = worldIn.isRemote;
+					PacketHacksHelper.unitPos = worldPos;
+					BlockItemUseContext context = new BlockItemUseContext(
+							tileEntity.getFakeWorld(), player, handIn, stack,
+							new BlockRayTraceResult(
+									raytraceContext.vecHit.scale(tileEntity.unitsPerBlock),
+									raytraceContext.hitFace.orElse(hit.getFace()), posOffset, hit.isInside()
+							)
+					);
+					context.offsetPos = posOffset;
+					World currWorld = worldIn;
+					player.world = tileEntity.getFakeWorld();
+					if (currWorld.isRemote) {
+						Minecraft.getInstance().world = tileEntity.worldClient;
+					}
+					ActionResultType type = ActionResultType.PASS;
+					type = stack.getItem().onItemUse(context);
+					if (currWorld.isRemote) {
+						Minecraft.getInstance().world = (ClientWorld) currWorld;
+					}
+					player.world = currWorld;
+					PacketHacksHelper.unitPos = null;
+					player.setWorld(currentWorld);
+					player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+					return type;
+				}
 			}
 		}
 		
-		return ActionResultType.SUCCESS;
+		return ActionResultType.PASS;
 	}
 	
 	public static final VoxelShape virtuallyEmptyShape = VoxelShapes.create(0, 0, 0, 0.001f, 0.001f, 0.001f);
@@ -738,10 +942,10 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		TileEntity tileEntity = worldIn.getTileEntity(pos);
 		if (!(tileEntity instanceof UnitTileEntity)) return;
 		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
-		if (tileEntity1.world != null) {
+		if (tileEntity1.getFakeWorld() != null) {
 			ArrayList<SmallUnit> toRemove = new ArrayList<>();
 			ArrayList<SmallUnit> toMove = new ArrayList<>();
-			for (SmallUnit value : tileEntity1.world.blockMap.values()) {
+			for (SmallUnit value : tileEntity1.getBlockMap().values()) {
 				BlockPos blockPos = value.pos;
 				if (value.pos == null) {
 					toRemove.add(value);
@@ -760,13 +964,18 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			}
 			for (SmallUnit smallUnit : toRemove) {
-				tileEntity1.world.blockMap.remove(smallUnit.pos.toLong());
+				tileEntity1.getBlockMap().remove(smallUnit.pos.toLong());
 			}
 			for (SmallUnit value : toMove) {
 				BlockPos blockPos = value.pos;
-				ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).world, value.pos);
+				ExternalUnitInteractionContext context;
+				if (((UnitTileEntity) tileEntity).getFakeWorld() instanceof FakeServerWorld) {
+					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldServer, value.pos);
+				} else {
+					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldClient, value.pos);
+				}
 				if (context.teInRealWorld instanceof UnitTileEntity) {
-					if (((UnitTileEntity) context.teInRealWorld).world.blockMap.isEmpty()) {
+					if (((UnitTileEntity) context.teInRealWorld).getBlockMap().isEmpty()) {
 						((UnitTileEntity) context.teInRealWorld).unitsPerBlock = tileEntity1.unitsPerBlock;
 					}
 				}
@@ -779,10 +988,13 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 				TileEntity te = context.teInRealWorld;
 				if (te instanceof UnitTileEntity) {
+					if (!worldIn.isRemote)
+						((UnitTileEntity) te).createServerWorld();
 					value.pos = context.posInFakeWorld;
-					((UnitTileEntity) te).world.setBlockState(value.pos, value.state, 3, 0);
-					((UnitTileEntity) te).world.setTileEntity(value.pos, value.tileEntity);
-					tileEntity1.world.blockMap.remove(blockPos.toLong());
+					if (((UnitTileEntity) te).getFakeWorld() == null) continue;
+					((UnitTileEntity) te).getFakeWorld().setBlockState(value.pos, value.state, 3, 0);
+					((UnitTileEntity) te).getFakeWorld().setTileEntity(value.pos, value.tileEntity);
+					tileEntity1.getBlockMap().remove(blockPos.toLong());
 					
 					tileEntity.markDirty();
 					te.markDirty();
@@ -790,13 +1002,33 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					worldIn.notifyBlockUpdate(te.getPos(), state, state, 3);
 				}
 			}
-			long start = new Date().getTime();
-			tileEntity1.world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
 			
-			if (tileEntity1.isNatural && tileEntity1.world.blockMap.isEmpty()) {
+			if (tileEntity1.isNatural && tileEntity1.getBlockMap().isEmpty()) {
 				worldIn.setBlockState(pos, Blocks.AIR.getDefaultState());
 			}
 		}
+	}
+	
+	@Override
+	public boolean isLadder(BlockState state, IWorldReader world, BlockPos pos, LivingEntity entity) {
+		TileEntity tileEntityUncasted = world.getTileEntity(pos);
+		
+		if (entity == null || !(tileEntityUncasted instanceof UnitTileEntity))
+			return false;
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		for (SmallUnit value : tileEntity.getBlockMap().values()) {
+			if (value.state.isIn(BlockTags.createOptional(new ResourceLocation("minecraft:climbable")))) {
+				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
+				pos1 = pos1.add(0.5, 0.5, 0.5);
+				pos1 = pos1.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
+				pos1 = pos1.add(pos.getX(), pos.getY(), pos.getZ());
+				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).contains(pos1)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 	
 	@Override
@@ -810,13 +1042,32 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		if (!(reader instanceof World) || !((World) reader).isRemote || SmallerUnitsConfig.CLIENT.useExperimentalSelection.get()) {
+		if ((!(reader instanceof ServerWorld)) && (!(reader instanceof World) || !((World) reader).isRemote || SmallerUnitsConfig.CLIENT.useExperimentalSelection.get())) {
 			Minecraft.getInstance().getProfiler().startSection("su_create_raytrace_shape");
 			shape = VoxelShapes.empty();
-			for (SmallUnit value : tileEntity.world.blockMap.values()) {
+			for (SmallUnit value : tileEntity.getBlockMap().values()) {
+//				if (context.getEntity() != null) {
+//					Entity entity = context.getEntity();
+//
+//					double reach = 8;
+//					Vector3d start = entity.getPositionVec();
+//					if (entity instanceof PlayerEntity)
+//						reach = ((LivingEntity) entity).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
+//					Vector3d look = entity.getLookVec().scale(reach);
+//					Vector3d end = entity.getEyePosition(0).add(look);
+//
+//					AxisAlignedBB aabb = new AxisAlignedBB(0,0,0,1f/tileEntity.unitsPerBlock,1f/tileEntity.unitsPerBlock,1f/tileEntity.unitsPerBlock);
+//					aabb = aabb.expand((1f/tileEntity.unitsPerBlock)/4f,(1f/tileEntity.unitsPerBlock)/4f,(1f/tileEntity.unitsPerBlock)/4f);
+//					aabb = aabb.offset(-(1f/tileEntity.unitsPerBlock)/8f,-(1f/tileEntity.unitsPerBlock)/8f,-(1f/tileEntity.unitsPerBlock)/8f);
+//					aabb = aabb.offset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+//					aabb = aabb.offset(pos.getX(), pos.getY(), pos.getZ());
+//					Optional<Vector3d> intercept = aabb.rayTrace(start, end);
+//					if (!intercept.isPresent() && !aabb.contains(start) && !aabb.contains(end))
+//						continue;
+//				}
 				Minecraft.getInstance().getProfiler().startSection("get_shape_for_" + value.state.toString());
-				VoxelShape shape1 = value.state.getRayTraceShape(tileEntity.world, value.pos);
-				if (shape1.isEmpty()) shape1 = value.state.getShape(tileEntity.world, tileEntity.getPos());
+				VoxelShape shape1 = value.state.getRaytraceShape(tileEntity.getFakeWorld(), value.pos, ISelectionContext.dummy());
+				if (shape1.isEmpty()) shape1 = value.state.getShape(tileEntity.getFakeWorld(), tileEntity.getPos());
 				Minecraft.getInstance().getProfiler().startSection("shrink_shape");
 				VoxelShape shape2 = VoxelShapes.empty();
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
@@ -869,16 +1120,18 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (!shapeMap.containsKey(nbt)) {
 			shape = VoxelShapes.empty();
 			
-			for (SmallUnit value : tileEntity.world.blockMap.values()) {
+			for (SmallUnit value : tileEntity.getBlockMap().values()) {
 				if (value.tileEntity != null) continue;
 				
-				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.world, value.pos);
+				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.getFakeWorld(), value.pos);
 				VoxelShape shape2 = VoxelShapes.empty();
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
 					shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
 				}
-				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
-				shape = VoxelShapes.or(shape, shape2);
+				if (!shape2.isEmpty()) {
+					shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+					shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+				}
 			}
 			
 			if (shapeMap.size() >= 11900) shapeMap.clear();
@@ -887,9 +1140,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			float padding = 0.05f;
 			if (context.getEntity() != null)
 				padding += context.getEntity().getMotion().distanceTo(new Vector3d(0, 0, 0)) * 2;
-			for (SmallUnit value : tileEntity.world.blockMap.values()) {
+			for (SmallUnit value : tileEntity.getBlockMap().values()) {
 				if (value.tileEntity == null) continue;
-				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.world, value.pos);
+				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.getFakeWorld(), value.pos);
 				VoxelShape shape2 = VoxelShapes.empty();
 				AxisAlignedBB otherBB = new AxisAlignedBB(0, 0, 0, 0, 0, 0);
 				if (context.getEntity() != null) {
@@ -906,7 +1159,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
 					if (
-							context.getEntity() == null ||
+							context.getEntity() != null &&
 									axisAlignedBB
 											.expand(padding, padding, padding)
 											.offset(-padding / 2f, -padding / 2f, -padding / 2f)
@@ -918,8 +1171,10 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 											.intersects(otherBB)
 					) shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
 				}
-				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
-				shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+				if (!shape2.isEmpty()) {
+					shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+					shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+				}
 			}
 			
 			if (shape.isEmpty()) return shape;
@@ -941,13 +1196,13 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					);
 				else otherBB = context.getEntity().getBoundingBox();
 			}
-			for (SmallUnit value : tileEntity.world.blockMap.values()) {
+			for (SmallUnit value : tileEntity.getBlockMap().values()) {
 				if (value.tileEntity == null) continue;
-				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.world, value.pos);
+				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.getFakeWorld(), value.pos);
 				VoxelShape shape2 = VoxelShapes.empty();
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
 					if (
-							context.getEntity() == null ||
+							context.getEntity() != null &&
 									axisAlignedBB
 											.expand(padding, padding, padding)
 											.offset(-padding / 2f, -padding / 2f, -padding / 2f)
@@ -959,8 +1214,10 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 											.intersects(otherBB)
 					) shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
 				}
-				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
-				shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+				if (!shape2.isEmpty()) {
+					shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+					shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+				}
 			}
 		}
 		return shape;
@@ -1051,15 +1308,26 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		BlockPos hitPos;
 		if (raytraceContext.shapeHit.isEmpty()) return;
 		else hitPos = raytraceContext.posHit;
+		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(Direction.UP));
+		raytraceContext.vecHit = raytraceContext.vecHit
+				.subtract(pos.getX(), pos.getY(), pos.getZ())
+				.subtract(raytraceContext.posHit.getX() / ((float) tileEntity.unitsPerBlock), (raytraceContext.posHit.getY() - 64) / ((float) tileEntity.unitsPerBlock), raytraceContext.posHit.getZ() / ((float) tileEntity.unitsPerBlock))
+		;
+		raytraceContext.vecHit = raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).add(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ());
+		Direction face = raytraceContext.hitFace.orElse(Direction.UP);
+		raytraceContext.posHit = raytraceContext.posHit.offset(face.getOpposite());
+		tileEntity.setRaytraceResult(new BlockRayTraceResult(
+				raytraceContext.vecHit,
+				face,
+				raytraceContext.posHit,
+				ticksRandomly
+		));
+		if (!player.isCreative()) {
+			player.getHeldItem(Hand.MAIN_HAND).onBlockStartBreak(pos, player);
+		}
 		
-		tileEntity.world.result = new BlockRayTraceResult(
-				raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).subtract(hitPos.getX(), hitPos.getY(), hitPos.getZ()).scale(tileEntity.unitsPerBlock),
-				raytraceContext.hitFace.orElse(Direction.UP),
-				hitPos, true
-		);
-		
-		tileEntity.world.getBlockState(hitPos).onBlockClicked(
-				tileEntity.world, hitPos, player
+		tileEntity.getFakeWorld().getBlockState(hitPos).onBlockClicked(
+				tileEntity.getFakeWorld(), hitPos, player
 		);
 	}
 }

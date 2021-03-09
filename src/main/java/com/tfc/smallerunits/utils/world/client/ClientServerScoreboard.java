@@ -1,4 +1,4 @@
-package com.tfc.smallerunits.utils.world;
+package com.tfc.smallerunits.utils.world.client;
 
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.server.MinecraftServer;

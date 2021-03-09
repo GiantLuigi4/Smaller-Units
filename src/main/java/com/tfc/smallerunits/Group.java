@@ -1,11 +1,21 @@
 package com.tfc.smallerunits;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.tfc.smallerunits.registry.Deferred;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompressedStreamTools;
+import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.StringNBT;
 import net.minecraft.util.NonNullList;
+import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TextFormatting;
 
+import java.io.DataInputStream;
+import java.io.InputStream;
 import java.util.Random;
 
 public class Group extends ItemGroup {
@@ -44,8 +54,43 @@ public class Group extends ItemGroup {
 		return stack;
 	}
 	
+	private static final Gson gson = new Gson();
+	
 	@Override
 	public void fill(NonNullList<ItemStack> items) {
 		super.fill(items);
+		String text = "";
+		try {
+			InputStream stream = Group.class.getClassLoader().getResourceAsStream("smaller_units_default_tab/default_su_tab_items.json");
+			byte[] bytes = new byte[stream.available()];
+			stream.read(bytes);
+			stream.close();
+			text = new String(bytes);
+		} catch (Throwable ignored) {
+			return;
+		}
+		JsonObject object = gson.fromJson(text, JsonObject.class);
+		JsonArray array = object.getAsJsonArray("list");
+		for (int i = 0; i < array.size(); i++) {
+			JsonObject object1 = (JsonObject) array.get(i);
+			String file = object1.getAsJsonPrimitive("file").getAsString();
+			String name = object1.getAsJsonPrimitive("name").getAsString();
+			String author = object1.getAsJsonPrimitive("author").getAsString();
+			ItemStack stack = new ItemStack(Deferred.UNITITEM.get());
+			CompoundNBT itemNBT = stack.getOrCreateTag();
+			CompoundNBT displayNBT = new CompoundNBT();
+			ListNBT tooltip = new ListNBT();
+			tooltip.add(StringNBT.valueOf("{\"text\":\"Author: " + author + "\"}"));
+			displayNBT.put("Lore", tooltip);
+			itemNBT.put("display", displayNBT);
+			InputStream stream = Group.class.getClassLoader().getResourceAsStream("smaller_units_default_tab/" + file + ".nbt");
+			try {
+				itemNBT.put("BlockEntityTag", CompressedStreamTools.read(new DataInputStream(stream)));
+				stream.close();
+			} catch (Throwable ignored) {
+			}
+			items.add(stack);
+			stack.setDisplayName(new StringTextComponent(name).mergeStyle(TextFormatting.AQUA));
+		}
 	}
 }

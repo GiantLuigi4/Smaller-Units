@@ -1,6 +1,7 @@
-package com.tfc.smallerunits.utils.world;
+package com.tfc.smallerunits.utils.world.common;
 
 import com.google.common.collect.ImmutableList;
+import com.tfc.smallerunits.utils.world.server.FakeServerChunkProvider;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.util.concurrent.ITaskExecutor;

@@ -26,6 +26,7 @@ public class SmallerUnitsConfig {
 	public final ForgeConfigSpec.IntValue minUPB;
 	public final ForgeConfigSpec.IntValue maxUPB;
 	public final ForgeConfigSpec.IntValue lightingUpdatesPerTick;
+	public final ForgeConfigSpec.BooleanValue usePacketHandlerHacks;
 	
 	public SmallerUnitsConfig(ForgeConfigSpec.Builder builder) {
 		builder.comment("Crafting related stuff").push("Recipe Settings");
@@ -61,6 +62,15 @@ public class SmallerUnitsConfig {
 				.translation("config.smaller_units.lighting_updates_per_tick")
 				.defineInRange("LightingUpdatesPerTick", 10, 1, 200);
 		
+		builder.comment("Potentially Broken Stuff, mostly invasive stuff").push("Compatibility Hacks");
+		
+		builder.pop();
+		
+		usePacketHandlerHacks = builder
+				.comment("Whether or not Smaller Units should use a hacky method of tying packets sent by small blocks to the tile entity of the small world which holds the block\nMay be very broken with some mods")
+				.translation("config.smaller_units.packet_handler_hacks")
+				.define("PacketHandlerHacks", true);
+		
 		builder.pop();
 	}
 	
@@ -76,11 +86,11 @@ public class SmallerUnitsConfig {
 			useExperimentalRenderer = builder
 					.comment("Potentially buggy, but better performance")
 					.translation("config.smaller_units.experimental_renderer")
-					.define("ExperimentalRenderer", false);
+					.define("ExperimentalRenderer", true);
 			useVBOS = builder
 					.comment("Buggy, higher GPU usage, better performance")
-					.translation("config.smaller_units.experimental_renderer")
-					.define("ExperimentalRenderer", false);
+					.translation("config.smaller_units.use_vbos")
+					.define("UseVOBS", false);
 			useExperimentalSelection = builder
 					.comment("Less likely to select the block behind the selected unit block, but work in progress")
 					.translation("config.smaller_units.experimental_selection")

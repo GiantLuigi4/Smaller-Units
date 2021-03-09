@@ -3,19 +3,18 @@
   "package": "com.tfc.smallerunits.mixins",
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
-  "client": [
-	"MinecraftMixin",
-	"TileEntityRendererDispatcherMixin"
-  ],
+  "client": ["GameRendererMixin", "MinecraftMixin", "ModelDataManagerMixin", "TileEntityRendererDispatcherMixin"],
   "mixins": [
 	"ContainerMixin",
 	"ContainerMixin2",
+	"IndexedMessageCodecMixin",
 	"PlayerEntityMixin",
 	"ServerPlayerEntityMixin",
-	"ServerPlayNetHandlerMixin"
+	"ServerPlayNetHandlerMixin",
+	"SimpleChannelMixin"
   ],
   "injectors": {
-	"defaultRequire": 1
+	"defaultRequire": 0
   },
   "minVersion": "0.8"
 }

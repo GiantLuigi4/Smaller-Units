@@ -7,6 +7,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.shapes.IBooleanFunction;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
@@ -35,15 +36,28 @@ public class UnitRaytraceHelper {
 		
 		Optional<Direction> hitFace = Optional.empty();
 		
-		for (SmallUnit unit : tileEntity.world.blockMap.values()) {
+		for (SmallUnit unit : tileEntity.getBlockMap().values()) {
 			VoxelShape shape1;
+//			{
+//				AxisAlignedBB aabb = new AxisAlignedBB(0,0,0,1f/tileEntity.unitsPerBlock,1f/tileEntity.unitsPerBlock,1f/tileEntity.unitsPerBlock);
+//				aabb = aabb.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
+//				aabb = aabb.offset(pos.getX(), pos.getY(), pos.getZ());
+//				Optional<Vector3d> intercept = aabb.rayTrace(start, end);
+//				if (!intercept.isPresent() && !aabb.contains(start) && !aabb.contains(end))
+//					continue;
+//			}
 			if (contextOptional.isPresent())
-				shape1 = unit.state.getRaytraceShape(tileEntity.world, unit.pos, contextOptional.get());
-			else shape1 = unit.state.getRayTraceShape(tileEntity.world, unit.pos);
+				shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
+			else shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
 			if (shape1.isEmpty())
 				if (contextOptional.isPresent())
-					shape1 = unit.state.getShape(tileEntity.world, unit.pos, contextOptional.get());
-				else shape1 = unit.state.getShape(tileEntity.world, unit.pos);
+					shape1 = unit.state.getRaytraceShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
+				else
+					shape1 = unit.state.getRaytraceShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
+			if (shape1.isEmpty())
+				if (contextOptional.isPresent())
+					shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
+				else shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
 			ArrayList<AxisAlignedBB> aabbs = shrink(shape1, tileEntity.unitsPerBlock);
 			
 			for (AxisAlignedBB axisAlignedBB : aabbs) {
@@ -61,7 +75,7 @@ public class UnitRaytraceHelper {
 				
 				for (AxisAlignedBB axisAlignedBB1 : aabbs) {
 					axisAlignedBB1 = axisAlignedBB1.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
-					theShape = VoxelShapes.or(theShape, VoxelShapes.create(axisAlignedBB1));
+					theShape = VoxelShapes.combine(theShape, VoxelShapes.create(axisAlignedBB1), IBooleanFunction.OR);
 				}
 				
 				shape = theShape;
@@ -145,7 +159,7 @@ public class UnitRaytraceHelper {
 		
 		Optional<Direction> hitFace = Optional.empty();
 		
-		for (SmallUnit unit : tileEntity.world.blockMap.values()) {
+		for (SmallUnit unit : tileEntity.getBlockMap().values()) {
 //			VoxelShape shape1;
 //			if (contextOptional.isPresent())
 //				shape1 = unit.state.getShape(tileEntity.world, unit.pos, contextOptional.get());

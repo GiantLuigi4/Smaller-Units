@@ -1,16 +1,22 @@
 package com.tfc.smallerunits.helpers;
 
-//import com.tfc.smallerunits.mixins.FMLNetworkConstantsAccessor;
-
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.util.math.BlockPos;
 
 public class PacketHacksHelper {
 	public static BlockPos unitPos = null;
-
-//	public static HashMap<ResourceLocation, SimpleChannel> channelHashMap = new HashMap<>();
-//
-//	static {
-//		channelHashMap.put(new ResourceLocation("fml:play"), FMLNetworkConstantsAccessor.smaller_units_getPlayChannel());
-//		channelHashMap.put(new ResourceLocation("fml:handshake"), FMLNetworkConstantsAccessor.smaller_units_getHandshakeChannel());
-//	}
+	
+	private static final Object2ObjectLinkedOpenHashMap<Object, BlockPos> map = new Object2ObjectLinkedOpenHashMap<>();
+	
+	public static <MSG> void setPosForPacket(MSG packet, BlockPos pos) {
+		map.put(packet, pos);
+	}
+	
+	public static <MSG> BlockPos getPosForPacket(MSG packet) {
+		return map.get(packet);
+	}
+	
+	public static <MSG> void markPacketDone(MSG msg) {
+		map.remove(msg);
+	}
 }

@@ -53,8 +53,11 @@ public class CustomBuffer implements IRenderTypeBuffer {
 	public IVertexBuilder getBuffer(RenderType p_getBuffer_1_) {
 		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get()) {
 			for (CustomVertexBuilder customVertexBuilder : builders) {
-				if (customVertexBuilder.type.equals(p_getBuffer_1_))
+				if (customVertexBuilder.type.equals(p_getBuffer_1_)) {
+					customVertexBuilder.pos = pos;
+					customVertexBuilder.face = face;
 					return customVertexBuilder;
+				}
 			}
 		}
 		CustomVertexBuilder builder = new CustomVertexBuilder(p_getBuffer_1_);

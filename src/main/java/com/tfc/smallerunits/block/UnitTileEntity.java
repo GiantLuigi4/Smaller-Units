@@ -1,42 +1,48 @@
 package com.tfc.smallerunits.block;
 
-import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitPallet;
-import com.tfc.smallerunits.utils.world.FakeDimensionSavedData;
-import com.tfc.smallerunits.utils.world.FakeServerWorld;
+import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
+import com.tfc.smallerunits.utils.world.common.FakeDimensionSavedData;
+import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.item.ExperienceOrbEntity;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.projectile.PotionEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
+import net.minecraft.profiler.IProfiler;
+import net.minecraft.profiler.Profiler;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.TickPriority;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.ForgeRegistries;
 import sun.misc.Unsafe;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	private static final Unsafe theUnsafe;
@@ -53,33 +59,146 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		}
 	}
 	
-	public final FakeServerWorld world;
+	public FakeServerWorld worldServer = null;
+	public FakeClientWorld worldClient = null;
 	public int unitsPerBlock = 4;
 	
 	public UnitTileEntity() {
 		super(Deferred.UNIT_TE.get());
-		
-		try {
-			world = (FakeServerWorld) theUnsafe.allocateInstance(FakeServerWorld.class);
-			world.init(this);
-		} catch (Throwable err) {
-			throw new RuntimeException(err);
-		}
+	}
+	
+	public Map<Integer, Entity> getEntitiesById() {
+		if (worldServer == null && worldClient == null) return new HashMap<>();
+		else if (worldServer == null) return worldClient.entitiesById;
+		else return worldServer.entitiesById;
+	}
+	
+	public World getFakeWorld() {
+		return worldClient != null ? worldClient : worldServer;
+	}
+	
+	public IProfiler getProfiler() {
+		return worldClient != null ? worldClient.profiler.get() : worldServer.profiler.get();
 	}
 	
 	@Override
 	public AxisAlignedBB getRenderBoundingBox() {
-		return new AxisAlignedBB(getPos().getX(), getPos().getY(), getPos().getZ(), getPos().getX() + 1, getPos().getY() + 1, getPos().getZ() + 1);
+		AxisAlignedBB bb = null;
+		for (Entity value : getEntitiesById().values()) {
+			AxisAlignedBB renderBB = value.getRenderBoundingBox();
+			renderBB = renderBB.offset(0, -64, 0);
+			renderBB = new AxisAlignedBB(
+					renderBB.minX / unitsPerBlock,
+					renderBB.minY / unitsPerBlock,
+					renderBB.minZ / unitsPerBlock,
+					renderBB.maxX / unitsPerBlock,
+					renderBB.maxY / unitsPerBlock,
+					renderBB.maxZ / unitsPerBlock
+			);
+			renderBB = renderBB.offset(getPos());
+			if (bb == null) {
+				bb = renderBB;
+			} else {
+				bb = new AxisAlignedBB(
+						Math.min(renderBB.minX, bb.minX),
+						Math.min(renderBB.minY, bb.minY),
+						Math.min(renderBB.minZ, bb.minZ),
+						Math.max(renderBB.maxX, bb.maxX),
+						Math.max(renderBB.maxY, bb.maxY),
+						Math.max(renderBB.maxZ, bb.maxZ)
+				);
+			}
+		}
+		for (SmallUnit value : getBlockMap().values()) {
+			VoxelShape shape = value.state.getRenderShape(getFakeWorld(), value.pos);
+			if (shape.isEmpty()) shape = value.state.getShape(getFakeWorld(), value.pos);
+			AxisAlignedBB renderBB = new AxisAlignedBB(0, 0, 0, 0, 0, 0);
+			if (!shape.isEmpty())
+				renderBB = shape.getBoundingBox();
+			renderBB = renderBB.offset(value.pos);
+			if (value.tileEntity != null) {
+				AxisAlignedBB bb1 = value.tileEntity.getRenderBoundingBox();
+				renderBB = new AxisAlignedBB(
+						Math.min(renderBB.minX, bb1.minX),
+						Math.min(renderBB.minY, bb1.minY),
+						Math.min(renderBB.minZ, bb1.minZ),
+						Math.max(renderBB.maxX, bb1.maxX),
+						Math.max(renderBB.maxY, bb1.maxY),
+						Math.max(renderBB.maxZ, bb1.maxZ)
+				);
+			}
+			if (!value.state.getFluidState().isEmpty()) {
+				AxisAlignedBB bb1 = new AxisAlignedBB(0, 0, 0, 1, value.state.getFluidState().getHeight(), 1);
+				bb1 = bb1.offset(value.pos);
+				renderBB = new AxisAlignedBB(
+						Math.min(renderBB.minX, bb1.minX),
+						Math.min(renderBB.minY, bb1.minY),
+						Math.min(renderBB.minZ, bb1.minZ),
+						Math.max(renderBB.maxX, bb1.maxX),
+						Math.max(renderBB.maxY, bb1.maxY),
+						Math.max(renderBB.maxZ, bb1.maxZ)
+				);
+			}
+			renderBB = renderBB.offset(0, -64, 0);
+			renderBB = new AxisAlignedBB(
+					renderBB.minX / unitsPerBlock,
+					renderBB.minY / unitsPerBlock,
+					renderBB.minZ / unitsPerBlock,
+					renderBB.maxX / unitsPerBlock,
+					renderBB.maxY / unitsPerBlock,
+					renderBB.maxZ / unitsPerBlock
+			);
+			renderBB = renderBB.offset(getPos());
+			if (bb == null) {
+				bb = renderBB;
+			} else {
+				bb = new AxisAlignedBB(
+						Math.min(renderBB.minX, bb.minX),
+						Math.min(renderBB.minY, bb.minY),
+						Math.min(renderBB.minZ, bb.minZ),
+						Math.max(renderBB.maxX, bb.maxX),
+						Math.max(renderBB.maxY, bb.maxY),
+						Math.max(renderBB.maxZ, bb.maxZ)
+				);
+			}
+		}
+		if (bb == null) {
+			bb = new AxisAlignedBB(getPos().getX(), getPos().getY(), getPos().getZ(), getPos().getX() + 1, getPos().getY() + 1, getPos().getZ() + 1);
+		}
+		return bb;
+	}
+	
+	public Long2ObjectLinkedOpenHashMap<SmallUnit> getBlockMap() {
+		if (worldServer == null && worldClient == null) return new Long2ObjectLinkedOpenHashMap<>();
+		else if (worldServer == null) return worldClient.blockMap;
+		else return worldServer.blockMap;
+	}
+	
+	private void setBlockMap(Long2ObjectLinkedOpenHashMap<SmallUnit> posUnitMap) {
+		if (worldServer != null) worldServer.blockMap = posUnitMap;
+		else worldClient.blockMap = posUnitMap;
+	}
+	
+	public void setRaytraceResult(BlockRayTraceResult result) {
+		if (worldServer != null) worldServer.result = result;
+		else worldClient.result = result;
 	}
 	
 	public IBlockReader loadingWorld;
 	
+	public BlockRayTraceResult getResult() {
+		if (worldServer != null) return worldServer.result;
+		else return worldClient.result;
+	}
 	
 	@Override
 	public void tick() {
-		if (world.isRemote) {
-			world.profiler.get().startTick();
-			for (SmallUnit value : this.world.blockMap.values()) {
+		if (getFakeWorld() == null) return;
+		
+		if (getFakeWorld().isRemote) {
+			getProfiler().startTick();
+			
+			for (SmallUnit value : this.getBlockMap().values()) {
 				if (value.tileEntity instanceof ITickableTileEntity) {
 					try {
 						((ITickableTileEntity) value.tileEntity).tick();
@@ -87,116 +206,113 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 					}
 				}
 			}
-			for (Entity value : world.entitiesByUuid.values()) {
+			
+			for (Entity value : getEntitiesById().values()) {
 				try {
 					value.tick();
 				} catch (Throwable ignored) {
 				}
 			}
-			world.profiler.get().endTick();
-		} else {
-			for (Entity value : world.entitiesByUuid.values()) {
-				if (value.getDataManager().isDirty()) {
-					this.markDirty();
-					this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
+			
+			getProfiler().endTick();
+			if (worldServer != null) worldServer.tick(() -> false);
+			else worldClient.tick(() -> false);
+			return;
+		}
+		
+		if (!getWorld().getPendingBlockTicks().isTickScheduled(pos, getBlockState().getBlock())) {
+			getWorld().getPendingBlockTicks().scheduleTick(pos, getBlockState().getBlock(), 1);
+		}
+		
+		long start = new Date().getTime();
+		BooleanSupplier supplier = () -> Math.abs(new Date().getTime() - start) <= 10;
+		if (worldServer != null) worldServer.tick(supplier);
+		else worldClient.tick(supplier);
+		
+		getProfiler().startTick();
+		for (SmallUnit value : this.getBlockMap().values()) {
+			if (value != null && value.tileEntity != null) {
+				try {
+					if (value.tileEntity instanceof ITickableTileEntity) {
+						((ITickableTileEntity) value.tileEntity).tick();
+					}
+				} catch (Throwable err) {
+					StringBuilder stacktrace = new StringBuilder(err.toString() + "\n");
+					for (StackTraceElement element : err.getStackTrace()) {
+						stacktrace.append(element.toString()).append("\n");
+					}
+					System.out.println(stacktrace);
+					err = err.getCause();
+					if (err != null) {
+						stacktrace = new StringBuilder(err.toString() + "\n");
+						for (StackTraceElement element : err.getStackTrace()) {
+							stacktrace.append(element.toString()).append("\n");
+						}
+						System.out.println(stacktrace);
+					}
 				}
 			}
 		}
-//		if (world.isRemote) {
-//		World worldIn = getWorld();
-//		BlockState state = this.getBlockState();
-//			TileEntity tileEntity = worldIn.getTileEntity(pos);
-//			if (!(tileEntity instanceof UnitTileEntity)) return;
-//			UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
-//			if (tileEntity1.world != null) {
-//				ArrayList<SmallUnit> toRemove = new ArrayList<>();
-//				ArrayList<SmallUnit> toMove = new ArrayList<>();
-//				for (SmallUnit value : tileEntity1.world.blockMap.values()) {
-//					BlockPos blockPos = value.pos;
-//					if (value.pos == null) {
-//						toRemove.add(value);
-//						continue;
-//					}
-//					int y = value.pos.getY() - 64;
-//					if (
-//							blockPos.getX() < 0 ||
-//									blockPos.getX() > tileEntity1.unitsPerBlock - 1 ||
-//									blockPos.getZ() < 0 ||
-//									blockPos.getZ() > tileEntity1.unitsPerBlock - 1 ||
-//									y < 0 ||
-//									y > tileEntity1.unitsPerBlock - 1
-//					) {
-//						toMove.add(value);
-//					}
-//				}
-//				for (SmallUnit smallUnit : toRemove) {
-//					tileEntity1.world.blockMap.remove(smallUnit.pos);
-//				}
-//				for (SmallUnit value : toMove) {
-//					BlockPos blockPos = value.pos;
-//					ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).world, value.pos);
-//					if (context.teInRealWorld instanceof UnitTileEntity) {
-//						if (((UnitTileEntity) context.teInRealWorld).world.blockMap.isEmpty()) {
-//							((UnitTileEntity) context.teInRealWorld).unitsPerBlock = tileEntity1.unitsPerBlock;
-//						}
-//					}
-//					if (context.stateInRealWorld.getBlock().equals(Blocks.AIR)) {
-//						UnitTileEntity tileEntity2 = new UnitTileEntity();
-//						worldIn.setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
-//						worldIn.setTileEntity(context.posInRealWorld,tileEntity2);
-//						tileEntity2.isNatural = true;
-//						continue;
-//					}
-//					TileEntity te = context.teInRealWorld;
-//					if (te instanceof UnitTileEntity) {
-//						value.pos = context.posInFakeWorld;
-//						((UnitTileEntity) te).world.setBlockState(value.pos,value.state,3,0);
-//						((UnitTileEntity) te).world.setTileEntity(value.pos,value.tileEntity);
-//						tileEntity1.world.blockMap.remove(blockPos);
-//
-//						tileEntity.markDirty();
-//						te.markDirty();
-//						worldIn.notifyBlockUpdate(tileEntity.getPos(), state, state, 3);
-//						worldIn.notifyBlockUpdate(te.getPos(), state, state, 3);
-//					}
-//				}
-//				long start = new Date().getTime();
-//				tileEntity1.world.tick(() -> Math.abs(new Date().getTime() - start) <= 10);
-//
-//				if (tileEntity1.isNatural && tileEntity1.world.blockMap.isEmpty()) {
-//					worldIn.setBlockState(pos,Blocks.AIR.getDefaultState());
-//				}
+		
+		for (Entity value : getEntitiesById().values()) {
+			if (!value.removed) {
+				try {
+					value.tick();
+				} catch (Throwable ignored) {
+				
+				}
+			}
+
+//			if (value.getDataManager().isDirty()) {
+//				value.getDataManager().setClean();
+			//TODO: change this to send packets to update only the specific entity being updated
+			this.markDirty();
+			this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
 //			}
-//		}
+		}
+		getProfiler().endTick();
 	}
 	
 	@Override
 	public void read(BlockState state, CompoundNBT nbt) {
 		super.read(state, nbt);
-		if (FMLEnvironment.dist.isClient()) {
-			for (Direction dir : Direction.values()) {
-				if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos().offset(dir))) {
-					SmallerUnitsTESR.bufferCache.get(this.getPos().offset(dir)).getSecond().dispose();
-				}
-				SmallerUnitsTESR.bufferCache.remove(this.getPos().offset(dir));
-			}
-			if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos())) {
-				SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().dispose();
-			}
-			SmallerUnitsTESR.bufferCache.remove(this.getPos());
+		
+		if (worldClient == null) {
+			createServerWorld();
 		}
+
+//		if (FMLEnvironment.dist.isClient()) {
+//			for (Direction dir : Direction.values()) {
+//				if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos().offset(dir))) {
+//					SmallerUnitsTESR.bufferCache.get(this.getPos().offset(dir)).getSecond().dispose();
+//				}
+//
+//				SmallerUnitsTESR.bufferCache.remove(this.getPos().offset(dir));
+//			}
+//
+//			if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos())) {
+//				SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().dispose();
+//			}
+//
+//			SmallerUnitsTESR.bufferCache.remove(this.getPos());
+//		}
+		
 		this.unitsPerBlock = Math.min(Math.max(nbt.getInt("upb"), 1), 256);
-		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), world);
-		this.world.blockMap = pallet.posUnitMap;
-		for (SmallUnit value : world.blockMap.values()) {
+		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), getFakeWorld());
+		this.setBlockMap(pallet.posUnitMap);
+		
+		for (SmallUnit value : getBlockMap().values()) {
 			if (value.tileEntity == null) continue;
 			if (value.tileEntity instanceof ITickableTileEntity) {
-				world.tickableTileEntities.add(value.tileEntity);
+				getFakeWorld().tickableTileEntities.add(value.tileEntity);
 			}
-			world.tileEntityPoses.add(value.pos);
-			world.loadedTileEntityList.add(value.tileEntity);
+			
+			if (worldServer != null) worldServer.tileEntityPoses.add(value.pos);
+			getFakeWorld().loadedTileEntityList.add(value.tileEntity);
 		}
+		
 		CompoundNBT ticks = nbt.getCompound("ticks");
+		
 		{
 			ListNBT blockTickList = ticks.getList("blockTicks", Constants.NBT.TAG_COMPOUND);
 			for (INBT inbt : blockTickList) {
@@ -204,21 +320,24 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				BlockPos pos = new BlockPos(tick.getInt("x"), tick.getInt("y"), tick.getInt("z"));
 				long time = tick.getInt("time");
 				int priority = tick.getInt("priority");
+				
 				try {
 					if (pos.getY() > 0 && pos.getX() > 0 && pos.getZ() > 0 && pos.getX() < (unitsPerBlock - 1) && (pos.getY() - 64) < (unitsPerBlock - 1) && pos.getZ() < (unitsPerBlock - 1))
-						world.getPendingBlockTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getBlock(), (int) time, TickPriority.getPriority(priority));
+						getFakeWorld().getPendingBlockTicks().scheduleTick(pos, pallet.posUnitMap.get(pos.toLong()).state.getBlock(), (int) time, TickPriority.getPriority(priority));
 				} catch (Throwable err) {
 					err.printStackTrace();
 				}
 			}
+			
 			ListNBT fluidTickList = ticks.getList("fluidTicks", Constants.NBT.TAG_COMPOUND);
+			
 			for (INBT inbt : fluidTickList) {
 				CompoundNBT tick = (CompoundNBT) inbt;
 				BlockPos pos = new BlockPos(tick.getInt("x"), tick.getInt("y"), tick.getInt("z"));
 				long time = tick.getInt("time");
 				int priority = tick.getInt("priority");
 				try {
-					world.getPendingFluidTicks().scheduleTick(pos, pallet.posUnitMap.get(pos).state.getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
+					getFakeWorld().getPendingFluidTicks().scheduleTick(pos, pallet.posUnitMap.get(pos.toLong()).state.getFluidState().getFluid(), (int) time, TickPriority.getPriority(priority));
 				} catch (Throwable err) {
 					err.printStackTrace();
 				}
@@ -229,36 +348,83 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		if (nbt.contains("isNatural"))
 			isNatural = nbt.getBoolean("isNatural");
 		CompoundNBT entities = nbt.getCompound("entities");
-		world.entitiesByUuid.clear();
-		world.entitiesById.clear();
+		ArrayList<Integer> entitiesExisting = new ArrayList<>();
+		loop_entities:
 		for (String key : entities.keySet()) {
 			CompoundNBT entityNBT = entities.getCompound(key);
 			EntityType<?> type = ForgeRegistries.ENTITIES.getValue(new ResourceLocation(entityNBT.getString("id")));
 			if (type == null) continue;
-			Entity entity = type.create(world);
+			Entity entity = type.create(getFakeWorld());
 			if (entity == null) continue;
-			entity.deserializeNBT(entityNBT);
-			Entity entityIn = entity;
-			if (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity) {
-				world.addEntity(entityIn);
+			if (worldServer != null) {
+				if (worldServer.containsEntityWithUUID(entity.getUniqueID())) {
+					for (Entity value : getEntitiesById().values()) {
+						if (value.getUniqueID().toString().equals(key)) {
+							int oldID = value.getEntityId();
+							entitiesExisting.add(value.getEntityId());
+							value.read(entityNBT);
+							value.setEntityId(oldID);
+							continue loop_entities;
+						}
+					}
+				}
 			} else {
-				world.entitiesByUuid.put(entity.getUniqueID(), entity);
-				world.entitiesById.put(entity.getEntityId(), entity);
+				if (worldClient.containsEntityWithUUID(entityNBT.getUniqueId("UUID"))) {
+					for (Entity value : getEntitiesById().values()) {
+						if (value.getUniqueID().toString().equals(key)) {
+							int oldID = value.getEntityId();
+							entitiesExisting.add(value.getEntityId());
+							value.read(entityNBT);
+							value.setEntityId(oldID);
+							continue loop_entities;
+						}
+					}
+				}
+			}
+			Entity entityIn = entity;
+			getFakeWorld().addEntity(entityIn);
+			entity.read(entityNBT);
+			entitiesExisting.add(entity.getEntityId());
+//			if (!(entityIn instanceof ArmorStandEntity) && (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity)) {
+//				worldServer.addEntity(entityIn);
+//			} else {
+//				worldServer.entitiesByUuid.put(entity.getUniqueID(), entity);
+//				getEntitiesById().put(entity.getEntityId(), entity);
+//			}
+		}
+		ArrayList<Integer> toRemove = new ArrayList<>();
+		for (Entity value : getEntitiesById().values()) {
+			if (!entitiesExisting.contains(value.getEntityId())) {
+				toRemove.add(value.getEntityId());
+			}
+		}
+		for (Integer integer : toRemove) {
+			getEntitiesById().remove(integer);
+		}
+	}
+	
+	public void createServerWorld() {
+		if (worldClient == null && worldServer == null) {
+			try {
+				worldServer = (FakeServerWorld) theUnsafe.allocateInstance(FakeServerWorld.class);
+				worldServer.init(this);
+			} catch (Throwable err) {
+				throw new RuntimeException(err);
 			}
 		}
 	}
 	
 	@Override
 	public CompoundNBT write(CompoundNBT compound) {
-		UnitPallet unitPallet = new UnitPallet(world.blockMap.values());
+		UnitPallet unitPallet = new UnitPallet(getBlockMap().values());
 		compound.put("containedUnits", unitPallet.nbt);
 		compound.putInt("upb", Math.max(1, unitsPerBlock));
 		CompoundNBT ticks = new CompoundNBT();
-		{
+		if (this.worldServer != null) {
 			ListNBT pendingBlockTicks = new ListNBT();
-			for (NextTickListEntry<Block> blockNextTickListEntry : this.world.getPendingBlockTicks().getPending(new ChunkPos(0), false, false)) {
+			for (NextTickListEntry<Block> blockNextTickListEntry : this.worldServer.getPendingBlockTicks().getPending(new ChunkPos(0), false, false)) {
 				CompoundNBT tick = new CompoundNBT();
-				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - world.getGameTime());
+				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - worldServer.getGameTime());
 				tick.putInt("x", blockNextTickListEntry.position.getX());
 				tick.putInt("y", blockNextTickListEntry.position.getY());
 				tick.putInt("z", blockNextTickListEntry.position.getZ());
@@ -267,11 +433,11 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			}
 			ticks.put("blockTicks", pendingBlockTicks);
 		}
-		{
+		if (this.worldServer != null) {
 			ListNBT pendingFluidTicks = new ListNBT();
-			for (NextTickListEntry<Fluid> blockNextTickListEntry : this.world.getPendingFluidTicks().getPending(new ChunkPos(0), false, false)) {
+			for (NextTickListEntry<Fluid> blockNextTickListEntry : this.worldServer.getPendingFluidTicks().getPending(new ChunkPos(0), false, false)) {
 				CompoundNBT tick = new CompoundNBT();
-				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - world.getGameTime());
+				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - worldServer.getGameTime());
 				tick.putInt("x", blockNextTickListEntry.position.getX());
 				tick.putInt("y", blockNextTickListEntry.position.getY());
 				tick.putInt("z", blockNextTickListEntry.position.getZ());
@@ -281,12 +447,14 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			ticks.put("fluidTicks", pendingFluidTicks);
 		}
 		compound.put("ticks", ticks);
-		world.getSavedData().save();
-		compound.put("savedData", ((FakeDimensionSavedData) world.getSavedData()).savedNBT);
+		if (this.worldServer != null) {
+			worldServer.getSavedData().save();
+			compound.put("savedData", ((FakeDimensionSavedData) worldServer.getSavedData()).savedNBT);
+		}
 		compound.putBoolean("isNatural", isNatural);
 		CompoundNBT entities = new CompoundNBT();
-		world.entitiesByUuid.forEach((uuid, entity) -> {
-			if (!world.entitiesToRemove.contains(entity)) {
+		if (this.worldServer != null) worldServer.entitiesByUuid.forEach((uuid, entity) -> {
+			if (!worldServer.entitiesToRemove.contains(entity)) {
 				if (this.getWorld().isRemote) {
 					try {
 						entities.put(uuid.toString(), entity.serializeNBT());
@@ -312,7 +480,43 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	}
 	
 	@Override
+	public void handleUpdateTag(BlockState state, CompoundNBT tag) {
+		if (worldClient == null) {
+			try {
+				worldClient = new FakeClientWorld(
+						null,
+						new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
+						getWorld().dimension,
+						getWorld().dimensionType,
+						0, () -> new Profiler(() -> 0, () -> 0, false),
+						null, true, 0
+				);
+				worldClient.init(this);
+			} catch (Throwable err) {
+				throw new RuntimeException(err);
+			}
+		}
+		super.handleUpdateTag(state, tag);
+	}
+	
+	@Override
 	public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
+		if (worldClient == null) {
+			try {
+				worldClient = new FakeClientWorld(
+						null,
+						new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
+						getWorld().dimension,
+						getWorld().dimensionType,
+						0, () -> new Profiler(() -> 0, () -> 0, false),
+						null, true, 0
+				);
+				worldClient.init(this);
+			} catch (Throwable err) {
+				throw new RuntimeException(err);
+			}
+		}
+		
 		deserializeNBT(pkt.getNbtCompound());
 	}
 	

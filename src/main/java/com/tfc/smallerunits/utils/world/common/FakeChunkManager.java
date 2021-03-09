@@ -1,8 +1,9 @@
-package com.tfc.smallerunits.utils.world;
+package com.tfc.smallerunits.utils.world.common;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Queues;
 import com.mojang.datafixers.DataFixer;
+import com.tfc.smallerunits.utils.world.server.FakeServerChunkProvider;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;

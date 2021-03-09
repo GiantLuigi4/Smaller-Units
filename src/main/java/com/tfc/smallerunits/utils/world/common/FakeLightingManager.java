@@ -1,8 +1,8 @@
-package com.tfc.smallerunits.utils.world;
+package com.tfc.smallerunits.utils.world.common;
 
-import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
+import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.Direction;
 import net.minecraft.util.concurrent.DelegatedTaskExecutor;
@@ -100,12 +100,10 @@ public class FakeLightingManager extends ServerWorldLightManager {
 							if (!context.posInRealWorld.equals(world.owner.getPos())) {
 								if (context.teInRealWorld != null) {
 									if (!context.teInRealWorld.equals(world.owner)) {
-										if (recursionDepth < 1) {
-											recursionDepth++;
-											int amt = ((UnitTileEntity) context.teInRealWorld).world.getLightFor(LightType.BLOCK, context.posInFakeWorld);
-											max = Math.max(max, amt - 1);
-											recursionDepth--;
-										}
+//											if (((FakeLightingManager)((UnitTileEntity)context.teInRealWorld).worldServer.lightManager).isInbounds(context.posInFakeWorld.down(64),((UnitTileEntity) context.teInRealWorld).unitsPerBlock)) {
+//												int amt = ((FakeLightingManager)((UnitTileEntity)context.teInRealWorld).worldServer.lightManager).lighting[toIndex(context.posInFakeWorld.down(64))];
+//												max = Math.max(max, amt - 1);
+//											}
 									}
 								}
 							}
@@ -116,10 +114,11 @@ public class FakeLightingManager extends ServerWorldLightManager {
 			if (stateLight == 0) {
 				max -= state.getOpacity(manager.world, pos.add(0, 64, 0));
 			}
+			max = Math.max(0, max);
 			if (lighting[toIndex(pos)] != (max)) {
+				lighting[toIndex(pos)] = (max);
 				hasChanged = true;
 			}
-			lighting[toIndex(pos)] = (max);
 			return false;
 		} else {
 			lastX = 0;
@@ -143,12 +142,13 @@ public class FakeLightingManager extends ServerWorldLightManager {
 	
 	public int getBlockLight(BlockPos pos) {
 		if (isInbounds(pos, ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
-			if (manager.world.isRemote) testLight(pos, (FakeServerWorld) manager.world);
-			return lighting[toIndex(pos)];
+			if (((FakeServerWorld) manager.world).owner.getWorld().isRemote)
+				testLight(pos, (FakeServerWorld) manager.world);
+			return Math.max(lighting[toIndex(pos)], 0);
 		}
 		for (Direction value : Direction.values()) {
 			if (isInbounds(pos.offset(value), ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
-				return lighting[toIndex(pos.offset(value))] - 10;
+				return Math.max(lighting[toIndex(pos.offset(value))] - 1, 0);
 			}
 		}
 		return 0;

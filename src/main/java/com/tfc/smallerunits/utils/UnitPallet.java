@@ -1,6 +1,5 @@
 package com.tfc.smallerunits.utils;
 
-import com.tfc.smallerunits.utils.world.FakeServerWorld;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -12,6 +11,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -63,7 +63,7 @@ public class UnitPallet {
 		nbt.put("blocks", blocks);
 	}
 	
-	public UnitPallet(CompoundNBT nbt, FakeServerWorld world) {
+	public UnitPallet(CompoundNBT nbt, World world) {
 		this.nbt = nbt;
 		ListNBT listNBT = nbt.getList("units", Constants.NBT.TAG_COMPOUND);
 		CompoundNBT stateIndexMap = nbt.getCompound("states");

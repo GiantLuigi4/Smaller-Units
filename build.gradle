@@ -4,7 +4,7 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
         jcenter()
         mavenCentral()
-        maven { url 'https://dist.creeper.host/Sponge/maven' }
+        maven { url 'https://repo.spongepowered.org/repository/maven-public/' }
     }
     dependencies {
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
@@ -97,7 +97,7 @@ minecraft {
 }
 
 repositories {
-    maven { url "https://dist.creeper.host/Sponge/maven" }
+    maven { url "https://repo.spongepowered.org/repository/maven-public/" }
     maven { url 'https://jitpack.io' }
 }
 
@@ -131,6 +131,7 @@ dependencies {
     implementation fg.deobf('curse.maven:patchouli-306770:3204037')
     implementation fg.deobf('curse.maven:curios-309927:3186427')
     implementation fg.deobf('curse.maven:chiselandbits-231095:3176033')
+    implementation fg.deobf('curse.maven:gullivern-385915:3227241')
 
     compile 'org.spongepowered:mixin:0.8'
 }

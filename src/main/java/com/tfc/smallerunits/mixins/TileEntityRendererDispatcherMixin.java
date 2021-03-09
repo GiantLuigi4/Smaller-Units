@@ -4,7 +4,9 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.helpers.BufferCacheHelper;
 import com.tfc.smallerunits.utils.rendering.BufferCache;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -20,10 +22,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(TileEntityRendererDispatcher.class)
 public class TileEntityRendererDispatcherMixin<E extends TileEntity> {
+	IRenderTypeBuffer SmallerUnits_buffer = null;
+	BufferCache SmallerUnits_bufferCache = null;
+	
 	@Inject(at = @At("HEAD"), method = "renderTileEntity(Lnet/minecraft/tileentity/TileEntity;FLcom/mojang/blaze3d/matrix/MatrixStack;Lnet/minecraft/client/renderer/IRenderTypeBuffer;)V", cancellable = true)
 	public void renderTileEntity(E tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, CallbackInfo ci) {
+		if (SmallerUnits_buffer == null || BufferCacheHelper.needsRefresh) {
+			SmallerUnits_buffer = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+			SmallerUnits_bufferCache = new BufferCache(SmallerUnits_buffer, matrixStackIn);
+			BufferCacheHelper.needsRefresh = false;
+		}
+		SmallerUnits_bufferCache.stack = matrixStackIn;
 		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get() && tileEntityIn instanceof UnitTileEntity) {
-			SmallerUnitsTESR.render((UnitTileEntity) tileEntityIn, partialTicks, matrixStackIn, new BufferCache(bufferIn, matrixStackIn), LightTexture.packLight(tileEntityIn.getWorld().getLightFor(LightType.BLOCK, tileEntityIn.getPos()), tileEntityIn.getWorld().getLightFor(LightType.SKY, tileEntityIn.getPos())), OverlayTexture.NO_OVERLAY);
+			SmallerUnitsTESR.render((UnitTileEntity) tileEntityIn, partialTicks, matrixStackIn, SmallerUnits_bufferCache, LightTexture.packLight(tileEntityIn.getWorld().getLightFor(LightType.BLOCK, tileEntityIn.getPos()), tileEntityIn.getWorld().getLightFor(LightType.SKY, tileEntityIn.getPos())), OverlayTexture.NO_OVERLAY);
 			ci.cancel();
 		}
 	}

@@ -1,4 +1,4 @@
-package com.tfc.smallerunits.utils.world;
+package com.tfc.smallerunits.utils.world.server;
 
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
@@ -33,9 +33,9 @@ public class FakeServerTickList<T> extends ServerTickList<T> {
 				if (!context.posInRealWorld.equals(world.owner.getPos())) {
 					if (context.teInRealWorld instanceof UnitTileEntity) {
 						if (isBlock) {
-							((UnitTileEntity) context.teInRealWorld).world.getPendingBlockTicks().scheduleTick(context.posInFakeWorld, (Block) itemIn, scheduledTime, priority);
+							((UnitTileEntity) context.teInRealWorld).worldServer.getPendingBlockTicks().scheduleTick(context.posInFakeWorld, (Block) itemIn, scheduledTime, priority);
 						} else {
-							((UnitTileEntity) context.teInRealWorld).world.getPendingFluidTicks().scheduleTick(context.posInFakeWorld, (Fluid) itemIn, scheduledTime, priority);
+							((UnitTileEntity) context.teInRealWorld).worldServer.getPendingFluidTicks().scheduleTick(context.posInFakeWorld, (Fluid) itemIn, scheduledTime, priority);
 						}
 						return;
 					}

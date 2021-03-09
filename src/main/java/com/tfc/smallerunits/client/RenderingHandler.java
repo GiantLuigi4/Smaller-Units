@@ -2,6 +2,7 @@ package com.tfc.smallerunits.client;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
@@ -95,10 +96,48 @@ public class RenderingHandler {
 	}
 	
 	public static void onDrawSelectionBox(DrawHighlightEvent event) {
+		if (!SmallerUnitsConfig.CLIENT.useExperimentalSelection.get()) return;
 		if (!(event.getTarget() instanceof BlockRayTraceResult)) return;
 		BlockState state = Minecraft.getInstance().world.getBlockState(((BlockRayTraceResult) event.getTarget()).getPos());
 		if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
 		event.getMatrix().push();
+
+//		UnitTileEntity tileEntity = (UnitTileEntity) Minecraft.getInstance().player.getEntityWorld().getTileEntity(((BlockRayTraceResult) event.getTarget()).getPos());
+//		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, Minecraft.getInstance().player, true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.empty());
+//		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(Direction.UP));
+//		BlockPos worldPos = ((BlockRayTraceResult) event.getTarget()).getPos();
+////		if (raytraceContext.vecHit.equals(new Vector3d(-100,-100,-100))) {
+////			raytraceContext.vecHit = hit.getHitVec()
+////					.subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+////					.add(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+////			;
+////			if (raytraceContext.hitFace.orElse(hit.getFace()).equals(Direction.UP)) {
+////				raytraceContext.vecHit = raytraceContext.vecHit.subtract(0,-(1f/16)/4,0);
+////			}
+////			raytraceContext.posHit = raytraceContext.posHit.up();
+////		}
+//		raytraceContext.vecHit = raytraceContext.vecHit
+//				.subtract(worldPos.getX(),worldPos.getY(),worldPos.getZ())
+//				.subtract(raytraceContext.posHit.getX()/((float)tileEntity.unitsPerBlock),(raytraceContext.posHit.getY()-64)/((float)tileEntity.unitsPerBlock),raytraceContext.posHit.getZ()/((float)tileEntity.unitsPerBlock))
+//		;
+//		raytraceContext.vecHit = raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).add(raytraceContext.posHit.getX(),raytraceContext.posHit.getY(),raytraceContext.posHit.getZ());
+//		Direction face = raytraceContext.hitFace.orElse(Direction.UP);
+//		raytraceContext.posHit = raytraceContext.posHit.offset(face.getOpposite());
+//		tileEntity.world.result = new BlockRayTraceResult(
+//				raytraceContext.vecHit,
+//				face,
+//				raytraceContext.posHit,
+//				true
+//		);
+//
+//		MinecraftForge.EVENT_BUS.post(new DrawHighlightEvent.HighlightBlock(
+//				event.getContext(),
+//				event.getInfo(),
+//				tileEntity.world.result,
+//				event.getPartialTicks(),
+//				event.getMatrix(),
+//				event.getBuffers()
+//		));
 		
 		event.getMatrix().translate(
 				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
@@ -148,26 +187,6 @@ public class RenderingHandler {
 			builder.pos(matrix4f, (float) (x1), (float) (y1), (float) (z1)).color(red, green, blue, alpha).endVertex();
 			builder.pos(matrix4f, (float) (x2), (float) (y2), (float) (z2)).color(red, green, blue, alpha).endVertex();
 		});
-//		ArrayList<Vector3d> vector3ds = new ArrayList<>();
-//		final boolean[] isFirst = {true};
-//		shape.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
-//			if (!isFirst[0]) {
-//				vector3ds.add(new Vector3d(x1, y1, z1));
-//				isFirst[0] = false;
-//			}
-//			vector3ds.add(new Vector3d(x2, y2, z2));
-//		});
-//		for (int i = 0; i < vector3ds.size(); i++) {
-//			Vector3d pos1 = vector3ds.get(i);
-//			builder.pos(matrix4f, (float) (pos1.getX()), (float) (pos1.getY()), (float) (pos1.getZ())).color(red, green, blue, alpha).endVertex();
-//			Vector3d pos2;
-//			if (i < (vector3ds.size() - 1)) {
-//				pos2 = vector3ds.get(i + 1);
-//			} else {
-//				pos2 = vector3ds.get(0);
-//			}
-//			builder.pos(matrix4f, (float) (pos2.getX()), (float) (pos2.getY()), (float) (pos2.getZ())).color(red, green, blue, alpha).endVertex();
-//		}
 		if (event.isCancelable()) {
 			event.setCanceled(true);
 		}

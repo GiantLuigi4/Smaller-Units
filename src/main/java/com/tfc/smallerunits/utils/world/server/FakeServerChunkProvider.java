@@ -1,6 +1,9 @@
-package com.tfc.smallerunits.utils.world;
+package com.tfc.smallerunits.utils.world.server;
 
 import com.mojang.datafixers.DataFixer;
+import com.tfc.smallerunits.utils.world.common.FakeChunkManager;
+import com.tfc.smallerunits.utils.world.common.FakeDimensionSavedData;
+import com.tfc.smallerunits.utils.world.common.FakeTicketManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;

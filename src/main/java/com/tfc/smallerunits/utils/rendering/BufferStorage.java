@@ -9,6 +9,7 @@ public class BufferStorage {
 	public RenderType renderType;
 	public Optional<VertexBuffer> terrainBuffer;
 	public Optional<VertexBuffer> fluidBuffer;
+	public boolean isPresent = false;
 	
 	public BufferStorage() {
 		//I've had a weird experience where java decided to mess up init order and initialized fields *after* I assigned values to them so
