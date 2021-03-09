@@ -178,12 +178,14 @@ public class FakeClientWorld extends ClientWorld {
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.stateInRealWorld != null) {
-			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-				if (!context.posInRealWorld.equals(this.owner.getPos())) {
-					if (context.teInRealWorld != null) {
-						((UnitTileEntity) context.teInRealWorld).getFakeWorld().setTileEntity(context.posInFakeWorld, tileEntityIn);
-						return;
+		if (context.posInRealWorld != null) {
+			if (context.stateInRealWorld != null) {
+				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (!context.posInRealWorld.equals(this.owner.getPos())) {
+						if (context.teInRealWorld != null) {
+							((UnitTileEntity) context.teInRealWorld).getFakeWorld().setTileEntity(context.posInFakeWorld, tileEntityIn);
+							return;
+						}
 					}
 				}
 			}
@@ -264,30 +266,32 @@ public class FakeClientWorld extends ClientWorld {
 	
 	public BlockState getBlockState(BlockPos pos) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.stateInRealWorld != null) {
-			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-				if (!context.posInRealWorld.equals(this.owner.getPos())) {
-					if (context.teInRealWorld != null) {
-						if (context.teInRealWorld.getWorld() != null) {
-							return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getBlockState(context.posInFakeWorld);
+		if (context.posInRealWorld != null) {
+			if (context.stateInRealWorld != null) {
+				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (!context.posInRealWorld.equals(this.owner.getPos())) {
+						if (context.teInRealWorld != null) {
+							if (context.teInRealWorld.getWorld() != null) {
+								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getBlockState(context.posInFakeWorld);
+							}
+						}
+					}
+				} else if (true) {
+					for (Direction value : Direction.values()) {
+						if (context.posInRealWorld.equals(owner.getPos().offset(value))) {
+							if (!(context.teInRealWorld instanceof UnitTileEntity)) {
+								BlockState state = owner.getWorld().getBlockState(context.posInRealWorld);
+								return state;
+							}
 						}
 					}
 				}
-			} else if (true) {
-				for (Direction value : Direction.values()) {
-					if (context.posInRealWorld.equals(owner.getPos().offset(value))) {
-						if (!(context.teInRealWorld instanceof UnitTileEntity)) {
-							BlockState state = owner.getWorld().getBlockState(context.posInRealWorld);
-							return state;
-						}
+				if (!context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (context.stateInRealWorld.equals(Blocks.BEDROCK.getDefaultState())) {
+						return Blocks.BEDROCK.getDefaultState();
+					} else if (context.stateInRealWorld.equals(Blocks.BARRIER.getDefaultState())) {
+						return Blocks.BARRIER.getDefaultState();
 					}
-				}
-			}
-			if (!context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-				if (context.stateInRealWorld.equals(Blocks.BEDROCK.getDefaultState())) {
-					return Blocks.BEDROCK.getDefaultState();
-				} else if (context.stateInRealWorld.equals(Blocks.BARRIER.getDefaultState())) {
-					return Blocks.BARRIER.getDefaultState();
 				}
 			}
 		}
@@ -332,18 +336,20 @@ public class FakeClientWorld extends ClientWorld {
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.stateInRealWorld != null) {
-			if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-				if (!context.posInRealWorld.equals(this.owner.getPos())) {
-					if (context.teInRealWorld != null) {
-						return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getTileEntity(context.posInFakeWorld);
+		if (context.posInRealWorld != null) {
+			if (context.stateInRealWorld != null) {
+				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (!context.posInRealWorld.equals(this.owner.getPos())) {
+						if (context.teInRealWorld != null) {
+							return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getTileEntity(context.posInFakeWorld);
+						}
 					}
-				}
-			} else {
-				for (Direction value : Direction.values()) {
-					if (context.posInRealWorld.equals(owner.getPos().offset(value))) {
-						if (!(context.teInRealWorld instanceof UnitTileEntity)) {
-							return owner.getWorld().getTileEntity(context.posInRealWorld);
+				} else {
+					for (Direction value : Direction.values()) {
+						if (context.posInRealWorld.equals(owner.getPos().offset(value))) {
+							if (!(context.teInRealWorld instanceof UnitTileEntity)) {
+								return owner.getWorld().getTileEntity(context.posInRealWorld);
+							}
 						}
 					}
 				}
@@ -357,21 +363,23 @@ public class FakeClientWorld extends ClientWorld {
 	public boolean setBlockState(BlockPos pos, BlockState state, int flags, int recursionLeft) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
 		if (recursionLeft < 0) return false;
-		if (context.stateInRealWorld != null) {
-			if (!context.posInRealWorld.equals(owner.getPos())) {
-				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-					if (!context.posInRealWorld.equals(this.owner.getPos())) {
-						if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() == null)
-							return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().setBlockState(context.posInFakeWorld, state, flags, recursionLeft - 1);
-					}
-					return false;
-				} else if (context.stateInRealWorld.isAir(owner.getWorld(), context.posInRealWorld)) {
+		if (context.posInRealWorld != null) {
+			if (context.stateInRealWorld != null) {
+				if (!context.posInRealWorld.equals(owner.getPos())) {
+					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+						if (!context.posInRealWorld.equals(this.owner.getPos())) {
+							if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() == null)
+								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().setBlockState(context.posInFakeWorld, state, flags, recursionLeft - 1);
+						}
+						return false;
+					} else if (context.stateInRealWorld.isAir(owner.getWorld(), context.posInRealWorld)) {
 //					owner.getWorld().setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
 //					UnitTileEntity tileEntity = new UnitTileEntity();
 //					owner.getWorld().setTileEntity(context.posInRealWorld, tileEntity);
 //					tileEntity.unitsPerBlock = this.owner.unitsPerBlock;
-				} else {
-					return false;
+					} else {
+						return false;
+					}
 				}
 			}
 		}
