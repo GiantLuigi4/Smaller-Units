@@ -943,7 +943,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					World currWorld = worldIn;
 					player.world = tileEntity.getFakeWorld();
 					if (currWorld.isRemote) {
-						Minecraft.getInstance().world = tileEntity.worldClient;
+						Minecraft.getInstance().world = tileEntity.worldClient.get();
 					}
 					ActionResultType type = ActionResultType.PASS;
 					type = stack.getItem().onItemUse(context);
@@ -993,6 +993,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			}
 			for (SmallUnit smallUnit : toRemove) {
+				tileEntity1.needsRefresh(true);
 				tileEntity1.getBlockMap().remove(smallUnit.pos.toLong());
 			}
 			for (SmallUnit value : toMove) {
@@ -1001,7 +1002,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				if (((UnitTileEntity) tileEntity).getFakeWorld() instanceof FakeServerWorld) {
 					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldServer, value.pos);
 				} else {
-					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldClient, value.pos);
+					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldClient.get(), value.pos);
 				}
 				if (context.teInRealWorld instanceof UnitTileEntity) {
 					if (((UnitTileEntity) context.teInRealWorld).getBlockMap().isEmpty()) {
@@ -1027,6 +1028,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					
 					tileEntity.markDirty();
 					te.markDirty();
+					((UnitTileEntity) tileEntity).needsRefresh(true);
+					((UnitTileEntity) te).needsRefresh(true);
 					worldIn.notifyBlockUpdate(tileEntity.getPos(), state, state, 3);
 					worldIn.notifyBlockUpdate(te.getPos(), state, state, 3);
 				}

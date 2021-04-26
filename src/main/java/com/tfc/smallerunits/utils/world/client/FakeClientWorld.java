@@ -92,7 +92,9 @@ public class FakeClientWorld extends ClientWorld {
 					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 						if (!context.posInRealWorld.equals(this.owner.getPos())) {
 							if (context.teInRealWorld != null) {
-								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getLightFor(lightTypeIn, context.posInFakeWorld);
+								if (((UnitTileEntity) context.teInRealWorld).worldClient != null && ((UnitTileEntity) context.teInRealWorld).worldClient.get().lightManager != null) {
+									return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getLightFor(lightTypeIn, context.posInFakeWorld);
+								}
 							}
 						}
 					}
@@ -377,6 +379,7 @@ public class FakeClientWorld extends ClientWorld {
 		if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos())) {
 			SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().isDirty = true;
 		}
+		owner.needsRefresh(true);
 	}
 	
 	public BlockState getBlockState(BlockPos pos) {
@@ -501,8 +504,10 @@ public class FakeClientWorld extends ClientWorld {
 				if (!context.posInRealWorld.equals(owner.getPos())) {
 					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 						if (!context.posInRealWorld.equals(this.owner.getPos())) {
-							if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() == null)
+							if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() == null) {
+								((UnitTileEntity) context.teInRealWorld).needsRefresh(true);
 								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().setBlockState(context.posInFakeWorld, state, flags, recursionLeft - 1);
+							}
 						}
 						return false;
 					} else if (context.stateInRealWorld.isAir(owner.getWorld(), context.posInRealWorld)) {
@@ -521,6 +526,7 @@ public class FakeClientWorld extends ClientWorld {
 		}
 		
 		owner.markDirty();
+		owner.needsRefresh(true);
 		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
 		
 		{

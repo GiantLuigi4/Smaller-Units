@@ -57,10 +57,38 @@ public class RenderingHandler {
 			);
 			matrixStack.pop();
 		}
-		if (!SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get()) return;
+		
 		MatrixStack matrixStack = event.getMatrixStack();
 		ClippingHelper clippinghelper = new ClippingHelper(matrixStack.getLast().getMatrix(), event.getProjectionMatrix());
 		clippinghelper.setCameraPosition(Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getX(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getY(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getZ());
+		{
+			ArrayList<BlockPos> toFree = new ArrayList<>();
+			SmallerUnitsTESR.vertexBufferCacheUsed.forEach((pos, buffer) -> {
+				TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+				if (tileEntity == null || !clippinghelper.isBoundingBoxInFrustum(tileEntity.getRenderBoundingBox())) {
+					toFree.add(pos);
+				}
+			});
+			for (BlockPos pos : toFree) {
+				SmallerUnitsTESR.vertexBufferCacheFree.put(pos, SmallerUnitsTESR.vertexBufferCacheUsed.get(pos));
+				SmallerUnitsTESR.vertexBufferCacheUsed.remove(pos);
+			}
+		}
+		{
+			ArrayList<BlockPos> toSetInUse = new ArrayList<>();
+			SmallerUnitsTESR.vertexBufferCacheFree.forEach((pos, buffer) -> {
+				TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+				if (tileEntity != null && clippinghelper.isBoundingBoxInFrustum(tileEntity.getRenderBoundingBox())) {
+					toSetInUse.add(pos);
+				}
+			});
+			for (BlockPos pos : toSetInUse) {
+				SmallerUnitsTESR.vertexBufferCacheUsed.put(pos, SmallerUnitsTESR.vertexBufferCacheUsed.get(pos));
+				SmallerUnitsTESR.vertexBufferCacheFree.remove(pos);
+			}
+		}
+		
+		if (!SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get()) return;
 		matrixStack.push();
 		Vector3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
 		matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);

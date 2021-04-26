@@ -2,9 +2,8 @@ package com.tfc.smallerunits.mixins;
 
 import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.helpers.MinecraftAccessor;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.tileentity.TileEntity;
@@ -118,7 +117,7 @@ public class IndexedMessageCodecMixin<MSG> {
 		if (isPosPresent.get()) {
 			PlayerEntity playerEntity;
 			if (context.get().getDirection().getOriginationSide().isServer())
-				playerEntity = Minecraft.getInstance().player;
+				playerEntity = MinecraftAccessor.getPlayer();
 			else playerEntity = context.get().getSender();
 			World world = playerEntity.getEntityWorld();
 			TileEntity te = playerEntity.world.getTileEntity(posIfPresent.get());
@@ -128,11 +127,11 @@ public class IndexedMessageCodecMixin<MSG> {
 			}
 			playerEntity.setWorld(((UnitTileEntity) te).getFakeWorld());
 			if (context.get().getDirection().getOriginationSide().isServer()) {
-				Minecraft.getInstance().world = ((UnitTileEntity) te).worldClient;
+				MinecraftAccessor.setWorld(((UnitTileEntity) te).getFakeWorld());
 			}
 			oldMessageConsumer.accept(msg, context);
 			if (context.get().getDirection().getOriginationSide().isServer()) {
-				Minecraft.getInstance().world = (ClientWorld) world;
+				MinecraftAccessor.setWorld(world);
 			}
 			playerEntity.setWorld(world);
 		} else {

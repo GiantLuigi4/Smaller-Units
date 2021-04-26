@@ -90,9 +90,13 @@ public class FakeClientLightingManager extends WorldLightManager {
 							if (!context.posInRealWorld.equals(world.owner.getPos())) {
 								if (context.teInRealWorld != null) {
 									if (!context.teInRealWorld.equals(world.owner)) {
-										if (((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager).isInbounds(context.posInFakeWorld.down(64), ((UnitTileEntity) context.teInRealWorld).unitsPerBlock)) {
-											int amt = ((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager).lighting[toIndex(context.posInFakeWorld.down(64))];
-											max = Math.max(max, amt - 1);
+										if ((((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld())) != null) {
+											if (((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager) != null) {
+												if (((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager).isInbounds(context.posInFakeWorld.down(64), ((UnitTileEntity) context.teInRealWorld).unitsPerBlock)) {
+													int amt = ((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager).lighting[toIndex(context.posInFakeWorld.down(64))];
+													max = Math.max(max, amt - 1);
+												}
+											}
 										}
 									}
 								}

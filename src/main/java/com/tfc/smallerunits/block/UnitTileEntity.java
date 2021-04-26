@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
 public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
@@ -61,25 +62,23 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	}
 	
 	public FakeServerWorld worldServer = null;
-	public FakeClientWorld worldClient = null;
+	public AtomicReference<FakeClientWorld> worldClient = null;
 	public int unitsPerBlock = 4;
 	
 	public UnitTileEntity() {
 		super(Deferred.UNIT_TE.get());
 	}
 	
+	boolean needsRefresh = false;
+	
 	public Map<Integer, Entity> getEntitiesById() {
 		if (worldServer == null && worldClient == null) return new HashMap<>();
-		else if (worldServer == null) return worldClient.entitiesById;
+		else if (worldServer == null) return worldClient.get().entitiesById;
 		else return worldServer.entitiesById;
 	}
 	
 	public World getFakeWorld() {
-		return worldClient != null ? worldClient : worldServer;
-	}
-	
-	public IProfiler getProfiler() {
-		return worldClient != null ? worldClient.profiler.get() : worldServer.profiler.get();
+		return worldClient != null ? worldClient.get() : worldServer;
 	}
 	
 	@Override
@@ -169,27 +168,31 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		return bb;
 	}
 	
+	public IProfiler getProfiler() {
+		return worldClient != null ? worldClient.get().profiler.get() : worldServer.profiler.get();
+	}
+	
 	public Long2ObjectLinkedOpenHashMap<SmallUnit> getBlockMap() {
 		if (worldServer == null && worldClient == null) return new Long2ObjectLinkedOpenHashMap<>();
-		else if (worldServer == null) return worldClient.blockMap;
+		else if (worldServer == null) return worldClient.get().blockMap;
 		else return worldServer.blockMap;
 	}
 	
 	private void setBlockMap(Long2ObjectLinkedOpenHashMap<SmallUnit> posUnitMap) {
 		if (worldServer != null) worldServer.blockMap = posUnitMap;
-		else worldClient.blockMap = posUnitMap;
-	}
-	
-	public void setRaytraceResult(BlockRayTraceResult result) {
-		if (worldServer != null) worldServer.result = result;
-		else if (worldClient != null) worldClient.result = result;
+		else worldClient.get().blockMap = posUnitMap;
 	}
 	
 	public IBlockReader loadingWorld;
 	
+	public void setRaytraceResult(BlockRayTraceResult result) {
+		if (worldServer != null) worldServer.result = result;
+		else if (worldClient != null) worldClient.get().result = result;
+	}
+	
 	public BlockRayTraceResult getResult() {
 		if (worldServer != null) return worldServer.result;
-		else if (worldClient != null) return worldClient.result;
+		else if (worldClient != null) return worldClient.get().result;
 		else return null;
 	}
 	
@@ -218,7 +221,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			
 			getProfiler().endTick();
 			if (worldServer != null) worldServer.tick(() -> false);
-			else worldClient.tick(() -> false);
+			else worldClient.get().tick(() -> false);
 			return;
 		}
 		
@@ -229,7 +232,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		long start = new Date().getTime();
 		BooleanSupplier supplier = () -> Math.abs(new Date().getTime() - start) <= 10;
 		if (worldServer != null) worldServer.tick(supplier);
-		else worldClient.tick(supplier);
+		else worldClient.get().tick(supplier);
 		
 		getProfiler().startTick();
 		for (SmallUnit value : this.getBlockMap().values()) {
@@ -303,6 +306,8 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), getFakeWorld());
 		this.setBlockMap(pallet.posUnitMap);
 		
+		needsRefresh(true);
+		
 		for (SmallUnit value : getBlockMap().values()) {
 			if (value.tileEntity == null) continue;
 			if (value.tileEntity instanceof ITickableTileEntity) {
@@ -371,7 +376,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 					}
 				}
 			} else {
-				if (worldClient.containsEntityWithUUID(entityNBT.getUniqueId("UUID"))) {
+				if (worldClient.get().containsEntityWithUUID(entityNBT.getUniqueId("UUID"))) {
 					for (Entity value : getEntitiesById().values()) {
 						if (value.getUniqueID().toString().equals(key)) {
 							if (value.getUniqueID().equals(Minecraft.getInstance().player.getUniqueID())) {
@@ -487,44 +492,29 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	}
 	
 	@Override
+	public void markDirty() {
+		super.markDirty();
+		needsRefresh(true);
+	}
+	
+	@Override
 	public void handleUpdateTag(BlockState state, CompoundNBT tag) {
 		if (worldClient == null) {
 			try {
-				worldClient = new FakeClientWorld(
+				worldClient = new AtomicReference<>(new FakeClientWorld(
 						null,
 						new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
 						getWorld().dimension,
 						getWorld().dimensionType,
 						0, () -> new Profiler(() -> 0, () -> 0, false),
 						null, true, 0
-				);
-				worldClient.init(this);
+				));
+				worldClient.get().init(this);
 			} catch (Throwable err) {
 				throw new RuntimeException(err);
 			}
 		}
 		super.handleUpdateTag(state, tag);
-	}
-	
-	@Override
-	public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
-		if (worldClient == null) {
-			try {
-				worldClient = new FakeClientWorld(
-						null,
-						new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
-						getWorld().dimension,
-						getWorld().dimensionType,
-						0, () -> new Profiler(() -> 0, () -> 0, false),
-						null, true, 0
-				);
-				worldClient.init(this);
-			} catch (Throwable err) {
-				throw new RuntimeException(err);
-			}
-		}
-		
-		deserializeNBT(pkt.getNbtCompound());
 	}
 	
 	@Nullable
@@ -544,5 +534,32 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		nbtShare.remove("ticks");
 		nbtShare.remove("savedData");
 		return nbtShare;
+	}
+	
+	@Override
+	public void onDataPacket(NetworkManager net, SUpdateTileEntityPacket pkt) {
+		if (worldClient == null) {
+			try {
+				worldClient = new AtomicReference<>(new FakeClientWorld(
+						null,
+						new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
+						getWorld().dimension,
+						getWorld().dimensionType,
+						0, () -> new Profiler(() -> 0, () -> 0, false),
+						null, true, 0
+				));
+				worldClient.get().init(this);
+			} catch (Throwable err) {
+				throw new RuntimeException(err);
+			}
+		}
+		
+		deserializeNBT(pkt.getNbtCompound());
+	}
+	
+	public boolean needsRefresh(boolean newValue) {
+		boolean oldVal = needsRefresh;
+		needsRefresh = newValue;
+		return oldVal;
 	}
 }
