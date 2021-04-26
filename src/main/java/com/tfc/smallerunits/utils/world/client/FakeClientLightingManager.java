@@ -1,41 +1,36 @@
-package com.tfc.smallerunits.utils.world.common;
+package com.tfc.smallerunits.utils.world.client;
 
+import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
-import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.Direction;
-import net.minecraft.util.concurrent.DelegatedTaskExecutor;
-import net.minecraft.util.concurrent.ITaskExecutor;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.SectionPos;
 import net.minecraft.world.LightType;
-import net.minecraft.world.chunk.ChunkTaskPriorityQueueSorter;
 import net.minecraft.world.chunk.IChunkLightProvider;
 import net.minecraft.world.chunk.NibbleArray;
 import net.minecraft.world.lighting.IWorldLightListener;
 import net.minecraft.world.lighting.WorldLightManager;
-import net.minecraft.world.server.ChunkManager;
-import net.minecraft.world.server.ServerWorldLightManager;
 
 import javax.annotation.Nullable;
 
-//TODO: optimize
-public class FakeLightingManager extends ServerWorldLightManager {
+public class FakeClientLightingManager extends WorldLightManager {
+	public boolean hasChanged = false;
+	FakeClientWorld world = null;
+	int recursionDepth = 0;
 	private WorldLightManager lightManager;
-	
-	private ChunkManager manager;
 	private int lastSize = 0;
 	private int[] lighting = new int[0];
 	private int lastX = 0;
 	private int lastY = 0;
 	private int lastZ = 0;
 	
-	public FakeLightingManager(IChunkLightProvider provider, ChunkManager chunkManagerIn, boolean hasSkyLight, DelegatedTaskExecutor<Runnable> p_i50701_4_, ITaskExecutor<ChunkTaskPriorityQueueSorter.FunctionEntry<Runnable>> p_i50701_5_, FakeServerWorld world) {
-		super(provider, chunkManagerIn, hasSkyLight, p_i50701_4_, p_i50701_5_);
+	public FakeClientLightingManager(IChunkLightProvider provider, boolean hasBlockLight, boolean hasSkyLight, FakeClientWorld world) {
+		super(provider, hasBlockLight, hasSkyLight);
+		this.world = world;
 		this.lightManager = new WorldLightManager(provider, true, hasSkyLight);
-		this.manager = chunkManagerIn;
 	}
 	
 	@Override
@@ -45,7 +40,6 @@ public class FakeLightingManager extends ServerWorldLightManager {
 	
 	@Override
 	public int tick(int toUpdateCount, boolean updateSkyLight, boolean updateBlockLight) {
-		FakeServerWorld world = (FakeServerWorld) manager.world;
 		if (lastSize != world.owner.unitsPerBlock) {
 			lighting = new int[world.owner.unitsPerBlock * world.owner.unitsPerBlock * world.owner.unitsPerBlock];
 			lastSize = world.owner.unitsPerBlock;
@@ -80,11 +74,7 @@ public class FakeLightingManager extends ServerWorldLightManager {
 //		return lightManager.tick(toUpdateCount, updateSkyLight, updateBlockLight);
 	}
 	
-	public boolean hasChanged = false;
-	
-	int recursionDepth = 0;
-	
-	private boolean testLight(BlockPos pos, FakeServerWorld world) {
+	private boolean testLight(BlockPos pos, FakeClientWorld world) {
 		if (isInbounds(pos, world.owner.unitsPerBlock)) {
 			BlockState state = world.getBlockState(pos.add(0, 64, 0));
 			int stateLight = state.getLightValue(world, pos.add(0, 64, 0));
@@ -100,10 +90,10 @@ public class FakeLightingManager extends ServerWorldLightManager {
 							if (!context.posInRealWorld.equals(world.owner.getPos())) {
 								if (context.teInRealWorld != null) {
 									if (!context.teInRealWorld.equals(world.owner)) {
-//											if (((FakeLightingManager)((UnitTileEntity)context.teInRealWorld).worldServer.lightManager).isInbounds(context.posInFakeWorld.down(64),((UnitTileEntity) context.teInRealWorld).unitsPerBlock)) {
-//												int amt = ((FakeLightingManager)((UnitTileEntity)context.teInRealWorld).worldServer.lightManager).lighting[toIndex(context.posInFakeWorld.down(64))];
-//												max = Math.max(max, amt - 1);
-//											}
+										if (((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager).isInbounds(context.posInFakeWorld.down(64), ((UnitTileEntity) context.teInRealWorld).unitsPerBlock)) {
+											int amt = ((FakeClientLightingManager) ((FakeClientWorld) ((UnitTileEntity) context.teInRealWorld).getFakeWorld()).lightManager).lighting[toIndex(context.posInFakeWorld.down(64))];
+											max = Math.max(max, amt - 1);
+										}
 									}
 								}
 							}
@@ -112,12 +102,13 @@ public class FakeLightingManager extends ServerWorldLightManager {
 				}
 			}
 			if (stateLight == 0) {
-				max -= state.getOpacity(manager.world, pos.add(0, 64, 0));
+				max -= state.getOpacity(world, pos.add(0, 64, 0));
 			}
 			max = Math.max(0, max);
 			if (lighting[toIndex(pos)] != (max)) {
 				lighting[toIndex(pos)] = (max);
 				hasChanged = true;
+				world.markSurroundingsForRerender(0, 0, 0);
 			}
 			return false;
 		} else {
@@ -141,13 +132,13 @@ public class FakeLightingManager extends ServerWorldLightManager {
 	}
 	
 	public int getBlockLight(BlockPos pos) {
-		if (isInbounds(pos, ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
-			if (((FakeServerWorld) manager.world).owner.getWorld().isRemote)
-				testLight(pos, (FakeServerWorld) manager.world);
+		if (isInbounds(pos, ((FakeClientWorld) world).owner.unitsPerBlock)) {
+			if (((FakeClientWorld) world).owner.getWorld().isRemote)
+				testLight(pos, (FakeClientWorld) world);
 			return Math.max(lighting[toIndex(pos)], 0);
 		}
 		for (Direction value : Direction.values()) {
-			if (isInbounds(pos.offset(value), ((FakeServerWorld) manager.world).owner.unitsPerBlock)) {
+			if (isInbounds(pos.offset(value), ((FakeClientWorld) world).owner.unitsPerBlock)) {
 				return Math.max(lighting[toIndex(pos.offset(value))] - 1, 0);
 			}
 		}
@@ -157,8 +148,8 @@ public class FakeLightingManager extends ServerWorldLightManager {
 	public int toIndex(BlockPos pos) {
 		return
 				pos.getX() +
-						(pos.getY() * ((FakeServerWorld) manager.world).owner.unitsPerBlock) +
-						(pos.getZ() * ((FakeServerWorld) manager.world).owner.unitsPerBlock * ((FakeServerWorld) manager.world).owner.unitsPerBlock);
+						(pos.getY() * ((FakeClientWorld) world).owner.unitsPerBlock) +
+						(pos.getZ() * ((FakeClientWorld) world).owner.unitsPerBlock * ((FakeClientWorld) world).owner.unitsPerBlock);
 	}
 	
 	@Override
@@ -184,13 +175,6 @@ public class FakeLightingManager extends ServerWorldLightManager {
 	@Override
 	public void onBlockEmissionIncrease(BlockPos blockPosIn, int p_215573_2_) {
 		lightManager.onBlockEmissionIncrease(blockPosIn, p_215573_2_);
-	}
-	
-	@Override
-	protected void updateChunkStatus(ChunkPos p_215581_1_) {
-		for (int i = 64; i < 64 + 16; i++) {
-			lightManager.updateSectionStatus(SectionPos.from(p_215581_1_, i), false);
-		}
 	}
 	
 	@Override

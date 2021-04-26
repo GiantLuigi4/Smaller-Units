@@ -9,6 +9,7 @@ import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -181,14 +182,15 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	
 	public void setRaytraceResult(BlockRayTraceResult result) {
 		if (worldServer != null) worldServer.result = result;
-		else worldClient.result = result;
+		else if (worldClient != null) worldClient.result = result;
 	}
 	
 	public IBlockReader loadingWorld;
 	
 	public BlockRayTraceResult getResult() {
 		if (worldServer != null) return worldServer.result;
-		else return worldClient.result;
+		else if (worldClient != null) return worldClient.result;
+		else return null;
 	}
 	
 	@Override
@@ -372,6 +374,9 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				if (worldClient.containsEntityWithUUID(entityNBT.getUniqueId("UUID"))) {
 					for (Entity value : getEntitiesById().values()) {
 						if (value.getUniqueID().toString().equals(key)) {
+							if (value.getUniqueID().equals(Minecraft.getInstance().player.getUniqueID())) {
+								continue loop_entities;
+							}
 							int oldID = value.getEntityId();
 							entitiesExisting.add(value.getEntityId());
 							value.read(entityNBT);
@@ -407,6 +412,8 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		if (worldClient == null && worldServer == null) {
 			try {
 				worldServer = (FakeServerWorld) theUnsafe.allocateInstance(FakeServerWorld.class);
+				worldServer.isFirstTick = true;
+				worldServer.owner = this;
 				worldServer.init(this);
 			} catch (Throwable err) {
 				throw new RuntimeException(err);

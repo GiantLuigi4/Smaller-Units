@@ -52,6 +52,10 @@ public class FakeChunkManager extends ChunkManager {
 	}
 	
 	@Override
+	public void setPlayerTracking(ServerPlayerEntity player, boolean track) {
+	}
+	
+	@Override
 	public Stream<ServerPlayerEntity> getTrackingPlayers(ChunkPos pos, boolean boundaryOnly) {
 		return Stream.empty();
 	}

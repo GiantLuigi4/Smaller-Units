@@ -2,18 +2,14 @@ package com.tfc.smallerunits.mixins;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.tfc.smallerunits.SmallerUnitsConfig;
-import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.helpers.BufferCacheHelper;
 import com.tfc.smallerunits.utils.rendering.BufferCache;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.LightType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -33,17 +29,21 @@ public class TileEntityRendererDispatcherMixin<E extends TileEntity> {
 			BufferCacheHelper.needsRefresh = false;
 		}
 		SmallerUnits_bufferCache.stack = matrixStackIn;
-		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get() && tileEntityIn instanceof UnitTileEntity) {
-			SmallerUnitsTESR.render((UnitTileEntity) tileEntityIn, partialTicks, matrixStackIn, SmallerUnits_bufferCache, LightTexture.packLight(tileEntityIn.getWorld().getLightFor(LightType.BLOCK, tileEntityIn.getPos()), tileEntityIn.getWorld().getLightFor(LightType.SKY, tileEntityIn.getPos())), OverlayTexture.NO_OVERLAY);
-			ci.cancel();
-		}
+		BufferCacheHelper.cache = SmallerUnits_bufferCache;
+		if (SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get() && tileEntityIn instanceof UnitTileEntity)
+			return;
+//		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get() && tileEntityIn instanceof UnitTileEntity) {
+//			SmallerUnitsTESR.render((UnitTileEntity) tileEntityIn, partialTicks, matrixStackIn, SmallerUnits_bufferCache, LightTexture.packLight(tileEntityIn.getWorld().getLightFor(LightType.BLOCK, tileEntityIn.getPos()), tileEntityIn.getWorld().getLightFor(LightType.SKY, tileEntityIn.getPos())), OverlayTexture.NO_OVERLAY);
+//			ci.cancel();
+//		}
 	}
 	
 	@Inject(at = @At("HEAD"), method = "getRenderer(Lnet/minecraft/tileentity/TileEntity;)Lnet/minecraft/client/renderer/tileentity/TileEntityRenderer;", cancellable = true)
 	public void getRenderer(E tileEntityIn, CallbackInfoReturnable<TileEntityRenderer<E>> cir) {
-		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get() && tileEntityIn instanceof UnitTileEntity) {
-			cir.setReturnValue((TileEntityRenderer<E>) SmallerUnitsTESR.INSTANCE);
-		}
+		if (SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get() && tileEntityIn instanceof UnitTileEntity)
+			cir.setReturnValue(null);
+//		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get() && tileEntityIn instanceof UnitTileEntity)
+//			cir.setReturnValue((TileEntityRenderer<E>) SmallerUnitsTESR.INSTANCE);
 	}
 }
 

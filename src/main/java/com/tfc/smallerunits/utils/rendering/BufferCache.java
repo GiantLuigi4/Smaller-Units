@@ -19,24 +19,11 @@ public class BufferCache {
 	}
 	
 	public IVertexBuilder getBuffer(RenderType type) {
-		if (!SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get() || true) {
+		if (!SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get()) {
 			return buffer.getBuffer(type);
 		} else {
-			if (!type.getVertexFormat().equals(DefaultVertexFormats.BLOCK)) {
-				return buffer.getBuffer(type);
-			}
-//			if (
-//					type.equals(RenderType.getCutout()) ||
-//							type.equals(RenderType.getCutoutMipped()) ||
-//							type.equals(RenderType.getTranslucent()) ||
-//							type.equals(RenderType.getTranslucentNoCrumbling()) ||
-//							type.equals(RenderType.getTranslucentMovingBlock()) ||
-//							type.equals(RenderType.getTripwire())
-//			)
-//				return buffer.getBuffer(type);
-			if (!builderHashMap.containsKey(type)) {
-				builderHashMap.put(type, buffer.getBuffer(type));
-			}
+			if (!type.getVertexFormat().equals(DefaultVertexFormats.BLOCK)) return buffer.getBuffer(type);
+			if (!builderHashMap.containsKey(type)) builderHashMap.put(type, buffer.getBuffer(type));
 			return builderHashMap.get(type);
 		}
 	}

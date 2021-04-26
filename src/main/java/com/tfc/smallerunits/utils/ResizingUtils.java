@@ -30,7 +30,7 @@ public class ResizingUtils {
 			if (ModList.get().isLoaded("threecore")) {
 				entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
 					if (cap.getSizeChangeType().equals(SUResizeType.SU_CHANGE_TYPE.get())) {
-						resizeForUnit(entity, 1);
+						cap.setSizeDirectly(SUResizeType.SU_CHANGE_TYPE.get(), 1);
 					}
 				});
 			}
@@ -84,7 +84,7 @@ public class ResizingUtils {
 	public static void resizeForUnit(Entity entity, float amt) {
 		//TODO: chiseled me integration
 		if (ModList.get().isLoaded("gullivern")) {
-		
+			GulliverSize.changeSize((LivingEntity) entity, amt);
 		} else if (ModList.get().isLoaded("threecore")) {
 			entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
 				cap.setSizeDirectly(SUResizeType.SU_CHANGE_TYPE.get(), amt);

@@ -240,8 +240,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					isAir ? "air" : isUnit ? ("unit" + scale) : "obstructed"
 			);
 		}
-
-//		tileEntityIn.worldServer.lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
+		
+		tileEntityIn.worldClient.lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 		
 		Minecraft.getInstance().getProfiler().endStartSection("renderBlocks");
 		Minecraft.getInstance().getProfiler().startSection("cacheLookup");
@@ -494,8 +494,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		tileEntityIn.getProfiler().endTick();
 //		oldStack.pop();
 		
-		IVertexBuilder lines = bufferIn.getBuffer(RenderType.getLines());
 		if (Minecraft.getInstance().getRenderManager().isDebugBoundingBox()) {
+			IVertexBuilder lines = bufferIn.getBuffer(RenderType.getLines());
 			WorldRenderer.drawBoundingBox(
 					matrixStackIn, lines,
 					tileEntityIn.getRenderBoundingBox().offset(-tileEntityIn.getPos().getX(), -tileEntityIn.getPos().getY(), -tileEntityIn.getPos().getZ()), 0.5f, 0, 0.5f, 1
@@ -586,8 +586,10 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	
 	@Override
 	public void render(UnitTileEntity tileEntityIn, float partialTicks, MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedLightIn, int combinedOverlayIn) {
+		if (SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get()) return;
 		if (!bufferIn.getClass().equals(IRenderTypeBuffer.Impl.class))
 			bufferIn = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
 		render(tileEntityIn, partialTicks, matrixStackIn, new BufferCache(bufferIn, matrixStackIn), combinedLightIn, combinedOverlayIn);
+//		render(tileEntityIn, partialTicks, matrixStackIn, BufferCacheHelper.cache, combinedLightIn, combinedOverlayIn);
 	}
 }

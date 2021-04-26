@@ -1,9 +1,11 @@
 package com.tfc.smallerunits;
 
+import com.tfc.smallerunits.client.RenderingHandler;
 import com.tfc.smallerunits.registry.Deferred;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraftforge.common.MinecraftForge;
 
 public class ClientEventHandler {
 	public static void doStuff() {
@@ -16,6 +18,6 @@ public class ClientEventHandler {
 //			new SmallerUnitsTESR(TileEntityRendererDispatcher.instance);
 
 //		if (SmallerUnitsConfig.CLIENT.useExperimentalRenderer.get())
-//			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onRenderWorldLast);
+		MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onRenderWorldLastNew);
 	}
 }

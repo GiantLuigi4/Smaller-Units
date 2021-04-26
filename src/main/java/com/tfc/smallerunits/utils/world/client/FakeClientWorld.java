@@ -1,5 +1,6 @@
 package com.tfc.smallerunits.utils.world.client;
 
+import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
@@ -28,20 +29,20 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ObjectIntIdentityMap;
 import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.RayTraceContext;
+import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.world.DimensionType;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeContainer;
+import net.minecraft.world.biome.BiomeManager;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.lighting.WorldLightManager;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class FakeClientWorld extends ClientWorld {
@@ -57,6 +59,12 @@ public class FakeClientWorld extends ClientWorld {
 	public BlockRayTraceResult result;
 	public UnitTileEntity owner;
 	int maxID = 0;
+	public FakeClientLightingManager lightManager = new FakeClientLightingManager(this.getChunkProvider(), true, true, this);
+	
+	@Override
+	public WorldLightManager getLightManager() {
+		return lightManager;
+	}
 	
 	public FakeClientWorld(ClientPlayNetHandler p_i242067_1_, ClientWorldInfo p_i242067_2_, RegistryKey<World> p_i242067_3_, DimensionType p_i242067_4_, int p_i242067_5_, Supplier<IProfiler> p_i242067_6_, WorldRenderer p_i242067_7_, boolean p_i242067_8_, long p_i242067_9_) {
 		super(p_i242067_1_, p_i242067_2_, p_i242067_3_, p_i242067_4_, p_i242067_5_, p_i242067_6_, p_i242067_7_, p_i242067_8_, p_i242067_9_);
@@ -71,12 +79,69 @@ public class FakeClientWorld extends ClientWorld {
 	}
 	
 	@Override
+	public Chunk getChunk(int chunkX, int chunkZ) {
+		return new FakeChunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()), this);
+	}
+	
+	@Override
+	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
+		if (lightTypeIn.equals(LightType.BLOCK)) {
+			ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, blockPosIn);
+			if (context.posInRealWorld != null && context.posInFakeWorld != null) {
+				if (context.stateInRealWorld != null) {
+					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+						if (!context.posInRealWorld.equals(this.owner.getPos())) {
+							if (context.teInRealWorld != null) {
+								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getLightFor(lightTypeIn, context.posInFakeWorld);
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if (lightTypeIn.equals(LightType.BLOCK)) {
+			return Math.max(
+					((FakeClientLightingManager) lightManager).getBlockLight(blockPosIn.offset(Direction.DOWN, 64)),
+					owner.getWorld().getLightFor(lightTypeIn, owner.getPos())
+			);
+		} else {
+			return Math.max(
+//					lightManager.getLightEngine(lightTypeIn).getLightFor(blockPosIn),
+					0,
+					owner.getWorld().getLightFor(lightTypeIn, owner.getPos())
+			);
+		}
+	}
+	
+	@Override
+	public int getLightSubtracted(BlockPos blockPosIn, int amount) {
+		return Math.max(
+				lightManager.getLightSubtracted(blockPosIn, amount),
+				owner.getWorld().getLightSubtracted(owner.getPos(), amount)
+		);
+	}
+	
+	@Override
+	public int getLightValue(BlockPos pos) {
+		return
+				Math.max(
+						getLightFor(LightType.BLOCK, pos),
+						getLightFor(LightType.SKY, pos)
+				);
+	}
+	
+	@Override
 	public BlockRayTraceResult rayTraceBlocks(RayTraceContext context) {
 		return result == null ? super.rayTraceBlocks(context) : result;
 	}
 	
 	public DimensionRenderInfo func_239132_a_() {
-		return ((ClientWorld) this.owner.getWorld()).func_239132_a_();
+		if (owner.getWorld() == null) {
+			return new DimensionRenderInfo.Overworld();
+		}
+		DimensionRenderInfo info = ((ClientWorld) this.owner.getWorld()).func_239132_a_();
+		return info == null ? new DimensionRenderInfo.Overworld() : info;
 	}
 	
 	@Nullable
@@ -130,6 +195,31 @@ public class FakeClientWorld extends ClientWorld {
 //				owner.getPos().getZ() + (z / owner.unitsPerBlock),
 //				xSpeed / owner.unitsPerBlock, ySpeed / owner.unitsPerBlock, zSpeed / owner.unitsPerBlock
 //		);
+	}
+	
+	@Override
+	public boolean checkNoEntityCollision(@Nullable Entity entityIn, VoxelShape shape) {
+		return true;
+	}
+	
+	@Override
+	public boolean hasNoCollisions(AxisAlignedBB aabb) {
+		return true;
+	}
+	
+	@Override
+	public boolean hasNoCollisions(Entity entity) {
+		return true;
+	}
+	
+	@Override
+	public boolean hasNoCollisions(Entity entity, AxisAlignedBB aabb) {
+		return true;
+	}
+	
+	@Override
+	public boolean hasNoCollisions(@Nullable Entity entity, AxisAlignedBB aabb, Predicate<Entity> entityPredicate) {
+		return true;
 	}
 	
 	@Override
@@ -229,6 +319,27 @@ public class FakeClientWorld extends ClientWorld {
 	}
 	
 	@Override
+	public BiomeManager getBiomeManager() {
+		World world = this;
+		return new BiomeManager(this, 0, (seed, x, y, z, biomeReader) -> world.getBiome(new BlockPos(x, y, z))) {
+			@Override
+			public Biome getBiomeAtPosition(double x, double y, double z) {
+				return getBiomeAtPosition(new BlockPos(x, y, z));
+			}
+			
+			@Override
+			public Biome getBiomeAtPosition(BlockPos pos) {
+				return owner.getWorld().getBiome(owner.getPos());
+			}
+			
+			@Override
+			public Biome getBiomeAtPosition(int x, int y, int z) {
+				return getBiomeAtPosition(new BlockPos(x, y, z));
+			}
+		};
+	}
+	
+	@Override
 	public Biome getBiome(BlockPos pos) {
 		return owner.getWorld().getBiome(owner.getPos());
 	}
@@ -262,16 +373,20 @@ public class FakeClientWorld extends ClientWorld {
 //		}
 //
 //		SmallerUnitsTESR.bufferCache.remove(this.getPos());
+		
+		if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos())) {
+			SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().isDirty = true;
+		}
 	}
 	
 	public BlockState getBlockState(BlockPos pos) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.posInRealWorld != null) {
+		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {
 				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 					if (!context.posInRealWorld.equals(this.owner.getPos())) {
 						if (context.teInRealWorld != null) {
-							if (context.teInRealWorld.getWorld() != null) {
+							if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() != null) {
 								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getBlockState(context.posInFakeWorld);
 							}
 						}
@@ -305,10 +420,28 @@ public class FakeClientWorld extends ClientWorld {
 	}
 	
 	@Override
+	public boolean isBlockPresent(BlockPos pos) {
+		return blockMap.containsKey(pos.offset(Direction.DOWN, 64).toLong());
+	}
+	
+	@Override
 	public void tick(BooleanSupplier hasTimeLeft) {
+		this.worldRenderer = Minecraft.getInstance().worldRenderer;
 		this.getProfiler().startTick();
 		super.tick(hasTimeLeft);
 		this.getProfiler().endTick();
+	}
+	
+	@Override
+	public IProfiler getProfiler() {
+		if (this == Minecraft.getInstance().world) return Minecraft.getInstance().getProfiler();
+		else return profiler.get();
+	}
+	
+	@Override
+	public Supplier<IProfiler> getWorldProfiler() {
+		if (this == Minecraft.getInstance().world) return () -> Minecraft.getInstance().getProfiler();
+		else return profiler;
 	}
 	
 	@Override
@@ -460,12 +593,12 @@ public class FakeClientWorld extends ClientWorld {
 					}
 //					this.blockMap.remove(pos.toLong());
 				}
-
-//				try {
-//					int newLight = state.getLightValue(this, pos);
-//					lightManager.blockLight.storage.updateSourceLevel(pos.toLong(), newLight, oldLight > newLight);
-//				} catch (Throwable ignored) {
-//				}
+				
+				try {
+					int newLight = state.getLightValue(this, pos);
+					lightManager.blockLight.storage.updateSourceLevel(pos.toLong(), newLight, oldLight > newLight);
+				} catch (Throwable ignored) {
+				}
 				
 				return true;
 			}

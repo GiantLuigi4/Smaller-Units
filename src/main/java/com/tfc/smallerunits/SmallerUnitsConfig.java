@@ -76,6 +76,7 @@ public class SmallerUnitsConfig {
 	
 	public static class ClientConfig {
 		public final ForgeConfigSpec.BooleanValue useExperimentalRenderer;
+		public final ForgeConfigSpec.BooleanValue useExperimentalRendererPt2;
 		public final ForgeConfigSpec.BooleanValue useVBOS;
 		public final ForgeConfigSpec.BooleanValue useExperimentalSelection;
 		public final ForgeConfigSpec.IntValue lightingUpdatesPerFrame;
@@ -84,11 +85,15 @@ public class SmallerUnitsConfig {
 			builder.comment("Defaults are the \"ideal\" settings").push("Rendering Settings");
 			
 			useExperimentalRenderer = builder
-					.comment("Potentially buggy, but better performance")
+					.comment("Potentially buggy, but may give slightly better performance (may lead to jvm crashes)")
 					.translation("config.smaller_units.experimental_renderer")
 					.define("ExperimentalRenderer", true);
+			useExperimentalRendererPt2 = builder
+					.comment("Most likely buggy, but potentially better performance (incompatible with fabulous graphics and maybe also shaders)")
+					.translation("config.smaller_units.experimental_renderer_pt2")
+					.define("ExperimentalRendererPt2", false);
 			useVBOS = builder
-					.comment("Buggy, higher GPU usage, better performance")
+					.comment("Buggy, higher GPU usage, better performance (will destroy your game if there are too many unit tile entities or you reload textures too much)")
 					.translation("config.smaller_units.use_vbos")
 					.define("UseVOBS", false);
 			useExperimentalSelection = builder

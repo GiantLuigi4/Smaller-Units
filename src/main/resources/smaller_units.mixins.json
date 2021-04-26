@@ -3,7 +3,7 @@
   "package": "com.tfc.smallerunits.mixins",
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
-  "client": ["GameRendererMixin", "MinecraftMixin", "ModelDataManagerMixin", "TileEntityRendererDispatcherMixin"],
+  "client": ["ClientPlayNetHandlerMixin", "GameRendererMixin", "MinecraftMixin", "ModelDataManagerMixin", "TileEntityRendererDispatcherMixin"],
   "mixins": [
 	"ContainerMixin",
 	"ContainerMixin2",

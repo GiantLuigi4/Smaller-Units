@@ -596,6 +596,35 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+
+//		if (player.getHeldItem(handIn).getItem().equals(Items.DEBUG_STICK)) {
+//			if (tileEntity.worldClient != null) {
+//				Field f = ObfuscationReflectionHelper.findField(ClientPlayNetHandler.class,"field_147307_j");
+//				f.setAccessible(true);
+//				Minecraft.getInstance().world.removeEntityFromWorld(player.getEntityId());
+//				try {
+//					tileEntity.worldClient.connection = new ClientPlayNetHandler(Minecraft.getInstance(),
+//							(Screen) f.get(Minecraft.getInstance().world.connection),
+//							Minecraft.getInstance().world.connection.getNetworkManager(),Minecraft.getInstance().world.connection.getGameProfile()) {
+//						@Override
+//						public void handleUpdateTileEntity(SUpdateTileEntityPacket packetIn) {
+//							if (tileEntity.getWorld().getTileEntity(packetIn.getPos()) != null) {
+//								super.handleUpdateTileEntity(packetIn);
+//							}
+//						}
+//					};
+//				} catch (Throwable e) {
+//					e.printStackTrace();
+//				}
+//				Minecraft.getInstance().world = tileEntity.worldClient;
+//				Minecraft.getInstance().player.world = tileEntity.worldClient;
+//				Minecraft.getInstance().worldRenderer.setWorldAndLoadRenderers(tileEntity.worldClient);
+//				Minecraft.getInstance().world.addEntity(player.getEntityId(),player);
+//			} else {
+//				tileEntity.worldServer.addDuringPortalTeleport((ServerPlayerEntity)player);
+//			}
+//			return ActionResultType.FAIL;
+//		}
 		
 		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
 		

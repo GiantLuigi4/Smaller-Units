@@ -6,9 +6,12 @@ import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.helpers.BufferCacheHelper;
 import com.tfc.smallerunits.utils.rendering.BufferCache;
+import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.culling.ClippingHelper;
@@ -23,14 +26,84 @@ import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.LightType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.DrawHighlightEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 
 public class RenderingHandler {
+	public static void onRenderWorldLastNew(RenderWorldLastEvent event) {
+		//TODO: force vanilla renderer to work in fake world
+		if (Minecraft.getInstance().world instanceof FakeClientWorld) {
+			MatrixStack matrixStack = event.getMatrixStack();
+			matrixStack.push();
+			Vector3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
+			matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
+			matrixStack.translate(0, 64, 0);
+			matrixStack.scale(
+					((FakeClientWorld) Minecraft.getInstance().world).owner.unitsPerBlock,
+					((FakeClientWorld) Minecraft.getInstance().world).owner.unitsPerBlock,
+					((FakeClientWorld) Minecraft.getInstance().world).owner.unitsPerBlock
+			);
+			SmallerUnitsTESR.render(
+					((FakeClientWorld) Minecraft.getInstance().world).owner, event.getPartialTicks(),
+					matrixStack, new BufferCache(Minecraft.getInstance().getRenderTypeBuffers().getBufferSource(), matrixStack),
+					0, 0
+			);
+			matrixStack.pop();
+		}
+		if (!SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get()) return;
+		MatrixStack matrixStack = event.getMatrixStack();
+		ClippingHelper clippinghelper = new ClippingHelper(matrixStack.getLast().getMatrix(), event.getProjectionMatrix());
+		clippinghelper.setCameraPosition(Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getX(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getY(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getZ());
+		matrixStack.push();
+		Vector3d projectedView = Minecraft.getInstance().gameRenderer.getActiveRenderInfo().getProjectedView();
+		matrixStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
+		IRenderTypeBuffer.Impl buffers = Minecraft.getInstance().getRenderTypeBuffers().getCrumblingBufferSource();
+		ArrayList<RenderType> types = new ArrayList<>();
+		for (TileEntity tileEntity : Minecraft.getInstance().world.loadedTileEntityList) {
+			if (tileEntity instanceof UnitTileEntity) {
+				if (clippinghelper.isBoundingBoxInFrustum(tileEntity.getRenderBoundingBox())) {
+					if (BufferCacheHelper.cache == null) {
+						BufferCache cache = new BufferCache(buffers, matrixStack);
+						BufferCacheHelper.cache = cache;
+					}
+					BufferCache cache = BufferCacheHelper.cache;
+//					BufferCache cache = new BufferCache(buffers, matrixStack);
+					cache.buffer = buffers;
+					matrixStack.push();
+					matrixStack.translate(
+							tileEntity.getPos().getX(),
+							tileEntity.getPos().getY(),
+							tileEntity.getPos().getZ()
+					);
+					SmallerUnitsTESR.render(
+							(UnitTileEntity) tileEntity, event.getPartialTicks(),
+							matrixStack, cache,
+							0, OverlayTexture.NO_OVERLAY
+					);
+					matrixStack.pop();
+					for (RenderType type : cache.builderHashMap.keySet()) {
+						if (!types.contains(type)) {
+							types.add(type);
+//							buffers.finish(type);
+						}
+					}
+					cache.builderHashMap.clear();
+				}
+			}
+		}
+		for (RenderType type : types) {
+			buffers.finish(type);
+		}
+		matrixStack.pop();
+	}
+	
 	//	public static void onRenderWorldLast(RenderWorldLastEvent event) {
 	public static void onRenderWorldLast(MatrixStack matrixStack, Matrix4f projectionIn) {
 //		float partialTicks = event.getPartialTicks();

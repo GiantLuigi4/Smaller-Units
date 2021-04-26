@@ -8,7 +8,6 @@ import com.tfc.smallerunits.utils.ResizingUtils;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.world.common.FakeChunk;
 import com.tfc.smallerunits.utils.world.common.FakeIChunk;
-import com.tfc.smallerunits.utils.world.common.FakeLightingManager;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -113,7 +112,7 @@ public class FakeServerWorld extends ServerWorld {
 	public WorldLightManager lightManager;
 	public UnitTileEntity owner;
 	protected boolean hasInit = false;
-	protected boolean isFirstTick;
+	public boolean isFirstTick;
 	public IChunk chunk;
 	protected Profiler blankProfiler;
 	private ArrayList<Entity> entitiesToAddArrayList;
@@ -151,7 +150,7 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.posInRealWorld != null) {
+		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {
 				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 					if (!context.posInRealWorld.equals(this.owner.getPos())) {
@@ -272,7 +271,7 @@ public class FakeServerWorld extends ServerWorld {
 			ITaskExecutor<Unit> unitExecutor = ITaskExecutor.inline("idk", unit -> {
 			});
 			ITaskExecutor<ChunkTaskPriorityQueueSorter.FunctionEntry<Runnable>> itaskexecutor = ITaskExecutor.inline("su_world", (entry) -> entry.task.apply(unitExecutor).run());
-			lightManager = new FakeLightingManager(
+			lightManager = new FakeServerLightingManager(
 					new IChunkLightProvider() {
 						@Nullable
 						@Override
@@ -328,11 +327,11 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.posInRealWorld != null) {
+		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {
 				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 					if (!context.posInRealWorld.equals(this.owner.getPos())) {
-						if (context.teInRealWorld.getWorld() != null) {
+						if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() != null) {
 							return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getBlockState(context.posInFakeWorld);
 						}
 					}
@@ -367,6 +366,7 @@ public class FakeServerWorld extends ServerWorld {
 		this.isRemote = this.owner.getWorld().isRemote;
 		owner.getWorld().getProfiler().startSection("firstTick");
 		if (isFirstTick) {
+			init(owner);
 			dimension = owner.getWorld().dimension;
 			dimensionType = owner.getWorld().dimensionType;
 			raids = new RaidManager(this);
@@ -828,11 +828,13 @@ public class FakeServerWorld extends ServerWorld {
 	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
 		if (lightTypeIn.equals(LightType.BLOCK)) {
 			ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, blockPosIn);
-			if (context.stateInRealWorld != null) {
-				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-					if (!context.posInRealWorld.equals(this.owner.getPos())) {
-						if (context.teInRealWorld != null) {
-							return ((UnitTileEntity) context.teInRealWorld).worldServer.getLightFor(lightTypeIn, context.posInFakeWorld);
+			if (context.posInRealWorld != null && context.posInFakeWorld != null) {
+				if (context.stateInRealWorld != null) {
+					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+						if (!context.posInRealWorld.equals(this.owner.getPos())) {
+							if (context.teInRealWorld != null) {
+								return ((UnitTileEntity) context.teInRealWorld).worldServer.getLightFor(lightTypeIn, context.posInFakeWorld);
+							}
 						}
 					}
 				}
@@ -841,7 +843,7 @@ public class FakeServerWorld extends ServerWorld {
 		
 		if (lightTypeIn.equals(LightType.BLOCK)) {
 			return Math.max(
-					((FakeLightingManager) lightManager).getBlockLight(blockPosIn.offset(Direction.DOWN, 64)),
+					((FakeServerLightingManager) lightManager).getBlockLight(blockPosIn.offset(Direction.DOWN, 64)),
 					owner.getWorld().getLightFor(lightTypeIn, owner.getPos())
 			);
 		} else {
@@ -857,7 +859,7 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.posInRealWorld != null) {
+		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {
 				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 					if (!context.posInRealWorld.equals(this.owner.getPos())) {
@@ -900,7 +902,7 @@ public class FakeServerWorld extends ServerWorld {
 		isErrored = false;
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
 		if (recursionLeft < 0) return false;
-		if (context.posInRealWorld != null) {
+		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {
 				if (!context.posInRealWorld.equals(owner.getPos())) {
 					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
@@ -1134,7 +1136,8 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public boolean addEntity(Entity entityIn) {
-		if (!(entityIn instanceof ArmorStandEntity) && (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity && entityIn instanceof Comparable)) {
+		if (!(entityIn instanceof ArmorStandEntity) && (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity && entityIn instanceof Comparable) && !(entityIn instanceof PlayerEntity)) {
+//		if (false) {
 			entityIn.teleportKeepLoaded(
 					owner.getPos().getX() + entityIn.getPositionVec().getX() / owner.unitsPerBlock,
 					owner.getPos().getY() + ((entityIn.getPositionVec().getY() - 64) / owner.unitsPerBlock),
@@ -1150,6 +1153,7 @@ public class FakeServerWorld extends ServerWorld {
 	}
 	
 	public boolean containsEntityWithUUID(UUID uuid) {
+		if (entitiesById == null) return false;
 		for (Entity value : entitiesById.values()) {
 			if (value.getUniqueID().equals(uuid)) return true;
 		}
@@ -1195,6 +1199,8 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public Stream<VoxelShape> getCollisionShapes(@Nullable Entity entity, AxisAlignedBB aabb) {
 		ArrayList<VoxelShape> shapes = new ArrayList<>();
+		float padding = 0.5f;
+		aabb = aabb.expand(padding, 0, padding).offset(-padding / 2, 0, -padding / 2);
 		VoxelShape aabbShape = VoxelShapes.create(aabb);
 		for (int x = (int) aabb.minX; x < aabb.maxX; x++) {
 			for (int y = (int) aabb.minY; y < aabb.maxY; y++) {
@@ -1208,6 +1214,29 @@ public class FakeServerWorld extends ServerWorld {
 			}
 		}
 		return Stream.of(shapes.toArray(new VoxelShape[0]));
+	}
+	
+	@Override
+	public boolean hasNoCollisions(AxisAlignedBB aabb) {
+		for (Entity value : entitiesById.values()) {
+			if (value.getBoundingBox().equals(aabb)) {
+				continue;
+			}
+			if (value.getBoundingBox().intersects(aabb)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	@Override
+	public boolean checkNoEntityCollision(@Nullable Entity entityIn, VoxelShape shape) {
+		return hasNoCollisions(shape.getBoundingBox());
+	}
+	
+	@Override
+	public boolean checkNoEntityCollision(Entity entity) {
+		return hasNoCollisions(entity.getBoundingBox());
 	}
 	
 	public Vector3d getRealPos(double x, double y, double z) {

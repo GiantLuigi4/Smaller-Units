@@ -42,7 +42,7 @@ public class SUPseudoVBO {
 			try {
 				MatrixStack matrixStack1 = new MatrixStack();
 				HashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new HashMap<>();
-				Minecraft.getInstance().getProfiler().endStartSection("renderPseudoVBO");
+				Minecraft.getInstance().getProfiler().startSection("renderPseudoVBO");
 				for (CustomBuffer.CustomVertexBuilder builder2 : buffer.builders) {
 					IVertexBuilder builder1;
 					Minecraft.getInstance().getProfiler().startSection("getVertexBuilder");
@@ -99,9 +99,11 @@ public class SUPseudoVBO {
 			} catch (Throwable ignored) {
 				ignored.printStackTrace();
 			}
-			isDirty = false;
+			if (SmallerUnitsConfig.CLIENT.useVBOS.get())
+				isDirty = false;
+			Minecraft.getInstance().getProfiler().endSection();
 		}
-		Minecraft.getInstance().getProfiler().endSection();
+		if (isDirty) return;
 		Minecraft.getInstance().getProfiler().startSection("renderVBOs");
 		boolean isFirst = true;
 		for (BufferStorage storage : vertexBuffers) {
