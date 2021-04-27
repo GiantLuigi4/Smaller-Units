@@ -107,7 +107,7 @@ dependencies {
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
 
-    implementation fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
+//    implementation fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
 
     implementation fg.deobf('curse.maven:jei-238222:3157864')
     implementation fg.deobf('curse.maven:carryon-274259:3206755')
@@ -118,8 +118,8 @@ dependencies {
     implementation fg.deobf('curse.maven:appeng-223794:3185882')
     implementation fg.deobf('curse.maven:refinedstorage-243076:3196167')
 //    implementation fg.deobf('curse.maven:shrink-426386:3162514')
-    implementation fg.deobf('curse.maven:pymtech-316946:3163217')
-    implementation fg.deobf('curse.maven:threecore-349285:3187033')
+//    implementation fg.deobf('curse.maven:pymtech-316946:3163217')
+    compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
     implementation fg.deobf('curse.maven:compactstorage-223703:3209571')
     implementation fg.deobf('curse.maven:mekanism-268560:3183270')
     implementation fg.deobf('curse.maven:fluxnetworks-248020:3174798')
@@ -131,7 +131,8 @@ dependencies {
     implementation fg.deobf('curse.maven:patchouli-306770:3204037')
     implementation fg.deobf('curse.maven:curios-309927:3186427')
     implementation fg.deobf('curse.maven:chiselandbits-231095:3176033')
-    implementation fg.deobf('curse.maven:gullivern-385915:3227241')
+    compileOnly fg.deobf('curse.maven:gullivern-385915:3227241')
+    compileOnly fg.deobf('curse.maven:pehkui-319596:3274207')
 
     compile 'org.spongepowered:mixin:0.8'
 }

@@ -411,6 +411,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	public boolean canBeRemoved(PlayerEntity player, World world, UnitTileEntity tileEntity, BlockPos worldPos) {
+		if (player == null || player.getPositionVec() == null) return false;
+		
 		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
 		
 		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(Direction.UP));
@@ -429,8 +431,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				ticksRandomly
 		));
 		
-		RayTraceResult result = Minecraft.getInstance().objectMouseOver;
+		RayTraceResult result = null;
 		if (FMLEnvironment.dist.isClient()) {
+			result = Minecraft.getInstance().objectMouseOver;
 			Minecraft.getInstance().objectMouseOver = tileEntity.getResult();
 		}
 		Vector3d playerPos = player.getPositionVec();
@@ -455,7 +458,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		canRemove = !player.getHeldItem(Hand.MAIN_HAND).onBlockStartBreak(raytraceContext.posHit, player);
 		PacketHacksHelper.unitPos = null;
 		
-		Minecraft.getInstance().objectMouseOver = result;
+		if (FMLEnvironment.dist.isClient()) {
+			Minecraft.getInstance().objectMouseOver = result;
+		}
 		player.setWorld(currentWorld);
 		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
 		player.recenterBoundingBox();

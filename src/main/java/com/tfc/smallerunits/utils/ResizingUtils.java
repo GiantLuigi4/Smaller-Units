@@ -8,6 +8,7 @@ import net.minecraftforge.fml.ModList;
 import net.teamfruit.gulliver.GulliverSize;
 import net.teamfruit.gulliver.attributes.Attributes;
 import net.threetag.threecore.capability.CapabilitySizeChanging;
+import virtuoel.pehkui.api.ScaleType;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,6 +27,19 @@ public class ResizingUtils {
 		} else if (getSize(entity) <= 2)
 			newSize = Math.min(getSize(entity) - (amt / 2f), 2);
 		
+		if (ModList.get().isLoaded("pehkui")) {
+			if (ModList.get().isLoaded("threecore")) {
+				entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
+					if (cap.getSizeChangeType().equals(SUResizeType.SU_CHANGE_TYPE.get())) {
+						cap.setSizeDirectly(SUResizeType.SU_CHANGE_TYPE.get(), 1);
+					}
+				});
+			}
+			if (ModList.get().isLoaded("gulliver")) {
+				GulliverSize.changeSize((LivingEntity) entity, 1);
+			}
+			ScaleType.BASE.getScaleData(entity).setTargetScale(newSize);
+		}
 		if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 			if (ModList.get().isLoaded("threecore")) {
 				entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
@@ -54,6 +68,10 @@ public class ResizingUtils {
 	
 	public static float getSize(Entity entity) {
 		AtomicReference<Float> size = new AtomicReference<>(1f);
+		if (ModList.get().isLoaded("pehkui")) {
+			size.set(size.get() * ScaleType.BASE.getScaleData(entity).getTargetScale());
+//			size.set(size.get() * ScaleUtils.getTypedScale(entity, ScaleType.BASE, 1));
+		}
 		if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 			if (((LivingEntity) entity).getAttribute(Attributes.ENTITY_HEIGHT.get()) != null) {
 				AttributeModifier modifier = ((LivingEntity) entity).getAttribute(Attributes.ENTITY_HEIGHT.get()).getModifier(uuidHeight);
