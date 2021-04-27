@@ -580,9 +580,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		ItemStack stack;
 		if (target instanceof BlockRayTraceResult) {
-			stack = state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, ((BlockRayTraceResult) target).getFace(), raytraceContext.posHit, ((BlockRayTraceResult) target).isInside()), world, pos, player);
+			stack = state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, ((BlockRayTraceResult) target).getFace(), raytraceContext.posHit, ((BlockRayTraceResult) target).isInside()), tileEntity.getFakeWorld(), hitPos, player);
 		} else {
-			stack = state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, Direction.UP, raytraceContext.posHit, false), world, pos, player);
+			stack = state1.getPickBlock(new BlockRayTraceResult(raytraceContext.vecHit, Direction.UP, raytraceContext.posHit, false), tileEntity.getFakeWorld(), hitPos, player);
 		}
 		
 		if (Screen.hasControlDown()) {

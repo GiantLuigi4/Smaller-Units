@@ -39,8 +39,7 @@ public class ResizingUtils {
 				GulliverSize.changeSize((LivingEntity) entity, 1);
 			}
 			ScaleType.BASE.getScaleData(entity).setTargetScale(newSize);
-		}
-		if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
+		} else if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 			if (ModList.get().isLoaded("threecore")) {
 				entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
 					if (cap.getSizeChangeType().equals(SUResizeType.SU_CHANGE_TYPE.get())) {
@@ -68,10 +67,8 @@ public class ResizingUtils {
 	
 	public static float getSize(Entity entity) {
 		AtomicReference<Float> size = new AtomicReference<>(1f);
-		if (ModList.get().isLoaded("pehkui")) {
+		if (ModList.get().isLoaded("pehkui"))
 			size.set(size.get() * ScaleType.BASE.getScaleData(entity).getTargetScale());
-//			size.set(size.get() * ScaleUtils.getTypedScale(entity, ScaleType.BASE, 1));
-		}
 		if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 			if (((LivingEntity) entity).getAttribute(Attributes.ENTITY_HEIGHT.get()) != null) {
 				AttributeModifier modifier = ((LivingEntity) entity).getAttribute(Attributes.ENTITY_HEIGHT.get()).getModifier(uuidHeight);
@@ -101,7 +98,9 @@ public class ResizingUtils {
 	
 	public static void resizeForUnit(Entity entity, float amt) {
 		//TODO: chiseled me integration
-		if (ModList.get().isLoaded("gullivern")) {
+		if (ModList.get().isLoaded("pehkui")) {
+			ScaleType.BASE.getScaleData(entity).setScale(amt);
+		} else if (ModList.get().isLoaded("gullivern")) {
 			GulliverSize.changeSize((LivingEntity) entity, amt);
 		} else if (ModList.get().isLoaded("threecore")) {
 			entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
