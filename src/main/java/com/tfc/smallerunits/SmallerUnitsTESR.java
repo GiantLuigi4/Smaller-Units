@@ -173,7 +173,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		tileEntityIn.worldClient.get().lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 		
 		Minecraft.getInstance().getProfiler().startSection("doSURender");
-		if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+		if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
 			Minecraft.getInstance().getProfiler().startSection("renderVBO");
 			SUVBO suvbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
 			if (suvbo == null) {
@@ -223,7 +223,12 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
 				vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
 				vertexBufferCacheFree.remove(tileEntityIn.getPos());
-			} else if (vertexBufferCacheFree.isEmpty() && (vertexBufferCacheUsed.size() + vertexBufferCacheFree.size() >= 16384)) {
+//			} else if (vertexBufferCacheFree.isEmpty() && (vertexBufferCacheUsed.size() + vertexBufferCacheFree.size() >= (16384 / 16))) {
+			} else if (
+					vertexBufferCacheFree.isEmpty() &&
+							vertexBufferCacheUsed.size() + vertexBufferCacheFree.size() >= (16384 / 1) &&
+							SmallerUnitsConfig.CLIENT.useVBOS.get()
+			) {
 				Minecraft.getInstance().getProfiler().startSection("renderWithoutVBO");
 				matrixStackIn.push();
 				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);

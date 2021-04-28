@@ -22,7 +22,7 @@ public class FakeClientLightingManager extends WorldLightManager {
 	int recursionDepth = 0;
 	private WorldLightManager lightManager;
 	private int lastSize = 0;
-	private int[] lighting = new int[0];
+	private byte[] lighting = new byte[0];
 	private int lastX = 0;
 	private int lastY = 0;
 	private int lastZ = 0;
@@ -41,7 +41,7 @@ public class FakeClientLightingManager extends WorldLightManager {
 	@Override
 	public int tick(int toUpdateCount, boolean updateSkyLight, boolean updateBlockLight) {
 		if (lastSize != world.owner.unitsPerBlock) {
-			lighting = new int[world.owner.unitsPerBlock * world.owner.unitsPerBlock * world.owner.unitsPerBlock];
+			lighting = new byte[world.owner.unitsPerBlock * world.owner.unitsPerBlock * world.owner.unitsPerBlock];
 			lastSize = world.owner.unitsPerBlock;
 		}
 		int i;
@@ -110,7 +110,7 @@ public class FakeClientLightingManager extends WorldLightManager {
 			}
 			max = Math.max(0, max);
 			if (lighting[toIndex(pos)] != (max)) {
-				lighting[toIndex(pos)] = (max);
+				lighting[toIndex(pos)] = (byte) max;
 				hasChanged = true;
 				world.markSurroundingsForRerender(0, 0, 0);
 			}

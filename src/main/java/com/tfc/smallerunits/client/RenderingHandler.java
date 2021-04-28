@@ -60,7 +60,12 @@ public class RenderingHandler {
 		
 		MatrixStack matrixStack = event.getMatrixStack();
 		ClippingHelper clippinghelper = new ClippingHelper(matrixStack.getLast().getMatrix(), event.getProjectionMatrix());
-		clippinghelper.setCameraPosition(Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getX(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getY(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getZ());
+//		clippinghelper.setCameraPosition(Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getX(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getY(), Minecraft.getInstance().renderViewEntity.getEyePosition(event.getPartialTicks()).getZ());
+		clippinghelper.setCameraPosition(
+				Minecraft.getInstance().getRenderManager().info.getProjectedView().x,
+				Minecraft.getInstance().getRenderManager().info.getProjectedView().y,
+				Minecraft.getInstance().getRenderManager().info.getProjectedView().z
+		);
 		{
 			ArrayList<BlockPos> toFree = new ArrayList<>();
 			SmallerUnitsTESR.vertexBufferCacheUsed.forEach((pos, buffer) -> {

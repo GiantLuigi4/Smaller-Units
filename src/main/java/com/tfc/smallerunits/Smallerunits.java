@@ -21,6 +21,9 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.swing.*;
+import java.awt.*;
+
 //import com.tfc.smallerunits.mixins.SimpleChannelAccessor;
 //import com.tfc.smallerunits.networking.SUWorldDirectingPacket;
 
@@ -42,6 +45,43 @@ public class Smallerunits {
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
+		
+		if (!FMLEnvironment.production) {
+			System.setProperty("java.awt.headless", "false");
+			JFrame frame = new JFrame();
+			frame.setSize(1000, 1000);
+			frame.setTitle("memory: " + Runtime.getRuntime().freeMemory() + "/" + Runtime.getRuntime().maxMemory());
+			Canvas canvas = new Canvas() {
+				@Override
+				public void paint(Graphics g) {
+					super.paint(g);
+//					IntegratedServer server = Minecraft.getInstance().getIntegratedServer();
+//					if (server != null) {
+//						ServerWorld world = server.getWorld(World.OVERWORLD);
+//						for (TileEntity tileEntity : world.addedTileEntityList) {
+//							if (tileEntity instanceof UnitTileEntity) {
+//								if (((UnitTileEntity) tileEntity).worldServer != null) {
+//								}
+//							}
+//						}
+//					}
+				}
+			};
+			frame.add(canvas);
+			Thread td = new Thread(() -> {
+				try {
+					while (frame.isVisible()) {
+						frame.setTitle("memory: " + (Runtime.getRuntime().freeMemory() / 10241024) + "MB/" + (Runtime.getRuntime().maxMemory() / 10241024) + "MB");
+						Thread.sleep(1000);
+					}
+				} catch (Throwable err) {
+					err.printStackTrace();
+				}
+			});
+			frame.setVisible(true);
+			td.start();
+			System.setProperty("java.awt.headless", "true");
+		}
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,

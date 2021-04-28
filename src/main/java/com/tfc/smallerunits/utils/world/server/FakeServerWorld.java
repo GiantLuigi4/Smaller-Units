@@ -8,8 +8,8 @@ import com.tfc.smallerunits.utils.ResizingUtils;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.world.common.FakeChunk;
 import com.tfc.smallerunits.utils.world.common.FakeIChunk;
-import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -106,16 +106,16 @@ public class FakeServerWorld extends ServerWorld {
 		}
 	}
 	
-	public Long2ObjectLinkedOpenHashMap<SmallUnit> blockMap;
-	public ArrayList<SmallUnit> tileEntityChanges;
-	public ArrayList<BlockPos> tileEntityPoses;
+	protected static Profiler blankProfiler = new Profiler(() -> 0, () -> 0, false);
+	public Map<Long, SmallUnit> blockMap;
+	public List<SmallUnit> tileEntityChanges;
 	public WorldLightManager lightManager;
 	public UnitTileEntity owner;
 	protected boolean hasInit = false;
 	public boolean isFirstTick;
 	public IChunk chunk;
-	protected Profiler blankProfiler;
-	private ArrayList<Entity> entitiesToAddArrayList;
+	public List<BlockPos> tileEntityPoses;
+	private List<Entity> entitiesToAddArrayList;
 	
 	public FakeServerWorld(MinecraftServer p_i241885_1_, Executor p_i241885_2_, SaveFormat.LevelSave p_i241885_3_, IServerWorldInfo p_i241885_4_, RegistryKey<World> p_i241885_5_, DimensionType p_i241885_6_, IChunkStatusListener p_i241885_7_, ChunkGenerator p_i241885_8_, boolean p_i241885_9_, long p_i241885_10_, List<ISpecialSpawner> p_i241885_12_, boolean p_i241885_13_) {
 		super(p_i241885_1_, p_i241885_2_, p_i241885_3_, p_i241885_4_, p_i241885_5_, p_i241885_6_, p_i241885_7_, p_i241885_8_, p_i241885_9_, p_i241885_10_, p_i241885_12_, p_i241885_13_);
@@ -262,7 +262,7 @@ public class FakeServerWorld extends ServerWorld {
 			this.owner = owner;
 			hasInit = true;
 			field_241102_C_ = null;
-			blockMap = new Long2ObjectLinkedOpenHashMap<>();
+			blockMap = new Long2ObjectArrayMap<>();
 			tileEntityPoses = new ArrayList<>();
 			chunk = new FakeIChunk(this);
 			FakeServerWorld world = this;
@@ -299,7 +299,7 @@ public class FakeServerWorld extends ServerWorld {
 			field_241103_E_ = new FakeServerWorldInfo(this);
 			worldInfo = field_241103_E_;
 			rand = new Random();
-			blankProfiler = new Profiler(() -> 0, () -> 0, false);
+//			blankProfiler = new Profiler(() -> 0, () -> 0, false);
 			profiler = () -> blankProfiler;
 			worldBorder = border;
 			isFirstTick = true;
@@ -308,12 +308,12 @@ public class FakeServerWorld extends ServerWorld {
 			entitiesToAdd = new PriorityQueue<>();
 			entitiesToRemove = new PriorityQueue<>();
 			entitiesByUuid = new Object2ObjectLinkedOpenHashMap<>();
-			entitiesById = new Int2ObjectArrayMap<>();
+			entitiesById = new Int2ObjectLinkedOpenHashMap<>();
 			entitiesToAddArrayList = new ArrayList<>();
 			tickableTileEntities = new ArrayList<>();
 			loadedTileEntityList = new ArrayList<>();
 			addedTileEntityList = new ArrayList<>();
-			capturedBlockSnapshots = new java.util.ArrayList<>();
+			capturedBlockSnapshots = new ArrayList<>();
 		}
 	}
 	

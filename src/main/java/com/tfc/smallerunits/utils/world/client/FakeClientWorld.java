@@ -6,7 +6,6 @@ import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.world.common.FakeChunk;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -45,7 +44,6 @@ import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.lighting.WorldLightManager;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -54,8 +52,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class FakeClientWorld extends ClientWorld {
-	public final ArrayList<Particle> particles = new ArrayList<>();
-	public Long2ObjectLinkedOpenHashMap<SmallUnit> blockMap;
+	public Map<Long, SmallUnit> blockMap;
 	public BlockRayTraceResult result;
 	public UnitTileEntity owner;
 	int maxID = 0;
@@ -76,6 +73,9 @@ public class FakeClientWorld extends ClientWorld {
 				return new FakeChunk(world, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()), world);
 			}
 		};
+//		this.addedTileEntityList = new ArrayList<>();
+//		this.loadedTileEntityList = new ArrayList<>();
+//		this.tickableTileEntities = new ArrayList<>();
 	}
 	
 	@Override

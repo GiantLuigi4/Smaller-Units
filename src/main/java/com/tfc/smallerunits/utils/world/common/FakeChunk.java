@@ -3,7 +3,6 @@ package com.tfc.smallerunits.utils.world.common;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -26,6 +25,7 @@ import net.minecraft.world.lighting.WorldLightManager;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -100,7 +100,7 @@ public class FakeChunk extends Chunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-		Long2ObjectLinkedOpenHashMap<SmallUnit> blockMap;
+		Map<Long, SmallUnit> blockMap;
 		if (world instanceof FakeServerWorld) {
 			blockMap = ((FakeServerWorld) world).blockMap;
 		} else {

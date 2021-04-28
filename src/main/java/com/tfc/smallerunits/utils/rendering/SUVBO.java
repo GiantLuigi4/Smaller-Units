@@ -65,9 +65,7 @@ public class SUVBO {
 		BufferStorage storage = new BufferStorage();
 		storage.renderType = renderType;
 		VertexBuffer buffer = new VertexBuffer(renderType.getVertexFormat());
-		if (bufferBuilder != null) {
-			buffer.upload(bufferBuilder);
-		}
+		if (bufferBuilder != null) buffer.upload(bufferBuilder);
 		storage.terrainBuffer = Optional.of(buffer);
 		storage.isPresent = bufferBuilder != null;
 		buffers.add(storage);

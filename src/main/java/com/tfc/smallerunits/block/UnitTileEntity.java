@@ -39,10 +39,7 @@ import sun.misc.Unsafe;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
@@ -172,7 +169,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		return worldClient != null ? worldClient.get().profiler.get() : worldServer.profiler.get();
 	}
 	
-	public Long2ObjectLinkedOpenHashMap<SmallUnit> getBlockMap() {
+	public Map<Long, SmallUnit> getBlockMap() {
 		if (worldServer == null && worldClient == null) return new Long2ObjectLinkedOpenHashMap<>();
 		else if (worldServer == null) return worldClient.get().blockMap;
 		else return worldServer.blockMap;
@@ -355,7 +352,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		if (nbt.contains("isNatural"))
 			isNatural = nbt.getBoolean("isNatural");
 		CompoundNBT entities = nbt.getCompound("entities");
-		ArrayList<Integer> entitiesExisting = new ArrayList<>();
+		List<Integer> entitiesExisting = new ArrayList<>();
 		loop_entities:
 		for (String key : entities.keySet()) {
 			CompoundNBT entityNBT = entities.getCompound(key);
@@ -402,7 +399,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 //				getEntitiesById().put(entity.getEntityId(), entity);
 //			}
 		}
-		ArrayList<Integer> toRemove = new ArrayList<>();
+		List<Integer> toRemove = new ArrayList<>();
 		for (Entity value : getEntitiesById().values()) {
 			if (!entitiesExisting.contains(value.getEntityId())) {
 				toRemove.add(value.getEntityId());

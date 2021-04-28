@@ -601,6 +601,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		
+		if (tileEntity.getFakeWorld() == null) return ActionResultType.FAIL;
 
 //		if (player.getHeldItem(handIn).getItem().equals(Items.DEBUG_STICK)) {
 //			if (tileEntity.worldClient != null) {
