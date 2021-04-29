@@ -7,13 +7,11 @@ import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.mojang.blaze3d.vertex.MatrixApplyingVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.utils.MathUtils;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitRaytraceContext;
 import com.tfc.smallerunits.utils.UnitRaytraceHelper;
-import com.tfc.smallerunits.utils.rendering.BufferCache;
-import com.tfc.smallerunits.utils.rendering.CustomBuffer;
-import com.tfc.smallerunits.utils.rendering.SUPseudoVBO;
-import com.tfc.smallerunits.utils.rendering.SUVBO;
+import com.tfc.smallerunits.utils.rendering.*;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.block.BlockState;
@@ -206,6 +204,28 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 								matrixStackIn, builder,
 								true, new Random(value.pos.toLong())
 						);
+						if (!value.state.getFluidState().isEmpty()) {
+							type = RenderTypeLookup.getRenderType(value.state.getFluidState());
+							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+								if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
+									type = blockRenderType;
+							if (!bufferBuilderHashMap.containsKey(type)) {
+								BufferBuilder buffer = new BufferBuilder(8342);
+								bufferBuilderHashMap.put(type, buffer);
+								buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+							}
+							builder = bufferBuilderHashMap.get(type);
+							TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
+							builder1.offset = new Vector3d(
+									((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
+									((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
+									((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
+							);
+							Minecraft.getInstance().getBlockRendererDispatcher().renderFluid(
+									value.pos, tileEntityIn.getFakeWorld(),
+									builder1, value.state.getFluidState()
+							);
+						}
 						matrixStackIn.pop();
 					}
 					matrixStackIn.pop();
@@ -244,6 +264,23 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 							matrixStackIn, bufferIn.getBuffer(type),
 							true, new Random(value.pos.toLong())
 					);
+					if (!value.state.getFluidState().isEmpty()) {
+						type = RenderTypeLookup.getRenderType(value.state.getFluidState());
+						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+							if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
+								type = blockRenderType;
+						IVertexBuilder builder = bufferIn.getBuffer(type);
+						TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
+						builder1.offset = new Vector3d(
+								((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
+								((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
+								((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
+						);
+						Minecraft.getInstance().getBlockRendererDispatcher().renderFluid(
+								value.pos, tileEntityIn.getFakeWorld(),
+								builder1, value.state.getFluidState()
+						);
+					}
 					matrixStackIn.pop();
 				}
 				matrixStackIn.pop();
@@ -276,6 +313,28 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 							matrixStackIn, builder,
 							true, new Random(value.pos.toLong())
 					);
+					if (!value.state.getFluidState().isEmpty()) {
+						type = RenderTypeLookup.getRenderType(value.state.getFluidState());
+						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+							if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
+								type = blockRenderType;
+						if (!bufferBuilderHashMap.containsKey(type)) {
+							BufferBuilder buffer = new BufferBuilder(8342);
+							bufferBuilderHashMap.put(type, buffer);
+							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+						}
+						builder = bufferBuilderHashMap.get(type);
+						TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
+						builder1.offset = new Vector3d(
+								((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
+								((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
+								((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
+						);
+						Minecraft.getInstance().getBlockRendererDispatcher().renderFluid(
+								value.pos, tileEntityIn.getFakeWorld(),
+								builder1, value.state.getFluidState()
+						);
+					}
 					matrixStackIn.pop();
 				}
 				matrixStackIn.pop();
