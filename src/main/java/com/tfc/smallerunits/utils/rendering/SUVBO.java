@@ -46,6 +46,7 @@ public class SUVBO {
 	public void uploadTerrain(RenderType renderType, BufferBuilder bufferBuilder) {
 		if (bufferBuilder.isDrawing())
 			bufferBuilder.finishDrawing();
+		else return;
 		if (bufferBuilder != null) {
 			for (BufferStorage buffer : buffers) {
 				if (buffer.renderType.equals(renderType)) {

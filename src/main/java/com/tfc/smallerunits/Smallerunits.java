@@ -73,7 +73,7 @@ public class Smallerunits {
 			SUScaleType.set(type);
 		}
 		
-		if (!FMLEnvironment.production) {
+		if (!FMLEnvironment.production && false) {
 			System.setProperty("java.awt.headless", "false");
 			JFrame frame = new JFrame();
 			frame.setSize(1000, 1000);
