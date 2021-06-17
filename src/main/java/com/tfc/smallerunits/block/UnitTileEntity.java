@@ -326,7 +326,24 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				int priority = tick.getInt("priority");
 				
 				try {
-					if (pos.getY() > 0 && pos.getX() > 0 && pos.getZ() > 0 && pos.getX() < (unitsPerBlock - 1) && (pos.getY() - 64) < (unitsPerBlock - 1) && pos.getZ() < (unitsPerBlock - 1))
+//					System.out.println(
+//							pos.getX() >= 0 &&
+//									pos.getY() - 64 >= 0 &&
+//									pos.getZ() >= 0
+//					);
+//					System.out.println(
+//							pos.getX() <= (unitsPerBlock - 1) &&
+//									(pos.getY() - 64) <= (unitsPerBlock - 1) &&
+//									pos.getZ() <= (unitsPerBlock - 1)
+//					);
+					if (
+							pos.getX() >= 0 &&
+									pos.getY() - 64 >= 0 &&
+									pos.getZ() >= 0 &&
+									pos.getX() <= (unitsPerBlock - 1) &&
+									(pos.getY() - 64) <= (unitsPerBlock - 1) &&
+									pos.getZ() <= (unitsPerBlock - 1)
+					)
 						getFakeWorld().getPendingBlockTicks().scheduleTick(pos, pallet.posUnitMap.get(pos.toLong()).state.getBlock(), (int) time, TickPriority.getPriority(priority));
 				} catch (Throwable err) {
 					err.printStackTrace();
@@ -433,7 +450,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			ListNBT pendingBlockTicks = new ListNBT();
 			for (NextTickListEntry<Block> blockNextTickListEntry : this.worldServer.getPendingBlockTicks().getPending(new ChunkPos(0), false, false)) {
 				CompoundNBT tick = new CompoundNBT();
-				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - worldServer.getGameTime());
+				tick.putLong("time", blockNextTickListEntry.field_235017_b_);
 				tick.putInt("x", blockNextTickListEntry.position.getX());
 				tick.putInt("y", blockNextTickListEntry.position.getY());
 				tick.putInt("z", blockNextTickListEntry.position.getZ());
@@ -446,7 +463,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			ListNBT pendingFluidTicks = new ListNBT();
 			for (NextTickListEntry<Fluid> blockNextTickListEntry : this.worldServer.getPendingFluidTicks().getPending(new ChunkPos(0), false, false)) {
 				CompoundNBT tick = new CompoundNBT();
-				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - worldServer.getGameTime());
+				tick.putLong("time", blockNextTickListEntry.field_235017_b_);
 				tick.putInt("x", blockNextTickListEntry.position.getX());
 				tick.putInt("y", blockNextTickListEntry.position.getY());
 				tick.putInt("z", blockNextTickListEntry.position.getZ());
