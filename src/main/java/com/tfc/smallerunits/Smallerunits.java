@@ -7,6 +7,7 @@ import com.tfc.smallerunits.crafting.CraftingRegistry;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.threecore.SUResizeType;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModList;
@@ -20,9 +21,14 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import virtuoel.pehkui.api.ScaleData;
+import virtuoel.pehkui.api.ScaleModifier;
+import virtuoel.pehkui.api.ScaleRegistries;
+import virtuoel.pehkui.api.ScaleType;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 //import com.tfc.smallerunits.mixins.SimpleChannelAccessor;
 //import com.tfc.smallerunits.networking.SUWorldDirectingPacket;
@@ -30,6 +36,9 @@ import java.awt.*;
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("smallerunits")
 public class Smallerunits {
+	
+	public static final AtomicReference<ScaleModifier> SUScaleModifier = new AtomicReference<>();
+	public static final AtomicReference<ScaleType> SUScaleType = new AtomicReference<>();
 	
 	// Directly reference a log4j logger.
 	public static final Logger LOGGER = LogManager.getLogger();
@@ -45,6 +54,24 @@ public class Smallerunits {
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
+		
+		if (ModList.get().isLoaded("pehkui")) {
+			ScaleModifier modifier = new ScaleModifier() {
+				@Override
+				public float modifyScale(ScaleData scaleData, float modifiedScale, float delta) {
+					return SUScaleType.get().getScaleData(scaleData.getEntity()).getScale(delta) * modifiedScale;
+				}
+			};
+			ScaleRegistries.SCALE_MODIFIERS.put(new ResourceLocation("smallerunits:su_resize"), modifier);
+			SUScaleModifier.set(modifier);
+			ScaleType type = ScaleType.Builder.create()
+					.affectsDimensions()
+					.addDependentModifier(SUScaleModifier.get())
+					.build();
+			ScaleRegistries.SCALE_TYPES.put(new ResourceLocation("smallerunits:su_resize"), type);
+			ScaleType.BASE.getDefaultBaseValueModifiers().add(modifier);
+			SUScaleType.set(type);
+		}
 		
 		if (!FMLEnvironment.production) {
 			System.setProperty("java.awt.headless", "false");

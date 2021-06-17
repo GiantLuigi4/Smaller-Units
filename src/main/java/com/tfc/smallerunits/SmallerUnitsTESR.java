@@ -4,7 +4,6 @@ package com.tfc.smallerunits;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
-import com.mojang.blaze3d.vertex.MatrixApplyingVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.utils.MathUtils;
@@ -31,6 +30,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.*;
 import net.minecraft.world.LightType;
+import net.minecraftforge.client.model.data.EmptyModelData;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	public static SmallerUnitsTESR INSTANCE;
+
+//	private static final Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 	
 	public static final Object2ObjectLinkedOpenHashMap<BlockPos, Pair<AtomicReference<CompoundNBT>, SUPseudoVBO>> bufferCache = new Object2ObjectLinkedOpenHashMap<>();
 	public static final Object2ObjectLinkedOpenHashMap<BlockPos, SUVBO> vertexBufferCacheUsed = new Object2ObjectLinkedOpenHashMap<>();
@@ -52,6 +54,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	private static final Quaternion quat90Y = new Quaternion(0, 90, 0, true);
 	
 	public static final Logger LOGGER = LogManager.getLogger();
+	
+	private static final IRenderTypeBuffer buffers = new RenderTypeBuffers().getBufferSource();
 	
 	public static void renderCube(float r, float g, float b, float x, float y, float z, IVertexBuilder builder, int combinedOverlay, int combinedLight, MatrixStack matrixStack, boolean useNormals) {
 		Minecraft.getInstance().getProfiler().startSection("renderSquare1");
@@ -180,6 +184,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			}
 			if (suvbo != null) { // sometimes an edge condition occurs, so...
 				if (tileEntityIn.needsRefresh(false)) {
+//					Object2ObjectLinkedOpenHashMap<RenderType, ByteArrayBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 					Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 					Minecraft.getInstance().getProfiler().startSection("createVBO");
 					matrixStackIn = new MatrixStack();
@@ -192,17 +197,25 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
 							if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
 						if (!bufferBuilderHashMap.containsKey(type)) {
-							BufferBuilder buffer = new BufferBuilder(8342);
+//							ByteArrayBuilder buffer = new ByteArrayBuilder(16);
+							BufferBuilder buffer = new BufferBuilder(16);
 							bufferBuilderHashMap.put(type, buffer);
 							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//							buffer.begin(DefaultVertexFormats.BLOCK);
 						}
 						builder = bufferBuilderHashMap.get(type);
+//						if (!((ByteArrayBuilder) builder).isDrawing()) {
+						if (!((BufferBuilder) builder).isDrawing()) {
+							((BufferBuilder) builder).begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//							((ByteArrayBuilder) builder).begin(DefaultVertexFormats.BLOCK);
+						}
 						matrixStackIn.push();
 						matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
 						Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
 								value.state, value.pos, tileEntityIn.worldClient.get(),
 								matrixStackIn, builder,
-								true, new Random(value.pos.toLong())
+								true, new Random(value.pos.toLong()),
+								value.tileEntity != null ? value.tileEntity.getModelData() : EmptyModelData.INSTANCE
 						);
 						if (!value.state.getFluidState().isEmpty()) {
 							type = RenderTypeLookup.getRenderType(value.state.getFluidState());
@@ -210,9 +223,11 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 								if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
 									type = blockRenderType;
 							if (!bufferBuilderHashMap.containsKey(type)) {
-								BufferBuilder buffer = new BufferBuilder(8342);
+//								ByteArrayBuilder buffer = new ByteArrayBuilder(16);
+								BufferBuilder buffer = new BufferBuilder(16);
 								bufferBuilderHashMap.put(type, buffer);
 								buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//								buffer.begin(DefaultVertexFormats.BLOCK);
 							}
 							builder = bufferBuilderHashMap.get(type);
 							TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
@@ -233,7 +248,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					Minecraft.getInstance().getProfiler().endSection();
 					if (suvbo != null) {
 						suvbo.markAllUnused();
-						bufferBuilderHashMap.forEach(suvbo::uploadTerrain);
+//						bufferBuilderHashMap.forEach(suvbo::uploadTerrain);
+						((IRenderTypeBuffer.Impl) buffers).finish();
 					}
 				}
 				suvbo.render(matrixStackIn);
@@ -249,6 +265,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 							vertexBufferCacheUsed.size() + vertexBufferCacheFree.size() >= (16384 / 1) &&
 							SmallerUnitsConfig.CLIENT.useVBOS.get()
 			) {
+//				Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 				Minecraft.getInstance().getProfiler().startSection("renderWithoutVBO");
 				matrixStackIn.push();
 				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
@@ -262,7 +279,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
 							value.state, value.pos, tileEntityIn.worldClient.get(),
 							matrixStackIn, bufferIn.getBuffer(type),
-							true, new Random(value.pos.toLong())
+							true, new Random(value.pos.toLong()),
+							value.tileEntity != null ? value.tileEntity.getModelData() : EmptyModelData.INSTANCE
 					);
 					if (!value.state.getFluidState().isEmpty()) {
 						type = RenderTypeLookup.getRenderType(value.state.getFluidState());
@@ -285,10 +303,31 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				}
 				matrixStackIn.pop();
 				Minecraft.getInstance().getProfiler().endSection();
+			} else if (!SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+				matrixStackIn.push();
+				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+				matrixStackIn.translate(0, -64, 0);
+				for (SmallUnit value : tileEntityIn.worldClient.get().blockMap.values()) {
+					matrixStackIn.push();
+					matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
+					RenderType type = RenderType.getSolid();
+					for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+						if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
+					IVertexBuilder builder = bufferIn.getBuffer(type);
+					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
+							value.state, value.pos, tileEntityIn.worldClient.get(),
+							matrixStackIn, builder,
+							true, new Random(value.pos.toLong()),
+							value.tileEntity != null ? value.tileEntity.getModelData() : EmptyModelData.INSTANCE
+					);
+					matrixStackIn.pop();
+				}
+				matrixStackIn.pop();
 			} else {
 				if (vertexBufferCacheFree.isEmpty()) {
 					vertexBufferCacheFree.put(tileEntityIn.getPos(), new SUVBO());
 				}
+//				Object2ObjectLinkedOpenHashMap<RenderType, ByteArrayBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 				Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 				Minecraft.getInstance().getProfiler().startSection("createVBO");
 				matrixStackIn = new MatrixStack();
@@ -301,17 +340,24 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
 						if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
 					if (!bufferBuilderHashMap.containsKey(type)) {
-						BufferBuilder buffer = new BufferBuilder(8342);
-						bufferBuilderHashMap.put(type, buffer);
-						buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+						BufferBuilder bufferBuilder = (BufferBuilder) buffers.getBuffer(type);
+						bufferBuilderHashMap.put(type, bufferBuilder);
+//						ByteArrayBuilder buffer = new ByteArrayBuilder(16);
+//						bufferBuilderHashMap.put(type, buffer);
+//						buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//						buffer.begin(DefaultVertexFormats.BLOCK);
 					}
 					builder = bufferBuilderHashMap.get(type);
+//					if (!((BufferBuilder) builder).isDrawing()) {
+//						((BufferBuilder) builder).begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//					}
 					matrixStackIn.push();
 					matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
 					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
 							value.state, value.pos, tileEntityIn.worldClient.get(),
 							matrixStackIn, builder,
-							true, new Random(value.pos.toLong())
+							true, new Random(value.pos.toLong()),
+							value.tileEntity != null ? value.tileEntity.getModelData() : EmptyModelData.INSTANCE
 					);
 					if (!value.state.getFluidState().isEmpty()) {
 						type = RenderTypeLookup.getRenderType(value.state.getFluidState());
@@ -319,9 +365,12 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 							if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
 								type = blockRenderType;
 						if (!bufferBuilderHashMap.containsKey(type)) {
-							BufferBuilder buffer = new BufferBuilder(8342);
-							bufferBuilderHashMap.put(type, buffer);
-							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+							BufferBuilder bufferBuilder = (BufferBuilder) buffers.getBuffer(type);
+							bufferBuilderHashMap.put(type, bufferBuilder);
+//							ByteArrayBuilder buffer = new ByteArrayBuilder(16);
+//							bufferBuilderHashMap.put(type, buffer);
+//							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//							buffer.begin(DefaultVertexFormats.BLOCK);
 						}
 						builder = bufferBuilderHashMap.get(type);
 						TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
@@ -375,30 +424,66 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					matrixStackIn.push();
 					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 					matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
-					CustomBuffer.CustomVertexBuilder customVertexBuilder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
-					IVertexBuilder ivertexbuilder1 = new MatrixApplyingVertexBuilder(customVertexBuilder, matrixStackIn.getLast().getMatrix(), matrixStackIn.getLast().getNormal());
-					Minecraft.getInstance().getBlockRendererDispatcher().renderBlockDamage(miningState, context.posHit, tileEntityIn.getFakeWorld(), matrixStackIn, ivertexbuilder1);
-					IVertexBuilder builder1 = bufferIn.getBuffer(customVertexBuilder.type);
+					CustomBuffer.CustomVertexBuilder builder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
+							tileEntityIn.getFakeWorld().getBlockState(context.posHit),
+							context.posHit, tileEntityIn.getFakeWorld(),
+							new MatrixStack(), builder, true,
+							new Random(context.posHit.toLong()),
+							EmptyModelData.INSTANCE
+					);
+					IVertexBuilder builder1 = bufferIn.getBuffer(builder.type);
 					int index = 0;
-					for (CustomBuffer.Vertex vert : customVertexBuilder.vertices) {
+					for (CustomBuffer.Vertex vert : builder.vertices) {
 						int amt = 1;
-						int u = (index == 0 || index == 3) ? 0 : 1;
-						int v = (index == 0 || index == 1) ? 1 : 0;
+						float u = vert.u * 128;
+						float v = vert.v * 128;
+						Vector4f vector4f = new Vector4f((float) vert.x, (float) vert.y, (float) vert.z, 1);
+						vector4f.transform(matrixStackIn.getLast().getMatrix());
 						builder1.addVertex(
-								(float) vert.x,
-								(float) vert.y,
-								(float) vert.z,
+								(float) vector4f.getX(),
+								(float) vector4f.getY(),
+								(float) vector4f.getZ(),
 								(float) (vert.r * amt) / 255f,
 								(float) (vert.g * amt) / 255f,
 								(float) (vert.b * amt) / 255f,
 								vert.a / 255f,
-								v, u,
+								u, v,
 								combinedOverlayIn, combinedLightIn,
 								vert.nx, vert.ny, vert.nz
 						);
 						index++;
 						if (index == 4) index = 0;
 					}
+//					CustomBuffer.CustomVertexBuilder customVertexBuilder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+////					IVertexBuilder customVertexBuilder = bufferIn.getBuffer(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+////					IVertexBuilder ivertexbuilder1 = new MatrixApplyingVertexBuilder(customVertexBuilder, matrixStackIn.getLast().getMatrix(), matrixStackIn.getLast().getNormal());
+//					IVertexBuilder ivertexbuilder1 = new TranslatingVertexBuilder(1f, customVertexBuilder);
+////					IVertexBuilder ivertexbuilder1 = customVertexBuilder;
+//					Minecraft.getInstance().getBlockRendererDispatcher().renderBlockDamage(miningState, context.posHit, tileEntityIn.getFakeWorld(), matrixStackIn, ivertexbuilder1);
+//					IVertexBuilder builder1 = bufferIn.getBuffer(customVertexBuilder.type);
+//					int index = 0;
+//					for (CustomBuffer.Vertex vert : customVertexBuilder.vertices) {
+//						int amt = 1;
+////						int u = (index == 0 || index == 1) ? 1 : 0;
+////						int v = (index == 0 || index == 3) ? 0 : 1;
+//						float u = vert.u * 128;
+//						float v = vert.v * 128;
+//						builder1.addVertex(
+//								(float) vert.x,
+//								(float) vert.y,
+//								(float) vert.z,
+//								(float) (vert.r * amt) / 255f,
+//								(float) (vert.g * amt) / 255f,
+//								(float) (vert.b * amt) / 255f,
+//								vert.a / 255f,
+//								u, v,
+//								combinedOverlayIn, combinedLightIn,
+//								vert.nx, vert.ny, vert.nz
+//						);
+//						index++;
+//						if (index == 4) index = 0;
+//					}
 					matrixStackIn.pop();
 				}
 			}

@@ -115,7 +115,7 @@ dependencies {
     implementation fg.deobf('curse.maven:quark-243121:3212156')
     implementation fg.deobf('curse.maven:oddities-301051:3088871')
     implementation fg.deobf('curse.maven:autoreglib-250363:3128555')
-    implementation fg.deobf('curse.maven:appeng-223794:3185882')
+//    implementation fg.deobf('curse.maven:appeng-223794:3185882')
     implementation fg.deobf('curse.maven:refinedstorage-243076:3196167')
 //    implementation fg.deobf('curse.maven:shrink-426386:3162514')
 //    implementation fg.deobf('curse.maven:pymtech-316946:3163217')

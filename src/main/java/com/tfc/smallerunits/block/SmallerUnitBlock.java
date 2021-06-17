@@ -81,6 +81,52 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	public static final HashMap<CompoundNBT, VoxelShape> shapeMap = new HashMap<>();
+	public static final HashMap<CompoundNBT, ArrayList<VoxelShape>> shapeMapRegions = new HashMap<>();
+	
+	@Override
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		TileEntity tileEntityUncasted = world.getTileEntity(pos);
+		
+		if (entity == null || !(tileEntityUncasted instanceof UnitTileEntity))
+			return;
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		for (SmallUnit value : tileEntity.getBlockMap().values()) {
+			if (!value.state.isAir()) {
+				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
+//				pos1 = pos1.add(0.5, 0.5, 0.5);
+				pos1 = pos1.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
+				pos1 = pos1.add(pos.getX(), pos.getY(), pos.getZ());
+				AxisAlignedBB aabb = new AxisAlignedBB(
+						pos1.x, pos1.y, pos1.z,
+						pos1.x + 1f / tileEntity.unitsPerBlock,
+						pos1.y + 1f / tileEntity.unitsPerBlock,
+						pos1.z + 1f / tileEntity.unitsPerBlock
+				);
+				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
+					value.state.onEntityCollision(tileEntity.getFakeWorld(), value.pos, entity);
+				}
+			}
+		}
+	}
+	
+	//TODO:
+//	@Override
+//	public void onLanded(IBlockReader worldIn, Entity entityIn) {
+//		AxisAlignedBB aabb = entityIn.getBoundingBox();
+//		TileEntity tileEntity = worldIn.getTileEntity(entityIn.getPosition().down());
+//		if (!(tileEntity instanceof UnitTileEntity)) return;
+//		int unitsPerBlock = ((UnitTileEntity) tileEntity).unitsPerBlock;
+//		World fakeWorld = ((UnitTileEntity) tileEntity).getFakeWorld();
+//		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() * unitsPerBlock, aabb.getYSize() * unitsPerBlock, aabb.getZSize() * unitsPerBlock);
+//		aabb1 = aabb1.offset(-entityIn.getPosition().getX(), -entityIn.getPosition().getY(), -entityIn.getPosition().getZ());
+//		AxisAlignedBB bb = aabb1.offset(
+//				aabb.minX * unitsPerBlock,
+//				(aabb.minY + 64) * unitsPerBlock,
+//				aabb.minZ * unitsPerBlock
+//		);
+//		super.onLanded(worldIn, entityIn);
+//	}
 	
 	@Override
 	public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
@@ -1154,6 +1200,59 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		nbt.remove("ticks");
 		nbt.remove("entities");
 		nbt = NBTStripper.stripOfTEData(nbt);
+		
+		if (tileEntity.unitsPerBlock > 8 && context.getEntity() != null) {
+//			shapeMapRegions.clear();
+			if (!shapeMapRegions.containsKey(nbt)) {
+				ArrayList<VoxelShape> shapes = new ArrayList<>();
+				for (int x = 0; x < tileEntity.unitsPerBlock / 8; x++) {
+					for (int y = 0; y < tileEntity.unitsPerBlock / 8; y++) {
+						for (int z = 0; z < tileEntity.unitsPerBlock / 8; z++) {
+							VoxelShape shape = VoxelShapes.empty();
+							for (int x1 = 0; x1 < 8; x1++) {
+								if (x * 8 + x1 >= tileEntity.unitsPerBlock) continue;
+								for (int y1 = 0; y1 < 8; y1++) {
+									if (y * 8 + y1 >= tileEntity.unitsPerBlock) continue;
+									for (int z1 = 0; z1 < 8; z1++) {
+										if (z * 8 + z1 >= tileEntity.unitsPerBlock) continue;
+										BlockPos pos1 = new BlockPos(x * 8 + x1, y * 8 + y1 + 64, z * 8 + z1);
+										SmallUnit unit = tileEntity.getBlockMap().get(pos1.toLong());
+										if (unit == null || unit.state.isAir()) continue;
+										VoxelShape shape1 = unit.state.getCollisionShape(tileEntity.getFakeWorld(), pos1);
+										if (shape1 == null) continue;
+										for (AxisAlignedBB axisAlignedBB : shrink(shape1.withOffset(pos1.getX(), pos1.getY() - 64, pos1.getZ()), tileEntity.unitsPerBlock))
+											shape = VoxelShapes.combine(shape, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
+									}
+								}
+							}
+							if (!shape.isEmpty()) shapes.add(shape);
+						}
+					}
+				}
+				if (shapeMapRegions.size() >= 11900) shapeMapRegions.clear();
+				shapeMapRegions.put(nbt, shapes);
+			}
+			ArrayList<VoxelShape> shapes = shapeMapRegions.get(nbt);
+			VoxelShape out = null;
+			for (VoxelShape shape : shapes) {
+				AxisAlignedBB shapeBB = shape.getBoundingBox();
+//				System.out.println(shapeBB);
+				AxisAlignedBB entityBB =
+						context.getEntity()
+								.getBoundingBox()
+								.offset(-pos.getX(), -pos.getY(), -pos.getZ());
+//				System.out.println(entityBB);
+				if (
+						shapeBB.intersects(entityBB) ||
+								entityBB.intersects(shapeBB)
+				) {
+					if (out == null) out = shape;
+					else out = VoxelShapes.combine(out, shape, IBooleanFunction.OR);
+				}
+			}
+			if (out != null) return out;
+			else return virtuallyEmptyShape;
+		}
 		
 		VoxelShape shape;
 		if (!shapeMap.containsKey(nbt)) {
