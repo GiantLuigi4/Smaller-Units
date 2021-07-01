@@ -1,16 +1,23 @@
 package com.tfc.smallerunits;
 
 
+import com.jozufozu.flywheel.backend.model.IndexedModel;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.helpers.GameRendererHelper;
+import com.tfc.smallerunits.renderer.FlywheelProgram;
+import com.tfc.smallerunits.renderer.SmallerUnitsProgram;
 import com.tfc.smallerunits.utils.DefaultedMap;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.rendering.BufferCache;
+import com.tfc.smallerunits.utils.rendering.CustomBuffer;
 import com.tfc.smallerunits.utils.rendering.SUPseudoVBO;
 import com.tfc.smallerunits.utils.rendering.SUVBO;
+import com.tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexBuilder;
+import com.tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexFormats;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -19,7 +26,6 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.CompoundNBT;
@@ -32,7 +38,6 @@ import net.minecraft.world.LightType;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.opengl.GL11;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
@@ -186,7 +191,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					stack.push();
 					stack.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 					boolean renderedAnything = false;
-//					CustomBuffer redirection = new CustomBuffer();
+					CustomBuffer redirection = new CustomBuffer();
 					for (SmallUnit value : fakeWorld.blockMap.values()) {
 						stack.push();
 						renderedAnything = true;
@@ -194,39 +199,48 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
 							if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
 						stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
-//						IVertexBuilder buffer = redirection.getBuffer(type);
-						BufferBuilder buffer = buffers.get(type);
-						if (!buffer.isDrawing()) buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+						IVertexBuilder buffer = redirection.getBuffer(type);
+//						BufferBuilder buffer = buffers.get(type);
+//						if (!buffer.isDrawing()) buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
 						dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
 						stack.pop();
 					}
-
-//					for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
-//						if (builder.vertices.size() == 0) continue;
-//						FlywheelVertexBuilder buffer = new FlywheelVertexBuilder(builder.vertices.size() * FlywheelVertexFormats.BLOCK.getStride() * 2);
-////						int number = 0;
-//						for (CustomBuffer.Vertex vertex : builder.vertices) {
-////							number += 1;
-////							System.out.println(number);
-//							buffer.pos(vertex.x, vertex.y, vertex.z);
-//							buffer.color(vertex.r, vertex.g, vertex.b, vertex.a);
-//							buffer.tex(vertex.u, vertex.v);
-//							buffer.lightmap((int)(vertex.lu * 15), (int)(vertex.lv * 15));
-//							buffer.normal(vertex.nx, vertex.ny, vertex.nz);
-//						}
-//						IndexedModel mdl = IndexedModel.fromSequentialQuads(FlywheelVertexFormats.BLOCK, buffer.unwrap(), buffer.vertices());
-//						RenderType.getSolid().setupRenderState();
-//						mdl.setupState();
-//						RenderSystem.pushMatrix();
-//						RenderSystem.loadIdentity();
-//						RenderSystem.multMatrix(oldStack.getLast().getMatrix());
-//						mdl.drawCall();
-//						mdl.clearState();
-//						RenderSystem.popMatrix();
-//						RenderType.getSolid().clearRenderState();
-//						buffer.close();
-//						mdl.delete();
-//					}
+					
+					for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
+						if (builder.vertices.size() == 0) continue;
+						FlywheelVertexBuilder buffer = new FlywheelVertexBuilder(builder.vertices.size() * FlywheelVertexFormats.BLOCK.getStride() * 2);
+//						int number = 0;
+						for (CustomBuffer.Vertex vertex : builder.vertices) {
+//							number += 1;
+//							System.out.println(number);
+							buffer.pos(vertex.x, vertex.y, vertex.z);
+							buffer.color(vertex.r, vertex.g, vertex.b, vertex.a);
+							buffer.tex(vertex.u, vertex.v);
+							buffer.lightmap((int) (vertex.lu * 15), (int) (vertex.lv * 15));
+							buffer.normal(vertex.nx, vertex.ny, vertex.nz);
+						}
+						SmallerUnitsProgram shader = FlywheelProgram.UNIT.getProgram(new ResourceLocation("smallerunits:unit_shader"));
+						shader.bind();
+						shader.uploadViewProjection(GameRendererHelper.matrix);
+						shader.uploadCameraPos(
+								Minecraft.getInstance().getRenderManager().info.getProjectedView().x,
+								Minecraft.getInstance().getRenderManager().info.getProjectedView().y,
+								Minecraft.getInstance().getRenderManager().info.getProjectedView().z
+						);
+						IndexedModel mdl = IndexedModel.fromSequentialQuads(FlywheelVertexFormats.BLOCK, buffer.unwrap(), buffer.vertices());
+						RenderType.getSolid().setupRenderState();
+						mdl.setupState();
+						RenderSystem.pushMatrix();
+						RenderSystem.loadIdentity();
+						RenderSystem.multMatrix(oldStack.getLast().getMatrix());
+						mdl.drawCall();
+						mdl.clearState();
+						RenderSystem.popMatrix();
+						RenderType.getSolid().clearRenderState();
+						shader.unbind();
+						buffer.close();
+						mdl.delete();
+					}
 					
 					stack.pop();
 					

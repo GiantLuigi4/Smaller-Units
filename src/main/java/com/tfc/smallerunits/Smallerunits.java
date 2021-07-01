@@ -6,6 +6,7 @@ import com.tfc.smallerunits.client.RenderingHandler;
 import com.tfc.smallerunits.crafting.CraftingRegistry;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
 import com.tfc.smallerunits.registry.Deferred;
+import com.tfc.smallerunits.renderer.FlywheelProgram;
 import com.tfc.smallerunits.utils.threecore.SUResizeType;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -143,6 +144,10 @@ public class Smallerunits {
 			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onChangeDimensions);
 			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onLeaveWorld);
 			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onRenderTick);
+			
+			if (ModList.get().isLoaded("flywheel")) {
+				bus.addListener(FlywheelProgram::onFlywheelInit);
+			}
 		}
 		
 		if (ModList.get().isLoaded("threecore")) {
