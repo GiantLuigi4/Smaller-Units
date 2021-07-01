@@ -30,6 +30,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+//import com.tfc.smallerunits.worldgen.WorldTypeRegistry;
+
 //import com.tfc.smallerunits.mixins.SimpleChannelAccessor;
 //import com.tfc.smallerunits.networking.SUWorldDirectingPacket;
 
@@ -54,7 +56,6 @@ public class Smallerunits {
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
-		
 		if (ModList.get().isLoaded("pehkui")) {
 			ScaleModifier modifier = new ScaleModifier() {
 				@Override
@@ -72,6 +73,8 @@ public class Smallerunits {
 			ScaleType.BASE.getDefaultBaseValueModifiers().add(modifier);
 			SUScaleType.set(type);
 		}
+
+//		WorldTypeRegistry.init();
 		
 		if (!FMLEnvironment.production && false) {
 			System.setProperty("java.awt.headless", "false");
@@ -139,6 +142,7 @@ public class Smallerunits {
 			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onDrawSelectionBox);
 			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onChangeDimensions);
 			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onLeaveWorld);
+			MinecraftForge.EVENT_BUS.addListener(RenderingHandler::onRenderTick);
 		}
 		
 		if (ModList.get().isLoaded("threecore")) {

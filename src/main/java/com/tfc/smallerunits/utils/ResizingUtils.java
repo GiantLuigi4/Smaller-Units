@@ -2,6 +2,7 @@ package com.tfc.smallerunits.utils;
 
 import com.tfc.smallerunits.Smallerunits;
 import com.tfc.smallerunits.utils.threecore.SUResizeType;
+import net.gigabit101.shrink.api.ShrinkAPI;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
@@ -48,19 +49,22 @@ public class ResizingUtils {
 				});
 			}
 			GulliverSize.changeSize((LivingEntity) entity, newSize);
+		} else if (ModList.get().isLoaded("shrink")) {
+			if (entity instanceof LivingEntity) {
+				float finalNewSize1 = newSize;
+				if (entity.getEntityWorld().isRemote) return;
+				entity.getCapability(ShrinkAPI.SHRINK_CAPABILITY).ifPresent((iShrinkProvider) -> {
+					if (finalNewSize1 == 1) iShrinkProvider.deShrink((LivingEntity) entity);
+					else {
+						if (!iShrinkProvider.isShrunk()) iShrinkProvider.shrink((LivingEntity) entity);
+						iShrinkProvider.setScale(finalNewSize1);
+					}
+				});
+			}
 		} else if (ModList.get().isLoaded("threecore")) {
 			float finalNewSize = newSize;
 			entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
 				cap.startSizeChange(SUResizeType.SU_CHANGE_TYPE.get(), finalNewSize);
-//				if (amt > 0) {
-//					if (1f / getSize(entity) <= 4) {
-//						cap.startSizeChange(SUResizeType.SU_CHANGE_TYPE.get(), Math.max(getSize(entity) - (amt / 8f), 1f / 8));
-//					}
-//				} else {
-//					if (getSize(entity) <= 2) {
-//						cap.startSizeChange(SUResizeType.SU_CHANGE_TYPE.get(), Math.min(getSize(entity) - (amt / 2f), 2));
-//					}
-//				}
 			});
 		}
 	}
@@ -85,6 +89,13 @@ public class ResizingUtils {
 					
 					size.set(s);
 				}
+			}
+		}
+		if (ModList.get().isLoaded("shrink")) {
+			if (entity instanceof LivingEntity) {
+				entity.getCapability(ShrinkAPI.SHRINK_CAPABILITY).ifPresent((iShrinkProvider) -> {
+					size.set(size.get() * iShrinkProvider.scale());
+				});
 			}
 		}
 		if (ModList.get().isLoaded("threecore")) {

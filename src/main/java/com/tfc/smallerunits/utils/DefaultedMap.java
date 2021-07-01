@@ -24,7 +24,7 @@ public class DefaultedMap<T, V> {
 	}
 	
 	public V put(T key, V value) {
-		if (map.containsKey(key)) return map.get(value);
+		if (map.containsKey(key)) return map.get(key);
 		map.put(key, value);
 		return value;
 	}

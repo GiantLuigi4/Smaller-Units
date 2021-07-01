@@ -573,7 +573,8 @@ public class FakeClientWorld extends ClientWorld {
 //				if (state.getBlockState().equals(state.getFluidState().getBlockState())) {
 				if (old.getBlock() != state.getBlock()) {
 					try {
-						state.onBlockAdded(this, pos, old, false);
+//						state.onBlockAdded(this, pos, old, false);
+//						super.setBlockState(pos, state, flags);
 						//TODO: figure out why LootContext$Builder throws null pointers
 					} catch (NullPointerException ignored) {
 					}

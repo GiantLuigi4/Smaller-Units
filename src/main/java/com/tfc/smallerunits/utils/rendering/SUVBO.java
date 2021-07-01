@@ -75,39 +75,6 @@ public class SUVBO {
 		buffers.add(storage);
 	}
 	
-	public void uploadTerrain(RenderType renderType, ByteArrayBuilder bufferBuilder) {
-		if (bufferBuilder != null) {
-			for (BufferStorage buffer : buffers) {
-				if (buffer.renderType.equals(renderType)) {
-					((VBO) buffer.terrainBuffer.get()).upload(bufferBuilder);
-					buffer.isPresent = true;
-					if (bufferBuilder.isDrawing())
-						bufferBuilder.finish();
-					return;
-				}
-			}
-		} else {
-			for (BufferStorage buffer : buffers) {
-				if (buffer.renderType.equals(renderType)) {
-					buffer.isPresent = false;
-					return;
-				}
-			}
-		}
-		BufferStorage storage = new BufferStorage();
-		storage.renderType = renderType;
-//		BufferBuilder.State state = bufferBuilder.getVertexState();
-		VBO buffer = new VBO(renderType.getVertexFormat());
-		if (bufferBuilder != null) buffer.upload(bufferBuilder);
-//		bufferBuilder.setVertexState(state);
-//		MemoryUtil.memFree(bufferBuilder.getNextBuffer().getSecond());
-		storage.terrainBuffer = Optional.of(buffer);
-		storage.isPresent = bufferBuilder != null;
-		buffers.add(storage);
-		if (bufferBuilder.isDrawing())
-			bufferBuilder.finish();
-	}
-	
 	public void markAllUnused() {
 		for (BufferStorage buffer : buffers) {
 			buffer.isPresent = false;
