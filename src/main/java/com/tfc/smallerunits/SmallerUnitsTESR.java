@@ -1,6 +1,7 @@
 package com.tfc.smallerunits;
 
 
+import com.jozufozu.flywheel.backend.Backend;
 import com.jozufozu.flywheel.backend.model.IndexedModel;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -11,11 +12,9 @@ import com.tfc.smallerunits.helpers.GameRendererHelper;
 import com.tfc.smallerunits.renderer.FlywheelProgram;
 import com.tfc.smallerunits.renderer.SmallerUnitsProgram;
 import com.tfc.smallerunits.utils.DefaultedMap;
+import com.tfc.smallerunits.utils.MathUtils;
 import com.tfc.smallerunits.utils.SmallUnit;
-import com.tfc.smallerunits.utils.rendering.BufferCache;
-import com.tfc.smallerunits.utils.rendering.CustomBuffer;
-import com.tfc.smallerunits.utils.rendering.SUPseudoVBO;
-import com.tfc.smallerunits.utils.rendering.SUVBO;
+import com.tfc.smallerunits.utils.rendering.*;
 import com.tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexBuilder;
 import com.tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexFormats;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
@@ -26,8 +25,10 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
@@ -35,9 +36,11 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.*;
 import net.minecraft.world.LightType;
+import net.minecraftforge.fml.ModList;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.lwjgl.opengl.GL11;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
@@ -193,84 +196,120 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					boolean renderedAnything = false;
 					CustomBuffer redirection = new CustomBuffer();
 					for (SmallUnit value : fakeWorld.blockMap.values()) {
-						stack.push();
-						renderedAnything = true;
-						RenderType type = RenderType.getSolid();
-						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-							if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
-						stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
-						IVertexBuilder buffer = redirection.getBuffer(type);
-//						BufferBuilder buffer = buffers.get(type);
-//						if (!buffer.isDrawing()) buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-						dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
-						stack.pop();
-					}
-					
-					for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
-						if (builder.vertices.size() == 0) continue;
-						FlywheelVertexBuilder buffer = new FlywheelVertexBuilder(builder.vertices.size() * FlywheelVertexFormats.BLOCK.getStride() * 2);
-//						int number = 0;
-						for (CustomBuffer.Vertex vertex : builder.vertices) {
-//							number += 1;
-//							System.out.println(number);
-							buffer.pos(vertex.x, vertex.y, vertex.z);
-							buffer.color(vertex.r, vertex.g, vertex.b, vertex.a);
-							buffer.tex(vertex.u, vertex.v);
-							buffer.lightmap((int) (vertex.lu * 15), (int) (vertex.lv * 15));
-							buffer.normal(vertex.nx, vertex.ny, vertex.nz);
+						{
+							stack.push();
+							renderedAnything = true;
+							RenderType type = RenderType.getSolid();
+							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+								if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType))
+									type = blockRenderType;
+							stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
+							IVertexBuilder buffer;
+							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs()) {
+								buffer = redirection.getBuffer(type);
+							} else {
+								BufferBuilder bufferBuilder = buffers.get(type);
+								buffer = bufferBuilder;
+								if (!bufferBuilder.isDrawing())
+									bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+								dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+							}
+							stack.pop();
 						}
-						SmallerUnitsProgram shader = FlywheelProgram.UNIT.getProgram(new ResourceLocation("smallerunits:unit_shader"));
-						shader.bind();
-						shader.uploadViewProjection(GameRendererHelper.matrix);
-						shader.uploadCameraPos(
-								Minecraft.getInstance().getRenderManager().info.getProjectedView().x,
-								Minecraft.getInstance().getRenderManager().info.getProjectedView().y,
-								Minecraft.getInstance().getRenderManager().info.getProjectedView().z
-						);
-						IndexedModel mdl = IndexedModel.fromSequentialQuads(FlywheelVertexFormats.BLOCK, buffer.unwrap(), buffer.vertices());
-//						RenderSystem.pushMatrix();
-//						RenderSystem.loadIdentity();
-//						RenderSystem.multMatrix(oldStack.getLast().getMatrix());
-						RenderType.getSolid().setupRenderState();
-						mdl.setupState();
-						mdl.drawCall();
-						mdl.clearState();
-						RenderType.getSolid().clearRenderState();
-//						RenderSystem.popMatrix();
-						shader.unbind();
-						buffer.close();
-						mdl.delete();
+						{
+							FluidState state = value.state.getFluidState();
+							if (state.isEmpty()) continue;
+							RenderType type = RenderType.getSolid();
+							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+								if (RenderTypeLookup.canRenderInLayer(state, blockRenderType)) type = blockRenderType;
+							IVertexBuilder buffer;
+							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs()) {
+								buffer = redirection.getBuffer(type);
+							} else {
+								BufferBuilder bufferBuilder = buffers.get(type);
+								buffer = bufferBuilder;
+								if (!bufferBuilder.isDrawing())
+									bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+							}
+							TranslatingVertexBuilder translator = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, buffer);
+							buffer = translator;
+							translator.offset = new Vector3d(
+									((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
+									((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
+									((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
+							);
+//						dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+							dispatcher.renderFluid(value.pos, fakeWorld, buffer, state);
+						}
 					}
 					
-					stack.pop();
-					
-					if (renderedAnything && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
-						SUVBO suvbo;
-						if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
-							if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
-								suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-							else suvbo = new SUVBO();
-						} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-						if (suvbo == null) suvbo = new SUVBO();
-						suvbo.markAllUnused();
-						buffers.forEach(suvbo::uploadTerrain);
-						vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
-					} else {
-//						buffers.forEach((type, buffer) -> {
-//							buffer.sortVertexData(
-//									(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
-//									(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
-//									(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
-//							);
+					if (ModList.get().isLoaded("flywheel") && false) {
+						for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
+							if (builder.vertices.size() == 0) continue;
+							FlywheelVertexBuilder buffer = new FlywheelVertexBuilder(builder.vertices.size() * FlywheelVertexFormats.BLOCK.getStride() * 2);
+//							int number = 0;
+							for (CustomBuffer.Vertex vertex : builder.vertices) {
+//								number += 1;
+//								System.out.println(number);
+								buffer.pos(vertex.x, vertex.y, vertex.z);
+								buffer.color(vertex.r, vertex.g, vertex.b, vertex.a);
+								buffer.tex(vertex.u, vertex.v);
+								buffer.lightmap((int) (vertex.lu * 15), (int) (vertex.lv * 15));
+								buffer.normal(vertex.nx, vertex.ny, vertex.nz);
+							}
+							SmallerUnitsProgram shader = FlywheelProgram.UNIT.getProgram(new ResourceLocation("smallerunits:unit_shader"));
+							shader.bind();
+							shader.uploadViewProjection(GameRendererHelper.matrix);
+							shader.uploadCameraPos(
+									Minecraft.getInstance().getRenderManager().info.getProjectedView().x,
+									Minecraft.getInstance().getRenderManager().info.getProjectedView().y,
+									Minecraft.getInstance().getRenderManager().info.getProjectedView().z
+							);
+							IndexedModel mdl = IndexedModel.fromSequentialQuads(FlywheelVertexFormats.BLOCK, buffer.unwrap(), buffer.vertices());
 //							RenderSystem.pushMatrix();
 //							RenderSystem.loadIdentity();
 //							RenderSystem.multMatrix(oldStack.getLast().getMatrix());
-//							type.finish(buffer,
-//									0, 0, 0
-//							);
+							RenderType.getSolid().setupRenderState();
+							mdl.setupState();
+							mdl.drawCall();
+							mdl.clearState();
+							RenderType.getSolid().clearRenderState();
 //							RenderSystem.popMatrix();
-//						});
+							shader.unbind();
+							buffer.close();
+							mdl.delete();
+						}
+					} else {
+						if (renderedAnything && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+							SUVBO suvbo;
+							if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+								if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
+									suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+								else suvbo = new SUVBO();
+							} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+							if (suvbo == null) suvbo = new SUVBO();
+							suvbo.markAllUnused();
+							buffers.forEach(suvbo::uploadTerrain);
+							vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
+						} else {
+							buffers.forEach((type, buffer) -> {
+								buffer.sortVertexData(
+										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
+										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
+										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
+								);
+								RenderSystem.pushMatrix();
+								RenderSystem.loadIdentity();
+								RenderSystem.multMatrix(oldStack.getLast().getMatrix());
+								type.finish(buffer,
+										0, 0, 0
+								);
+								RenderSystem.popMatrix();
+							});
+						}
 					}
+					
+					stack.pop();
 				}
 				if (SmallerUnitsConfig.CLIENT.useVBOS.get()) {
 					matrixStackIn = oldStack;
