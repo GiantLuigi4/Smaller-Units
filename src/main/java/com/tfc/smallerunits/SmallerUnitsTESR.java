@@ -228,15 +228,15 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 								Minecraft.getInstance().getRenderManager().info.getProjectedView().z
 						);
 						IndexedModel mdl = IndexedModel.fromSequentialQuads(FlywheelVertexFormats.BLOCK, buffer.unwrap(), buffer.vertices());
+//						RenderSystem.pushMatrix();
+//						RenderSystem.loadIdentity();
+//						RenderSystem.multMatrix(oldStack.getLast().getMatrix());
 						RenderType.getSolid().setupRenderState();
 						mdl.setupState();
-						RenderSystem.pushMatrix();
-						RenderSystem.loadIdentity();
-						RenderSystem.multMatrix(oldStack.getLast().getMatrix());
 						mdl.drawCall();
 						mdl.clearState();
-						RenderSystem.popMatrix();
 						RenderType.getSolid().clearRenderState();
+//						RenderSystem.popMatrix();
 						shader.unbind();
 						buffer.close();
 						mdl.delete();

@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 public class FlywheelProgram {
 	private static final ResourceLocation UNIT_PROGRAM = new ResourceLocation("smallerunits:unit_program");
+	private static final ResourceLocation UNIT_PROGRAM_SPEC = new ResourceLocation("smallerunits:unit_shader");
 	
 	public static WorldContext<SmallerUnitsProgram> UNIT;
 	
@@ -19,7 +20,7 @@ public class FlywheelProgram {
 		
 		UNIT = backend.register(
 				unitContext(backend)
-						.withSpecStream(() -> Stream.of(UNIT_PROGRAM))
+						.withSpecStream(() -> Stream.of(UNIT_PROGRAM_SPEC))
 						.withTemplateFactory(ModelTemplate::new)
 		);
 	}
