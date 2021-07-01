@@ -7,6 +7,7 @@ import com.tfc.smallerunits.SmallerUnitsTESR;
 import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.helpers.BufferCacheHelper;
+import com.tfc.smallerunits.mixins.WorldRendererMixin;
 import com.tfc.smallerunits.utils.rendering.BufferCache;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import net.minecraft.block.BlockState;
@@ -31,13 +32,23 @@ import net.minecraft.world.LightType;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.DrawHighlightEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 
 public class RenderingHandler {
+	static boolean hasChecked = false;
+	
+	public static void onRenderTick(TickEvent.RenderTickEvent event) {
+		hasChecked = false;
+	}
+	
 	public static void onRenderWorldLastNew(RenderWorldLastEvent event) {
+		if (!((WorldRendererMixin) event.getContext()).getWorld().equals(Minecraft.getInstance().world) || hasChecked)
+			return;
+		hasChecked = true;
 		//TODO: force vanilla renderer to work in fake world
 		if (Minecraft.getInstance().world instanceof FakeClientWorld) {
 			MatrixStack matrixStack = event.getMatrixStack();

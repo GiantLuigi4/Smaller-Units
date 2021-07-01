@@ -4,21 +4,19 @@ package com.tfc.smallerunits;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
-import com.mojang.blaze3d.vertex.MatrixApplyingVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.smallerunits.block.UnitTileEntity;
-import com.tfc.smallerunits.utils.MathUtils;
+import com.tfc.smallerunits.utils.DefaultedMap;
 import com.tfc.smallerunits.utils.SmallUnit;
-import com.tfc.smallerunits.utils.UnitRaytraceContext;
-import com.tfc.smallerunits.utils.UnitRaytraceHelper;
-import com.tfc.smallerunits.utils.rendering.*;
+import com.tfc.smallerunits.utils.rendering.BufferCache;
+import com.tfc.smallerunits.utils.rendering.SUPseudoVBO;
+import com.tfc.smallerunits.utils.rendering.SUVBO;
+import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
-import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.EntityRenderer;
-import net.minecraft.client.renderer.model.ModelBakery;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -36,13 +34,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 
-import java.util.Optional;
 import java.util.Random;
-import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	public static SmallerUnitsTESR INSTANCE;
+
+//	private static final Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
 	
 	public static final Object2ObjectLinkedOpenHashMap<BlockPos, Pair<AtomicReference<CompoundNBT>, SUPseudoVBO>> bufferCache = new Object2ObjectLinkedOpenHashMap<>();
 	public static final Object2ObjectLinkedOpenHashMap<BlockPos, SUVBO> vertexBufferCacheUsed = new Object2ObjectLinkedOpenHashMap<>();
@@ -52,6 +50,9 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	private static final Quaternion quat90Y = new Quaternion(0, 90, 0, true);
 	
 	public static final Logger LOGGER = LogManager.getLogger();
+	
+	//	private static final IRenderTypeBuffer buffers = new RenderTypeBuffers().getBufferSource();
+	private static final DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<RenderType, BufferBuilder>().setDefaultVal(() -> new BufferBuilder(16));
 	
 	public static void renderCube(float r, float g, float b, float x, float y, float z, IVertexBuilder builder, int combinedOverlay, int combinedLight, MatrixStack matrixStack, boolean useNormals) {
 		Minecraft.getInstance().getProfiler().startSection("renderSquare1");
@@ -170,384 +171,105 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		
 		tileEntityIn.worldClient.get().lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 		
-		Minecraft.getInstance().getProfiler().startSection("doSURender");
-		if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
-			Minecraft.getInstance().getProfiler().startSection("renderVBO");
-			SUVBO suvbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
-			if (suvbo == null) {
-				vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-				return;
-			}
-			if (suvbo != null) { // sometimes an edge condition occurs, so...
-				if (tileEntityIn.needsRefresh(false)) {
-					Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
-					Minecraft.getInstance().getProfiler().startSection("createVBO");
-					matrixStackIn = new MatrixStack();
-					matrixStackIn.push();
-					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-					matrixStackIn.translate(0, -64, 0);
-					for (SmallUnit value : tileEntityIn.worldClient.get().blockMap.values()) {
-						IVertexBuilder builder = null;
+		// TODO: make it render without vbos if the player is not in the same world
+		if (tileEntityIn.getWorld() == null || tileEntityIn.getWorld().equals(Minecraft.getInstance().world)) {
+			boolean isRefreshing = tileEntityIn.needsRefresh(false);
+			if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) || isRefreshing) {
+				if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
+					vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
+				} else {
+					MatrixStack stack = new MatrixStack();
+//					MatrixStack stack = oldStack;
+					Minecraft.getInstance().getProfiler().startSection("doSURender");
+					BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
+					FakeClientWorld fakeWorld = ((FakeClientWorld) tileEntityIn.getFakeWorld());
+					stack.push();
+					stack.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+					boolean renderedAnything = false;
+//					CustomBuffer redirection = new CustomBuffer();
+					for (SmallUnit value : fakeWorld.blockMap.values()) {
+						stack.push();
+						renderedAnything = true;
 						RenderType type = RenderType.getSolid();
 						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
 							if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
-						if (!bufferBuilderHashMap.containsKey(type)) {
-							BufferBuilder buffer = new BufferBuilder(8342);
-							bufferBuilderHashMap.put(type, buffer);
-							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-						}
-						builder = bufferBuilderHashMap.get(type);
-						matrixStackIn.push();
-						matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
-						Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
-								value.state, value.pos, tileEntityIn.worldClient.get(),
-								matrixStackIn, builder,
-								true, new Random(value.pos.toLong())
-						);
-						if (!value.state.getFluidState().isEmpty()) {
-							type = RenderTypeLookup.getRenderType(value.state.getFluidState());
-							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-								if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
-									type = blockRenderType;
-							if (!bufferBuilderHashMap.containsKey(type)) {
-								BufferBuilder buffer = new BufferBuilder(8342);
-								bufferBuilderHashMap.put(type, buffer);
-								buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-							}
-							builder = bufferBuilderHashMap.get(type);
-							TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
-							builder1.offset = new Vector3d(
-									((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
-									((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
-									((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
-							);
-							Minecraft.getInstance().getBlockRendererDispatcher().renderFluid(
-									value.pos, tileEntityIn.getFakeWorld(),
-									builder1, value.state.getFluidState()
-							);
-						}
-						matrixStackIn.pop();
+						stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
+//						IVertexBuilder buffer = redirection.getBuffer(type);
+						BufferBuilder buffer = buffers.get(type);
+						if (!buffer.isDrawing()) buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+						dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+						stack.pop();
 					}
-					matrixStackIn.pop();
-					matrixStackIn = oldStack;
-					Minecraft.getInstance().getProfiler().endSection();
-					if (suvbo != null) {
+
+//					for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
+//						if (builder.vertices.size() == 0) continue;
+//						FlywheelVertexBuilder buffer = new FlywheelVertexBuilder(builder.vertices.size() * FlywheelVertexFormats.BLOCK.getStride() * 2);
+////						int number = 0;
+//						for (CustomBuffer.Vertex vertex : builder.vertices) {
+////							number += 1;
+////							System.out.println(number);
+//							buffer.pos(vertex.x, vertex.y, vertex.z);
+//							buffer.color(vertex.r, vertex.g, vertex.b, vertex.a);
+//							buffer.tex(vertex.u, vertex.v);
+//							buffer.lightmap((int)(vertex.lu * 15), (int)(vertex.lv * 15));
+//							buffer.normal(vertex.nx, vertex.ny, vertex.nz);
+//						}
+//						IndexedModel mdl = IndexedModel.fromSequentialQuads(FlywheelVertexFormats.BLOCK, buffer.unwrap(), buffer.vertices());
+//						RenderType.getSolid().setupRenderState();
+//						mdl.setupState();
+//						RenderSystem.pushMatrix();
+//						RenderSystem.loadIdentity();
+//						RenderSystem.multMatrix(oldStack.getLast().getMatrix());
+//						mdl.drawCall();
+//						mdl.clearState();
+//						RenderSystem.popMatrix();
+//						RenderType.getSolid().clearRenderState();
+//						buffer.close();
+//						mdl.delete();
+//					}
+					
+					stack.pop();
+					
+					if (renderedAnything && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+						SUVBO suvbo;
+						if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+							if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
+								suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+							else suvbo = new SUVBO();
+						} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+						if (suvbo == null) suvbo = new SUVBO();
 						suvbo.markAllUnused();
-						bufferBuilderHashMap.forEach(suvbo::uploadTerrain);
-					}
-				}
-				suvbo.render(matrixStackIn);
-			}
-			Minecraft.getInstance().getProfiler().endSection();
-		} else {
-			if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
-				vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
-				vertexBufferCacheFree.remove(tileEntityIn.getPos());
-//			} else if (vertexBufferCacheFree.isEmpty() && (vertexBufferCacheUsed.size() + vertexBufferCacheFree.size() >= (16384 / 16))) {
-			} else if (
-					vertexBufferCacheFree.isEmpty() &&
-							vertexBufferCacheUsed.size() + vertexBufferCacheFree.size() >= (16384 / 1) &&
-							SmallerUnitsConfig.CLIENT.useVBOS.get()
-			) {
-				Minecraft.getInstance().getProfiler().startSection("renderWithoutVBO");
-				matrixStackIn.push();
-				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-				matrixStackIn.translate(0, -64, 0);
-				for (SmallUnit value : tileEntityIn.worldClient.get().blockMap.values()) {
-					matrixStackIn.push();
-					matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
-					RenderType type = RenderType.getSolid();
-					for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-						if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
-					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
-							value.state, value.pos, tileEntityIn.worldClient.get(),
-							matrixStackIn, bufferIn.getBuffer(type),
-							true, new Random(value.pos.toLong())
-					);
-					if (!value.state.getFluidState().isEmpty()) {
-						type = RenderTypeLookup.getRenderType(value.state.getFluidState());
-						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-							if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
-								type = blockRenderType;
-						IVertexBuilder builder = bufferIn.getBuffer(type);
-						TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
-						builder1.offset = new Vector3d(
-								((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
-								((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
-								((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
-						);
-						Minecraft.getInstance().getBlockRendererDispatcher().renderFluid(
-								value.pos, tileEntityIn.getFakeWorld(),
-								builder1, value.state.getFluidState()
-						);
-					}
-					matrixStackIn.pop();
-				}
-				matrixStackIn.pop();
-				Minecraft.getInstance().getProfiler().endSection();
-			} else {
-				if (vertexBufferCacheFree.isEmpty()) {
-					vertexBufferCacheFree.put(tileEntityIn.getPos(), new SUVBO());
-				}
-				Object2ObjectLinkedOpenHashMap<RenderType, BufferBuilder> bufferBuilderHashMap = new Object2ObjectLinkedOpenHashMap<>();
-				Minecraft.getInstance().getProfiler().startSection("createVBO");
-				matrixStackIn = new MatrixStack();
-				matrixStackIn.push();
-				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-				matrixStackIn.translate(0, -64, 0);
-				for (SmallUnit value : tileEntityIn.worldClient.get().blockMap.values()) {
-					IVertexBuilder builder = null;
-					RenderType type = RenderType.getSolid();
-					for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-						if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
-					if (!bufferBuilderHashMap.containsKey(type)) {
-						BufferBuilder buffer = new BufferBuilder(8342);
-						bufferBuilderHashMap.put(type, buffer);
-						buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-					}
-					builder = bufferBuilderHashMap.get(type);
-					matrixStackIn.push();
-					matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
-					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
-							value.state, value.pos, tileEntityIn.worldClient.get(),
-							matrixStackIn, builder,
-							true, new Random(value.pos.toLong())
-					);
-					if (!value.state.getFluidState().isEmpty()) {
-						type = RenderTypeLookup.getRenderType(value.state.getFluidState());
-						for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-							if (RenderTypeLookup.canRenderInLayer(value.state.getFluidState(), blockRenderType))
-								type = blockRenderType;
-						if (!bufferBuilderHashMap.containsKey(type)) {
-							BufferBuilder buffer = new BufferBuilder(8342);
-							bufferBuilderHashMap.put(type, buffer);
-							buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-						}
-						builder = bufferBuilderHashMap.get(type);
-						TranslatingVertexBuilder builder1 = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, builder);
-						builder1.offset = new Vector3d(
-								((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
-								((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
-								((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
-						);
-						Minecraft.getInstance().getBlockRendererDispatcher().renderFluid(
-								value.pos, tileEntityIn.getFakeWorld(),
-								builder1, value.state.getFluidState()
-						);
-					}
-					matrixStackIn.pop();
-				}
-				matrixStackIn.pop();
-				matrixStackIn = oldStack;
-				Minecraft.getInstance().getProfiler().endSection();
-				BlockPos pos = vertexBufferCacheFree.firstKey();
-				if (vertexBufferCacheFree.containsKey(pos)) {
-					SUVBO suvbo = vertexBufferCacheFree.remove(pos);
-					if (suvbo != null) {
-						suvbo.markAllUnused();
-						bufferBuilderHashMap.forEach(suvbo::uploadTerrain);
+						buffers.forEach(suvbo::uploadTerrain);
 						vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
-						vertexBufferCacheFree.remove(pos);
-						suvbo.render(matrixStackIn);
+					} else {
+//						buffers.forEach((type, buffer) -> {
+//							buffer.sortVertexData(
+//									(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
+//									(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
+//									(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
+//							);
+//							RenderSystem.pushMatrix();
+//							RenderSystem.loadIdentity();
+//							RenderSystem.multMatrix(oldStack.getLast().getMatrix());
+//							type.finish(buffer,
+//									0, 0, 0
+//							);
+//							RenderSystem.popMatrix();
+//						});
 					}
 				}
-			}
-		}
-//		Minecraft.getInstance().getProfiler().startSection("stripNBT");
-//		nbt.remove("x");
-//		nbt.remove("y");
-//		nbt.remove("z");
-//		nbt.remove("id");
-//		nbt.remove("ForgeData");
-//		nbt.remove("ForgeCaps");
-//		nbt.remove("ticks");
-//		nbt.remove("entities");
-//		nbt = NBTStripper.stripOfTEData(nbt);
-//
-		Minecraft.getInstance().getProfiler().endStartSection("breakProgress");
-		for (SortedSet<DestroyBlockProgress> value : Minecraft.getInstance().worldRenderer.damageProgress.values()) {
-			for (DestroyBlockProgress destroyBlockProgress : value) {
-				if (destroyBlockProgress.getPosition().equals(tileEntityIn.getPos())) {
-					int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
-					Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
-					UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(tileEntityIn, entity, false, tileEntityIn.getPos(), Optional.empty());
-					BlockState miningState = tileEntityIn.getFakeWorld().getBlockState(context.posHit);
-					matrixStackIn.push();
-					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-					matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
-					CustomBuffer.CustomVertexBuilder customVertexBuilder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
-					IVertexBuilder ivertexbuilder1 = new MatrixApplyingVertexBuilder(customVertexBuilder, matrixStackIn.getLast().getMatrix(), matrixStackIn.getLast().getNormal());
-					Minecraft.getInstance().getBlockRendererDispatcher().renderBlockDamage(miningState, context.posHit, tileEntityIn.getFakeWorld(), matrixStackIn, ivertexbuilder1);
-					IVertexBuilder builder1 = bufferIn.getBuffer(customVertexBuilder.type);
-					int index = 0;
-					for (CustomBuffer.Vertex vert : customVertexBuilder.vertices) {
-						int amt = 1;
-						int u = (index == 0 || index == 3) ? 0 : 1;
-						int v = (index == 0 || index == 1) ? 1 : 0;
-						builder1.addVertex(
-								(float) vert.x,
-								(float) vert.y,
-								(float) vert.z,
-								(float) (vert.r * amt) / 255f,
-								(float) (vert.g * amt) / 255f,
-								(float) (vert.b * amt) / 255f,
-								vert.a / 255f,
-								v, u,
-								combinedOverlayIn, combinedLightIn,
-								vert.nx, vert.ny, vert.nz
-						);
-						index++;
-						if (index == 4) index = 0;
-					}
-					matrixStackIn.pop();
+				if (SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+					matrixStackIn = oldStack;
+					SUVBO vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
+					if (vbo != null) vbo.render(matrixStackIn);
 				}
+			} else {
+				matrixStackIn = oldStack;
+				SUVBO vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
+				if (vbo != null) vbo.render(matrixStackIn);
 			}
 		}
-//
-//		Minecraft.getInstance().getProfiler().endStartSection("checkNeighbors");
-//		for (Direction dir : Direction.values()) {
-//			BlockState state = tileEntityIn.getWorld().getBlockState(tileEntityIn.getPos().offset(dir));
-//			boolean isAir = state.isAir(tileEntityIn.getWorld(), tileEntityIn.getPos().offset(dir));
-//			boolean isUnit = state.getBlock() instanceof SmallerUnitBlock;
-//			int scale = 0;
-//			if (isUnit) {
-//				TileEntity otherTE = tileEntityIn.getWorld().getTileEntity(tileEntityIn.getPos().offset(dir));
-//				if (otherTE instanceof UnitTileEntity) {
-//					scale = ((UnitTileEntity) otherTE).unitsPerBlock;
-//				}
-//			}
-//			nbt.putString(dir.toString(),
-//					isAir ? "air" : isUnit ? ("unit" + scale) : "obstructed"
-//			);
-//		}
-//
-//		Minecraft.getInstance().getProfiler().endStartSection("renderBlocks");
-//		Minecraft.getInstance().getProfiler().startSection("cacheLookup");
-//		if (
-//				!bufferCache.containsKey(tileEntityIn.getPos())
-//						|| !bufferCache.get(tileEntityIn.getPos()).getFirst().get().equals(nbt) &&
-//						!tileEntityIn.getBlockMap().isEmpty()
-//		) {
-//			Minecraft.getInstance().getProfiler().endStartSection("createPseudoVBO");
-//			Minecraft.getInstance().getProfiler().startSection("setup");
-//
-//			CustomBuffer customBuffer = new CustomBuffer();
-//
-//			{
-//				MatrixStack src = matrixStackIn;
-//				matrixStackIn = new MatrixStack();
-//				matrixStackIn.push();
-//				matrixStackIn.getLast().getNormal().set(new Matrix3f(new Quaternion(1, 0, 0, 0)));
-//				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-//
-//				matrixStackIn.translate(0, -64, 0);
-//
-//				Minecraft.getInstance().getProfiler().endStartSection("doRender");
-//				for (SmallUnit value : tileEntityIn.getBlockMap().values()) {
-//					customBuffer.pos = value.pos;
-//
-//					Minecraft.getInstance().getProfiler().startSection("renderBlocks");
-//					Minecraft.getInstance().getProfiler().startSection("render:" + value.state.getBlock().toString());
-//
-//					Minecraft.getInstance().getProfiler().startSection("getRenderType");
-//					RenderType type = RenderType.getSolid();
-//
-//					for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-//						if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) type = blockRenderType;
-//					Minecraft.getInstance().getProfiler().endStartSection("translateStack");
-//
-//					matrixStackIn.push();
-//					matrixStackIn.translate(value.pos.getX(), value.pos.getY(), value.pos.getZ());
-//
-//					Minecraft.getInstance().getProfiler().endStartSection("checkCanRender");
-//					if (value.state.getRenderType().equals(BlockRenderType.MODEL)) {
-//						IVertexBuilder builder;
-//
-//						Minecraft.getInstance().getProfiler().endStartSection("getModelData");
-//
-//						builder = customBuffer.getBuffer(type);
-//						IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state);
-//						IModelData data = EmptyModelData.INSTANCE;
-//						data = model.getModelData(tileEntityIn.getFakeWorld(), value.pos, value.state, data);
-//
-//						Minecraft.getInstance().getProfiler().endStartSection("renderBlock");
-//						if (Minecraft.getInstance().gameSettings.ambientOcclusionStatus.equals(AmbientOcclusionStatus.MAX)) {
-//							Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelSmooth(
-//									tileEntityIn.getFakeWorld(), Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
-//									value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
-//									value.pos.toLong(), combinedOverlayIn, data
-//							);
-//						} else {
-//							Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelRenderer().renderModelFlat(
-//									tileEntityIn.getFakeWorld(), Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state),
-//									value.state, value.pos, matrixStackIn, builder, true, new Random(value.pos.toLong()),
-//									value.pos.toLong(), combinedOverlayIn, data
-//							);
-//						}
-//						Minecraft.getInstance().getProfiler().endSection();
-//					}
-//					Minecraft.getInstance().getProfiler().endSection();
-//					Minecraft.getInstance().getProfiler().endSection();
-//
-//					//TODO: profile fluids
-//					if (!value.state.getFluidState().isEmpty()) {
-//						RenderType type1 = RenderTypeLookup.getRenderType(value.state.getFluidState());
-//						CustomBuffer.CustomVertexBuilder builder1;
-//
-//						builder1 = (CustomBuffer.CustomVertexBuilder) customBuffer.getBuffer(type1);
-//
-//						try {
-//							matrixStackIn.push();
-//							builder1.matrix = matrixStackIn;
-//							Minecraft.getInstance().getBlockRendererDispatcher().fluidRenderer.render(
-//									tileEntityIn.getFakeWorld(), value.pos,
-//									builder1, value.state.getFluidState()
-//							);
-//							matrixStackIn.pop();
-//							builder1.matrix = null;
-//						} catch (Throwable ignored) {
-//							StringBuilder builder2 = new StringBuilder(ignored.toString()).append("\n");
-//							for (StackTraceElement element : ignored.getStackTrace()) {
-//								builder2.append(element.toString()).append("\n");
-//							}
-//							System.out.println(builder2.toString());
-//						}
-//					}
-//
-//					matrixStackIn.pop();
-//				}
-//
-//				matrixStackIn.pop();
-//				matrixStackIn = src;
-//
-//				if (bufferCache.containsKey(tileEntityIn.getPos())) {
-//					SUPseudoVBO vbo = bufferCache.get(tileEntityIn.getPos()).getSecond();
-//					vbo.isDirty = true;
-//					bufferCache.get(tileEntityIn.getPos()).getFirst().set(nbt);
-//					vbo.buffer = customBuffer;
-//					vbo.render(
-//							bufferIn, matrixStackIn, combinedLightIn, combinedOverlayIn, (FakeClientWorld) tileEntityIn.getFakeWorld()
-//					);
-//				} else {
-//					SUPseudoVBO vbo = new SUPseudoVBO(customBuffer);
-//					vbo.isDirty = true;
-//					vbo.render(
-//							bufferIn, matrixStackIn, combinedLightIn, combinedOverlayIn, (FakeClientWorld) tileEntityIn.getFakeWorld()
-//					);
-//
-////					bufferCache.put(nbt, vbo);
-////					System.out.println(bufferCache.size());
-//					bufferCache.put(tileEntityIn.getPos(), Pair.of(new AtomicReference<>(nbt), vbo));
-//				}
-//			}
-//
-//			Minecraft.getInstance().getProfiler().endSection();
-////			tileEntityIn.worldServer.isRendering = false;
-//		} else {
-//			Minecraft.getInstance().getProfiler().endStartSection("renderPseudoVBO");
-//			bufferCache.get(tileEntityIn.getPos()).getSecond().render(bufferIn, matrixStackIn, combinedLightIn, combinedOverlayIn, (FakeClientWorld) tileEntityIn.getFakeWorld());
-//		}
-//		Minecraft.getInstance().getProfiler().endSection();
+		matrixStackIn = oldStack;
 		
 		Minecraft.getInstance().getProfiler().endStartSection("renderTileEntities");
 		matrixStackIn.push();

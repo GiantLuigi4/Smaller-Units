@@ -83,11 +83,13 @@ public class IndexedMessageCodecMixin<MSG> {
 			oldEncoder.ifPresent((consumer) -> consumer.accept(msg, buffer));
 			return;
 		}
-		oldEncoder.ifPresent(msgPacketBufferBiConsumer -> msgPacketBufferBiConsumer.accept(msg, buffer));
+		
 		buffer.writeBoolean(PacketHacksHelper.getPosForPacket(msg) != null);
 		if (PacketHacksHelper.getPosForPacket(msg) != null) {
 			buffer.writeBlockPos(PacketHacksHelper.getPosForPacket(msg));
 		}
+		
+		oldEncoder.ifPresent(msgPacketBufferBiConsumer -> msgPacketBufferBiConsumer.accept(msg, buffer));
 		PacketHacksHelper.markPacketDone(msg);
 	}
 	
@@ -98,13 +100,14 @@ public class IndexedMessageCodecMixin<MSG> {
 			return msg;
 		}
 		MSG msg = null;
-		if (oldDecoder.isPresent()) {
-			msg = oldDecoder.get().apply(buffer);
-		}
 		
 		isPosPresent.set(buffer.readBoolean());
 		if (isPosPresent.get()) {
 			posIfPresent.set(buffer.readBlockPos());
+		}
+		
+		if (oldDecoder.isPresent()) {
+			msg = oldDecoder.get().apply(buffer);
 		}
 		return msg;
 	}

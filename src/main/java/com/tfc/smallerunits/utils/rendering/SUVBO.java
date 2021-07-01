@@ -46,10 +46,11 @@ public class SUVBO {
 	public void uploadTerrain(RenderType renderType, BufferBuilder bufferBuilder) {
 		if (bufferBuilder.isDrawing())
 			bufferBuilder.finishDrawing();
+		else return;
 		if (bufferBuilder != null) {
 			for (BufferStorage buffer : buffers) {
 				if (buffer.renderType.equals(renderType)) {
-					buffer.terrainBuffer.get().upload(bufferBuilder);
+					(buffer.terrainBuffer.get()).upload(bufferBuilder);
 					buffer.isPresent = true;
 					return;
 				}
@@ -64,8 +65,11 @@ public class SUVBO {
 		}
 		BufferStorage storage = new BufferStorage();
 		storage.renderType = renderType;
+//		BufferBuilder.State state = bufferBuilder.getVertexState();
 		VertexBuffer buffer = new VertexBuffer(renderType.getVertexFormat());
 		if (bufferBuilder != null) buffer.upload(bufferBuilder);
+//		bufferBuilder.setVertexState(state);
+//		MemoryUtil.memFree(bufferBuilder.getNextBuffer().getSecond());
 		storage.terrainBuffer = Optional.of(buffer);
 		storage.isPresent = bufferBuilder != null;
 		buffers.add(storage);

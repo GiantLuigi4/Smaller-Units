@@ -47,7 +47,9 @@ minecraft {
 
             arg "-mixin.config=smaller_units.mixins.json"
 
-            property 'mixin.env.disableRefMap', 'true'
+//            property 'mixin.env.disableRefMap', 'true'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
                 smallerunits {
@@ -99,25 +101,32 @@ minecraft {
 repositories {
     maven { url "https://repo.spongepowered.org/repository/maven-public/" }
     maven { url 'https://jitpack.io' }
+    maven {
+        name "tterrag maven"
+        url "https://maven.tterrag.com/"
+    }
 }
 
 dependencies {
     // Specify the version of Minecraft to use, If this is any group other then 'net.minecraft' it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
-    minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
+//    minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
+    minecraft 'net.minecraftforge:forge:1.16.5-36.1.32'
 
 //    implementation fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
+    implementation fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.0.3.18")
 
+    implementation fg.deobf('curse.maven:reauth-237701:3105779')
     implementation fg.deobf('curse.maven:jei-238222:3157864')
     implementation fg.deobf('curse.maven:carryon-274259:3206755')
     implementation fg.deobf('curse.maven:storagedrawers-223852:3180569')
-    implementation fg.deobf('curse.maven:quark-243121:3212156')
+    compileOnly fg.deobf('curse.maven:quark-243121:3212156')
     implementation fg.deobf('curse.maven:oddities-301051:3088871')
     implementation fg.deobf('curse.maven:autoreglib-250363:3128555')
-    implementation fg.deobf('curse.maven:appeng-223794:3185882')
+//    implementation fg.deobf('curse.maven:appeng-223794:3185882')
     implementation fg.deobf('curse.maven:refinedstorage-243076:3196167')
-//    implementation fg.deobf('curse.maven:shrink-426386:3162514')
+    implementation fg.deobf('curse.maven:shrink-426386:3352335')
 //    implementation fg.deobf('curse.maven:pymtech-316946:3163217')
     compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
     implementation fg.deobf('curse.maven:compactstorage-223703:3209571')

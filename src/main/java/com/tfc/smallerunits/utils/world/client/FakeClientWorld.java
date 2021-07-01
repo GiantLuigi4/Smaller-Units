@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.settings.ParticleStatus;
 import net.minecraft.client.world.ClientWorld;
@@ -56,6 +57,7 @@ public class FakeClientWorld extends ClientWorld {
 	public BlockRayTraceResult result;
 	public UnitTileEntity owner;
 	int maxID = 0;
+	int oldLight = 0;
 	public FakeClientLightingManager lightManager = new FakeClientLightingManager(this.getChunkProvider(), true, true, this);
 	
 	@Override
@@ -429,6 +431,9 @@ public class FakeClientWorld extends ClientWorld {
 	
 	@Override
 	public void tick(BooleanSupplier hasTimeLeft) {
+		int newLight = LightTexture.packLight(owner.getWorld().getLightFor(LightType.BLOCK, owner.getPos()), owner.getWorld().getLightFor(LightType.SKY, owner.getPos()));
+		if (newLight != oldLight) owner.needsRefresh(true);
+		oldLight = newLight;
 		this.worldRenderer = Minecraft.getInstance().worldRenderer;
 		this.getProfiler().startTick();
 		super.tick(hasTimeLeft);
@@ -568,7 +573,8 @@ public class FakeClientWorld extends ClientWorld {
 //				if (state.getBlockState().equals(state.getFluidState().getBlockState())) {
 				if (old.getBlock() != state.getBlock()) {
 					try {
-						state.onBlockAdded(this, pos, old, false);
+//						state.onBlockAdded(this, pos, old, false);
+//						super.setBlockState(pos, state, flags);
 						//TODO: figure out why LootContext$Builder throws null pointers
 					} catch (NullPointerException ignored) {
 					}

@@ -89,6 +89,7 @@ import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class FakeServerWorld extends ServerWorld {
@@ -223,8 +224,6 @@ public class FakeServerWorld extends ServerWorld {
 		return forcedChunks;
 	}
 	
-	public boolean isRendering = false;
-	
 	@Override
 	public void removeTileEntity(BlockPos pos) {
 		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
@@ -340,7 +339,7 @@ public class FakeServerWorld extends ServerWorld {
 						if (context.posInRealWorld.equals(owner.getPos().offset(value))) {
 							if (!(context.teInRealWorld instanceof UnitTileEntity)) {
 								BlockState state = owner.getWorld().getBlockState(context.posInRealWorld);
-								if (state.hasTileEntity() || isRendering) {
+								if (state.hasTileEntity()) {
 									return state;
 								}
 							}
@@ -1227,6 +1226,45 @@ public class FakeServerWorld extends ServerWorld {
 			}
 		}
 		return true;
+	}
+	
+	@Override
+	public <T extends Entity> List<T> getEntitiesWithinAABB(Class<? extends T> clazz, AxisAlignedBB aabb, @Nullable Predicate<? super T> filter) {
+		List<T> entities = super.getEntitiesWithinAABB(clazz, aabb, filter);
+		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() / owner.unitsPerBlock, aabb.getYSize() / owner.unitsPerBlock, aabb.getZSize() / owner.unitsPerBlock);
+		AxisAlignedBB bb = aabb1.offset(
+				aabb.minX / owner.unitsPerBlock,
+				(aabb.minY - 64) / owner.unitsPerBlock,
+				aabb.minZ / owner.unitsPerBlock
+		).offset(owner.getPos().getX(), owner.getPos().getY(), owner.getPos().getZ());
+		entities.addAll(owner.getWorld().getEntitiesWithinAABB(clazz, bb, filter));
+		return entities;
+	}
+	
+	@Override
+	public List<Entity> getEntitiesWithinAABBExcludingEntity(@Nullable Entity entityIn, AxisAlignedBB aabb) {
+		List<Entity> entities = super.getEntitiesWithinAABBExcludingEntity(entityIn, aabb);
+		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() / owner.unitsPerBlock, aabb.getYSize() / owner.unitsPerBlock, aabb.getZSize() / owner.unitsPerBlock);
+		AxisAlignedBB bb = aabb1.offset(
+				aabb.minX / owner.unitsPerBlock,
+				(aabb.minY - 64) / owner.unitsPerBlock,
+				aabb.minZ / owner.unitsPerBlock
+		).offset(owner.getPos().getX(), owner.getPos().getY(), owner.getPos().getZ());
+		entities.addAll(owner.getWorld().getEntitiesWithinAABBExcludingEntity(entityIn, bb));
+		return entities;
+	}
+	
+	@Override
+	public List<Entity> getEntitiesInAABBexcluding(@Nullable Entity entityIn, AxisAlignedBB aabb, @Nullable Predicate<? super Entity> predicate) {
+		List<Entity> entities = super.getEntitiesInAABBexcluding(entityIn, aabb, predicate);
+		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() / owner.unitsPerBlock, aabb.getYSize() / owner.unitsPerBlock, aabb.getZSize() / owner.unitsPerBlock);
+		AxisAlignedBB bb = aabb1.offset(
+				aabb.minX / owner.unitsPerBlock,
+				(aabb.minY - 64) / owner.unitsPerBlock,
+				aabb.minZ / owner.unitsPerBlock
+		).offset(owner.getPos().getX(), owner.getPos().getY(), owner.getPos().getZ());
+		entities.addAll(owner.getWorld().getEntitiesInAABBexcluding(entityIn, bb, predicate));
+		return entities;
 	}
 	
 	@Override
