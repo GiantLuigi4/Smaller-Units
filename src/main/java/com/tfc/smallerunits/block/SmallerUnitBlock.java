@@ -29,7 +29,6 @@ import net.minecraft.loot.LootParameters;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
 import net.minecraft.nbt.StringNBT;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.*;
@@ -1103,7 +1102,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		for (SmallUnit value : tileEntity.getBlockMap().values()) {
-			if (value.state.isIn(BlockTags.createOptional(new ResourceLocation("minecraft:climbable")))) {
+			if (value.state.isIn(TagUtils.getBlockTag(new ResourceLocation("minecraft:climbable")))) {
 				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
 				pos1 = pos1.add(0.5, 0.5, 0.5);
 				pos1 = pos1.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);

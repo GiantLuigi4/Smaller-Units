@@ -115,7 +115,7 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.16.5-36.1.32'
 
 //    implementation fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
-    implementation fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.0.3.18")
+    compileOnly fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.0.3.18")
 
     implementation fg.deobf('curse.maven:reauth-237701:3105779')
     implementation fg.deobf('curse.maven:jei-238222:3157864')
@@ -126,7 +126,7 @@ dependencies {
     implementation fg.deobf('curse.maven:autoreglib-250363:3128555')
 //    implementation fg.deobf('curse.maven:appeng-223794:3185882')
     implementation fg.deobf('curse.maven:refinedstorage-243076:3196167')
-    implementation fg.deobf('curse.maven:shrink-426386:3352335')
+    compileOnly fg.deobf('curse.maven:shrink-426386:3352335')
 //    implementation fg.deobf('curse.maven:pymtech-316946:3163217')
     compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
     implementation fg.deobf('curse.maven:compactstorage-223703:3209571')
@@ -135,7 +135,8 @@ dependencies {
     implementation fg.deobf('curse.maven:xnet-260912:3140153')
     implementation fg.deobf('curse.maven:mcjtylib-233105:3194349')
     implementation fg.deobf('curse.maven:rftoolsbase-326041:3206945')
-    implementation fg.deobf('curse.maven:create-328085:3167531') //3278516
+    implementation fg.deobf('curse.maven:create-328085:3278516') //3278516
+
 //    implementation fg.deobf('curse.maven:botania-225643:3175663')
     implementation fg.deobf('curse.maven:patchouli-306770:3204037')
     implementation fg.deobf('curse.maven:curios-309927:3186427')
