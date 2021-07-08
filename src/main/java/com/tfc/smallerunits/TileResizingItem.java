@@ -11,7 +11,6 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.ModList;
 
 public class TileResizingItem extends Item {
 	private final int scale;
@@ -37,7 +36,7 @@ public class TileResizingItem extends Item {
 	
 	@Override
 	public boolean hitEntity(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-		if (ModList.get().isLoaded("threecore")) {
+		if (ResizingUtils.isResizingModPresent()) {
 			if (target instanceof PlayerEntity && attacker instanceof ServerPlayerEntity) {
 				((ServerPlayerEntity) attacker).getAdvancements().grantCriterion(((ServerPlayerEntity) attacker).getServerWorld().getServer().getAdvancementManager().getAdvancement(new ResourceLocation("smallerunits:rude")), "strike_player");
 			}

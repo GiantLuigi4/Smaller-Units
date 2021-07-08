@@ -23,6 +23,7 @@ import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.tileentity.ITickableTileEntity;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -34,6 +35,7 @@ import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.ForgeRegistries;
 import sun.misc.Unsafe;
 
@@ -72,6 +74,18 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		if (worldServer == null && worldClient == null) return new HashMap<>();
 		else if (worldServer == null) return worldClient.get().entitiesById;
 		else return worldServer.entitiesById;
+	}
+	
+	boolean hasLoaded = false;
+	CompoundNBT toLoad = null;
+	
+	@Override
+	public void setWorldAndPos(World world, BlockPos pos) {
+		super.setWorldAndPos(world, pos);
+		if (!hasLoaded && toLoad != null) {
+			doRead(toLoad);
+			hasLoaded = true;
+		}
 	}
 	
 	public World getFakeWorld() {
@@ -261,7 +275,6 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				try {
 					value.tick();
 				} catch (Throwable ignored) {
-				
 				}
 			}
 
@@ -278,13 +291,50 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	@Override
 	public void read(BlockState state, CompoundNBT nbt) {
 		super.read(state, nbt);
-		
-		if (worldClient == null) {
-			createServerWorld();
+		if (world == null) {
+			toLoad = nbt;
+			hasLoaded = false;
+		} else {
+			doRead(nbt);
 		}
-
-//		if (FMLEnvironment.dist.isClient()) {
-//			for (Direction dir : Direction.values()) {
+	}
+	
+	public void doRead(CompoundNBT nbt) {
+//		if (worldClient == null) {
+//			createServerWorld();
+//		}
+		if (!this.world.isRemote) {
+			createServerWorld();
+		} else {
+			if (worldClient == null) {
+				try {
+					worldClient = new AtomicReference<>(new FakeClientWorld(
+							null,
+							new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
+							getWorld().dimension,
+							getWorld().dimensionType,
+							0, () -> new Profiler(() -> 0, () -> 0, false),
+							null, true, 0
+					));
+					worldClient.get().init(this);
+				} catch (Throwable err) {
+					throw new RuntimeException(err);
+				}
+			}
+		}
+		
+		if (FMLEnvironment.dist.isClient() && world.isRemote) {
+			// TODO: make this mark corners dirty
+			for (Direction dir : Direction.values()) {
+				if (world.isBlockLoaded(pos.offset(dir))) {
+					TileEntity te = world.getTileEntity(pos.offset(dir));
+					if (te instanceof UnitTileEntity) {
+						// TODO: "optimize" this (only mark dirty if a block changed at the edge of the unit)
+						te.markDirty();
+					}
+				}
+			}
+		}
 //				if (SmallerUnitsTESR.bufferCache.containsKey(this.getPos().offset(dir))) {
 //					SmallerUnitsTESR.bufferCache.get(this.getPos().offset(dir)).getSecond().dispose();
 //				}

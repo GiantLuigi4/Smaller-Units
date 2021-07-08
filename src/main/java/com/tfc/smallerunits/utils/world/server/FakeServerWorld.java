@@ -19,6 +19,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.ITileEntityProvider;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.item.ArmorStandEntity;
 import net.minecraft.entity.item.ExperienceOrbEntity;
@@ -419,6 +420,23 @@ public class FakeServerWorld extends ServerWorld {
 		entitiesToAddArrayList.clear();
 		
 		owner.getWorld().getProfiler().endStartSection("iter_remove_entities");
+		
+		{
+			ArrayList<Entity> toRemove = new ArrayList<>();
+			for (Entity value : entitiesById.values()) {
+				if (value.removed) {
+					toRemove.add(value);
+				}
+			}
+			
+			for (Entity entity : toRemove) {
+				entitiesByUuid.remove(entity.getUniqueID(), entity);
+				entitiesById.remove(entity.getEntityId(), entity);
+				owner.markDirty();
+				owner.getWorld().markChunkDirty(owner.getPos(), owner);
+			}
+		}
+		
 		for (Entity entity : entitiesToRemove) {
 			entitiesByUuid.remove(entity.getUniqueID(), entity);
 			entitiesById.remove(entity.getEntityId(), entity);
@@ -1144,9 +1162,13 @@ public class FakeServerWorld extends ServerWorld {
 			);
 			entityIn.setWorld(owner.getWorld());
 			ResizingUtils.resizeForUnit(entityIn, 1f / owner.unitsPerBlock);
-			return owner.getWorld().addEntity(entityIn);
+			boolean out = owner.getWorld().addEntity(entityIn);
+			entityIn.setMotion(entityIn.getMotion().mul(1f / owner.unitsPerBlock, 1f / owner.unitsPerBlock, 1f / owner.unitsPerBlock));
+//			out.onAddedToWorld();
+			return out;
 		} else {
 			entitiesToAddArrayList.add(entityIn);
+			entityIn.onAddedToWorld();
 			return true;
 		}
 	}
@@ -1238,6 +1260,19 @@ public class FakeServerWorld extends ServerWorld {
 				aabb.minZ / owner.unitsPerBlock
 		).offset(owner.getPos().getX(), owner.getPos().getY(), owner.getPos().getZ());
 		entities.addAll(owner.getWorld().getEntitiesWithinAABB(clazz, bb, filter));
+		return entities;
+	}
+	
+	@Override
+	public <T extends Entity> List<T> getEntitiesWithinAABB(@Nullable EntityType<T> type, AxisAlignedBB aabb, Predicate<? super T> predicate) {
+		List<T> entities = super.getEntitiesWithinAABB(type, aabb, predicate);
+		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() / owner.unitsPerBlock, aabb.getYSize() / owner.unitsPerBlock, aabb.getZSize() / owner.unitsPerBlock);
+		AxisAlignedBB bb = aabb1.offset(
+				aabb.minX / owner.unitsPerBlock,
+				(aabb.minY - 64) / owner.unitsPerBlock,
+				aabb.minZ / owner.unitsPerBlock
+		).offset(owner.getPos().getX(), owner.getPos().getY(), owner.getPos().getZ());
+		entities.addAll(owner.getWorld().getEntitiesWithinAABB(type, bb, predicate));
 		return entities;
 	}
 	

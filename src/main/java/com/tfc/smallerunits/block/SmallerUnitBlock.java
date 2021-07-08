@@ -349,6 +349,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				
 				for (ItemStack stack : stacks) {
 					ItemEntity entity = new ItemEntity(tileEntity.getFakeWorld(), blockPos.pos.getX(), blockPos.pos.getY(), blockPos.pos.getZ(), stack);
+//					entity.setMotion(entity.getMotion().mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock));
 					tileEntity.getFakeWorld().addEntity(entity);
 				}
 				
@@ -431,22 +432,47 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		BlockState state1 = tileEntity.getFakeWorld().getBlockState(hitPos);
 		
 		if (state1.removedByPlayer(tileEntity.getFakeWorld(), hitPos, player, true, state1.getFluidState())) {
-			List<ItemStack> stacks = state1.getDrops(
-					new LootContext.Builder(tileEntity.worldServer)
-							.withLuck(player.getLuck())
-							.withRandom(tileEntity.worldServer.rand)
-							.withSeed(tileEntity.worldServer.rand.nextLong())
-							.withParameter(LootParameters.TOOL, player.getHeldItem(Hand.MAIN_HAND))
-							.withParameter(LootParameters.field_237457_g_, raytraceContext.vecHit)
-							.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.worldServer.getTileEntity(raytraceContext.posHit))
-							.withParameter(LootParameters.BLOCK_STATE, state1)
-							.withParameter(LootParameters.THIS_ENTITY, player)
-			);
-			
-			for (ItemStack stack : stacks) {
-				ItemEntity entity = new ItemEntity(tileEntity.getFakeWorld(), hitPos.getX(), hitPos.getY(), hitPos.getZ(), stack);
-				tileEntity.getFakeWorld().addEntity(entity);
+			if (!player.isCreative()) {
+				List<ItemStack> stacks = state1.getDrops(
+						new LootContext.Builder(tileEntity.worldServer)
+								.withLuck(player.getLuck())
+								.withRandom(tileEntity.worldServer.rand)
+								.withSeed(tileEntity.worldServer.rand.nextLong())
+								.withParameter(LootParameters.TOOL, player.getHeldItem(Hand.MAIN_HAND))
+								.withParameter(LootParameters.field_237457_g_, raytraceContext.vecHit)
+								.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.worldServer.getTileEntity(raytraceContext.posHit))
+								.withParameter(LootParameters.BLOCK_STATE, state1)
+								.withParameter(LootParameters.THIS_ENTITY, player)
+				);
+				
+				for (ItemStack stack : stacks) {
+					ItemEntity entity = new ItemEntity(tileEntity.getFakeWorld(), hitPos.getX() + 0.5, hitPos.getY() + 0.5, hitPos.getZ() + 0.5, stack);
+//					entity.setMotion(entity.getMotion().mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock));
+					tileEntity.getFakeWorld().addEntity(entity);
+				}
 			}
+			
+			SoundType type = state1.getSoundType(tileEntity.getFakeWorld(), hitPos, player);
+			tileEntity.worldServer.playSound(hitPos.getX(), hitPos.getY(), hitPos.getZ(), type.getBreakSound(), SoundCategory.BLOCKS, type.getVolume(), type.getPitch(), false);
+
+//			if (worldIn.isRemote) {
+//				for (int i =0; i < 256;i++) {
+//					double x = worldIn.rand.nextFloat();
+//					double y = worldIn.rand.nextFloat();
+//					double z = worldIn.rand.nextFloat();
+//
+////					x = dir.getXOffset() == 0 ? x : Math.max(dir.getXOffset(), 0);
+////					y = dir.getYOffset() == 0 ? y : Math.max(dir.getYOffset(), 0);
+////					z = dir.getZOffset() == 0 ? z : Math.max(dir.getZOffset(), 0);
+//
+//					float scl = ((1f / tileEntity.unitsPerBlock));
+//					Particle particle = ParticleHelper.create(worldIn, x, y, z, hitPos, tileEntity, worldPos, scl);
+//
+//					Minecraft.getInstance().particles.addEffect(particle);
+//
+////					worldIn.addParticle(particle);
+//				}
+//			}
 			
 			state1.onReplaced(tileEntity.getFakeWorld(), raytraceContext.posHit, Blocks.AIR.getDefaultState(), false);
 			tileEntity.getFakeWorld().removeBlock(hitPos, false);
@@ -825,11 +851,11 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						
 						SoundType type1 = item.getBlock().getSoundType(statePlace);
 						SoundEvent event = type1.getPlaceSound();
-//					tileEntity.world.playSound(
-//							null,
-//							posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
-//							event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
-//					);
+						tileEntity.worldServer.playSound(
+								null,
+								posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
+								event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
+						);
 						ForgeEventFactory.onBlockPlace(player, BlockSnapshot.create(tileEntity.getFakeWorld().dimension, tileEntity.getFakeWorld(), posOffset), raytraceContext.hitFace.orElse(hit.getFace()));
 					}
 					return type;

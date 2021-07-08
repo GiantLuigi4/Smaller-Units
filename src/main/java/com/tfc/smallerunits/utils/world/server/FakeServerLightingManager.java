@@ -216,4 +216,44 @@ public class FakeServerLightingManager extends ServerWorldLightManager {
 	public void func_215567_a(BlockPos p_215567_1_, boolean p_215567_2_) {
 		lightManager.func_215567_a(p_215567_1_, p_215567_2_);
 	}
+	
+	@Override
+	protected void finalize() {
+		if (lightManager.blockLight != null) {
+			lightManager.blockLight.storage = null;
+			lightManager.blockLight.type = null;
+			lightManager.blockLight.chunkProvider = null;
+			lightManager.blockLight.field_215629_e = true;
+			lightManager.blockLight.recentPositions = null;
+			lightManager.blockLight.recentChunks = null;
+			lightManager.blockLight.scratchPos = null;
+		}
+		if (lightManager.skyLight != null) {
+			lightManager.skyLight.storage = null;
+			lightManager.skyLight.type = null;
+			lightManager.skyLight.chunkProvider = null;
+			lightManager.skyLight.field_215629_e = true;
+			lightManager.skyLight.recentPositions = null;
+			lightManager.skyLight.recentChunks = null;
+			lightManager.skyLight.scratchPos = null;
+		}
+		if (this.blockLight != null) {
+			this.blockLight.storage = null;
+			this.blockLight.type = null;
+			this.blockLight.chunkProvider = null;
+			this.blockLight.field_215629_e = true;
+			this.blockLight.recentPositions = null;
+			this.blockLight.recentChunks = null;
+			this.blockLight.scratchPos = null;
+		}
+		if (this.skyLight != null) {
+			this.skyLight.storage = null;
+			this.skyLight.type = null;
+			this.skyLight.chunkProvider = null;
+			this.skyLight.field_215629_e = true;
+			this.skyLight.recentPositions = null;
+			this.skyLight.recentChunks = null;
+			this.skyLight.scratchPos = null;
+		}
+	}
 }

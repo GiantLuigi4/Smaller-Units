@@ -180,12 +180,13 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		tileEntityIn.worldClient.get().lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 		
 		// TODO: make it render without vbos if the player is not in the same world
-		if (tileEntityIn.getWorld() == null || tileEntityIn.getWorld().equals(Minecraft.getInstance().world)) {
-			boolean isRefreshing = tileEntityIn.needsRefresh(false);
+		if (tileEntityIn.getWorld() == null || tileEntityIn.getWorld().equals(Minecraft.getInstance().world) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+			boolean isRefreshing = tileEntityIn.needsRefresh(false) || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos());
 			if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) || isRefreshing) {
 				if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
 					vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
-				} else {
+				}
+				{
 					MatrixStack stack = new MatrixStack();
 //					MatrixStack stack = oldStack;
 					Minecraft.getInstance().getProfiler().startSection("doSURender");
@@ -198,22 +199,22 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					for (SmallUnit value : fakeWorld.blockMap.values()) {
 						{
 							stack.push();
+							stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
 							renderedAnything = true;
 							RenderType type = RenderType.getSolid();
 							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
 								if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType))
 									type = blockRenderType;
-							stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
 							IVertexBuilder buffer;
-							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs()) {
+							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
 								buffer = redirection.getBuffer(type);
 							} else {
 								BufferBuilder bufferBuilder = buffers.get(type);
 								buffer = bufferBuilder;
 								if (!bufferBuilder.isDrawing())
 									bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-								dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
 							}
+							dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
 							stack.pop();
 						}
 						{
@@ -223,7 +224,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
 								if (RenderTypeLookup.canRenderInLayer(state, blockRenderType)) type = blockRenderType;
 							IVertexBuilder buffer;
-							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs()) {
+							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
 								buffer = redirection.getBuffer(type);
 							} else {
 								BufferBuilder bufferBuilder = buffers.get(type);
@@ -321,6 +322,23 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				SUVBO vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
 				if (vbo != null) vbo.render(matrixStackIn);
 			}
+		} else {
+			BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
+			FakeClientWorld fakeWorld = ((FakeClientWorld) tileEntityIn.getFakeWorld());
+			matrixStackIn.push();
+			matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+			for (SmallUnit value : fakeWorld.blockMap.values()) {
+				matrixStackIn.push();
+				matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
+				RenderType type = RenderType.getSolid();
+				for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+					if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType))
+						type = blockRenderType;
+				IVertexBuilder buffer = bufferIn.getBuffer(type);
+				dispatcher.renderModel(value.state, value.pos, fakeWorld, matrixStackIn, buffer, true, new Random(value.pos.toLong()));
+				matrixStackIn.pop();
+			}
+			matrixStackIn.pop();
 		}
 		matrixStackIn = oldStack;
 		

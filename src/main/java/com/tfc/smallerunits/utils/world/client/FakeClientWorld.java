@@ -22,6 +22,7 @@ import net.minecraft.client.world.DimensionRenderInfo;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
+import net.minecraft.item.crafting.RecipeManager;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
@@ -382,6 +383,11 @@ public class FakeClientWorld extends ClientWorld {
 			SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().isDirty = true;
 		}
 		owner.needsRefresh(true);
+	}
+	
+	@Override
+	public RecipeManager getRecipeManager() {
+		return owner.getWorld().getRecipeManager();
 	}
 	
 	public BlockState getBlockState(BlockPos pos) {

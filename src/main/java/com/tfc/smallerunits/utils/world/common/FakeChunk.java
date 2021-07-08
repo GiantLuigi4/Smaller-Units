@@ -6,12 +6,15 @@ import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.tileentity.TileEntityType;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.palette.UpgradeData;
@@ -25,9 +28,12 @@ import net.minecraft.world.lighting.WorldLightManager;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class FakeChunk extends Chunk {
 	private World world;
@@ -45,6 +51,44 @@ public class FakeChunk extends Chunk {
 	public FakeChunk(World worldIn, ChunkPrimer primer, World world) {
 		super(worldIn, primer);
 		this.world = world;
+	}
+	
+	@Override
+	public void getEntitiesWithinAABBForEntity(@Nullable Entity entityIn, AxisAlignedBB aabb, List<Entity> listToFill, @Nullable Predicate<? super Entity> filter) {
+		Collection<Entity> entities = getEntities();
+		for (Entity entity : entities) {
+			if (entity.getBoundingBox().intersects(aabb) && (filter == null || filter.test(entity))) {
+				listToFill.add(entity);
+			}
+		}
+	}
+	
+	@Override
+	public <T extends Entity> void getEntitiesWithinAABBForList(@Nullable EntityType<?> entitytypeIn, AxisAlignedBB aabb, List<? super T> list, Predicate<? super T> filter) {
+		Collection<Entity> entities = getEntities();
+		for (Entity entity : entities) {
+			if (entity.getBoundingBox().intersects(aabb) && (filter.test((T) entity))) {
+				list.add((T) entity);
+			}
+		}
+	}
+	
+	@Override
+	public <T extends Entity> void getEntitiesOfTypeWithinAABB(Class<? extends T> entityClass, AxisAlignedBB aabb, List<T> listToFill, @Nullable Predicate<? super T> filter) {
+		Collection<Entity> entities = getEntities();
+		for (Entity entity : entities) {
+			if (entity.getBoundingBox().intersects(aabb) && (filter.test((T) entity)) && entityClass.isInstance(entity)) {
+				listToFill.add((T) entity);
+			}
+		}
+	}
+	
+	public Collection<Entity> getEntities() {
+		if (world instanceof FakeServerWorld) {
+			return ((FakeServerWorld) world).entitiesById.values();
+		} else {
+			return ((FakeClientWorld) world).entitiesById.values();
+		}
 	}
 	
 	@Override

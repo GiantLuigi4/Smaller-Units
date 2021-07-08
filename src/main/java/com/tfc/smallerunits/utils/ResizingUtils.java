@@ -117,6 +117,19 @@ public class ResizingUtils {
 			entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
 				cap.setSizeDirectly(SUResizeType.SU_CHANGE_TYPE.get(), amt);
 			});
+		} else if (ModList.get().isLoaded("shrink") && entity instanceof LivingEntity) {
+			entity.getCapability(ShrinkAPI.SHRINK_CAPABILITY).ifPresent((iShrinkProvider) -> {
+				if (!iShrinkProvider.isShrunk()) iShrinkProvider.shrink((LivingEntity) entity);
+				iShrinkProvider.setScale(amt);
+			});
 		}
+	}
+	
+	public static boolean isResizingModPresent() {
+		return
+				ModList.get().isLoaded("threecore") ||
+						ModList.get().isLoaded("shrink") ||
+						ModList.get().isLoaded("gullivern") ||
+						ModList.get().isLoaded("pehkui");
 	}
 }
