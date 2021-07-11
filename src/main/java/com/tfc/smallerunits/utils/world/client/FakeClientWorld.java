@@ -20,6 +20,7 @@ import net.minecraft.client.settings.ParticleStatus;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.client.world.DimensionRenderInfo;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.crafting.RecipeManager;
@@ -46,6 +47,7 @@ import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.lighting.WorldLightManager;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -270,45 +272,7 @@ public class FakeClientWorld extends ClientWorld {
 //		);
 	}
 	
-	@Override
-	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
-		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
-		if (context.posInRealWorld != null) {
-			if (context.stateInRealWorld != null) {
-				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
-					if (!context.posInRealWorld.equals(this.owner.getPos())) {
-						if (context.teInRealWorld != null) {
-							((UnitTileEntity) context.teInRealWorld).getFakeWorld().setTileEntity(context.posInFakeWorld, tileEntityIn);
-							return;
-						}
-					}
-				}
-			}
-		}
-		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
-		
-		if (unit.tileEntity != null && unit.tileEntity != tileEntityIn) {
-			try {
-				unit.tileEntity.remove();
-			} catch (Throwable ignored) {
-			}
-			loadedTileEntityList.remove(tileEntityIn);
-		}
-		
-		if (tileEntityIn != null && tileEntityIn.getType().isValidBlock(unit.state.getBlock())) {
-			unit.tileEntity = tileEntityIn;
-			tileEntityIn.setWorldAndPos(this, pos);
-			if (tileEntityIn != null) tileEntityIn.validate();
-			loadedTileEntityList.add(unit.tileEntity);
-			if (!blockMap.containsKey(pos.toLong())) blockMap.put(pos.toLong(), unit);
-		} else {
-			if (unit.tileEntity != null)
-				unit.tileEntity.remove();
-			unit.tileEntity = null;
-		}
-
-//		tileEntityChanges.add(unit);
-	}
+	private final ArrayList<BlockPos> removedTileEntities = new ArrayList<>();
 	
 	@Override
 	public boolean addTileEntity(TileEntity tile) {
@@ -383,6 +347,52 @@ public class FakeClientWorld extends ClientWorld {
 			SmallerUnitsTESR.bufferCache.get(this.getPos()).getSecond().isDirty = true;
 		}
 		owner.needsRefresh(true);
+	}
+	
+	@Override
+	public void setTileEntity(BlockPos pos, @Nullable TileEntity tileEntityIn) {
+		if (removedTileEntities.contains(pos)) removedTileEntities.remove(pos);
+		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
+		if (context.posInRealWorld != null) {
+			if (context.stateInRealWorld != null) {
+				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
+					if (!context.posInRealWorld.equals(this.owner.getPos())) {
+						if (context.teInRealWorld != null) {
+							((UnitTileEntity) context.teInRealWorld).getFakeWorld().setTileEntity(context.posInFakeWorld, tileEntityIn);
+							return;
+						}
+					}
+				}
+			}
+		}
+		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
+		
+		if (unit.tileEntity != null && unit.tileEntity != tileEntityIn) {
+			try {
+				unit.tileEntity.remove();
+			} catch (Throwable ignored) {
+			}
+			loadedTileEntityList.remove(tileEntityIn);
+		}
+		
+		if (tileEntityIn != null && tileEntityIn.getType().isValidBlock(unit.state.getBlock())) {
+			unit.tileEntity = tileEntityIn;
+			tileEntityIn.setWorldAndPos(this, pos);
+			if (tileEntityIn != null) tileEntityIn.validate();
+			loadedTileEntityList.add(unit.tileEntity);
+			if (!blockMap.containsKey(pos.toLong())) blockMap.put(pos.toLong(), unit);
+		} else {
+			if (unit.tileEntity != null)
+				unit.tileEntity.remove();
+			unit.tileEntity = null;
+		}
+
+//		tileEntityChanges.add(unit);
+	}
+	
+	@Override
+	public void playEvent(int type, BlockPos pos, int data) {
+		playEvent(null, type, pos, data);
 	}
 	
 	@Override
@@ -479,6 +489,11 @@ public class FakeClientWorld extends ClientWorld {
 		return getBlockState(pos).getFluidState();
 	}
 	
+	@Override
+	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
+		getBlockState(pos).receiveBlockEvent(this, pos, type, data);
+	}
+	
 	@Nullable
 	@Override
 	public TileEntity getTileEntity(BlockPos pos) {
@@ -488,7 +503,11 @@ public class FakeClientWorld extends ClientWorld {
 				if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 					if (!context.posInRealWorld.equals(this.owner.getPos())) {
 						if (context.teInRealWorld != null) {
-							return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getTileEntity(context.posInFakeWorld);
+							if (context.teInRealWorld instanceof UnitTileEntity) {
+								if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() != null) {
+									return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().getTileEntity(context.posInFakeWorld);
+								}
+							}
 						}
 					}
 				} else {
@@ -502,8 +521,27 @@ public class FakeClientWorld extends ClientWorld {
 				}
 			}
 		}
-		TileEntity te = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
-		return te;
+//		for (TileEntity tileEntityChange : tileEntitiesToBeRemoved) {
+//			if (tileEntityChange.equals(blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity)) {
+//				return null;
+//			}
+//		}
+//		boolean containsTE = false;
+		if (removedTileEntities.contains(pos)) return null;
+		for (TileEntity tileEntity : loadedTileEntityList) {
+			if (tileEntity.getPos().equals(pos)) {
+				TileEntity te = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
+				return te;
+//				containsTE = true;
+			}
+		}
+		return null;
+	}
+	
+	@Override
+	public void removeTileEntity(BlockPos pos) {
+		removedTileEntities.add(pos);
+		super.removeTileEntity(pos);
 	}
 	
 	@Override
@@ -515,7 +553,7 @@ public class FakeClientWorld extends ClientWorld {
 				if (!context.posInRealWorld.equals(owner.getPos())) {
 					if (context.stateInRealWorld.equals(Deferred.UNIT.get().getDefaultState())) {
 						if (!context.posInRealWorld.equals(this.owner.getPos())) {
-							if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() == null) {
+							if (((UnitTileEntity) context.teInRealWorld).getFakeWorld() != null) {
 								((UnitTileEntity) context.teInRealWorld).needsRefresh(true);
 								return ((UnitTileEntity) context.teInRealWorld).getFakeWorld().setBlockState(context.posInFakeWorld, state, flags, recursionLeft - 1);
 							}

@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.shorts.ShortList;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
@@ -44,11 +45,13 @@ public class FakeIChunk implements IChunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
-		if (owner.blockMap.containsKey(pos.toLong())) {
-			owner.blockMap.get(pos.toLong()).state = state;
-		} else {
-			owner.blockMap.put(pos.toLong(), new SmallUnit(pos, state));
-		}
+		BlockState oldState;
+		if (owner.blockMap.containsKey(pos.toLong())) oldState = owner.blockMap.get(pos.toLong()).state;
+		else oldState = Blocks.AIR.getDefaultState();
+		oldState.onReplaced(owner, pos, state, isMoving);
+		if (owner.blockMap.containsKey(pos.toLong())) owner.blockMap.get(pos.toLong()).state = state;
+		else owner.blockMap.put(pos.toLong(), new SmallUnit(pos, state));
+		owner.blockMap.get(pos.toLong()).state.onBlockAdded(owner, pos, oldState, isMoving);
 		return state;
 	}
 	

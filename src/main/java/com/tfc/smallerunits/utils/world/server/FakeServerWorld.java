@@ -1,7 +1,9 @@
 package com.tfc.smallerunits.utils.world.server;
 
 import com.tfc.smallerunits.SmallerUnitsConfig;
+import com.tfc.smallerunits.Smallerunits;
 import com.tfc.smallerunits.block.UnitTileEntity;
+import com.tfc.smallerunits.networking.SLittleBlockEventPacket;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import com.tfc.smallerunits.utils.ResizingUtils;
@@ -81,6 +83,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.minecraftforge.fml.network.PacketDistributor;
 import sun.misc.Unsafe;
 
 import javax.annotation.Nonnull;
@@ -167,10 +170,7 @@ public class FakeServerWorld extends ServerWorld {
 		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
 		
 		if (unit.tileEntity != null && unit.tileEntity != tileEntityIn) {
-			try {
-				unit.tileEntity.remove();
-			} catch (Throwable ignored) {
-			}
+			unit.tileEntity.remove();
 			loadedTileEntityList.remove(tileEntityIn);
 		}
 		
@@ -411,7 +411,11 @@ public class FakeServerWorld extends ServerWorld {
 		for (SmallUnit smallUnit : unitsToRemove) {
 //			setBlockState(smallUnit.pos,Blocks.AIR.getDefaultState());
 			if (smallUnit.tileEntity != null) {
-				smallUnit.tileEntity.remove();
+				try {
+					smallUnit.tileEntity.remove();
+				} catch (Throwable ignored) {
+				
+				}
 				tileEntityChanges.add(smallUnit);
 			}
 			blockMap.remove(smallUnit.pos.toLong());
@@ -531,7 +535,7 @@ public class FakeServerWorld extends ServerWorld {
 				if (!loadedTileEntityList.contains(unit.tileEntity)) loadedTileEntityList.add(unit.tileEntity);
 			}
 			
-			if (unit.oldTE != null && !unit.oldTE.equals(unit.tileEntity))
+			if (unit.oldTE != null && !unit.oldTE.equals(unit.tileEntity) && !unit.oldTE.isRemoved())
 				unit.oldTE.remove();
 			unit.oldTE = unit.tileEntity;
 		}
@@ -895,6 +899,11 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
+		for (SmallUnit tileEntityChange : tileEntityChanges) {
+			if (tileEntityChange.pos.equals(pos)) {
+				return tileEntityChange.tileEntity;
+			}
+		}
 		TileEntity te = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
 		return te;
 	}
@@ -1010,7 +1019,10 @@ public class FakeServerWorld extends ServerWorld {
 				
 				if (state.equals(Blocks.AIR.getDefaultState())) {
 					try {
-						if (this.getTileEntity(pos) != null) this.getTileEntity(pos).remove();
+						if (this.getTileEntity(pos) != null) {
+//							this.getTileEntity(pos).remove();
+							removeTileEntity(pos);
+						}
 					} catch (Throwable ignored) {
 					}
 //					this.blockMap.remove(pos.toLong());
@@ -1123,6 +1135,51 @@ public class FakeServerWorld extends ServerWorld {
 		for (TileEntity tileEntity : tileEntityCollection) {
 			addTileEntity(tileEntity);
 		}
+	}
+	
+	@Override
+	public void playEvent(int type, BlockPos pos, int data) {
+		this.getBlockState(pos).receiveBlockEvent(this, pos, type, data);
+		System.out.println(type + ", " + pos + ", " + data);
+//		super.playEvent(type, pos, data);
+		Vector3d targetPosition = new Vector3d(
+				owner.getPos().getX() + ((double) pos.getX() / owner.unitsPerBlock),
+				owner.getPos().getY() + ((double) pos.getY() / owner.unitsPerBlock),
+				owner.getPos().getZ() + ((double) pos.getZ() / owner.unitsPerBlock)
+		);
+		SLittleBlockEventPacket packet = new SLittleBlockEventPacket(owner.getPos(), pos, type, data);
+		for (ServerPlayerEntity player : server.getPlayerList().getPlayers()) {
+			if (player.world == this) {
+				Smallerunits.NETWORK_INSTANCE.send(
+						PacketDistributor.PLAYER.with(() -> player),
+						packet
+				);
+			} else if (!(player.world instanceof FakeServerWorld) && player.world.dimension.equals(this.dimension)) {
+				if (player.getDistanceSq(targetPosition) < 64 * 64) {
+					Smallerunits.NETWORK_INSTANCE.send(
+							PacketDistributor.PLAYER.with(() -> player),
+							packet
+					);
+				}
+			}
+		}
+//		Smallerunits.NETWORK_INSTANCE.send(
+//				PacketDistributor.NEAR.with(
+//						() -> new PacketDistributor.TargetPoint(
+//								owner.getPos().getX() + ((double) pos.getX() / owner.unitsPerBlock),
+//								owner.getPos().getY() + ((double) pos.getY() / owner.unitsPerBlock),
+//								owner.getPos().getZ() + ((double) pos.getZ() / owner.unitsPerBlock),
+//								64, owner.getWorld().dimension
+//						)
+//				),
+//				new SLittleBlockEventPacket(owner.getPos(), pos, type, data)
+//		);
+	}
+	
+	@Override
+	public void addBlockEvent(BlockPos pos, Block blockIn, int eventID, int eventParam) {
+		System.out.println(pos + ", " + blockIn + ", " + eventID + ", " + eventParam);
+		playEvent(eventID, pos, eventParam);
 	}
 	
 	@Override

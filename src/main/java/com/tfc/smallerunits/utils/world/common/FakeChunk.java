@@ -6,6 +6,7 @@ import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.fluid.Fluid;
@@ -145,16 +146,15 @@ public class FakeChunk extends Chunk {
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
 		Map<Long, SmallUnit> blockMap;
-		if (world instanceof FakeServerWorld) {
-			blockMap = ((FakeServerWorld) world).blockMap;
-		} else {
-			blockMap = ((FakeClientWorld) world).blockMap;
-		}
-		if (blockMap.containsKey(pos.toLong())) {
-			blockMap.get(pos.toLong()).state = state;
-		} else {
-			blockMap.put(pos.toLong(), new SmallUnit(pos, state));
-		}
+		if (world instanceof FakeServerWorld) blockMap = ((FakeServerWorld) world).blockMap;
+		else blockMap = ((FakeClientWorld) world).blockMap;
+		BlockState oldState;
+		if (blockMap.containsKey(pos.toLong())) oldState = blockMap.get(pos.toLong()).state;
+		else oldState = Blocks.AIR.getDefaultState();
+		oldState.onReplaced(world, pos, state, isMoving);
+		if (blockMap.containsKey(pos.toLong())) blockMap.get(pos.toLong()).state = state;
+		else blockMap.put(pos.toLong(), new SmallUnit(pos, state));
+		state.onBlockAdded(world, pos, oldState, isMoving);
 		return state;
 	}
 	

@@ -5,6 +5,8 @@ package com.tfc.smallerunits;
 import com.tfc.smallerunits.client.RenderingHandler;
 import com.tfc.smallerunits.crafting.CraftingRegistry;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
+import com.tfc.smallerunits.networking.CLittleBlockInteractionPacket;
+import com.tfc.smallerunits.networking.SLittleBlockEventPacket;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.renderer.FlywheelProgram;
 import com.tfc.smallerunits.utils.threecore.SUResizeType;
@@ -20,6 +22,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.simple.SimpleChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import virtuoel.pehkui.api.ScaleData;
@@ -45,13 +49,13 @@ public class Smallerunits {
 	
 	// Directly reference a log4j logger.
 	public static final Logger LOGGER = LogManager.getLogger();
-
-//	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
-//			new ResourceLocation("smaller_units", "main"),
-//			() -> "1",
-//			"1"::equals,
-//			"1"::equals
-//	);
+	
+	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
+			new ResourceLocation("smaller_units", "main"),
+			() -> "1",
+			"1"::equals,
+			"1"::equals
+	);
 	
 	public Smallerunits() {
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -113,6 +117,23 @@ public class Smallerunits {
 			td.start();
 			System.setProperty("java.awt.headless", "true");
 		}
+		
+		NETWORK_INSTANCE.registerMessage(0, SLittleBlockEventPacket.class,
+				SLittleBlockEventPacket::writePacketData,
+				SLittleBlockEventPacket::new,
+				(packet, ctx) -> {
+					ctx.get().setPacketHandled(true);
+					packet.processPacket(null);
+				}
+		);
+		NETWORK_INSTANCE.registerMessage(1, CLittleBlockInteractionPacket.class,
+				CLittleBlockInteractionPacket::writePacketData,
+				CLittleBlockInteractionPacket::new,
+				(packet, ctx) -> {
+					ctx.get().setPacketHandled(true);
+					packet.handle(ctx);
+				}
+		);
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,
