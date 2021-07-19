@@ -7,6 +7,8 @@ import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.mojang.datafixers.util.Pair;
+import com.tfc.better_fps_graph.API.Profiler;
+import com.tfc.smallerunits.api.SmallerUnitsAPI;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.helpers.GameRendererHelper;
 import com.tfc.smallerunits.renderer.FlywheelProgram;
@@ -28,6 +30,7 @@ import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
@@ -36,6 +39,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.*;
 import net.minecraft.world.LightType;
+import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.fml.ModList;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -156,18 +160,19 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	}
 	
 	public static void render(UnitTileEntity tileEntityIn, float partialTicks, MatrixStack matrixStackIn, BufferCache bufferIn, int combinedLightIn, int combinedOverlayIn) {
+		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:get_and_check_world");
 		if (tileEntityIn.getFakeWorld() == null) return;
 		if (tileEntityIn.getFakeWorld() instanceof FakeServerWorld) {
 			CompoundNBT tag = tileEntityIn.serializeNBT();
 			tileEntityIn.worldServer = null;
 			tileEntityIn.handleUpdateTag(tileEntityIn.getBlockState(), tag);
 		}
-		
-		Minecraft.getInstance().getProfiler().startSection("renderSUTE");
+
 //		CompoundNBT nbt = tileEntityIn.serializeNBT();
 //
 //		if (tileEntityIn.getWorld() == null) return;
 //
+		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:matrix_copy");
 		MatrixStack oldStack = matrixStackIn;
 		matrixStackIn = new MatrixStack();
 		matrixStackIn.stack.add(oldStack.getLast());
@@ -177,9 +182,36 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 ////		tileEntityIn.worldServer.animateTick();
 //
 		
+		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:refresh_check");
+		{
+			PlayerEntity playerEntity = Minecraft.getInstance().player;
+			if (playerEntity != null) {
+				Vector3d lastPos = new Vector3d(playerEntity.prevPosX, playerEntity.prevPosY, playerEntity.prevPosZ);
+				Vector3d currentPos = playerEntity.getPositionVec();
+
+//				float scale = ResizingUtils.getSize(playerEntity);
+				float scale = 1;
+//				System.out.println(tileEntityIn.getPos().distanceSq(currentPos, true));
+//				if (tileEntityIn.getPos().distanceSq(currentPos, true) < 12) {
+				if (tileEntityIn.getPos().distanceSq(currentPos, true) < 6) {
+					scale = tileEntityIn.unitsPerBlock;
+				}
+				lastPos = lastPos.mul(scale, scale, scale);
+				currentPos = currentPos.mul(scale, scale, scale);
+				lastPos = new Vector3d(Math.round(lastPos.x), Math.round(lastPos.y), Math.round(lastPos.z));
+				currentPos = new Vector3d(Math.round(currentPos.x), Math.round(currentPos.y), Math.round(currentPos.z));
+				if (!lastPos.equals(currentPos)) {
+					tileEntityIn.needsRefresh(true);
+					if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+						vertexBufferCacheFree.put(tileEntityIn.getPos(), vertexBufferCacheUsed.remove(tileEntityIn.getPos()));
+					}
+				}
+			}
+		}
+		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:light");
 		tileEntityIn.worldClient.get().lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
-		
 		// TODO: make it render without vbos if the player is not in the same world
+		if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 		if (tileEntityIn.getWorld() == null || tileEntityIn.getWorld().equals(Minecraft.getInstance().world) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
 			boolean isRefreshing = tileEntityIn.needsRefresh(false) || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos());
 			if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) || isRefreshing) {
@@ -189,60 +221,123 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				{
 					MatrixStack stack = new MatrixStack();
 //					MatrixStack stack = oldStack;
-					Minecraft.getInstance().getProfiler().startSection("doSURender");
 					BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
 					FakeClientWorld fakeWorld = ((FakeClientWorld) tileEntityIn.getFakeWorld());
 					stack.push();
 					stack.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 					boolean renderedAnything = false;
 					CustomBuffer redirection = new CustomBuffer();
-					for (SmallUnit value : fakeWorld.blockMap.values()) {
-						{
+					for (RenderType type : RenderType.getBlockRenderTypes()) {
+						boolean hasSetType = false;
+						for (SmallUnit value : fakeWorld.blockMap.values()) {
 							stack.push();
 							stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
-							renderedAnything = true;
-							RenderType type = RenderType.getSolid();
-							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-								if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType))
-									type = blockRenderType;
-							IVertexBuilder buffer;
-							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
-								buffer = redirection.getBuffer(type);
-							} else {
-								BufferBuilder bufferBuilder = buffers.get(type);
-								buffer = bufferBuilder;
-								if (!bufferBuilder.isDrawing())
-									bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+							
+							if (RenderTypeLookup.canRenderInLayer(value.state, type)) {
+								renderedAnything = true;
+								
+								if (!hasSetType) {
+									if (ModList.get().isLoaded("better_fps_graph"))
+										Profiler.addSection("su:set_render_layer");
+									ForgeHooksClient.setRenderLayer(type);
+									if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
+									hasSetType = true;
+								}
+								
+								if (ModList.get().isLoaded("better_fps_graph"))
+									Profiler.addSection("su:render_block", 0.3, 0.4, 0.8);
+								IVertexBuilder buffer;
+								if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
+									buffer = redirection.getBuffer(type);
+								} else {
+									BufferBuilder bufferBuilder = buffers.get(type);
+									buffer = bufferBuilder;
+									if (!bufferBuilder.isDrawing())
+										bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+								}
+//								IModelData data = ModelDataManager.getModelData(fakeWorld, value.pos);
+								ForgeHooksClient.setRenderLayer(type);
+								dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+								if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 							}
-							dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+							
+							FluidState state = value.state.getFluidState();
+							if (!state.isEmpty() && RenderTypeLookup.canRenderInLayer(state, type)) {
+								IVertexBuilder buffer;
+								if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
+									buffer = redirection.getBuffer(type);
+								} else {
+									BufferBuilder bufferBuilder = buffers.get(type);
+									buffer = bufferBuilder;
+									if (!bufferBuilder.isDrawing())
+										bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+								}
+								TranslatingVertexBuilder translator = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, buffer);
+								buffer = translator;
+								translator.offset = new Vector3d(
+										((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
+										((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
+										((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
+								);
+//								dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+								dispatcher.renderFluid(value.pos, fakeWorld, buffer, state);
+							}
+							
 							stack.pop();
 						}
-						{
-							FluidState state = value.state.getFluidState();
-							if (state.isEmpty()) continue;
-							RenderType type = RenderType.getSolid();
-							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-								if (RenderTypeLookup.canRenderInLayer(state, blockRenderType)) type = blockRenderType;
-							IVertexBuilder buffer;
-							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
-								buffer = redirection.getBuffer(type);
-							} else {
-								BufferBuilder bufferBuilder = buffers.get(type);
-								buffer = bufferBuilder;
-								if (!bufferBuilder.isDrawing())
-									bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
-							}
-							TranslatingVertexBuilder translator = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, buffer);
-							buffer = translator;
-							translator.offset = new Vector3d(
-									((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
-									((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
-									((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
-							);
-//						dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
-							dispatcher.renderFluid(value.pos, fakeWorld, buffer, state);
-						}
 					}
+					ForgeHooksClient.setRenderLayer(null);
+//					for (SmallUnit value : fakeWorld.blockMap.values()) {
+//						{
+//							stack.push();
+//							stack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
+//							renderedAnything = true;
+//							RenderType type;
+//							for (RenderType blockRenderType : RenderType.getBlockRenderTypes()) {
+//								if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType)) {
+//									type = blockRenderType;
+//									IVertexBuilder buffer;
+//									if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
+//										buffer = redirection.getBuffer(type);
+//									} else {
+//										BufferBuilder bufferBuilder = buffers.get(type);
+//										buffer = bufferBuilder;
+//										if (!bufferBuilder.isDrawing())
+//											bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//									}
+////									IModelData data = ModelDataManager.getModelData(fakeWorld, value.pos);
+//									ForgeHooksClient.setRenderLayer(type);
+//									dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+//								}
+//							}
+//							stack.pop();
+//						}
+//						{
+//							FluidState state = value.state.getFluidState();
+//							if (state.isEmpty()) continue;
+//							RenderType type = RenderType.getSolid();
+//							for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+//								if (RenderTypeLookup.canRenderInLayer(state, blockRenderType)) type = blockRenderType;
+//							IVertexBuilder buffer;
+//							if (ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && false) {
+//								buffer = redirection.getBuffer(type);
+//							} else {
+//								BufferBuilder bufferBuilder = buffers.get(type);
+//								buffer = bufferBuilder;
+//								if (!bufferBuilder.isDrawing())
+//									bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
+//							}
+//							TranslatingVertexBuilder translator = new TranslatingVertexBuilder(1f / tileEntityIn.unitsPerBlock, buffer);
+//							buffer = translator;
+//							translator.offset = new Vector3d(
+//									((int) MathUtils.getChunkOffset(value.pos.getX(), 16)) * 16,
+//									((int) MathUtils.getChunkOffset(value.pos.getY() - 64, 16)) * 16,
+//									((int) MathUtils.getChunkOffset(value.pos.getZ(), 16)) * 16
+//							);
+////						dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+//							dispatcher.renderFluid(value.pos, fakeWorld, buffer, state);
+//						}
+//					}
 					
 					if (ModList.get().isLoaded("flywheel") && false) {
 						for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
@@ -290,14 +385,29 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 							} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
 							if (suvbo == null) suvbo = new SUVBO();
 							suvbo.markAllUnused();
-							buffers.forEach(suvbo::uploadTerrain);
+							SUVBO finalSuvbo = suvbo;
+							buffers.forEach((type, buffer) -> {
+								if (RenderTypeHelper.isTransparent(type)) {
+									if (ModList.get().isLoaded("better_fps_graph"))
+										Profiler.addSection("su:sort_quads", 0.2, 0.5, 0.7);
+									buffer.sortVertexData(
+											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
+											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
+											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
+									);
+								}
+								if (ModList.get().isLoaded("better_fps_graph"))
+									Profiler.addSection("su:upload_vbo", 0.2, 0.2, 0.7);
+								finalSuvbo.uploadTerrain(type, buffer);
+								if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
+							});
 							vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
 						} else {
 							buffers.forEach((type, buffer) -> {
 								buffer.sortVertexData(
-										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
-										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
-										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
+										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
+										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
+										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
 								);
 								RenderSystem.pushMatrix();
 								RenderSystem.loadIdentity();
@@ -313,14 +423,18 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					stack.pop();
 				}
 				if (SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+					if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:draw_vbo", 0.4, 0.2, 0.8);
 					matrixStackIn = oldStack;
 					SUVBO vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
 					if (vbo != null) vbo.render(matrixStackIn);
+					if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 				}
 			} else {
+				if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:draw_vbo", 0.4, 0.2, 0.8);
 				matrixStackIn = oldStack;
 				SUVBO vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
 				if (vbo != null) vbo.render(matrixStackIn);
+				if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 			}
 		} else {
 			BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
@@ -342,7 +456,6 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		}
 		matrixStackIn = oldStack;
 		
-		Minecraft.getInstance().getProfiler().endStartSection("renderTileEntities");
 		matrixStackIn.push();
 		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 		for (SmallUnit value : tileEntityIn.getBlockMap().values()) {
@@ -382,7 +495,6 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		}
 		matrixStackIn.pop();
 		
-		Minecraft.getInstance().getProfiler().endStartSection("renderEmpty");
 		boolean isEmpty = tileEntityIn.getBlockMap().isEmpty();
 		if (!isEmpty) {
 			isEmpty = true;
@@ -414,7 +526,6 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //		matrixStackIn.push();
 //		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 		
-		Minecraft.getInstance().getProfiler().endStartSection("renderEntities");
 		for (Entity entity : tileEntityIn.getEntitiesById().values()) {
 			MatrixStack finalMatrixStackIn = new MatrixStack();
 			finalMatrixStackIn.stack.add(oldStack.getLast());
@@ -473,7 +584,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			}
 			finalMatrixStackIn.pop();
 		}
-		Minecraft.getInstance().getProfiler().endSection();
+		
+		SmallerUnitsAPI.postRenderUnitLast(bufferIn.buffer, tileEntityIn);
 		
 		tileEntityIn.getProfiler().endTick();
 //		oldStack.pop();
@@ -520,7 +632,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //			}
 //		}
 		
-		Minecraft.getInstance().getProfiler().endSection();
+		if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 	}
 	
 	public static void renderHalf(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn) {

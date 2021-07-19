@@ -38,26 +38,9 @@ public class UnitRaytraceHelper {
 		
 		for (SmallUnit unit : tileEntity.getBlockMap().values()) {
 			VoxelShape shape1;
-//			{
-//				AxisAlignedBB aabb = new AxisAlignedBB(0,0,0,1f/tileEntity.unitsPerBlock,1f/tileEntity.unitsPerBlock,1f/tileEntity.unitsPerBlock);
-//				aabb = aabb.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
-//				aabb = aabb.offset(pos.getX(), pos.getY(), pos.getZ());
-//				Optional<Vector3d> intercept = aabb.rayTrace(start, end);
-//				if (!intercept.isPresent() && !aabb.contains(start) && !aabb.contains(end))
-//					continue;
-//			}
 			if (contextOptional.isPresent())
 				shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
 			else shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
-			if (shape1.isEmpty())
-				if (contextOptional.isPresent())
-					shape1 = unit.state.getRaytraceShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
-				else
-					shape1 = unit.state.getRaytraceShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
-			if (shape1.isEmpty())
-				if (contextOptional.isPresent())
-					shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
-				else shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
 			ArrayList<AxisAlignedBB> aabbs = shrink(shape1, tileEntity.unitsPerBlock);
 			
 			for (AxisAlignedBB axisAlignedBB : aabbs) {
@@ -120,6 +103,80 @@ public class UnitRaytraceHelper {
 		
 		context = new UnitRaytraceContext(shape, hitPos, hitVec);
 		context.hitFace = hitFace;
+		return context;
+	}
+	
+	public static UnitRaytraceContext raytraceBlockWithoutShape(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
+		Vector3d start = entity.getEyePosition(0);
+		double reach = 8;
+		
+		if (entity instanceof PlayerEntity)
+			reach = ((LivingEntity) entity).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
+		Vector3d look = entity.getLookVec().scale(reach);
+		Vector3d end = entity.getEyePosition(0).add(look);
+		
+		double bestDist = Double.POSITIVE_INFINITY;
+		
+		BlockPos hitPos = null;
+		Vector3d hitVec = null;
+		
+		Optional<Direction> hitFace = Optional.empty();
+		
+		for (SmallUnit unit : tileEntity.getBlockMap().values()) {
+			VoxelShape shape1;
+			if (contextOptional.isPresent())
+				shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, contextOptional.get());
+			else shape1 = unit.state.getShape(tileEntity.getFakeWorld(), unit.pos, ISelectionContext.dummy());
+			ArrayList<AxisAlignedBB> aabbs = shrink(shape1, tileEntity.unitsPerBlock);
+			
+			for (AxisAlignedBB axisAlignedBB : aabbs) {
+				axisAlignedBB = axisAlignedBB.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
+				axisAlignedBB = axisAlignedBB.offset(pos.getX(), pos.getY(), pos.getZ());
+				
+				Optional<Vector3d> intercept = axisAlignedBB.rayTrace(start, end);
+				if (!intercept.isPresent()) continue;
+				
+				double dist = intercept.get().distanceTo(start);
+				if (dist > bestDist) continue;
+				
+				bestDist = dist;
+				hitPos = unit.pos;
+				hitVec = intercept.get();
+				Vector3d vector3d = hitVec.subtract(start);
+				hitFace = Optional.of(Direction.getFacingFromVector(vector3d.x, vector3d.y, vector3d.z).getOpposite());
+				for (Direction value : Direction.values()) {
+					if (value.getXOffset() < 0) {
+						if (axisAlignedBB.minX == hitVec.x) {
+							hitFace = Optional.of(value);
+						}
+					} else if (value.getXOffset() > 0) {
+						if (axisAlignedBB.maxX == hitVec.x) {
+							hitFace = Optional.of(value);
+						}
+					} else if (value.getYOffset() < 0) {
+						if (axisAlignedBB.minY == hitVec.y) {
+							hitFace = Optional.of(value);
+						}
+					} else if (value.getYOffset() > 0) {
+						if (axisAlignedBB.maxY == hitVec.y) {
+							hitFace = Optional.of(value);
+						}
+					} else if (value.getZOffset() < 0) {
+						if (axisAlignedBB.minZ == hitVec.z) {
+							hitFace = Optional.of(value);
+						}
+					} else if (value.getZOffset() > 0) {
+						if (axisAlignedBB.maxZ == hitVec.z) {
+							hitFace = Optional.of(value);
+						}
+					}
+				}
+			}
+		}
+		
+		UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
+		context.hitFace = hitFace;
+		context.posHit = hitPos;
 		return context;
 	}
 	

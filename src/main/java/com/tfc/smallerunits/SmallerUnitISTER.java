@@ -24,6 +24,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Quaternion;
 import net.minecraft.util.math.vector.Vector3f;
 import net.minecraftforge.client.model.data.EmptyModelData;
@@ -103,7 +104,7 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 		int unitsPerBlock = nbt.getInt("upb");
 		
 		Minecraft.getInstance().getProfiler().startSection("constructPallet");
-		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), null);
+		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), null, BlockPos.ZERO, unitsPerBlock);
 		
 		Minecraft.getInstance().getProfiler().endStartSection("doRender");
 		matrixStack.push();

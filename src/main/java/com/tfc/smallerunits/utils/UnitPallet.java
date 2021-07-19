@@ -1,5 +1,6 @@
 package com.tfc.smallerunits.utils;
 
+import com.tfc.smallerunits.api.placement.UnitPos;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -63,7 +64,7 @@ public class UnitPallet {
 		nbt.put("blocks", blocks);
 	}
 	
-	public UnitPallet(CompoundNBT nbt, World world) {
+	public UnitPallet(CompoundNBT nbt, World world, BlockPos realPos, int scale) {
 		this.nbt = nbt;
 		ListNBT listNBT = nbt.getList("units", Constants.NBT.TAG_COMPOUND);
 		CompoundNBT stateIndexMap = nbt.getCompound("states");
@@ -71,7 +72,7 @@ public class UnitPallet {
 		
 		for (INBT inbt : listNBT) {
 			CompoundNBT nbt1 = (CompoundNBT) inbt;
-			BlockPos pos = new BlockPos(nbt1.getInt("x"), nbt1.getInt("y") + 64, nbt1.getInt("z"));
+			BlockPos pos = new UnitPos(nbt1.getInt("x"), nbt1.getInt("y") + 64, nbt1.getInt("z"), realPos, scale);
 			
 			int stateIndex = nbt1.getInt("state");
 			String state = stateIndexMap.getString(stateIndex + "");
@@ -87,17 +88,17 @@ public class UnitPallet {
 			SmallUnit unit = null;
 			for (BlockState validState : block.getStateContainer().getValidStates()) {
 				if (validState.toString().startsWith("Block{" + state.replace("[", "}["))) {
-					unit = new SmallUnit(pos, validState);
+					unit = new SmallUnit(new UnitPos(pos, realPos, scale), validState);
 					posUnitMap.put(pos.toLong(), unit);
 					break;
 				} else if (validState.toString().equals(state)) {
-					unit = new SmallUnit(pos, validState);
+					unit = new SmallUnit(new UnitPos(pos, realPos, scale), validState);
 					posUnitMap.put(pos.toLong(), unit);
 					break;
 				}
 			}
 			if (unit == null && block != Blocks.AIR) {
-				unit = new SmallUnit(pos, block.getDefaultState());
+				unit = new SmallUnit(new UnitPos(pos, realPos, scale), block.getDefaultState());
 				posUnitMap.put(pos.toLong(), unit);
 			}
 			
@@ -109,7 +110,11 @@ public class UnitPallet {
 				if (type == null) continue;
 				TileEntity te = type.create();
 				if (te == null) continue;
-				te.read(unit.state, teNBT);
+				if (world.isRemote) {
+					// TODO: do this properly
+					te.setWorldAndPos(world, unit.pos);
+					te.handleUpdateTag(unit.state, teNBT);
+				} else te.read(unit.state, teNBT);
 				unit.tileEntity = te;
 				if (world != null) unit.tileEntity.setWorldAndPos(world, pos);
 			}

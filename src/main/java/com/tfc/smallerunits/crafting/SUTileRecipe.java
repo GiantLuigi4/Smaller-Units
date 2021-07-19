@@ -2,6 +2,7 @@ package com.tfc.smallerunits.crafting;
 
 import com.tfc.smallerunits.TileResizingItem;
 import com.tfc.smallerunits.UnitItem;
+import com.tfc.smallerunits.api.placement.UnitPos;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitPallet;
@@ -52,7 +53,7 @@ public class SUTileRecipe extends SpecialRecipe {
 		nbt.putInt("upb", 4);
 		if (otherThing != null) {
 			ArrayList<SmallUnit> units = new ArrayList<>();
-			units.add(new SmallUnit(new BlockPos(0, 64, 0), ((BlockItem) otherThing.getItem()).getBlock().getDefaultState()));
+			units.add(new SmallUnit(new UnitPos(0, 64, 0, BlockPos.ZERO, 4), ((BlockItem) otherThing.getItem()).getBlock().getDefaultState()));
 			UnitPallet pallet = new UnitPallet(units);
 			nbt.put("containedUnits", pallet.nbt);
 		}

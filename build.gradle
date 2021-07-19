@@ -139,6 +139,10 @@ dependencies {
     implementation fg.deobf('curse.maven:create-328085:3278516') //3278516
 //    implementation fg.deobf('curse.maven:botania-225643:3175663')
     implementation fg.deobf('curse.maven:patchouli-306770:3204037')
+    implementation fg.deobf('curse.maven:framedblocks-441647:3381744')
+    implementation fg.deobf("curse.maven:better_fps_graph-399699:3094889")
+//    implementation fg.deobf('com.github.XFactHD:FramedBlocks:cc915289ef')
+//    implementation fg.deobf(files("FramedBlocks-2.9.2.jar"))
     implementation fg.deobf('curse.maven:curios-309927:3186427')
     implementation fg.deobf('curse.maven:chiselandbits-231095:3176033')
     compileOnly fg.deobf('curse.maven:gullivern-385915:3227241')

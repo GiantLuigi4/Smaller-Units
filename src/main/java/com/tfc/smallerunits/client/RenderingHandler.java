@@ -8,6 +8,8 @@ import com.tfc.smallerunits.block.SmallerUnitBlock;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.helpers.BufferCacheHelper;
 import com.tfc.smallerunits.mixins.WorldRendererMixin;
+import com.tfc.smallerunits.utils.UnitRaytraceContext;
+import com.tfc.smallerunits.utils.UnitRaytraceHelper;
 import com.tfc.smallerunits.utils.rendering.BufferCache;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import net.minecraft.block.BlockState;
@@ -37,6 +39,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Optional;
 
 public class RenderingHandler {
 	static boolean hasChecked = false;
@@ -261,40 +264,63 @@ public class RenderingHandler {
 				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
 				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
 		);
-		VoxelShape shape = SmallerUnitBlock.getShapeOld(state, Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos(),
-				new ISelectionContext() {
-					@Override
-					public boolean getPosY() {
-						return false;
-					}
-					
-					@Override
-					public boolean func_216378_a(VoxelShape shape, BlockPos pos, boolean p_216378_3_) {
-						return false;
-					}
-					
-					@Override
-					public boolean hasItem(Item itemIn) {
-						return false;
-					}
-					
-					@Nullable
-					@Override
-					public Entity getEntity() {
-						return Minecraft.getInstance().player;
-					}
-					
-					@Override
-					public boolean func_230426_a_(FluidState p_230426_1_, FlowingFluid p_230426_2_) {
-						return false;
-					}
-				});
+		ISelectionContext context = new ISelectionContext() {
+			@Override
+			public boolean getPosY() {
+				return false;
+			}
+			
+			@Override
+			public boolean func_216378_a(VoxelShape shape, BlockPos pos, boolean p_216378_3_) {
+				return false;
+			}
+			
+			@Override
+			public boolean hasItem(Item itemIn) {
+				return false;
+			}
+			
+			@Nullable
+			@Override
+			public Entity getEntity() {
+				return Minecraft.getInstance().player;
+			}
+			
+			@Override
+			public boolean func_230426_a_(FluidState p_230426_1_, FlowingFluid p_230426_2_) {
+				return false;
+			}
+		};
+//		VoxelShape shape = SmallerUnitBlock.getShapeOld(state, Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos(), context);
+		TileEntity te = Minecraft.getInstance().world.getTileEntity(((BlockRayTraceResult) event.getTarget()).getPos());
+		if (!(te instanceof UnitTileEntity)) return;
+		UnitTileEntity tileEntity = (UnitTileEntity) te;
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player.getEntity(), true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.of(context));
+		VoxelShape shape;
+		if (raytraceContext.posHit != null) {
+			BlockState state1 = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);
+			shape = state1.getShape(((UnitTileEntity) te).getFakeWorld(), raytraceContext.posHit, context);
+			if (shape.isEmpty()) {
+				shape = SmallerUnitBlock.getShapeOld(state, Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos(), context);
+				raytraceContext.posHit = null;
+			}
+		} else {
+			shape = SmallerUnitBlock.getShapeOld(state, Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos(), context);
+		}
 		IVertexBuilder builder = event.getBuffers().getBuffer(RenderType.getLines());
 		event.getMatrix().translate(
 				((BlockRayTraceResult) event.getTarget()).getPos().getX(),
 				((BlockRayTraceResult) event.getTarget()).getPos().getY(),
 				((BlockRayTraceResult) event.getTarget()).getPos().getZ()
 		);
+		if (raytraceContext.posHit != null) {
+			event.getMatrix().scale(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
+			event.getMatrix().translate(
+					raytraceContext.posHit.getX(),
+					raytraceContext.posHit.getY() - 64,
+					raytraceContext.posHit.getZ()
+			);
+		}
 		Matrix4f matrix4f = event.getMatrix().getLast().getMatrix();
 		float red = 0;
 		float green = 0;

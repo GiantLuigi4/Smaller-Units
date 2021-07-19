@@ -95,11 +95,11 @@ public class SmallerUnitsConfig {
 			useVBOS = builder
 					.comment("Buggy, higher GPU usage, better performance (will destroy your game if there are too many unit tile entities or you reload textures too much)")
 					.translation("config.smaller_units.use_vbos")
-					.define("UseVOBS", false);
+					.define("UseVOBS", true);
 			useExperimentalSelection = builder
 					.comment("Less likely to select the block behind the selected unit block, but work in progress")
 					.translation("config.smaller_units.experimental_selection")
-					.define("ExperimentalSelection", false);
+					.define("ExperimentalSelection", true);
 			lightingUpdatesPerFrame = builder
 					.comment("How many lighting updates should occur on each small unit block per frame, lower values look worse but cause less lag, higher values cause more lag but look better")
 					.comment("Default: 10")

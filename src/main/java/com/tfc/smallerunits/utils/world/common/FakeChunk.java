@@ -1,5 +1,8 @@
 package com.tfc.smallerunits.utils.world.common;
 
+import com.tfc.smallerunits.api.SmallerUnitsAPI;
+import com.tfc.smallerunits.api.placement.UnitPos;
+import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
@@ -85,19 +88,14 @@ public class FakeChunk extends Chunk {
 	}
 	
 	public Collection<Entity> getEntities() {
-		if (world instanceof FakeServerWorld) {
-			return ((FakeServerWorld) world).entitiesById.values();
-		} else {
-			return ((FakeClientWorld) world).entitiesById.values();
-		}
+		if (world instanceof FakeServerWorld) return ((FakeServerWorld) world).entitiesById.values();
+		else return ((FakeClientWorld) world).entitiesById.values();
 	}
 	
 	@Override
 	public Set<BlockPos> getTileEntitiesPos() {
 		ObjectArraySet<BlockPos> tileEntityPoses = new ObjectArraySet<>();
-		for (TileEntity tileEntity : world.loadedTileEntityList) {
-			tileEntityPoses.add(tileEntity.getPos());
-		}
+		for (TileEntity tileEntity : world.loadedTileEntityList) tileEntityPoses.add(tileEntity.getPos());
 		return tileEntityPoses;
 	}
 	
@@ -145,6 +143,7 @@ public class FakeChunk extends Chunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
+		if (!(pos instanceof UnitPos)) pos = SmallerUnitsAPI.createPos(pos, getOwner());
 		Map<Long, SmallUnit> blockMap;
 		if (world instanceof FakeServerWorld) blockMap = ((FakeServerWorld) world).blockMap;
 		else blockMap = ((FakeClientWorld) world).blockMap;
@@ -153,9 +152,14 @@ public class FakeChunk extends Chunk {
 		else oldState = Blocks.AIR.getDefaultState();
 		oldState.onReplaced(world, pos, state, isMoving);
 		if (blockMap.containsKey(pos.toLong())) blockMap.get(pos.toLong()).state = state;
-		else blockMap.put(pos.toLong(), new SmallUnit(pos, state));
+		else blockMap.put(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, getOwner()), state));
 		state.onBlockAdded(world, pos, oldState, isMoving);
 		return state;
+	}
+	
+	private UnitTileEntity getOwner() {
+		if (world instanceof FakeServerWorld) return ((FakeServerWorld) world).owner;
+		else return ((FakeClientWorld) world).owner;
 	}
 	
 	@Nullable

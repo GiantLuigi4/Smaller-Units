@@ -1,19 +1,24 @@
 package com.tfc.smallerunits.utils.world.server;
 
+import com.mojang.serialization.Lifecycle;
 import net.minecraft.command.TimerCallbackManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.GameType;
+import net.minecraft.world.WorldSettings;
 import net.minecraft.world.border.WorldBorder;
+import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.storage.IServerWorldInfo;
+import net.minecraft.world.storage.ServerWorldInfo;
 
 import java.util.UUID;
 
-public class FakeServerWorldInfo implements IServerWorldInfo {
+public class FakeServerWorldInfo extends ServerWorldInfo {
 	public FakeServerWorld owner;
 	
-	public FakeServerWorldInfo(FakeServerWorld owner) {
+	public FakeServerWorldInfo(WorldSettings worldSettings, DimensionGeneratorSettings generatorSettings, Lifecycle lifecycle, FakeServerWorld owner) {
+		super(worldSettings, generatorSettings, lifecycle);
 		this.owner = owner;
 	}
 	

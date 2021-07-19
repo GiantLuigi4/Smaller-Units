@@ -38,4 +38,11 @@ public class RenderTypeHelper {
 			return type.toString();
 		}
 	}
+	
+	public static boolean isTransparent(RenderType type) {
+		return
+				type.equals(RenderType.getTranslucent()) ||
+						type.equals(RenderType.getTranslucentMovingBlock()) ||
+						type.equals(RenderType.getTranslucentNoCrumbling());
+	}
 }

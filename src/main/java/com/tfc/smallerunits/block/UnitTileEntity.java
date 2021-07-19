@@ -350,7 +350,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 //		}
 		
 		this.unitsPerBlock = Math.min(Math.max(nbt.getInt("upb"), 1), 256);
-		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), getFakeWorld());
+		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), getFakeWorld(), getPos(), unitsPerBlock);
 		this.setBlockMap(pallet.posUnitMap);
 		
 		needsRefresh(true);
@@ -500,7 +500,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			ListNBT pendingBlockTicks = new ListNBT();
 			for (NextTickListEntry<Block> blockNextTickListEntry : this.worldServer.getPendingBlockTicks().getPending(new ChunkPos(0), false, false)) {
 				CompoundNBT tick = new CompoundNBT();
-				tick.putLong("time", blockNextTickListEntry.field_235017_b_);
+				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - world.getGameTime());
 				tick.putInt("x", blockNextTickListEntry.position.getX());
 				tick.putInt("y", blockNextTickListEntry.position.getY());
 				tick.putInt("z", blockNextTickListEntry.position.getZ());
@@ -513,7 +513,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			ListNBT pendingFluidTicks = new ListNBT();
 			for (NextTickListEntry<Fluid> blockNextTickListEntry : this.worldServer.getPendingFluidTicks().getPending(new ChunkPos(0), false, false)) {
 				CompoundNBT tick = new CompoundNBT();
-				tick.putLong("time", blockNextTickListEntry.field_235017_b_);
+				tick.putLong("time", blockNextTickListEntry.field_235017_b_ - world.getGameTime());
 				tick.putInt("x", blockNextTickListEntry.position.getX());
 				tick.putInt("y", blockNextTickListEntry.position.getY());
 				tick.putInt("z", blockNextTickListEntry.position.getZ());

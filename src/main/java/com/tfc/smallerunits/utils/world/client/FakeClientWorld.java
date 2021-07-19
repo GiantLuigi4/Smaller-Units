@@ -1,6 +1,8 @@
 package com.tfc.smallerunits.utils.world.client;
 
 import com.tfc.smallerunits.SmallerUnitsTESR;
+import com.tfc.smallerunits.api.SmallerUnitsAPI;
+import com.tfc.smallerunits.api.placement.UnitPos;
 import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.registry.Deferred;
 import com.tfc.smallerunits.utils.ExternalUnitInteractionContext;
@@ -47,10 +49,7 @@ import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.lighting.WorldLightManager;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -78,6 +77,7 @@ public class FakeClientWorld extends ClientWorld {
 				return new FakeChunk(world, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()), world);
 			}
 		};
+		blockMap = new HashMap<>();
 //		this.addedTileEntityList = new ArrayList<>();
 //		this.loadedTileEntityList = new ArrayList<>();
 //		this.tickableTileEntities = new ArrayList<>();
@@ -276,15 +276,14 @@ public class FakeClientWorld extends ClientWorld {
 	
 	@Override
 	public boolean addTileEntity(TileEntity tile) {
+		if (!(tile.getPos() instanceof UnitPos)) tile.setPos(SmallerUnitsAPI.createPos(tile.getPos(), owner));
 		setTileEntity(tile.getPos(), tile);
 		return true;
 	}
 	
 	@Override
 	public void addTileEntities(Collection<TileEntity> tileEntityCollection) {
-		for (TileEntity tileEntity : tileEntityCollection) {
-			addTileEntity(tileEntity);
-		}
+		for (TileEntity tileEntity : tileEntityCollection) addTileEntity(tileEntity);
 	}
 	
 	@Override
@@ -365,7 +364,7 @@ public class FakeClientWorld extends ClientWorld {
 				}
 			}
 		}
-		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState()));
+		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, owner), Blocks.AIR.getDefaultState()));
 		
 		if (unit.tileEntity != null && unit.tileEntity != tileEntityIn) {
 			try {
@@ -431,7 +430,7 @@ public class FakeClientWorld extends ClientWorld {
 				}
 			}
 		}
-		return blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).state;
+		return blockMap.getOrDefault(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, owner), Blocks.AIR.getDefaultState())).state;
 	}
 	
 	public void init(UnitTileEntity owner) {
@@ -530,7 +529,7 @@ public class FakeClientWorld extends ClientWorld {
 		if (removedTileEntities.contains(pos)) return null;
 		for (TileEntity tileEntity : loadedTileEntityList) {
 			if (tileEntity.getPos().equals(pos)) {
-				TileEntity te = blockMap.getOrDefault(pos.toLong(), new SmallUnit(pos, Blocks.AIR.getDefaultState())).tileEntity;
+				TileEntity te = blockMap.getOrDefault(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, owner), Blocks.AIR.getDefaultState())).tileEntity;
 				return te;
 //				containsTE = true;
 			}

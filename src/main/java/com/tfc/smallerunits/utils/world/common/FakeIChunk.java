@@ -2,6 +2,8 @@ package com.tfc.smallerunits.utils.world.common;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.tfc.smallerunits.api.SmallerUnitsAPI;
+import com.tfc.smallerunits.api.placement.UnitPos;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -45,12 +47,13 @@ public class FakeIChunk implements IChunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState state, boolean isMoving) {
+		if (!(pos instanceof UnitPos)) pos = SmallerUnitsAPI.createPos(pos, owner.owner);
 		BlockState oldState;
 		if (owner.blockMap.containsKey(pos.toLong())) oldState = owner.blockMap.get(pos.toLong()).state;
 		else oldState = Blocks.AIR.getDefaultState();
-		oldState.onReplaced(owner, pos, state, isMoving);
 		if (owner.blockMap.containsKey(pos.toLong())) owner.blockMap.get(pos.toLong()).state = state;
-		else owner.blockMap.put(pos.toLong(), new SmallUnit(pos, state));
+		else owner.blockMap.put(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, owner.owner), state));
+		oldState.onReplaced(owner, pos, state, isMoving);
 		owner.blockMap.get(pos.toLong()).state.onBlockAdded(owner, pos, oldState, isMoving);
 		return state;
 	}

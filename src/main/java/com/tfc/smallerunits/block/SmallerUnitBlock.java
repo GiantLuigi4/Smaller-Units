@@ -3,6 +3,8 @@ package com.tfc.smallerunits.block;
 import com.google.common.collect.ImmutableSet;
 import com.tfc.smallerunits.SmallerUnitsConfig;
 import com.tfc.smallerunits.Smallerunits;
+import com.tfc.smallerunits.api.SmallerUnitsAPI;
+import com.tfc.smallerunits.api.placement.UnitPos;
 import com.tfc.smallerunits.helpers.ContainerMixinHelper;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
 import com.tfc.smallerunits.networking.CLittleBlockInteractionPacket;
@@ -92,6 +94,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			return;
 		
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		if (tileEntity.getBlockMap() == null) return;
 		for (SmallUnit value : tileEntity.getBlockMap().values()) {
 			if (!value.state.isAir()) {
 				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
@@ -374,7 +377,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		
 		BlockPos hitPos;
 		if (worldIn instanceof FakeServerWorld) {
-			hitPos = new BlockPos(((FakeServerWorld) worldIn).owner.worldServer.result.getHitVec());
+			hitPos = new UnitPos(((FakeServerWorld) worldIn).owner.worldServer.result.getHitVec(), pos, tileEntity.unitsPerBlock);
 		} else if (raytraceContext.shapeHit == null || raytraceContext.shapeHit.isEmpty()) {
 			(player).resetActiveHand();
 			return 0;
@@ -533,7 +536,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			}
 		}
-		PacketHacksHelper.unitPos = new BlockPos(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+		PacketHacksHelper.unitPos = new UnitPos(worldPos.getX(), worldPos.getY(), worldPos.getZ(), worldPos, tileEntity.unitsPerBlock);
 		canRemove = !player.getHeldItem(Hand.MAIN_HAND).onBlockStartBreak(raytraceContext.posHit, player);
 		PacketHacksHelper.unitPos = null;
 		
@@ -738,10 +741,11 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				pos = invRound(pos);
 			}
 			
-			BlockPos hitPos = new BlockPos(
+			BlockPos hitPos = new UnitPos(
 					Math.floor(pos.x),
 					Math.floor(pos.y) + 64,
-					Math.floor(pos.z)
+					Math.floor(pos.z),
+					worldPos, tileEntity.unitsPerBlock
 			);
 			
 			raytraceContext.posHit = hitPos;
@@ -1208,7 +1212,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				if (te instanceof UnitTileEntity) {
 					if (!worldIn.isRemote)
 						((UnitTileEntity) te).createServerWorld();
-					value.pos = context.posInFakeWorld;
+					value.pos = SmallerUnitsAPI.createPos(context.posInFakeWorld, tileEntity1);
 					if (((UnitTileEntity) te).getFakeWorld() == null) continue;
 					((UnitTileEntity) te).getFakeWorld().setBlockState(value.pos, value.state, 3, 0);
 					((UnitTileEntity) te).getFakeWorld().setTileEntity(value.pos, value.tileEntity);
@@ -1285,15 +1289,16 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //					if (!intercept.isPresent() && !aabb.contains(start) && !aabb.contains(end))
 //						continue;
 //				}
-				Minecraft.getInstance().getProfiler().startSection("get_shape_for_" + value.state.toString());
-				VoxelShape shape1 = value.state.getRaytraceShape(tileEntity.getFakeWorld(), value.pos, ISelectionContext.dummy());
-				if (shape1.isEmpty()) shape1 = value.state.getShape(tileEntity.getFakeWorld(), tileEntity.getPos());
-				Minecraft.getInstance().getProfiler().startSection("shrink_shape");
+//				Minecraft.getInstance().getProfiler().startSection("get_shape_for_" + value.state.toString());
+				Minecraft.getInstance().getProfiler().startSection("get_shape_for");
+				VoxelShape shape1 = value.state.getShape(tileEntity.getFakeWorld(), tileEntity.getPos());
+				if (!shape1.isEmpty()) shape1 = VoxelShapes.create(0, 0, 0, 1, 1, 1);
+				Minecraft.getInstance().getProfiler().startSection("shrink_cube");
 				VoxelShape shape2 = VoxelShapes.empty();
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
 					shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
 				}
-				Minecraft.getInstance().getProfiler().endStartSection("move_shape");
+				Minecraft.getInstance().getProfiler().endStartSection("move_cube");
 				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
 				Minecraft.getInstance().getProfiler().endStartSection("merge_shape");
 				shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
@@ -1493,6 +1498,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			}
 		}
+		SmallerUnitsAPI.postCollisionEvent(shape, tileEntity);
 		return shape;
 	}
 	
@@ -1529,10 +1535,11 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			pos = invRound(pos);
 		}
 		
-		return new BlockPos(
+		return new UnitPos(
 				Math.floor(pos.x),
 				Math.floor(pos.y),
-				Math.floor(pos.z)
+				Math.floor(pos.z),
+				worldPos, scale
 		);
 	}
 	

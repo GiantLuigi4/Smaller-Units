@@ -16,6 +16,7 @@ public class SUVBO {
 	public ArrayList<BufferStorage> buffers = new ArrayList<>();
 	
 	public void render(MatrixStack matrixStack) {
+		buffers.sort(BufferStorage::compareTo);
 		Minecraft.getInstance().getProfiler().startSection("renderVBOs");
 		boolean isFirst = true;
 		for (BufferStorage storage : buffers) {

@@ -2,6 +2,7 @@ package com.tfc.smallerunits;
 
 //import com.tfc.smallerunits.client.TickHandler;
 
+import com.tfc.smallerunits.api.SmallerUnitsAPI;
 import com.tfc.smallerunits.client.RenderingHandler;
 import com.tfc.smallerunits.crafting.CraftingRegistry;
 import com.tfc.smallerunits.helpers.PacketHacksHelper;
@@ -58,6 +59,8 @@ public class Smallerunits {
 	);
 	
 	public Smallerunits() {
+		IEventBus suEventBus = SmallerUnitsAPI.EVENT_BUS;
+		
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
