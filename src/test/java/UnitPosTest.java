@@ -1,5 +1,5 @@
-import com.tfc.smallerunits.api.placement.UnitPos;
 import net.minecraft.util.math.BlockPos;
+import tfc.smallerunits.api.placement.UnitPos;
 
 public class UnitPosTest {
 	public static void main(String[] args) {

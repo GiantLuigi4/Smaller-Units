@@ -1,4 +1,4 @@
-import com.tfc.smallerunits.utils.MathUtils;
+import tfc.smallerunits.utils.MathUtils;
 
 public class ChunkModTest {
 	public static void main(String[] args) {
