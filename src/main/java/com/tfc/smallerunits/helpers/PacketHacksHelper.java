@@ -1,12 +1,13 @@
 package com.tfc.smallerunits.helpers;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.util.math.BlockPos;
+
+import java.util.HashMap;
 
 public class PacketHacksHelper {
 	public static BlockPos unitPos = null;
 	
-	private static final Object2ObjectLinkedOpenHashMap<Object, BlockPos> map = new Object2ObjectLinkedOpenHashMap<>();
+	private static final HashMap<Object, BlockPos> map = new HashMap<>();
 	
 	public static <MSG> void setPosForPacket(MSG packet, BlockPos pos) {
 		map.put(packet, pos);
@@ -17,6 +18,7 @@ public class PacketHacksHelper {
 	}
 	
 	public static <MSG> void markPacketDone(MSG msg) {
-		map.remove(msg);
+		if (map.isEmpty()) return;
+		if (map.containsKey(msg)) map.remove(msg);
 	}
 }

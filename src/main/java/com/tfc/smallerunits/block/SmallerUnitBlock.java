@@ -45,6 +45,7 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.math.vector.Vector3i;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.*;
 import net.minecraft.world.server.ServerWorld;
@@ -86,33 +87,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	public static final HashMap<CompoundNBT, VoxelShape> shapeMap = new HashMap<>();
 	public static final HashMap<CompoundNBT, ArrayList<VoxelShape>> shapeMapRegions = new HashMap<>();
 	
-	@Override
-	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
-		TileEntity tileEntityUncasted = world.getTileEntity(pos);
-		
-		if (entity == null || !(tileEntityUncasted instanceof UnitTileEntity))
-			return;
-		
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
-		if (tileEntity.getBlockMap() == null) return;
-		for (SmallUnit value : tileEntity.getBlockMap().values()) {
-			if (!value.state.isAir()) {
-				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
-//				pos1 = pos1.add(0.5, 0.5, 0.5);
-				pos1 = pos1.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
-				pos1 = pos1.add(pos.getX(), pos.getY(), pos.getZ());
-				AxisAlignedBB aabb = new AxisAlignedBB(
-						pos1.x, pos1.y, pos1.z,
-						pos1.x + 1f / tileEntity.unitsPerBlock,
-						pos1.y + 1f / tileEntity.unitsPerBlock,
-						pos1.z + 1f / tileEntity.unitsPerBlock
-				);
-				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
-					value.state.onEntityCollision(tileEntity.getFakeWorld(), value.pos, entity);
-				}
-			}
-		}
-	}
+	protected static final HashMap<Vector3i, VoxelShape> selectionShapeHashMap = new HashMap<>();
 	
 	//TODO:
 //	@Override
@@ -262,14 +237,14 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				else if (dir == Direction.SOUTH)
 					pos2 = new BlockPos(pos2.getX(), pos2.getY(), tileEntity.unitsPerBlock);
 				
-				float minX = pos2.getX() / (float) tileEntity.unitsPerBlock;
-				float maxX = pos2.getX() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
-				float minY = pos2.getY() / (float) tileEntity.unitsPerBlock;
-				float maxY = pos2.getY() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
-				float minZ = pos2.getZ() / (float) tileEntity.unitsPerBlock;
-				float maxZ = pos2.getZ() / (float) tileEntity.unitsPerBlock + 1f / tileEntity.unitsPerBlock;
+				double minX = pos2.getX() / (double) tileEntity.unitsPerBlock;
+				double maxX = pos2.getX() / (double) tileEntity.unitsPerBlock + 1d / tileEntity.unitsPerBlock;
+				double minY = pos2.getY() / (double) tileEntity.unitsPerBlock;
+				double maxY = pos2.getY() / (double) tileEntity.unitsPerBlock + 1d / tileEntity.unitsPerBlock;
+				double minZ = pos2.getZ() / (double) tileEntity.unitsPerBlock;
+				double maxZ = pos2.getZ() / (double) tileEntity.unitsPerBlock + 1d / tileEntity.unitsPerBlock;
 				
-				float size = 0.001f;
+				double size = 0.001f;
 				if (dir == Direction.UP) maxY = minY + size;
 				else if (dir == Direction.DOWN) minY = maxY - size;
 				else if (dir == Direction.WEST) minX = maxX - size;
@@ -677,10 +652,53 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	@Override
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+		TileEntity tileEntityUncasted = world.getTileEntity(pos);
+		
+		if (entity == null || !(tileEntityUncasted instanceof UnitTileEntity))
+			return;
+		
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		if (tileEntity.getBlockMap() == null) return;
+		for (SmallUnit value : tileEntity.getBlockMap().values()) {
+			if (!value.state.isAir()) {
+				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
+//				pos1 = pos1.add(0.5, 0.5, 0.5);
+				pos1 = pos1.mul(1d / tileEntity.unitsPerBlock, 1d / tileEntity.unitsPerBlock, 1d / tileEntity.unitsPerBlock);
+				pos1 = pos1.add(pos.getX(), pos.getY(), pos.getZ());
+				AxisAlignedBB aabb = new AxisAlignedBB(
+						pos1.x, pos1.y, pos1.z,
+						pos1.x + 1d / tileEntity.unitsPerBlock,
+						pos1.y + 1d / tileEntity.unitsPerBlock,
+						pos1.z + 1d / tileEntity.unitsPerBlock
+				);
+				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
+					value.state.onEntityCollision(tileEntity.getFakeWorld(), value.pos, entity);
+				}
+//				if (entity.getBoundingBox().intersects(aabb)) {
+//					if (value.state.isNormalCube(tileEntity.getFakeWorld(), value.pos)) {
+//						Vector3d entityPos = entity.getPositionVec();
+//						entityPos = entityPos.subtract(pos.getX(), pos.getY(), pos.getZ());
+////						entityPos = entityPos.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
+//						entityPos = entityPos.scale(tileEntity.unitsPerBlock);
+//						entityPos = new Vector3d(Math.round(entityPos.x), Math.round(entityPos.y), Math.round(entityPos.z));
+//						Vector3d offset = entityPos.subtract(value.pos.getX() + (1f/tileEntity.unitsPerBlock * 0.5), value.pos.getY() + 0.5, value.pos.getZ() + (1f/tileEntity.unitsPerBlock * 0.5));
+//						offset = offset.mul(1,0,1);
+//						offset = offset.normalize();
+//						offset = offset.scale(1f/tileEntity.unitsPerBlock);
+//						entity.addVelocity(offset.getX(), 0, offset.getZ());
+//					}
+//				}
+			}
+		}
+	}
+	
+	@Override
 	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
-		if (!worldIn.isRemote) return ActionResultType.SUCCESS;
+		if (!worldIn.isRemote) return ActionResultType.CONSUME;
+		if (handIn == Hand.OFF_HAND) return ActionResultType.PASS;
 		ActionResultType type = doAction(state, worldIn, pos, player, handIn, hit);
-		if (type.isSuccess()) {
+		if (!type.equals(ActionResultType.FAIL) && !type.equals(ActionResultType.CONSUME)) {
 			Smallerunits.NETWORK_INSTANCE.sendToServer(
 					new CLittleBlockInteractionPacket(
 							player.getPositionVec(), player.getEyePosition(1),
@@ -688,8 +706,26 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 							player.rotationYaw, player.rotationPitch, pos
 					)
 			);
+			return type;
 		}
-		return type;
+		if (player.getHeldItem(handIn).getItem() instanceof BlockItem) return ActionResultType.CONSUME;
+		return ActionResultType.PASS;
+	}
+	
+	public static final VoxelShape virtuallyEmptyShape = VoxelShapes.create(0, 0, 0, 0.001f, 0.001f, 0.001f);
+	
+	@Override
+	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
+		super.tick(state, worldIn, pos, rand);
+		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
+		TileEntity tileEntity = worldIn.getTileEntity(pos);
+		if (!(tileEntity instanceof UnitTileEntity)) return;
+		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
+		if (tileEntity1.getFakeWorld() != null) {
+			if (tileEntity1.isNatural && tileEntity1.getBlockMap().isEmpty()) {
+				worldIn.setBlockState(pos, Blocks.AIR.getDefaultState());
+			}
+		}
 	}
 	
 	public ActionResultType doAction(BlockState state, World worldIn, BlockPos worldPos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
@@ -842,7 +878,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					.add(worldPos.getX(), worldPos.getY(), worldPos.getZ())
 			;
 			if (raytraceContext.hitFace.orElse(hit.getFace()).equals(Direction.UP)) {
-				raytraceContext.vecHit = raytraceContext.vecHit.subtract(0, -(1f / 16) / 4, 0);
+				raytraceContext.vecHit = raytraceContext.vecHit.subtract(0, -(1d / 16) / 4, 0);
 			}
 			raytraceContext.posHit = raytraceContext.posHit.up();
 			isEdge = true;
@@ -879,10 +915,22 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			player.setRawPosition(miniWorldPos.getX(), miniWorldPos.getY(), miniWorldPos.getZ());
 		}
 		PacketHacksHelper.unitPos = worldPos;
+		
+		ActionResultType useFirstResult;
+		{
+			
+			BlockPos posOffset = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
+			BlockRayTraceResult result1 = new BlockRayTraceResult(
+					hit.getHitVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ()).scale(tileEntity.unitsPerBlock).add(0, 64, 0),
+					raytraceContext.hitFace.orElse(hit.getFace()), posOffset, hit.isInside()
+			);
+			BlockItemUseContext context = new BlockItemUseContext(tileEntity.getFakeWorld(), player, handIn, stack, result1);
+			useFirstResult = stack.getItem().onItemUseFirst(stack, context);
+		}
 		try {
 			BlockPos pos = raytraceContext.posHit;
 //			BlockPos pos = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(hit.getFace()).getOpposite());
-			if (!(player.isSneaking()) || stack.doesSneakBypassUse(worldIn, pos, player)) {
+			if ((!(player.isSneaking()) || stack.doesSneakBypassUse(worldIn, pos, player)) && !useFirstResult.isSuccessOrConsume()) {
 				resultType = tileEntity.getFakeWorld().getBlockState(pos).onBlockActivated(tileEntity.getFakeWorld(), player, handIn, result);
 			}
 		} catch (Throwable ignored) {
@@ -902,6 +950,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		}
 		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
 		player.recenterBoundingBox();
+		if (useFirstResult.isSuccessOrConsume()) return useFirstResult;
 		
 		if (resultType.isSuccessOrConsume()) {
 			tileEntity.markDirty();
@@ -947,6 +996,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 					return ActionResultType.SUCCESS;
 				}
 //				ActionResultType type = item.onItemUse(context);
+				player.setWorld(tileEntity.getFakeWorld());
 				ActionResultType type = ForgeHooks.onPlaceItemIntoWorld(context);
 				PacketHacksHelper.unitPos = null;
 				player.setWorld(currentWorld);
@@ -1154,85 +1204,6 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		return ActionResultType.PASS;
 	}
 	
-	public static final VoxelShape virtuallyEmptyShape = VoxelShapes.create(0, 0, 0, 0.001f, 0.001f, 0.001f);
-	
-	@Override
-	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
-		super.tick(state, worldIn, pos, rand);
-		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
-		TileEntity tileEntity = worldIn.getTileEntity(pos);
-		if (!(tileEntity instanceof UnitTileEntity)) return;
-		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
-		if (tileEntity1.getFakeWorld() != null) {
-			ArrayList<SmallUnit> toRemove = new ArrayList<>();
-			ArrayList<SmallUnit> toMove = new ArrayList<>();
-			for (SmallUnit value : tileEntity1.getBlockMap().values()) {
-				BlockPos blockPos = value.pos;
-				if (value.pos == null) {
-					toRemove.add(value);
-					continue;
-				}
-				int y = value.pos.getY() - 64;
-				if (
-						blockPos.getX() < 0 ||
-								blockPos.getX() > tileEntity1.unitsPerBlock - 1 ||
-								blockPos.getZ() < 0 ||
-								blockPos.getZ() > tileEntity1.unitsPerBlock - 1 ||
-								y < 0 ||
-								y > tileEntity1.unitsPerBlock - 1
-				) {
-					toMove.add(value);
-				}
-			}
-			for (SmallUnit smallUnit : toRemove) {
-				tileEntity1.needsRefresh(true);
-				tileEntity1.getBlockMap().remove(smallUnit.pos.toLong());
-			}
-			for (SmallUnit value : toMove) {
-				BlockPos blockPos = value.pos;
-				ExternalUnitInteractionContext context;
-				if (((UnitTileEntity) tileEntity).getFakeWorld() instanceof FakeServerWorld) {
-					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldServer, value.pos);
-				} else {
-					context = new ExternalUnitInteractionContext(((UnitTileEntity) tileEntity).worldClient.get(), value.pos);
-				}
-				if (context.teInRealWorld instanceof UnitTileEntity) {
-					if (((UnitTileEntity) context.teInRealWorld).getBlockMap().isEmpty()) {
-						((UnitTileEntity) context.teInRealWorld).unitsPerBlock = tileEntity1.unitsPerBlock;
-					}
-				}
-				if (context.stateInRealWorld.isAir(worldIn, context.posInRealWorld)) {
-					UnitTileEntity tileEntity2 = new UnitTileEntity();
-					worldIn.setBlockState(context.posInRealWorld, Deferred.UNIT.get().getDefaultState());
-					worldIn.setTileEntity(context.posInRealWorld, tileEntity2);
-					tileEntity2.isNatural = true;
-					continue;
-				}
-				TileEntity te = context.teInRealWorld;
-				if (te instanceof UnitTileEntity) {
-					if (!worldIn.isRemote)
-						((UnitTileEntity) te).createServerWorld();
-					value.pos = SmallerUnitsAPI.createPos(context.posInFakeWorld, tileEntity1);
-					if (((UnitTileEntity) te).getFakeWorld() == null) continue;
-					((UnitTileEntity) te).getFakeWorld().setBlockState(value.pos, value.state, 3, 0);
-					((UnitTileEntity) te).getFakeWorld().setTileEntity(value.pos, value.tileEntity);
-					tileEntity1.getBlockMap().remove(blockPos.toLong());
-					
-					tileEntity.markDirty();
-					te.markDirty();
-					((UnitTileEntity) tileEntity).needsRefresh(true);
-					((UnitTileEntity) te).needsRefresh(true);
-					worldIn.notifyBlockUpdate(tileEntity.getPos(), state, state, 3);
-					worldIn.notifyBlockUpdate(te.getPos(), state, state, 3);
-				}
-			}
-			
-			if (tileEntity1.isNatural && tileEntity1.getBlockMap().isEmpty()) {
-				worldIn.setBlockState(pos, Blocks.AIR.getDefaultState());
-			}
-		}
-	}
-	
 	@Override
 	public boolean isLadder(BlockState state, IWorldReader world, BlockPos pos, LivingEntity entity) {
 		TileEntity tileEntityUncasted = world.getTileEntity(pos);
@@ -1245,7 +1216,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			if (value.state.isIn(TagUtils.getBlockTag(new ResourceLocation("minecraft:climbable")))) {
 				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
 				pos1 = pos1.add(0.5, 0.5, 0.5);
-				pos1 = pos1.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
+				pos1 = pos1.mul(1d / tileEntity.unitsPerBlock, 1d / tileEntity.unitsPerBlock, 1d / tileEntity.unitsPerBlock);
 				pos1 = pos1.add(pos.getX(), pos.getY(), pos.getZ());
 				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).contains(pos1)) {
 					return true;
@@ -1267,6 +1238,51 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
 		if ((!(reader instanceof ServerWorld)) && (!(reader instanceof World) || !((World) reader).isRemote || SmallerUnitsConfig.CLIENT.useExperimentalSelection.get())) {
+			if (selectionShapeHashMap.size() > 20) {
+				selectionShapeHashMap.clear();
+			}
+			if (selectionShapeHashMap.containsKey(new Vector3i(pos.getX(), pos.getY(), pos.getZ()))) {
+				VoxelShape shape1 = selectionShapeHashMap.get(new Vector3i(pos.getX(), pos.getY(), pos.getZ()));
+				if (context.getEntity() != null) {
+					UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, context.getEntity(), true, pos, Optional.of(context));
+					if (raytraceContext.posHit == null) {
+						VoxelShape shape2 = VoxelShapes.empty();
+						for (Direction dir : Direction.values()) {
+							BlockPos pos1 = pos.offset(dir);
+							BlockState state1 = reader.getBlockState(pos1);
+							if (state1.getBlock() instanceof SmallerUnitBlock) continue;
+							VoxelShape shape3 = state1.getShape(reader, pos1);
+							shape3 = shape3.withOffset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset());
+							{
+								float minX = 0 / (float) tileEntity.unitsPerBlock;
+								float maxX = 0 / (float) tileEntity.unitsPerBlock + 1;
+								float minY = 0 / (float) tileEntity.unitsPerBlock;
+								float maxY = 0 / (float) tileEntity.unitsPerBlock + 1;
+								float minZ = 0 / (float) tileEntity.unitsPerBlock;
+								float maxZ = 0 / (float) tileEntity.unitsPerBlock + 1;
+								
+								float size = 0.001f;
+								if (dir == Direction.UP) maxY = minY + size;
+								else if (dir == Direction.DOWN) minY = maxY - size;
+								else if (dir == Direction.WEST) minX = maxX - size;
+								else if (dir == Direction.EAST) maxX = minX + size;
+								else if (dir == Direction.SOUTH) maxZ = minZ + size;
+								else if (dir == Direction.NORTH) minZ = maxZ - size;
+								
+								shape3 = VoxelShapes.combine(shape3,
+										VoxelShapes.create(
+												new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ)
+														.offset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset())
+										),
+										IBooleanFunction.AND);
+							}
+							shape2 = VoxelShapes.combine(shape2, shape3, IBooleanFunction.OR);
+						}
+						return shape2;
+					}
+				}
+				if (shape1 != null) return shape1;
+			}
 			Minecraft.getInstance().getProfiler().startSection("su_create_raytrace_shape");
 			shape = VoxelShapes.empty();
 			for (SmallUnit value : tileEntity.getBlockMap().values()) {
@@ -1292,31 +1308,68 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //				Minecraft.getInstance().getProfiler().startSection("get_shape_for_" + value.state.toString());
 				Minecraft.getInstance().getProfiler().startSection("get_shape_for");
 				VoxelShape shape1 = value.state.getShape(tileEntity.getFakeWorld(), tileEntity.getPos());
-				if (!shape1.isEmpty()) shape1 = VoxelShapes.create(0, 0, 0, 1, 1, 1);
-				Minecraft.getInstance().getProfiler().startSection("shrink_cube");
-				VoxelShape shape2 = VoxelShapes.empty();
-				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
-					shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
+//				if (!shape1.isEmpty()) shape1 = VoxelShapes.create(0, 0, 0, 1, 1, 1);
+				if (!shape1.isEmpty()) shape1 = VoxelShapes.create(shape1.getBoundingBox());
+				boolean hasNonNormalNeighbor = false;
+				for (Direction direction : Direction.values()) {
+					Minecraft.getInstance().getProfiler().startSection("shrink_cube");
+					BlockPos pos1 = value.pos.offset(direction);
+					if (!tileEntity.getFakeWorld().getBlockState(pos1).isNormalCube(tileEntity.getFakeWorld(), pos1)) {
+						hasNonNormalNeighbor = true;
+						break;
+					}
 				}
-				Minecraft.getInstance().getProfiler().endStartSection("move_cube");
-				shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
-				Minecraft.getInstance().getProfiler().endStartSection("merge_shape");
-				shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
-				Minecraft.getInstance().getProfiler().endSection();
+				if (hasNonNormalNeighbor) {
+					VoxelShape shape2 = VoxelShapes.empty();
+					for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
+						shape2 = VoxelShapes.combine(shape2, VoxelShapes.create(axisAlignedBB), IBooleanFunction.OR);
+					}
+					Minecraft.getInstance().getProfiler().endStartSection("move_cube");
+					shape2 = shape2.withOffset(value.pos.getX() / (float) tileEntity.unitsPerBlock, (value.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, value.pos.getZ() / (float) tileEntity.unitsPerBlock);
+					Minecraft.getInstance().getProfiler().endStartSection("merge_shape");
+					shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
+					Minecraft.getInstance().getProfiler().endSection();
+				}
 				Minecraft.getInstance().getProfiler().endSection();
 			}
 			VoxelShape shape2 = VoxelShapes.empty();
-			for (Direction value : Direction.values()) {
-				BlockPos pos1 = pos.offset(value);
+			for (Direction dir : Direction.values()) {
+				BlockPos pos1 = pos.offset(dir);
 				BlockState state1 = reader.getBlockState(pos1);
 				if (state1.getBlock() instanceof SmallerUnitBlock) continue;
-				VoxelShape shape1 = state1.getRayTraceShape(reader, pos1);
-				if (shape1.isEmpty()) shape1 = state1.getShape(reader, pos1);
-				shape1 = shape1.withOffset(value.getXOffset(), value.getYOffset(), value.getZOffset());
-				shape2 = VoxelShapes.combine(shape2, shape1, IBooleanFunction.OR);
+//				VoxelShape shape1 = state1.getRayTraceShape(reader, pos1);
+//				if (shape1.isEmpty()) shape1 = state1.getShape(reader, pos1);
+				VoxelShape shape1 = state1.getShape(reader, pos1);
+				shape1 = shape1.withOffset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset());
+				{
+					float minX = 0 / (float) tileEntity.unitsPerBlock;
+					float maxX = 0 / (float) tileEntity.unitsPerBlock + 1;
+					float minY = 0 / (float) tileEntity.unitsPerBlock;
+					float maxY = 0 / (float) tileEntity.unitsPerBlock + 1;
+					float minZ = 0 / (float) tileEntity.unitsPerBlock;
+					float maxZ = 0 / (float) tileEntity.unitsPerBlock + 1;
+					
+					float size = 0.001f;
+					if (dir == Direction.UP) maxY = minY + size;
+					else if (dir == Direction.DOWN) minY = maxY - size;
+					else if (dir == Direction.WEST) minX = maxX - size;
+					else if (dir == Direction.EAST) maxX = minX + size;
+					else if (dir == Direction.SOUTH) maxZ = minZ + size;
+					else if (dir == Direction.NORTH) minZ = maxZ - size;
+					
+					shape1 = VoxelShapes.combine(shape1,
+							VoxelShapes.create(
+									new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ)
+											.offset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset())
+							),
+							IBooleanFunction.AND);
+				}
+				shape2 = VoxelShapes.combineAndSimplify(shape2, shape1, IBooleanFunction.OR);
 			}
 			shape = VoxelShapes.combine(shape, shape2, IBooleanFunction.OR);
 			Minecraft.getInstance().getProfiler().endSection();
+			if (!tileEntity.needsRefresh)
+				selectionShapeHashMap.put(new Vector3i(pos.getX(), pos.getY(), pos.getZ()), shape);
 			return shape;
 		}
 		

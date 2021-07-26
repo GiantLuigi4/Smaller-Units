@@ -3,6 +3,7 @@ package com.tfc.smallerunits;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.tfc.smallerunits.block.UnitTileEntity;
 import com.tfc.smallerunits.utils.SmallUnit;
 import com.tfc.smallerunits.utils.UnitPallet;
 import com.tfc.smallerunits.utils.rendering.RenderTypeHelper;
@@ -15,12 +16,9 @@ import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
-import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
@@ -226,22 +224,31 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 				
 				RenderSystem.disableRescaleNormal();
 			}
-			if (value.tileEntity != null) {
-				matrixStack.push();
-				TileEntity tileEntity = value.tileEntity;
-				TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(tileEntity);
-				int matrixSize = matrixStack.stack.size();
-				if (renderer != null) {
-					try {
-						renderer.render(tileEntity, 0, matrixStack, buffer, combinedLight, combinedOverlay);
-					} catch (Throwable ignored) {
-					}
-				}
-				while (matrixStack.stack.size() != matrixSize) {
-					matrixStack.pop();
-				}
-				matrixStack.pop();
+			if (value.tileEntity != null && !(value.tileEntity instanceof UnitTileEntity)) {
+				//TODO: use item renderer if tile entity is present
+//				value.state.getBlock()
+//				matrixStack.push();
+//				TileEntity tileEntity = value.tileEntity;
+//				TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(tileEntity);
+//				int matrixSize = matrixStack.stack.size();
+//				if (renderer != null) {
+//					try {
+//						renderer.render(tileEntity, 0, matrixStack, buffer, combinedLight, combinedOverlay);
+//					} catch (Throwable ignored) {
+//					}
+//				}
+//				while (matrixStack.stack.size() != matrixSize) {
+//					matrixStack.pop();
+//				}
+//				matrixStack.pop();
+				matrixStack.translate(0.5, 0.5, 0.5);
+				Minecraft.getInstance().getItemRenderer().renderItem(
+						new ItemStack(value.state.getBlock().asItem()),
+						ItemCameraTransforms.TransformType.NONE, combinedLight,
+						combinedOverlay, matrixStack, buffer
+				);
 			}
+
 //			IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getModelForState(value.state);
 //			IVertexBuilder builder = buffer.getBuffer(RenderTypeLookup.getChunkRenderType(value.state));
 //			for (Direction direction : Direction.values()) {

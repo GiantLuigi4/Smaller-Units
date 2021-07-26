@@ -110,7 +110,7 @@ public class UnitPallet {
 				if (type == null) continue;
 				TileEntity te = type.create();
 				if (te == null) continue;
-				if (world.isRemote) {
+				if (world != null && world.isRemote) {
 					// TODO: do this properly
 					te.setWorldAndPos(world, unit.pos);
 					te.handleUpdateTag(unit.state, teNBT);

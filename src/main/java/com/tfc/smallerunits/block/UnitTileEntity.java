@@ -246,29 +246,6 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		else worldClient.get().tick(supplier);
 		
 		getProfiler().startTick();
-		for (SmallUnit value : this.getBlockMap().values()) {
-			if (value != null && value.tileEntity != null) {
-				try {
-					if (value.tileEntity instanceof ITickableTileEntity) {
-						((ITickableTileEntity) value.tileEntity).tick();
-					}
-				} catch (Throwable err) {
-					StringBuilder stacktrace = new StringBuilder(err.toString() + "\n");
-					for (StackTraceElement element : err.getStackTrace()) {
-						stacktrace.append(element.toString()).append("\n");
-					}
-					System.out.println(stacktrace);
-					err = err.getCause();
-					if (err != null) {
-						stacktrace = new StringBuilder(err.toString() + "\n");
-						for (StackTraceElement element : err.getStackTrace()) {
-							stacktrace.append(element.toString()).append("\n");
-						}
-						System.out.println(stacktrace);
-					}
-				}
-			}
-		}
 		
 		for (Entity value : getEntitiesById().values()) {
 			if (!value.removed) {
@@ -281,8 +258,10 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 //			if (value.getDataManager().isDirty()) {
 //				value.getDataManager().setClean();
 			//TODO: change this to send packets to update only the specific entity being updated
-			this.markDirty();
-			this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
+			if (world.isRemote) {
+				this.markDirty();
+				this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
+			}
 //			}
 		}
 		getProfiler().endTick();
@@ -624,6 +603,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	public boolean needsRefresh(boolean newValue) {
 		boolean oldVal = needsRefresh;
 		needsRefresh = newValue;
+		if (newValue) SmallerUnitBlock.selectionShapeHashMap.remove(this.getPos());
 		return oldVal;
 	}
 }

@@ -21,7 +21,7 @@ public class UnitRaytraceHelper {
 	public static UnitRaytraceContext raytraceBlock(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
 		VoxelShape shape = null;
 		
-		Vector3d start = entity.getEyePosition(0);
+		Vector3d start1 = entity.getEyePosition(0);
 		double reach = 8;
 		
 		if (entity instanceof PlayerEntity)
@@ -47,10 +47,15 @@ public class UnitRaytraceHelper {
 				axisAlignedBB = axisAlignedBB.offset(unit.pos.getX() / (float) tileEntity.unitsPerBlock, (unit.pos.getY() - 64) / (float) tileEntity.unitsPerBlock, unit.pos.getZ() / (float) tileEntity.unitsPerBlock);
 				axisAlignedBB = axisAlignedBB.offset(pos.getX(), pos.getY(), pos.getZ());
 				
+				Vector3d start = start1;
+				if (axisAlignedBB.contains(start))
+					start = start1.add(look.scale(-1));
 				Optional<Vector3d> intercept = axisAlignedBB.rayTrace(start, end);
 				if (!intercept.isPresent()) continue;
 				
 				double dist = intercept.get().distanceTo(start);
+				if (axisAlignedBB.contains(start1))
+					dist = Double.MIN_VALUE;
 				if (dist > bestDist) continue;
 				
 				bestDist = dist;
@@ -251,9 +256,14 @@ public class UnitRaytraceHelper {
 			}
 		}
 		
+		UnitRaytraceContext result1 = raytraceBlockWithoutShape(tileEntity, entity, true, pos, contextOptional);
+		
 		UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
 		context.hitFace = hitFace;
-		if (shape == null || hitPos == null)
+		double distBlocks = 0;
+		if (result1.posHit != null)
+			distBlocks = Math.sqrt(result1.posHit.distanceSq(start.subtract(tileEntity.getPos().getX(), tileEntity.getPos().getY(), tileEntity.getPos().getZ()).mul(tileEntity.unitsPerBlock, tileEntity.unitsPerBlock, tileEntity.unitsPerBlock).add(0, 64, 0), true)) / tileEntity.unitsPerBlock;
+		if (shape == null || hitPos == null || (result1.posHit != null && distBlocks < bestDist))
 			return context;
 		
 		context = new UnitRaytraceContext(shape, hitPos, hitVec);

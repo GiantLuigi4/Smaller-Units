@@ -69,7 +69,9 @@ minecraft {
 
             arg "-mixin.config=smaller_units.mixins.json"
 
-            property 'mixin.env.disableRefMap', 'true'
+//            property 'mixin.env.disableRefMap', 'true'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
 
             mods {
                 smallerunits {
@@ -114,39 +116,48 @@ dependencies {
 //    minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
     minecraft 'net.minecraftforge:forge:1.16.5-36.1.32'
 
-//    implementation fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
+//    runtimeOnly fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
     compileOnly fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.0.3.18")
 
-    implementation fg.deobf('curse.maven:reauth-237701:3105779')
-    implementation fg.deobf('curse.maven:worldmanipulation-414161:3096407')
-    implementation fg.deobf('curse.maven:jei-238222:3157864')
-    implementation fg.deobf('curse.maven:carryon-274259:3206755')
-    implementation fg.deobf('curse.maven:storagedrawers-223852:3180569')
-    compileOnly fg.deobf('curse.maven:quark-243121:3212156')
-    implementation fg.deobf('curse.maven:oddities-301051:3088871')
-    implementation fg.deobf('curse.maven:autoreglib-250363:3128555')
-//    implementation fg.deobf('curse.maven:appeng-223794:3185882')
-    implementation fg.deobf('curse.maven:refinedstorage-243076:3196167')
+    runtimeOnly fg.deobf('curse.maven:reauth-237701:3105779')
+    runtimeOnly fg.deobf('curse.maven:worldmanipulation-414161:3096407')
+    runtimeOnly fg.deobf('curse.maven:jei-238222:3383214')
+    runtimeOnly fg.deobf('curse.maven:carryon-274259:3206755')
+    runtimeOnly fg.deobf('curse.maven:storagedrawers-223852:3180569')
+    runtimeOnly fg.deobf('curse.maven:quark-243121:3393195')
+    runtimeOnly fg.deobf('curse.maven:oddities-301051:3088871')
+    runtimeOnly fg.deobf('curse.maven:autoreglib-250363:3326041')
+    runtimeOnly fg.deobf('curse.maven:appeng-223794:3354897')
+    runtimeOnly fg.deobf('curse.maven:refinedstorage-243076:3196167')
+//    runtimeOnly fg.deobf('curse.maven:pymtech-316946:3163217')
+    runtimeOnly fg.deobf('curse.maven:compactstorage-223703:3209571')
+    runtimeOnly fg.deobf('curse.maven:mekanism-268560:3183270')
+    runtimeOnly fg.deobf('curse.maven:fluxnetworks-248020:3174798')
+    runtimeOnly fg.deobf('curse.maven:xnet-260912:3140153')
+    runtimeOnly fg.deobf('curse.maven:mcjtylib-233105:3194349')
+    runtimeOnly fg.deobf('curse.maven:rftoolsbase-326041:3206945')
+    runtimeOnly fg.deobf('curse.maven:create-328085:3278516') //3278516
+//    runtimeOnly fg.deobf('curse.maven:botania-225643:3175663')
+    runtimeOnly fg.deobf('curse.maven:patchouli-306770:3204037')
+    runtimeOnly fg.deobf('com.github.XFactHD:FramedBlocks:7fda318779')
+    runtimeOnly fg.deobf('curse.maven:curios-309927:3186427')
+    runtimeOnly fg.deobf('curse.maven:integrated_dyanmics-236307:3376007')
+    runtimeOnly fg.deobf('curse.maven:common_capabilities-247007:3292062')
+    runtimeOnly fg.deobf('curse.maven:cyclops_core-232758:3336467')
+    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3176033')
+    runtimeOnly fg.deobf('curse.maven:the_one_probe-245211:3319255')
+    implementation fg.deobf('curse.maven:redstone_pen-461710:3348960')
+    implementation fg.deobf('curse.maven:ctm-267602:3137659')
+
+    implementation fg.deobf('curse.maven:pokecube-285121:3308917')
+
+    compileOnly fg.deobf('curse.maven:charm-430988:3214651')
+
     compileOnly fg.deobf('curse.maven:shrink-426386:3352335')
-//    implementation fg.deobf('curse.maven:pymtech-316946:3163217')
     compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
-    implementation fg.deobf('curse.maven:compactstorage-223703:3209571')
-    implementation fg.deobf('curse.maven:mekanism-268560:3183270')
-    implementation fg.deobf('curse.maven:fluxnetworks-248020:3174798')
-    implementation fg.deobf('curse.maven:xnet-260912:3140153')
-    implementation fg.deobf('curse.maven:mcjtylib-233105:3194349')
-    implementation fg.deobf('curse.maven:rftoolsbase-326041:3206945')
-    implementation fg.deobf('curse.maven:create-328085:3278516') //3278516
-//    implementation fg.deobf('curse.maven:botania-225643:3175663')
-    implementation fg.deobf('curse.maven:patchouli-306770:3204037')
-    implementation fg.deobf('curse.maven:framedblocks-441647:3381744')
-    implementation fg.deobf("curse.maven:better_fps_graph-399699:3094889")
-//    implementation fg.deobf('com.github.XFactHD:FramedBlocks:cc915289ef')
-//    implementation fg.deobf(files("FramedBlocks-2.9.2.jar"))
-    implementation fg.deobf('curse.maven:curios-309927:3186427')
-    implementation fg.deobf('curse.maven:chiselandbits-231095:3176033')
     compileOnly fg.deobf('curse.maven:gullivern-385915:3227241')
-    compileOnly fg.deobf('curse.maven:pehkui-319596:3274207')
+    implementation fg.deobf('curse.maven:pehkui-319596:3351969')
+    compileOnly fg.deobf("curse.maven:better_fps_graph-399699:3094889")
 
     compile 'org.spongepowered:mixin:0.8'
 }
@@ -164,6 +175,13 @@ mixin {
 jar {
     manifest {
         attributes([
+                "Specification-Title"     : "smallerunits",
+                "Specification-Vendor": "GiantLuigi4",
+                "Specification-Version"   : "1", // We are version 1 of ourselves
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.version,
+                "Implementation-Vendor": "GiantLuigi4",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
                 // Existing properties here
                 "MixinConfigs": "smaller_units.mixins.json"
         ])

@@ -74,7 +74,7 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		player.rotationPitch = (float) pitch;
 		player.rotationYaw = (float) yaw;
 		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
-		BlockRayTraceResult result = state.getRaytraceShape(player.world, clickedPos, ISelectionContext.forEntity(player)).rayTrace(playerLookStart, playerLookEnd, clickedPos);
+		BlockRayTraceResult result = state.getShape(player.world, clickedPos, ISelectionContext.forEntity(player)).rayTrace(playerLookStart, playerLookEnd, clickedPos);
 		if (result == null) {
 			player.setRawPosition(position.getX(), position.getY(), position.getZ());
 			player.rotationPitch = playerPitch;

@@ -20,6 +20,7 @@ import com.tfc.smallerunits.utils.rendering.*;
 import com.tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexBuilder;
 import com.tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexFormats;
 import com.tfc.smallerunits.utils.world.client.FakeClientWorld;
+import com.tfc.smallerunits.utils.world.client.SmallBlockReader;
 import com.tfc.smallerunits.utils.world.server.FakeServerWorld;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
@@ -40,6 +41,8 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.*;
 import net.minecraft.world.LightType;
 import net.minecraftforge.client.ForgeHooksClient;
+import net.minecraftforge.client.model.data.EmptyModelData;
+import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.fml.ModList;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -182,6 +185,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 ////		tileEntityIn.worldServer.animateTick();
 //
 		
+		boolean needsResort = false;
 		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:refresh_check");
 		{
 			PlayerEntity playerEntity = Minecraft.getInstance().player;
@@ -201,10 +205,11 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				lastPos = new Vector3d(Math.round(lastPos.x), Math.round(lastPos.y), Math.round(lastPos.z));
 				currentPos = new Vector3d(Math.round(currentPos.x), Math.round(currentPos.y), Math.round(currentPos.z));
 				if (!lastPos.equals(currentPos)) {
-					tileEntityIn.needsRefresh(true);
-					if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
-						vertexBufferCacheFree.put(tileEntityIn.getPos(), vertexBufferCacheUsed.remove(tileEntityIn.getPos()));
-					}
+//					tileEntityIn.needsRefresh(true);
+					needsResort = true;
+//					if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+//						vertexBufferCacheFree.put(tileEntityIn.getPos(), vertexBufferCacheUsed.remove(tileEntityIn.getPos()));
+//					}
 				}
 			}
 		}
@@ -212,9 +217,9 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		tileEntityIn.worldClient.get().lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 		// TODO: make it render without vbos if the player is not in the same world
 		if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
-		if (tileEntityIn.getWorld() == null || tileEntityIn.getWorld().equals(Minecraft.getInstance().world) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+		if (tileEntityIn.getWorld() != null && tileEntityIn.getWorld().equals(Minecraft.getInstance().world) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
 			boolean isRefreshing = tileEntityIn.needsRefresh(false) || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos());
-			if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) || isRefreshing) {
+			if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()) || isRefreshing || needsResort) {
 				if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
 					vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
 				}
@@ -223,11 +228,13 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //					MatrixStack stack = oldStack;
 					BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
 					FakeClientWorld fakeWorld = ((FakeClientWorld) tileEntityIn.getFakeWorld());
+					SmallBlockReader blockReader = new SmallBlockReader(fakeWorld);
 					stack.push();
 					stack.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 					boolean renderedAnything = false;
 					CustomBuffer redirection = new CustomBuffer();
 					for (RenderType type : RenderType.getBlockRenderTypes()) {
+						if (!RenderTypeHelper.isTransparent(type)) if (!isRefreshing) continue;
 						boolean hasSetType = false;
 						for (SmallUnit value : fakeWorld.blockMap.values()) {
 							stack.push();
@@ -256,8 +263,29 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 										bufferBuilder.begin(GL11.GL_QUADS, DefaultVertexFormats.BLOCK);
 								}
 //								IModelData data = ModelDataManager.getModelData(fakeWorld, value.pos);
-								ForgeHooksClient.setRenderLayer(type);
-								dispatcher.renderModel(value.state, value.pos, fakeWorld, stack, buffer, true, new Random(value.pos.toLong()));
+//								if (data == null) {
+//								}
+								IModelData data = EmptyModelData.INSTANCE;
+								if (value.tileEntity != null) data = value.tileEntity.getModelData();
+								dispatcher.renderModel(value.state, value.pos, blockReader, stack, buffer, true, new Random(value.pos.toLong()), data);
+
+//								{
+//									IBakedModel model = dispatcher.getModelForState(value.state);
+//									boolean flag = Minecraft.getInstance().gameSettings.ambientOcclusionStatus.equals(AmbientOcclusionStatus.MAX) && value.state.getLightValue(fakeWorld, value.pos) == 0 && model.isAmbientOcclusion();
+//									Vector3d vector3d = value.state.getOffset(fakeWorld, value.pos);
+//									stack.push();
+//									stack.translate(vector3d.x, vector3d.y, vector3d.z);
+//									Random r = new Random(value.pos.toLong());
+//									if (value.state.getRenderType() == BlockRenderType.MODEL) {
+//										if (flag) {
+//											dispatcher.getBlockModelRenderer().renderModelSmooth(fakeWorld, dispatcher.getModelForState(value.state), value.state, value.pos, stack, buffer, true, r, value.state.getPositionRandom(value.pos), OverlayTexture.NO_OVERLAY, data);
+//										} else {
+//											dispatcher.getBlockModelRenderer().renderModelFlat(fakeWorld, dispatcher.getModelForState(value.state), value.state, value.pos, stack, buffer, true, r, value.state.getPositionRandom(value.pos), OverlayTexture.NO_OVERLAY, data);
+//										}
+//									}
+//									stack.pop();
+//								}
+								
 								if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 							}
 							
@@ -384,7 +412,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 								else suvbo = new SUVBO();
 							} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
 							if (suvbo == null) suvbo = new SUVBO();
-							suvbo.markAllUnused();
+							if (isRefreshing) suvbo.markAllUnused();
 							SUVBO finalSuvbo = suvbo;
 							buffers.forEach((type, buffer) -> {
 								if (RenderTypeHelper.isTransparent(type)) {

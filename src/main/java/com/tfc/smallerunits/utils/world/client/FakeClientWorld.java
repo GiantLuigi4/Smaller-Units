@@ -33,16 +33,19 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ObjectIntIdentityMap;
 import net.minecraft.util.RegistryKey;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.DynamicRegistries;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeContainer;
 import net.minecraft.world.biome.BiomeManager;
+import net.minecraft.world.biome.BiomeRegistry;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
@@ -83,9 +86,16 @@ public class FakeClientWorld extends ClientWorld {
 //		this.tickableTileEntities = new ArrayList<>();
 	}
 	
+	private static final Biome[] BIOMES = Util.make(new Biome[BiomeContainer.BIOMES_SIZE], (biomes) -> {
+		Arrays.fill(biomes, BiomeRegistry.PLAINS);
+	});
+	
 	@Override
 	public Chunk getChunk(int chunkX, int chunkZ) {
-		return new FakeChunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()), this);
+		return new FakeChunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(
+				owner.getWorld().func_241828_r().getRegistry(Registry.BIOME_KEY), BIOMES),
+				this
+		);
 	}
 	
 	@Override
@@ -206,7 +216,27 @@ public class FakeClientWorld extends ClientWorld {
 	
 	@Override
 	public boolean checkNoEntityCollision(@Nullable Entity entityIn, VoxelShape shape) {
+		for (AxisAlignedBB axisAlignedBB : shape.toBoundingBoxList()) {
+			for (Entity entity : this.getEntitiesWithinAABBExcludingEntity(entityIn, axisAlignedBB)) {
+				if (!entity.removed && entity.preventEntitySpawning) {
+					return false;
+				}
+			}
+		}
 		return true;
+	}
+	
+	@Override
+	public List<Entity> getEntitiesWithinAABBExcludingEntity(@Nullable Entity entityIn, AxisAlignedBB aabb) {
+		List<Entity> entities = super.getEntitiesWithinAABBExcludingEntity(entityIn, aabb);
+		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() / owner.unitsPerBlock, aabb.getYSize() / owner.unitsPerBlock, aabb.getZSize() / owner.unitsPerBlock);
+		AxisAlignedBB bb = aabb1.offset(
+				aabb.minX / owner.unitsPerBlock,
+				(aabb.minY - 64) / owner.unitsPerBlock,
+				aabb.minZ / owner.unitsPerBlock
+		).offset(owner.getPos().getX(), owner.getPos().getY(), owner.getPos().getZ());
+		entities.addAll(owner.getWorld().getEntitiesWithinAABBExcludingEntity(entityIn, bb));
+		return entities;
 	}
 	
 	@Override
@@ -297,7 +327,8 @@ public class FakeClientWorld extends ClientWorld {
 			
 			@Override
 			public Biome getBiomeAtPosition(BlockPos pos) {
-				return owner.getWorld().getBiome(owner.getPos());
+				pos = new UnitPos(pos, owner.getPos(), owner.unitsPerBlock).adjustRealPosition();
+				return owner.getWorld().getBiome(((UnitPos) pos).realPos);
 			}
 			
 			@Override
@@ -309,7 +340,8 @@ public class FakeClientWorld extends ClientWorld {
 	
 	@Override
 	public Biome getBiome(BlockPos pos) {
-		return owner.getWorld().getBiome(owner.getPos());
+		pos = new UnitPos(pos, owner.getPos(), owner.unitsPerBlock).adjustRealPosition();
+		return owner.getWorld().getBiome(((UnitPos) pos).realPos);
 	}
 	
 	public BlockPos getPos() {

@@ -258,12 +258,12 @@ public class RenderingHandler {
 //				event.getMatrix(),
 //				event.getBuffers()
 //		));
-		
-		event.getMatrix().translate(
-				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
-				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
-				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
-		);
+
+//		event.getMatrix().translate(
+//				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
+//				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
+//				-Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
+//		);
 		ISelectionContext context = new ISelectionContext() {
 			@Override
 			public boolean getPosY() {
@@ -309,9 +309,9 @@ public class RenderingHandler {
 		}
 		IVertexBuilder builder = event.getBuffers().getBuffer(RenderType.getLines());
 		event.getMatrix().translate(
-				((BlockRayTraceResult) event.getTarget()).getPos().getX(),
-				((BlockRayTraceResult) event.getTarget()).getPos().getY(),
-				((BlockRayTraceResult) event.getTarget()).getPos().getZ()
+				((BlockRayTraceResult) event.getTarget()).getPos().getX() - Minecraft.getInstance().getRenderManager().info.getProjectedView().getX(),
+				((BlockRayTraceResult) event.getTarget()).getPos().getY() - Minecraft.getInstance().getRenderManager().info.getProjectedView().getY(),
+				((BlockRayTraceResult) event.getTarget()).getPos().getZ() - Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ()
 		);
 		if (raytraceContext.posHit != null) {
 			event.getMatrix().scale(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
@@ -330,9 +330,7 @@ public class RenderingHandler {
 			builder.pos(matrix4f, (float) (x1), (float) (y1), (float) (z1)).color(red, green, blue, alpha).endVertex();
 			builder.pos(matrix4f, (float) (x2), (float) (y2), (float) (z2)).color(red, green, blue, alpha).endVertex();
 		});
-		if (event.isCancelable()) {
-			event.setCanceled(true);
-		}
+		if (event.isCancelable()) event.setCanceled(true);
 		event.getMatrix().pop();
 	}
 }
