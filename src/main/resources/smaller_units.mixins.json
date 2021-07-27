@@ -4,21 +4,21 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
   "client": [
-	"tfc.smallerunits.mixins.ClientPlayNetHandlerMixin",
-	"tfc.smallerunits.mixins.GameRendererMixin",
-	"tfc.smallerunits.mixins.MinecraftMixin",
-	"tfc.smallerunits.mixins.ModelDataManagerMixin",
-	"tfc.smallerunits.mixins.TileEntityRendererDispatcherMixin",
-	"tfc.smallerunits.mixins.WorldRendererMixin"
+	"ClientPlayNetHandlerMixin",
+	"GameRendererMixin",
+	"MinecraftMixin",
+	"ModelDataManagerMixin",
+	"TileEntityRendererDispatcherMixin",
+	"WorldRendererMixin"
   ],
   "mixins": [
-	"tfc.smallerunits.mixins.ContainerMixin",
-	"tfc.smallerunits.mixins.ContainerMixin2",
-	"tfc.smallerunits.mixins.IndexedMessageCodecMixin",
-	"tfc.smallerunits.mixins.PlayerEntityMixin",
-	"tfc.smallerunits.mixins.ServerPlayerEntityMixin",
-	"tfc.smallerunits.mixins.ServerPlayNetHandlerMixin",
-	"tfc.smallerunits.mixins.SimpleChannelMixin"
+	"ContainerMixin",
+	"ContainerMixin2",
+	"IndexedMessageCodecMixin",
+	"PlayerEntityMixin",
+	"ServerPlayerEntityMixin",
+	"ServerPlayNetHandlerMixin",
+	"SimpleChannelMixin"
   ],
   "injectors": {
 	"defaultRequire": 0

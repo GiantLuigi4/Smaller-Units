@@ -6,6 +6,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockDisplayReader;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.lighting.WorldLightManager;
@@ -58,5 +59,20 @@ public class SmallBlockReader implements IBlockDisplayReader {
 	@Override
 	public int getBlockColor(BlockPos blockPosIn, ColorResolver colorResolverIn) {
 		return wld.getBlockColor(blockPosIn, colorResolverIn);
+	}
+	
+	@Override
+	public int getLightFor(LightType lightTypeIn, BlockPos blockPosIn) {
+		return wld.getLightFor(lightTypeIn, blockPosIn);
+	}
+	
+	@Override
+	public int getLightSubtracted(BlockPos blockPosIn, int amount) {
+		return wld.getLightSubtracted(blockPosIn, amount);
+	}
+	
+	@Override
+	public boolean canSeeSky(BlockPos blockPosIn) {
+		return wld.canBlockSeeSky(blockPosIn);
 	}
 }
