@@ -1,6 +1,6 @@
 {
   "required": false,
-  "package": "com.tfc.smallerunits.mixins",
+  "package": "tfc.smallerunits.mixins",
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
   "client": [
