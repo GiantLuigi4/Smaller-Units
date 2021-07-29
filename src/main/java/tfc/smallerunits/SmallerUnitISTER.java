@@ -108,6 +108,7 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 		matrixStack.push();
 		matrixStack.scale(1f / unitsPerBlock, 1f / unitsPerBlock, 1f / unitsPerBlock);
 		IVertexBuilder builder1 = buffer.getBuffer(RenderTypeHelper.getType(RenderType.getTranslucent()));
+		
 		for (SmallUnit value : pallet.posUnitMap.values()) {
 			matrixStack.push();
 			matrixStack.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());

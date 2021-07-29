@@ -1,12 +1,10 @@
 package tfc.smallerunits.utils.world.client;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ITileEntityProvider;
+import net.minecraft.block.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientChunkProvider;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
+import net.minecraft.client.particle.DiggingParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.WorldRenderer;
@@ -19,13 +17,11 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.crafting.RecipeManager;
 import net.minecraft.particles.IParticleData;
+import net.minecraft.particles.ParticleTypes;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
 import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.ObjectIntIdentityMap;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.Util;
+import net.minecraft.util.*;
 import net.minecraft.util.math.*;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Vector3d;
@@ -521,8 +517,260 @@ public class FakeClientWorld extends ClientWorld {
 	}
 	
 	@Override
+	public void playMovingSound(@Nullable PlayerEntity playerIn, Entity entityIn, SoundEvent eventIn, SoundCategory categoryIn, float volume, float pitch) {
+		playSound(playerIn, entityIn.getPositionVec().x, entityIn.getPositionVec().y, entityIn.getPositionVec().z, eventIn, categoryIn, volume, pitch);
+	}
+	
+	@Override
+	public void playSound(double x, double y, double z, SoundEvent soundIn, SoundCategory category, float volume, float pitch, boolean distanceDelay) {
+		this.playSound(null, x, y, z, soundIn, category, volume, pitch);
+	}
+	
+	@Override
+	public void playSound(@Nullable PlayerEntity player, BlockPos pos, SoundEvent soundIn, SoundCategory category, float volume, float pitch) {
+		playSound(player, pos.getX(), pos.getY(), pos.getZ(), soundIn, category, volume, pitch);
+	}
+	
+	@Override
+	public void playSound(@Nullable PlayerEntity player, double x, double y, double z, SoundEvent soundIn, SoundCategory category, float volume, float pitch) {
+		owner.getWorld().playSound(player, owner.getPos().getX() + (x / (float) owner.unitsPerBlock), owner.getPos().getY() + ((y - 64) / (float) owner.unitsPerBlock), owner.getPos().getZ() + (z / (float) owner.unitsPerBlock), soundIn, category, (volume / owner.unitsPerBlock), pitch);
+	}
+	
+	/**
+	 * {@link net.minecraft.client.renderer.WorldRenderer#playEvent}
+	 */
+	@Override
 	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
 		getBlockState(pos).receiveBlockEvent(this, pos, type, data);
+		this.isRemote = owner.getWorld().isRemote;
+		Random random = rand;
+		// TODO: move this to client world
+		switch (type) {
+			case 1000:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_DISPENSER_DISPENSE, SoundCategory.BLOCKS, 1.0F, 1.2F);
+				break;
+			case 1001:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.2F);
+				break;
+			case 1002:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_DISPENSER_LAUNCH, SoundCategory.BLOCKS, 1.0F, 1.2F);
+				break;
+			case 1003:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ENDER_EYE_LAUNCH, SoundCategory.NEUTRAL, 1.0F, 1.2F);
+				break;
+			case 1004:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_FIREWORK_ROCKET_SHOOT, SoundCategory.NEUTRAL, 1.0F, 1.2F);
+				break;
+			case 1005:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1006:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_WOODEN_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1007:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_WOODEN_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1008:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_FENCE_GATE_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1009:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+				break;
+			//TODO:1010
+			case 1011:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_IRON_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1012:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_WOODEN_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1013:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_WOODEN_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1014:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_FENCE_GATE_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1015:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_GHAST_WARN, SoundCategory.HOSTILE, 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1016:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_GHAST_SHOOT, SoundCategory.HOSTILE, 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1017:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ENDER_DRAGON_SHOOT, SoundCategory.HOSTILE, 10.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1018:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_BLAZE_SHOOT, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1019:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ZOMBIE_ATTACK_WOODEN_DOOR, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1020:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1021:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1022:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_WITHER_BREAK_BLOCK, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1024:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_WITHER_SHOOT, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1025:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_BAT_TAKEOFF, SoundCategory.NEUTRAL, 0.05F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1026:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ZOMBIE_INFECT, SoundCategory.HOSTILE, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1027:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ZOMBIE_VILLAGER_CONVERTED, SoundCategory.NEUTRAL, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1029:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_ANVIL_DESTROY, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1030:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_ANVIL_USE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1031:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_ANVIL_LAND, SoundCategory.BLOCKS, 0.3F, this.rand.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1032:
+				// TODO
+//				this.mc.getSoundHandler().play(SimpleSound.ambientWithoutAttenuation(SoundEvents.BLOCK_PORTAL_TRAVEL, random.nextFloat() * 0.4F + 0.8F, 0.25F));
+				break;
+			case 1033:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_CHORUS_FLOWER_GROW, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				break;
+			case 1034:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_CHORUS_FLOWER_DEATH, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				break;
+			case 1035:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_BREWING_STAND_BREW, SoundCategory.BLOCKS, 1.0F, 1.0F);
+				break;
+			case 1036:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1037:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_IRON_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1039:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_PHANTOM_BITE, SoundCategory.HOSTILE, 0.3F, this.rand.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1040:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_ZOMBIE_CONVERTED_TO_DROWNED, SoundCategory.NEUTRAL, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1041:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ENTITY_HUSK_CONVERTED_TO_ZOMBIE, SoundCategory.NEUTRAL, 2.0F, (random.nextFloat() - random.nextFloat()) * 0.2F + 1.0F);
+				break;
+			case 1042:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_GRINDSTONE_USE, SoundCategory.BLOCKS, 1.0F, this.rand.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1043:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.ITEM_BOOK_PAGE_TURN, SoundCategory.BLOCKS, 1.0F, this.rand.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1044:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_SMITHING_TABLE_USE, SoundCategory.BLOCKS, 1.0F, this.rand.nextFloat() * 0.1F + 0.9F);
+				break;
+			case 1500:
+				ComposterBlock.playEvent(this, pos, data > 0);
+				break;
+			case 1502:
+				this.playSound(Minecraft.getInstance().player, pos, SoundEvents.BLOCK_REDSTONE_TORCH_BURNOUT, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+				
+				for (int l1 = 0; l1 < 5; ++l1) {
+					double d15 = (double) pos.getX() + random.nextDouble() * 0.6D + 0.2D;
+					double d20 = (double) pos.getY() + random.nextDouble() * 0.6D + 0.2D;
+					double d26 = (double) pos.getZ() + random.nextDouble() * 0.6D + 0.2D;
+					this.addParticle(ParticleTypes.SMOKE, d15, d20, d26, 0.0D, 0.0D, 0.0D);
+				}
+				break;
+			case 2001:
+				BlockState state = Block.getStateById(data);
+				if (!state.isAir(this, pos)) {
+					SoundType soundtype = state.getSoundType(this, pos, null);
+					this.playSound(pos, soundtype.getBreakSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
+				}
+				
+				if (!state.isAir(this, pos) && !state.addDestroyEffects(this, pos, Minecraft.getInstance().particles)) {
+					VoxelShape voxelshape = state.getShape(this, pos);
+					voxelshape.forEachBox((x1, y1, z1, x2, y2, z2) -> {
+						double d1 = Math.min(1.0D, x2 - x1);
+						double d2 = Math.min(1.0D, y2 - y1);
+						double d3 = Math.min(1.0D, z2 - z1);
+						int i = Math.max(2, MathHelper.ceil(d1 / 0.25D));
+						int j = Math.max(2, MathHelper.ceil(d2 / 0.25D));
+						int k = Math.max(2, MathHelper.ceil(d3 / 0.25D));
+						
+						for (int l = 0; l < i; ++l) {
+							for (int i1 = 0; i1 < j; ++i1) {
+								for (int j1 = 0; j1 < k; ++j1) {
+									double d4 = ((double) l + 0.5D) / (double) i;
+									double d5 = ((double) i1 + 0.5D) / (double) j;
+									double d6 = ((double) j1 + 0.5D) / (double) k;
+									double d7 = d4 * d1 + x1;
+									double d8 = d5 * d2 + y1;
+									double d9 = d6 * d3 + z1;
+									Minecraft.getInstance().particles.addEffect(
+											(new DiggingParticle((ClientWorld) owner.getWorld(),
+													(((double) pos.getX() + d7) / owner.unitsPerBlock) + owner.getPos().getX(),
+													(((double) pos.getY() + d8 - 64) / owner.unitsPerBlock) + owner.getPos().getY(),
+													(((double) pos.getZ() + d9) / owner.unitsPerBlock) + owner.getPos().getZ(),
+													(d4 - 0.5D),
+													(d5 - 0.5D),
+													(d6 - 0.5D),
+													state
+											)).setBlockPos(pos)
+													.multiplyVelocity((1f / owner.unitsPerBlock) * 1.5f)
+													.multiplyParticleScaleBy(1f / owner.unitsPerBlock)
+									);
+								}
+							}
+						}
+						
+					});
+				}
+				break;
+			//TODO: everything else
+//			case 2000:
+//				Direction direction = Direction.byIndex(data);
+//				int j1 = direction.getXOffset();
+//				int j2 = direction.getYOffset();
+//				int k2 = direction.getZOffset();
+//				double d18 = (double) pos.getX() + (double) j1 * 0.6D + 0.5D;
+//				double d24 = (double) pos.getY() + (double) j2 * 0.6D + 0.5D;
+//				double d28 = (double) pos.getZ() + (double) k2 * 0.6D + 0.5D;
+//
+//				for (int i3 = 0; i3 < 10; ++i3) {
+//					double d4 = random.nextDouble() * 0.2D + 0.01D;
+//					double d6 = d18 + (double) j1 * 0.01D + (random.nextDouble() - 0.5D) * (double) k2 * 0.5D;
+//					double d8 = d24 + (double) j2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j2 * 0.5D;
+//					double d30 = d28 + (double) k2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j1 * 0.5D;
+//					double d9 = (double) j1 * d4 + random.nextGaussian() * 0.01D;
+//					double d10 = (double) j2 * d4 + random.nextGaussian() * 0.01D;
+//					double d11 = (double) k2 * d4 + random.nextGaussian() * 0.01D;
+//					if (!isRemote) {
+//						spawnParticle(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 2, 0, 0, 0, 0);
+//					} else {
+//						this.addOptionalParticle(ParticleTypes.SMOKE, d6, d8, d30, d9, d10, d11);
+//					}
+//				}
+//				break;
+			//TODO: everything else else
+			default:
+//				if (!isRemote) {
+//					owner.getWorld().getServer().getPlayerList()
+//							.sendToAllNearExcept(
+//									player,
+//									(double) owner.getPos().getX() + (pos.getX() / (float) owner.unitsPerBlock),
+//									(double) owner.getPos().getY() + (((pos.getY() - 64)) / (float) owner.unitsPerBlock),
+//									(double) owner.getPos().getZ() + (pos.getZ() / (float) owner.unitsPerBlock),
+//									(64.0D), owner.getWorld().getDimensionKey(),
+//									new SPlaySoundEventPacket(type, owner.getPos(), data, false)
+//							);
+//				} else {
+//					owner.getWorld().playEvent(player, type, owner.getPos(), data);
+//				}
+		}
 	}
 	
 	@Nullable

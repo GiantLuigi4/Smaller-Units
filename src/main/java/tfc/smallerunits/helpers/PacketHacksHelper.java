@@ -5,6 +5,7 @@ import net.minecraft.util.math.BlockPos;
 import java.util.HashMap;
 
 public class PacketHacksHelper {
+	// TODO: convert to array list
 	public static BlockPos unitPos = null;
 	
 	private static final HashMap<Object, BlockPos> map = new HashMap<>();

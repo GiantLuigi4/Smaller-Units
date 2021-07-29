@@ -27,9 +27,6 @@ public class SUResizeType extends DefaultSizeChangeType {
 	public void onSizeChanged(Entity entity, ISizeChanging data, float size) {
 		super.onSizeChanged(entity, data, size);
 		if (entity instanceof LivingEntity) {
-			System.out.println(size);
-			System.out.println((4 / (1f / size)) / 4);
-			System.out.println(((4 / (1f / size)) - 4));
 			float scl = 1f / (1 - (1f / size));
 			if (scl < 0) {
 				scl = (0 - scl) - 8;

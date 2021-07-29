@@ -149,7 +149,7 @@ dependencies {
     implementation fg.deobf('curse.maven:redstone_pen-461710:3348960')
     implementation fg.deobf('curse.maven:ctm-267602:3137659')
 
-    implementation fg.deobf('curse.maven:pokecube-285121:3308917')
+//    implementation fg.deobf('curse.maven:pokecube-285121:3308917')
 
     compileOnly fg.deobf('curse.maven:charm-430988:3214651')
 

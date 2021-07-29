@@ -20,7 +20,6 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.crafting.RecipeManager;
-import net.minecraft.network.play.server.SPlaySoundEventPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
@@ -571,94 +570,9 @@ public class FakeServerWorld extends ServerWorld {
 		owner.getWorld().playSound(player, owner.getPos().getX() + (x / (float) owner.unitsPerBlock), owner.getPos().getY() + ((y - 64) / (float) owner.unitsPerBlock), owner.getPos().getZ() + (z / (float) owner.unitsPerBlock), soundIn, category, (volume / owner.unitsPerBlock), pitch);
 	}
 	
-	/**
-	 * {@link net.minecraft.client.renderer.WorldRenderer#playEvent}
-	 */
 	@Override
 	public void playEvent(@Nullable PlayerEntity player, int type, BlockPos pos, int data) {
-		this.isRemote = owner.getWorld().isRemote;
-		Random random = rand;
-		// TODO: move this to client world
-		switch (type) {
-			case 1000:
-				this.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_DISPENSE, SoundCategory.BLOCKS, 1.0F, 1.2F);
-				break;
-			case 1001:
-				this.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_FAIL, SoundCategory.BLOCKS, 1.0F, 1.2F);
-				break;
-			case 1002:
-				this.playSound(null, pos, SoundEvents.BLOCK_DISPENSER_LAUNCH, SoundCategory.BLOCKS, 1.0F, 1.2F);
-				break;
-			//TODO:1003-1004
-			case 1005:
-				this.playSound(null, pos, SoundEvents.BLOCK_IRON_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1006:
-				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_DOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1007:
-				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1008:
-				this.playSound(null, pos, SoundEvents.BLOCK_FENCE_GATE_OPEN, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1009:
-				this.playSound(null, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
-				break;
-			//TODO:1010
-			case 1011:
-				this.playSound(null, pos, SoundEvents.BLOCK_IRON_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1012:
-				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_DOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1013:
-				this.playSound(null, pos, SoundEvents.BLOCK_WOODEN_TRAPDOOR_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			case 1014:
-				this.playSound(null, pos, SoundEvents.BLOCK_FENCE_GATE_CLOSE, SoundCategory.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F);
-				break;
-			//TODO: everything else
-//			case 2000:
-//				Direction direction = Direction.byIndex(data);
-//				int j1 = direction.getXOffset();
-//				int j2 = direction.getYOffset();
-//				int k2 = direction.getZOffset();
-//				double d18 = (double) pos.getX() + (double) j1 * 0.6D + 0.5D;
-//				double d24 = (double) pos.getY() + (double) j2 * 0.6D + 0.5D;
-//				double d28 = (double) pos.getZ() + (double) k2 * 0.6D + 0.5D;
-//
-//				for (int i3 = 0; i3 < 10; ++i3) {
-//					double d4 = random.nextDouble() * 0.2D + 0.01D;
-//					double d6 = d18 + (double) j1 * 0.01D + (random.nextDouble() - 0.5D) * (double) k2 * 0.5D;
-//					double d8 = d24 + (double) j2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j2 * 0.5D;
-//					double d30 = d28 + (double) k2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j1 * 0.5D;
-//					double d9 = (double) j1 * d4 + random.nextGaussian() * 0.01D;
-//					double d10 = (double) j2 * d4 + random.nextGaussian() * 0.01D;
-//					double d11 = (double) k2 * d4 + random.nextGaussian() * 0.01D;
-//					if (!isRemote) {
-//						spawnParticle(ParticleTypes.SMOKE, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 2, 0, 0, 0, 0);
-//					} else {
-//						this.addOptionalParticle(ParticleTypes.SMOKE, d6, d8, d30, d9, d10, d11);
-//					}
-//				}
-//				break;
-			//TODO: everything else else
-			default:
-				if (!isRemote) {
-					owner.getWorld().getServer().getPlayerList()
-							.sendToAllNearExcept(
-									player,
-									(double) owner.getPos().getX() + (pos.getX() / (float) owner.unitsPerBlock),
-									(double) owner.getPos().getY() + (((pos.getY() - 64)) / (float) owner.unitsPerBlock),
-									(double) owner.getPos().getZ() + (pos.getZ() / (float) owner.unitsPerBlock),
-									(64.0D), owner.getWorld().getDimensionKey(),
-									new SPlaySoundEventPacket(type, owner.getPos(), data, false)
-							);
-				} else {
-					owner.getWorld().playEvent(player, type, owner.getPos(), data);
-				}
-		}
+		playEvent(type, pos, data);
 	}
 	
 	@Nonnull

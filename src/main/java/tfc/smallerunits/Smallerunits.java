@@ -180,6 +180,7 @@ public class Smallerunits {
 		
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onSneakClick);
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerInteract);
+		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerTick);
 		
 		MinecraftForge.EVENT_BUS.register(this);
 	}

@@ -9,9 +9,11 @@ import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.better_fps_graph.API.Profiler;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.model.ModelBakery;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -39,9 +41,7 @@ import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.helpers.GameRendererHelper;
 import tfc.smallerunits.renderer.FlywheelProgram;
 import tfc.smallerunits.renderer.SmallerUnitsProgram;
-import tfc.smallerunits.utils.DefaultedMap;
-import tfc.smallerunits.utils.MathUtils;
-import tfc.smallerunits.utils.SmallUnit;
+import tfc.smallerunits.utils.*;
 import tfc.smallerunits.utils.rendering.*;
 import tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexBuilder;
 import tfc.smallerunits.utils.rendering.flywheel.FlywheelVertexFormats;
@@ -49,7 +49,9 @@ import tfc.smallerunits.utils.world.client.FakeClientWorld;
 import tfc.smallerunits.utils.world.client.SmallBlockReader;
 import tfc.smallerunits.utils.world.server.FakeServerWorld;
 
+import java.util.Optional;
 import java.util.Random;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
@@ -482,6 +484,53 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			}
 			matrixStackIn.pop();
 		}
+		
+		for (SortedSet<DestroyBlockProgress> value : Minecraft.getInstance().worldRenderer.damageProgress.values()) {
+			for (DestroyBlockProgress destroyBlockProgress : value) {
+				if (destroyBlockProgress.getPosition().equals(tileEntityIn.getPos())) {
+					int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
+					Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
+					UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(tileEntityIn, entity, false, tileEntityIn.getPos(), Optional.empty());
+					BlockState miningState = tileEntityIn.getFakeWorld().getBlockState(context.posHit);
+					matrixStackIn.push();
+					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+					matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
+					CustomBuffer.CustomVertexBuilder builder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
+							miningState,
+							context.posHit, tileEntityIn.getFakeWorld(),
+							new MatrixStack(), builder, true,
+							new Random(context.posHit.toLong()),
+							EmptyModelData.INSTANCE
+					);
+					IVertexBuilder builder1 = bufferIn.getBuffer(builder.type);
+					int index = 0;
+					for (CustomBuffer.Vertex vert : builder.vertices) {
+						int amt = 1;
+						float u = vert.u * 128;
+						float v = vert.v * 128;
+						Vector4f vector4f = new Vector4f((float) vert.x, (float) vert.y, (float) vert.z, 1);
+						vector4f.transform(matrixStackIn.getLast().getMatrix());
+						builder1.addVertex(
+								(float) vector4f.getX(),
+								(float) vector4f.getY(),
+								(float) vector4f.getZ(),
+								(float) (vert.r * amt) / 255f,
+								(float) (vert.g * amt) / 255f,
+								(float) (vert.b * amt) / 255f,
+								vert.a / 255f,
+								u, v,
+								combinedOverlayIn, combinedLightIn,
+								vert.nx, vert.ny, vert.nz
+						);
+						index++;
+						if (index == 4) index = 0;
+					}
+					matrixStackIn.pop();
+				}
+			}
+		}
+		
 		matrixStackIn = oldStack;
 		
 		matrixStackIn.push();
