@@ -2,5 +2,9 @@
   "item.smallerunits.su_grower": "Увеличитель блоков",
   "item.smallerunits.su_shrinker": "Уменьшитель блоков",
   "block.smallerunits.su": "Маленький блок",
-  "itemGroup.Smaller Units": "Маленькие блоки"
+  "itemGroup.Smaller Units": "Маленькие блоки",
+  "smallerunits.advancements.root.name": "Чем меньше, тем лучше!",
+  "smallerunits.advancements.root.description": "Сделайте молот изменения размера",
+  "smallerunits.advancements.rude.name": "Ну это же грубо!",
+  "smallerunits.advancements.rude.description": "Принудительно измените размер игрока при помощи молотка изменения размера"
 }

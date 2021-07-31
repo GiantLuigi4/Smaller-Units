@@ -26,6 +26,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.*;
 import net.minecraft.world.LightType;
 import net.minecraftforge.client.ForgeHooksClient;
@@ -610,9 +611,9 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			finalMatrixStackIn.push();
 			finalMatrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 			finalMatrixStackIn.translate(
-					(entity.getPositionVec().getX()),
-					(entity.getPositionVec().getY() - 64),
-					(entity.getPositionVec().getZ())
+					(MathHelper.lerp(partialTicks, entity.lastTickPosX, entity.getPositionVec().getX())),
+					(MathHelper.lerp(partialTicks, entity.lastTickPosY, entity.getPositionVec().getY())) - 64,
+					(MathHelper.lerp(partialTicks, entity.lastTickPosZ, entity.getPositionVec().getZ()))
 			);
 			EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) Minecraft.getInstance().getRenderManager().getRenderer(entity);
 			int matrixSize = finalMatrixStackIn.stack.size();
@@ -644,7 +645,11 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				}
 				Vector3d offset = renderer.getRenderOffset(entity, partialTicks);
 				finalMatrixStackIn.translate(offset.getX(), offset.getY(), offset.getZ());
-				renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, bufferIn.getWrapped(), combinedLightIn);
+				int light = LightTexture.packLight(
+						Math.max(LightTexture.getLightBlock(combinedLightIn), entity.getEntityWorld().getLightFor(LightType.BLOCK, entity.getPosition())),
+						Math.max(LightTexture.getLightSky(combinedLightIn), entity.getEntityWorld().getLightFor(LightType.SKY, entity.getPosition()))
+				);
+				renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, bufferIn.getWrapped(), light);
 			} catch (Throwable err) {
 				isExceptionPresent = true;
 				for (StackTraceElement element : err.getStackTrace()) {

@@ -24,6 +24,7 @@ import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.helpers.PacketHacksHelper;
 import tfc.smallerunits.networking.CLittleBlockInteractionPacket;
 import tfc.smallerunits.networking.SLittleBlockEventPacket;
+import tfc.smallerunits.networking.SLittleEntityUpdatePacket;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.renderer.FlywheelProgram;
 import tfc.smallerunits.utils.threecore.SUResizeType;
@@ -132,6 +133,14 @@ public class Smallerunits {
 		NETWORK_INSTANCE.registerMessage(1, CLittleBlockInteractionPacket.class,
 				CLittleBlockInteractionPacket::writePacketData,
 				CLittleBlockInteractionPacket::new,
+				(packet, ctx) -> {
+					ctx.get().setPacketHandled(true);
+					packet.handle(ctx);
+				}
+		);
+		NETWORK_INSTANCE.registerMessage(2, SLittleEntityUpdatePacket.class,
+				SLittleEntityUpdatePacket::writePacketData,
+				SLittleEntityUpdatePacket::new,
 				(packet, ctx) -> {
 					ctx.get().setPacketHandled(true);
 					packet.handle(ctx);

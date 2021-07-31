@@ -2,5 +2,9 @@
   "item.smallerunits.su_grower": "Unit Grower",
   "item.smallerunits.su_shrinker": "Unit Shrinker",
   "block.smallerunits.su": "Small Unit",
-  "itemGroup.Smaller Units": "Smaller Units"
+  "itemGroup.Smaller Units": "Smaller Units",
+  "smallerunits.advancements.root.name": "Smaller is better!",
+  "smallerunits.advancements.root.description": "Make a hammer of resizing",
+  "smallerunits.advancements.rude.name": "Well that's just rude!",
+  "smallerunits.advancements.rude.description": "Forcefully set a player's size using a hammer of resizing"
 }

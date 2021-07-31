@@ -2,10 +2,10 @@
   "__comment": "Made with TheDestruc7i0n's advancements generator: https://advancements.thedestruc7i0n.ca",
   "display": {
 	"title": {
-	  "text": "Well that's just rude!"
+	  "translate": "smallerunits.advancements.rude.name"
 	},
 	"description": {
-	  "text": "Forcefully set a player's size using a hammer of resizing"
+	  "translate": "smallerunits.advancements.rude.description"
 	},
 	"icon": {
 	  "item": "smallerunits:su_grower"

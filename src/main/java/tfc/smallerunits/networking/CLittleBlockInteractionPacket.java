@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 public class CLittleBlockInteractionPacket implements IPacket {
 	Vector3d playerPos, lookVector, playerLookStart, playerLookEnd;
 	double yaw, pitch;
+	// TODO: change to array list
 	BlockPos clickedPos;
 	
 	public CLittleBlockInteractionPacket(Vector3d playerPos, Vector3d playerLookStart, Vector3d playerLookEnd, float yaw, float pitch, BlockPos clickedPos) {

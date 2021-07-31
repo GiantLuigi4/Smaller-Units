@@ -2,10 +2,10 @@
   "__comment": "Made with TheDestruc7i0n's advancements generator: https://advancements.thedestruc7i0n.ca",
   "display": {
 	"title": {
-	  "text": "Smaller is better!"
+	  "translate": "smallerunits.advancements.root.name"
 	},
 	"description": {
-	  "text": "Make a hammer of resizing"
+	  "translate": "smallerunits.advancements.root.description"
 	},
 	"icon": {
 	  "item": "smallerunits:su_shrinker"

@@ -24,13 +24,16 @@ displayName = "Smallerunits" #mandatory
 #logoFile="smallerunits.png" #optional
 # A text field displayed in the mod UI
 credits = '''Moony, for the two hammer textures,
+Lorenzo for Italian translations,
+Space Lover for Russian translations,
+Mohatax for Spanish translations,
 https://advancements.thedestruc7i0n.ca/ for advancments generator'''
 #optional
 # A text field displayed in the mod UI
 authors = "GiantLuigi4" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description = '''
-
+A mod about bending space to make blocks smaller
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 #[[dependencies.smallerunits]] #optional

@@ -1,5 +1,6 @@
 package tfc.smallerunits.block;
 
+import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -24,14 +25,18 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import sun.misc.Unsafe;
+import tfc.smallerunits.Smallerunits;
+import tfc.smallerunits.networking.SLittleEntityUpdatePacket;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.SmallUnit;
 import tfc.smallerunits.utils.UnitPallet;
@@ -228,6 +233,10 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 					value.tick();
 				} catch (Throwable ignored) {
 				}
+				Vector3d lastPosition = value.getPositionVec();
+				value.lastTickPosX = lastPosition.x;
+				value.lastTickPosY = lastPosition.y;
+				value.lastTickPosZ = lastPosition.z;
 			}
 			
 			getProfiler().endTick();
@@ -247,6 +256,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		
 		getProfiler().startTick();
 		
+		ArrayList<Pair<UUID, CompoundNBT>> updatePackets = new ArrayList<>();
 		for (Entity value : getEntitiesById().values()) {
 			if (!value.removed) {
 				try {
@@ -258,11 +268,25 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 //			if (value.getDataManager().isDirty()) {
 //				value.getDataManager().setClean();
 			//TODO: change this to send packets to update only the specific entity being updated
-			if (world.isRemote) {
-				this.markDirty();
-				this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
+			if (getFakeWorld().getGameTime() % value.getType().getUpdateFrequency() == 0) {
+				updatePackets.add(Pair.of(value.getUniqueID(), value.serializeNBT()));
 			}
+//			if (world.isRemote) {
+//				this.markDirty();
+//				this.getWorld().notifyBlockUpdate(this.getPos(), this.getBlockState(), this.getBlockState(), 3);
 //			}
+//			}
+		}
+		if (!updatePackets.isEmpty()) {
+			SLittleEntityUpdatePacket updatePacket = new SLittleEntityUpdatePacket(this.getPos(), updatePackets);
+			Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.NEAR.with(() ->
+					new PacketDistributor.TargetPoint(
+							this.getPos().getX(),
+							this.getPos().getY(),
+							this.getPos().getZ(),
+							64, worldServer.dimension
+					)), updatePacket
+			);
 		}
 		getProfiler().endTick();
 	}

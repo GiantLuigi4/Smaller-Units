@@ -1,0 +1,10 @@
+{
+  "item.smallerunits.su_grower": "Aumentador de Unidades",
+  "item.smallerunits.su_shrinker": "Reductor de Unidades",
+  "block.smallerunits.su": "Unidad Pequeña",
+  "itemGroup.Smaller Units": "Unidades Pequeñas",
+  "smallerunits.advancements.root.name": "¡Más pequeño mejor!",
+  "smallerunits.advancements.root.description": "Haz un martillo de redimensionamiento",
+  "smallerunits.advancements.rude.name": "¡Eso es de mala educación!",
+  "smallerunits.advancements.rude.description": "Cambia el tamaño de un jugador forzosamente con un martillo de redimensionamiento"
+}

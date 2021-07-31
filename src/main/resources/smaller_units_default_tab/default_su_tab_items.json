@@ -5,10 +5,10 @@
 	{"file": "dsm/crane", "author": "Drink Some Milk", "name": "Crane"},
 	{"file": "dsm/sword", "author": "Drink Some Milk", "name": "Sword"},
 	{"file": "dsm/tree", "author": "Drink Some Milk", "name": "Tree"},
-	{"file": "ceo/house", "author": "CEO", "name": "House"},
-	{"file": "ceo/stool", "author": "CEO", "name": "Stool"},
-	{"file": "ceo/table", "author": "CEO", "name": "Table"},
-	{"file": "ceo/grassplain", "author": "CEO", "name": "Grass Plains"},
-	{"file": "ceo/cobblegen", "author": "CEO", "name": "Cobble Generator"}
+	{"file": "ceo/house", "author": "Pichu Rose", "name": "House"},
+	{"file": "ceo/stool", "author": "Pichu Rose", "name": "Stool"},
+	{"file": "ceo/table", "author": "Pichu Rose", "name": "Table"},
+	{"file": "ceo/grassplain", "author": "Pichu Rose", "name": "Grass Plains"},
+	{"file": "ceo/cobblegen", "author": "Pichu Rose", "name": "Cobble Generator"}
   ]
 }

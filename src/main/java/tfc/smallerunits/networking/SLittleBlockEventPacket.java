@@ -9,6 +9,7 @@ import net.minecraft.util.math.BlockPos;
 import tfc.smallerunits.block.UnitTileEntity;
 
 public class SLittleBlockEventPacket implements IPacket {
+	// TODO: change small block pos to array list
 	BlockPos pos, smallBlockPos;
 	int type, data;
 	
