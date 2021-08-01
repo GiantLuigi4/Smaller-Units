@@ -33,24 +33,47 @@ https://advancements.thedestruc7i0n.ca/ for advancments generator'''
 authors = "GiantLuigi4" #optional
 # The description text for the mod (multi line!) (#mandatory)
 description = '''
-A mod about bending space to make blocks smaller
-'''
+A mod about bending space to make blocks smaller'''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
-#[[dependencies.smallerunits]] #optional
-#    # the modid of the dependency
-#    modId="forge" #mandatory
-#    # Does this dependency have to exist - if not, ordering below must be specified
-#    mandatory=true #mandatory
-#    # The version range of the dependency
-#    versionRange="[28,)" #mandatory
-#    # An ordering relationship for the dependency - BEFORE or AFTER required if the relationship is not mandatory
-#    ordering="NONE"
-#    # Side this dependency is applied on - BOTH, CLIENT or SERVER
-#    side="BOTH"
+[[dependencies.smallerunits]] #optional
+# the modid of the dependency
+modId = "forge" #mandatory
+# Does this dependency have to exist - if not, ordering below must be specified
+mandatory = true #mandatory
+# The version range of the dependency
+versionRange = "[28,)" #mandatory
+# An ordering relationship for the dependency - BEFORE or AFTER required if the relationship is not mandatory
+ordering = "NONE"
+# Side this dependency is applied on - BOTH, CLIENT or SERVER
+side = "BOTH"
 # Here's another dependency
-#[[dependencies.smallerunits]]
-#    modId="minecraft"
-#    mandatory=true
-#    versionRange="[1.14.4]"
-#    ordering="NONE"
-#    side="BOTH"
+[[dependencies.smallerunits]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.3,1.17)"
+ordering = "NONE"
+side = "BOTH"
+[[dependencies.smallerunits]]
+modId = "pehkui"
+mandatory = false
+versionRange = "[2.0.0,)"
+ordering = "NONE"
+side = "BOTH"
+[[dependencies.smallerunits]]
+modId = "threecore"
+mandatory = false
+versionRange = "[3.2.0,)"
+ordering = "NONE"
+side = "BOTH"
+[[dependencies.smallerunits]]
+modId = "shrink"
+mandatory = false
+versionRange = "[1.1.0,)"
+ordering = "NONE"
+side = "BOTH"
+[[dependencies.smallerunits]]
+modId = "gullivern"
+mandatory = false
+versionRange = "[2.1.6,)"
+ordering = "NONE"
+side = "BOTH"

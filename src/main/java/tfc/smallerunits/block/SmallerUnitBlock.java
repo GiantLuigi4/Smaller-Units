@@ -91,20 +91,48 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	//TODO:
 //	@Override
-//	public void onLanded(IBlockReader worldIn, Entity entityIn) {
-//		AxisAlignedBB aabb = entityIn.getBoundingBox();
-//		TileEntity tileEntity = worldIn.getTileEntity(entityIn.getPosition().down());
-//		if (!(tileEntity instanceof UnitTileEntity)) return;
-//		int unitsPerBlock = ((UnitTileEntity) tileEntity).unitsPerBlock;
-//		World fakeWorld = ((UnitTileEntity) tileEntity).getFakeWorld();
-//		AxisAlignedBB aabb1 = new AxisAlignedBB(0, 0, 0, aabb.getXSize() * unitsPerBlock, aabb.getYSize() * unitsPerBlock, aabb.getZSize() * unitsPerBlock);
-//		aabb1 = aabb1.offset(-entityIn.getPosition().getX(), -entityIn.getPosition().getY(), -entityIn.getPosition().getZ());
-//		AxisAlignedBB bb = aabb1.offset(
-//				aabb.minX * unitsPerBlock,
-//				(aabb.minY + 64) * unitsPerBlock,
-//				aabb.minZ * unitsPerBlock
-//		);
-//		super.onLanded(worldIn, entityIn);
+//	public void onLanded(IBlockReader world, Entity entity) {
+//		BlockPos pos = entity.getPosition();
+//		TileEntity tileEntityUncasted = world.getTileEntity(pos);
+//
+//		if (entity == null || !(tileEntityUncasted instanceof UnitTileEntity))
+//			return;
+//
+//		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+//		if (tileEntity.getBlockMap() == null) return;
+//		for (SmallUnit value : tileEntity.getBlockMap().values()) {
+//			if (!value.state.isAir()) {
+//				Vector3d pos1 = new Vector3d(value.pos.getX(), (value.pos.getY() - 64), value.pos.getZ());
+////				pos1 = pos1.add(0.5, 0.5, 0.5);
+//				pos1 = pos1.mul(1d / tileEntity.unitsPerBlock, 1d / tileEntity.unitsPerBlock, 1d / tileEntity.unitsPerBlock);
+//				pos1 = pos1.add(pos.getX(), pos.getY(), pos.getZ());
+//				AxisAlignedBB aabb = new AxisAlignedBB(
+//						pos1.x, pos1.y, pos1.z,
+//						pos1.x + 1d / tileEntity.unitsPerBlock,
+//						pos1.y + 1d / tileEntity.unitsPerBlock,
+//						pos1.z + 1d / tileEntity.unitsPerBlock
+//				);
+////				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
+//				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
+//					value.state.getBlock().onLanded(tileEntity.getFakeWorld(), entity);
+//				}
+////				if (entity.getBoundingBox().intersects(aabb)) {
+////					if (value.state.isNormalCube(tileEntity.getFakeWorld(), value.pos)) {
+////						Vector3d entityPos = entity.getPositionVec();
+////						entityPos = entityPos.subtract(pos.getX(), pos.getY(), pos.getZ());
+//////						entityPos = entityPos.mul(1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock, 1f / tileEntity.unitsPerBlock);
+////						entityPos = entityPos.scale(tileEntity.unitsPerBlock);
+////						entityPos = new Vector3d(Math.round(entityPos.x), Math.round(entityPos.y), Math.round(entityPos.z));
+////						Vector3d offset = entityPos.subtract(value.pos.getX() + (1f/tileEntity.unitsPerBlock * 0.5), value.pos.getY() + 0.5, value.pos.getZ() + (1f/tileEntity.unitsPerBlock * 0.5));
+////						offset = offset.mul(1,0,1);
+////						offset = offset.normalize();
+////						offset = offset.scale(1f/tileEntity.unitsPerBlock);
+////						entity.addVelocity(offset.getX(), 0, offset.getZ());
+////					}
+////				}
+//			}
+//		}
+//		super.onLanded(world, entity);
 //	}
 	
 	@Override
@@ -672,7 +700,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						pos1.y + 1d / tileEntity.unitsPerBlock,
 						pos1.z + 1d / tileEntity.unitsPerBlock
 				);
-				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
+//				if (entity.getBoundingBox().expand(0.05f, 0.05f, 0.05f).offset(-0.025f, -0.025f, -0.025f).intersects(aabb)) {
+				if (entity.getBoundingBox().intersects(aabb)) {
 					value.state.onEntityCollision(tileEntity.getFakeWorld(), value.pos, entity);
 				}
 //				if (entity.getBoundingBox().intersects(aabb)) {
@@ -698,7 +727,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (!worldIn.isRemote) return ActionResultType.CONSUME;
 		if (handIn == Hand.OFF_HAND) return ActionResultType.PASS;
 		ActionResultType type = doAction(state, worldIn, pos, player, handIn, hit);
-		if (!type.equals(ActionResultType.FAIL) && !type.equals(ActionResultType.CONSUME)) {
+//		if (!type.equals(ActionResultType.FAIL) && !type.equals(ActionResultType.CONSUME)) {
+		if (!type.equals(ActionResultType.FAIL)) {
 			Smallerunits.NETWORK_INSTANCE.sendToServer(
 					new CLittleBlockInteractionPacket(
 							player.getPositionVec(), player.getEyePosition(1),
@@ -1307,7 +1337,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //				}
 //				Minecraft.getInstance().getProfiler().startSection("get_shape_for_" + value.state.toString());
 				Minecraft.getInstance().getProfiler().startSection("get_shape_for");
-				VoxelShape shape1 = value.state.getShape(tileEntity.getFakeWorld(), tileEntity.getPos());
+				VoxelShape shape1 = value.state.getShape(tileEntity.getFakeWorld(), value.pos);
 //				if (!shape1.isEmpty()) shape1 = VoxelShapes.create(0, 0, 0, 1, 1, 1);
 				if (!shape1.isEmpty()) shape1 = VoxelShapes.create(shape1.getBoundingBox());
 				boolean hasNonNormalNeighbor = false;
@@ -1529,7 +1559,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			}
 			for (SmallUnit value : tileEntity.getBlockMap().values()) {
 				if (value.tileEntity == null) continue;
-				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.getFakeWorld(), value.pos);
+				VoxelShape shape1 = value.state.getCollisionShape(tileEntity.getFakeWorld(), value.pos, context);
 				VoxelShape shape2 = VoxelShapes.empty();
 				for (AxisAlignedBB axisAlignedBB : shrink(shape1, tileEntity.unitsPerBlock)) {
 					if (

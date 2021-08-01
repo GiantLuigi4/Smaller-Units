@@ -63,6 +63,7 @@ public class CommonEventHandler {
 	// client
 	private static UnitPos lastMiningPos = null;
 	
+	// TODO: request datapackets upon comming with 64 blocks
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
 		if (FMLEnvironment.dist.isClient()) {
 			if (event.player == Minecraft.getInstance().player) {

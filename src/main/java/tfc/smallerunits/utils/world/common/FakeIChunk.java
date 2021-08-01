@@ -55,6 +55,7 @@ public class FakeIChunk implements IChunk {
 		else owner.blockMap.put(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, owner.owner), state));
 		oldState.onReplaced(owner, pos, state, isMoving);
 		owner.blockMap.get(pos.toLong()).state.onBlockAdded(owner, pos, oldState, isMoving);
+		owner.toUpdate.add(pos);
 		return state;
 	}
 	

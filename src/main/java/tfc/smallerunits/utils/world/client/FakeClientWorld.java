@@ -481,6 +481,10 @@ public class FakeClientWorld extends ClientWorld {
 		this.getProfiler().startTick();
 		super.tick(hasTimeLeft);
 		this.getProfiler().endTick();
+		
+		ArrayList<Integer> toRemove = new ArrayList<>();
+		for (Integer integer : entitiesById.keySet()) if (entitiesById.get(integer).removed) toRemove.add(integer);
+		toRemove.forEach(entitiesById::remove);
 	}
 	
 	@Override

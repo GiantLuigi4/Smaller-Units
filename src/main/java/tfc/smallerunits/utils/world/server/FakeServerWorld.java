@@ -20,6 +20,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.crafting.RecipeManager;
+import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.profiler.IProfiler;
 import net.minecraft.profiler.Profiler;
@@ -79,6 +80,8 @@ import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.api.placement.UnitPos;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.networking.SLittleBlockEventPacket;
+import tfc.smallerunits.networking.SLittleEntityStatusPacket;
+import tfc.smallerunits.networking.SLittleTileEntityUpdatePacket;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import tfc.smallerunits.utils.ResizingUtils;
@@ -446,10 +449,13 @@ public class FakeServerWorld extends ServerWorld {
 		);
 	}
 	
+	public ArrayList<BlockPos> toUpdate;
+	
 	@Override
 	public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
 		owner.markDirty();
 		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
+		toUpdate.add(pos);
 	}
 	
 	@Override
@@ -547,6 +553,7 @@ public class FakeServerWorld extends ServerWorld {
 			loadedTileEntityList = new ArrayList<>();
 			addedTileEntityList = new ArrayList<>();
 			capturedBlockSnapshots = new ArrayList<>();
+			toUpdate = new ArrayList<>();
 			
 			eventData = new ArrayList<>();
 		}
@@ -735,8 +742,17 @@ public class FakeServerWorld extends ServerWorld {
 			if (entity == null) continue;
 			entitiesByUuid.put(entity.getUniqueID(), entity);
 			entitiesById.put(entity.getEntityId(), entity);
-			owner.markDirty();
-			owner.getWorld().markChunkDirty(owner.getPos(), owner);
+//			owner.markDirty();
+//			owner.getWorld().markChunkDirty(owner.getPos(), owner);
+			SLittleEntityStatusPacket updatePacket = new SLittleEntityStatusPacket(owner.getPos(), entity);
+			Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.NEAR.with(() ->
+					new PacketDistributor.TargetPoint(
+							owner.getPos().getX(),
+							owner.getPos().getY(),
+							owner.getPos().getZ(),
+							64, owner.getWorld().dimension
+					)), updatePacket
+			);
 		}
 		
 		owner.getWorld().getProfiler().endStartSection("iterRemoveAir");
@@ -764,26 +780,36 @@ public class FakeServerWorld extends ServerWorld {
 		owner.getWorld().getProfiler().endStartSection("iter_remove_entities");
 		
 		{
-			ArrayList<Entity> toRemove = new ArrayList<>();
+//			ArrayList<Entity> toRemove = new ArrayList<>();
 			for (Entity value : entitiesById.values()) {
 				if (value.removed) {
-					toRemove.add(value);
+//					toRemove.add(value);
+					removeEntity(value);
 				}
 			}
-			
-			for (Entity entity : toRemove) {
-				entitiesByUuid.remove(entity.getUniqueID(), entity);
-				entitiesById.remove(entity.getEntityId(), entity);
-				owner.markDirty();
-				owner.getWorld().markChunkDirty(owner.getPos(), owner);
-			}
+
+//			for (Entity entity : toRemove) {
+//				entitiesByUuid.remove(entity.getUniqueID(), entity);
+//				entitiesById.remove(entity.getEntityId(), entity);
+//				owner.markDirty();
+//				owner.getWorld().markChunkDirty(owner.getPos(), owner);
+//			}
 		}
 		
 		for (Entity entity : entitiesToRemove) {
 			entitiesByUuid.remove(entity.getUniqueID(), entity);
 			entitiesById.remove(entity.getEntityId(), entity);
-			owner.markDirty();
-			owner.getWorld().markChunkDirty(owner.getPos(), owner);
+//			owner.markDirty();
+//			owner.getWorld().markChunkDirty(owner.getPos(), owner);
+			SLittleEntityStatusPacket updatePacket = new SLittleEntityStatusPacket(owner.getPos(), entity).markRemoval();
+			Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.NEAR.with(() ->
+					new PacketDistributor.TargetPoint(
+							owner.getPos().getX(),
+							owner.getPos().getY(),
+							owner.getPos().getZ(),
+							64, owner.getWorld().dimension
+					)), updatePacket
+			);
 		}
 		
 		entitiesToRemove.clear();
@@ -922,6 +948,23 @@ public class FakeServerWorld extends ServerWorld {
 		blankProfiler.endTick();
 		owner.getWorld().getProfiler().endSection();
 		owner.getWorld().getProfiler().endSection();
+		
+		for (BlockPos pos : toUpdate) {
+			TileEntity te = getTileEntity(pos);
+			if (te == null) continue;
+			SUpdateTileEntityPacket packet = te.getUpdatePacket();
+			if (packet == null) continue;
+			SLittleTileEntityUpdatePacket packet1 = new SLittleTileEntityUpdatePacket(owner.getPos(), packet.getPos(), packet.getTileEntityType(), packet.getNbtCompound());
+			Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.NEAR.with(() ->
+					new PacketDistributor.TargetPoint(
+							owner.getPos().getX(),
+							owner.getPos().getY(),
+							owner.getPos().getZ(),
+							64, owner.getWorld().dimension
+					)), packet1
+			);
+		}
+		toUpdate.clear();
 	}
 	
 	@Override

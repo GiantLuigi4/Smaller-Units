@@ -114,7 +114,8 @@ public class UnitPallet {
 					// TODO: do this properly
 					te.setWorldAndPos(world, unit.pos);
 					te.handleUpdateTag(unit.state, teNBT);
-				} else te.read(unit.state, teNBT);
+				}
+				te.read(unit.state, teNBT);
 				unit.tileEntity = te;
 				if (world != null) unit.tileEntity.setWorldAndPos(world, pos);
 			}

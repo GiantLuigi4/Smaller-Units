@@ -124,7 +124,7 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:jei-238222:3383214')
     runtimeOnly fg.deobf('curse.maven:carryon-274259:3206755')
     runtimeOnly fg.deobf('curse.maven:storagedrawers-223852:3180569')
-    runtimeOnly fg.deobf('curse.maven:quark-243121:3393195')
+    implementation fg.deobf('curse.maven:quark-243121:3393195')
     runtimeOnly fg.deobf('curse.maven:oddities-301051:3088871')
     runtimeOnly fg.deobf('curse.maven:autoreglib-250363:3326041')
     runtimeOnly fg.deobf('curse.maven:appeng-223794:3354897')
@@ -145,9 +145,9 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:common_capabilities-247007:3292062')
     runtimeOnly fg.deobf('curse.maven:cyclops_core-232758:3336467')
     runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3176033')
-    runtimeOnly fg.deobf('curse.maven:the_one_probe-245211:3319255')
     implementation fg.deobf('curse.maven:redstone_pen-461710:3348960')
     implementation fg.deobf('curse.maven:ctm-267602:3137659')
+    implementation fg.deobf('curse.maven:tiny_redstone-453746:3347318')
 
 //    implementation fg.deobf('curse.maven:pokecube-285121:3308917')
 
@@ -157,6 +157,7 @@ dependencies {
     compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
     compileOnly fg.deobf('curse.maven:gullivern-385915:3227241')
     implementation fg.deobf('curse.maven:pehkui-319596:3351969')
+    implementation fg.deobf('curse.maven:the_one_probe-245211:3319255')
     compileOnly fg.deobf("curse.maven:better_fps_graph-399699:3094889")
 
     compile 'org.spongepowered:mixin:0.8'
