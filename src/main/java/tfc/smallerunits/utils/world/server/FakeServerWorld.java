@@ -1,5 +1,6 @@
 package tfc.smallerunits.utils.world.server;
 
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
@@ -132,7 +133,7 @@ public class FakeServerWorld extends ServerWorld {
 //	private static final ArrayList<Particle> particles = new ArrayList<>();
 	
 	public BlockRayTraceResult result;
-	public Queue<Entity> entitiesToRemove;
+	public ArrayList<Entity> entitiesToRemove;
 	private boolean isErrored = false;
 
 //	private Object2ObjectLinkedOpenHashMap<String, ICapabilityProvider> capabilityObject2ObjectLinkedOpenHashMap;
@@ -545,7 +546,7 @@ public class FakeServerWorld extends ServerWorld {
 			blockEventQueue = new ObjectLinkedOpenHashSet<>();
 			players = new ArrayList<>();
 			entitiesToAdd = new PriorityQueue<>();
-			entitiesToRemove = new PriorityQueue<>();
+			entitiesToRemove = new ArrayList<>();
 			entitiesByUuid = new Object2ObjectLinkedOpenHashMap<>();
 			entitiesById = new Int2ObjectLinkedOpenHashMap<>();
 			entitiesToAddArrayList = new ArrayList<>();
@@ -554,6 +555,8 @@ public class FakeServerWorld extends ServerWorld {
 			addedTileEntityList = new ArrayList<>();
 			capturedBlockSnapshots = new ArrayList<>();
 			toUpdate = new ArrayList<>();
+			
+			field_241104_N_ = ImmutableList.of();
 			
 			eventData = new ArrayList<>();
 		}

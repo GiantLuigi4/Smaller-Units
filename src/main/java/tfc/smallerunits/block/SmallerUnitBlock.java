@@ -92,7 +92,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	//TODO:
 //	@Override
 //	public void onLanded(IBlockReader world, Entity entity) {
-//		BlockPos pos = entity.getPosition();
+//		BlockPos pos = entity.getOnPosition();
 //		TileEntity tileEntityUncasted = world.getTileEntity(pos);
 //
 //		if (entity == null || !(tileEntityUncasted instanceof UnitTileEntity))
@@ -134,6 +134,19 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //		}
 //		super.onLanded(world, entity);
 //	}
+	
+	
+	@Override
+	public boolean canConnectRedstone(BlockState state, IBlockReader world, BlockPos pos, @Nullable Direction side) {
+		TileEntity tileEntityUncasted = world.getTileEntity(pos);
+		if (!(tileEntityUncasted instanceof UnitTileEntity)) return false;
+		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		if (tileEntity.getBlockMap() == null) return false;
+		
+		// TODO
+		
+		return false;
+	}
 	
 	@Override
 	public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
@@ -1018,7 +1031,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //			BlockPos posOffset = raytraceContext.posHit;
 			BlockState clicked = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);
 			BlockItemUseContext context = new BlockItemUseContext(tileEntity.getFakeWorld(), player, handIn, stack, result);
-			context.offsetPos = posOffset;
+//			context.offsetPos = posOffset;
 			if (true) {
 				player.setWorld(tileEntity.getFakeWorld());
 				PacketHacksHelper.unitPos = worldPos;

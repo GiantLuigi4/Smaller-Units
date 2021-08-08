@@ -71,7 +71,7 @@ public class FakeChunk extends Chunk {
 	public <T extends Entity> void getEntitiesWithinAABBForList(@Nullable EntityType<?> entitytypeIn, AxisAlignedBB aabb, List<? super T> list, Predicate<? super T> filter) {
 		Collection<Entity> entities = getEntities();
 		for (Entity entity : entities) {
-			if (entity.getBoundingBox().intersects(aabb) && (filter.test((T) entity))) {
+			if ((entitytypeIn == null || entitytypeIn.equals(entity.getType())) && entity.getBoundingBox().intersects(aabb) && (filter.test((T) entity))) {
 				list.add((T) entity);
 			}
 		}
@@ -82,7 +82,7 @@ public class FakeChunk extends Chunk {
 		Collection<Entity> entities = getEntities();
 		for (Entity entity : entities) {
 			if (entity == null) continue;
-			if (entity.getBoundingBox().intersects(aabb) && ((filter == null || filter.test((T) entity))) && entityClass.isInstance(entity)) {
+			if (entityClass.isInstance(entity) && entity.getBoundingBox().intersects(aabb) && ((filter == null || filter.test((T) entity)))) {
 				listToFill.add((T) entity);
 			}
 		}

@@ -25,7 +25,7 @@ import tfc.smallerunits.helpers.ContainerMixinHelper;
 		BrewingStandContainer.class
 })
 public class ContainerMixin2 {
-	@Inject(at = @At("HEAD"), method = "canInteractWith(Lnet/minecraft/entity/player/PlayerEntity;)Z", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "canInteractWith", cancellable = true)
 	public void canInteract(PlayerEntity playerIn, CallbackInfoReturnable<Boolean> cir) {
 		if (!ContainerMixinHelper.getNaturallyClosable((Container) (Object) this)) {
 			cir.setReturnValue(true);
