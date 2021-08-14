@@ -9,12 +9,10 @@ buildscript {
     dependencies {
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
         classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
-        classpath "com.wynprice.cursemaven:CurseMaven:2.1.4"
     }
 }
 
 apply plugin: 'net.minecraftforge.gradle'
-apply plugin: "com.wynprice.cursemaven"
 
 version = modVersion
 group = modGroup
@@ -107,6 +105,7 @@ repositories {
         name "tterrag maven"
         url "https://maven.tterrag.com/"
     }
+    maven { url "https://www.cursemaven.com" }
 }
 
 dependencies {

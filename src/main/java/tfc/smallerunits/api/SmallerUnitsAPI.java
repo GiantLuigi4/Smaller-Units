@@ -29,8 +29,8 @@ public class SmallerUnitsAPI {
 		EVENT_BUS.post(new RenderUnitLastEvent(buffers, tileEntity));
 	}
 	
-	public static VoxelShape postCollisionEvent(VoxelShape shape, UnitTileEntity tileEntity) {
-		GetUnitCollisionEvent event = new GetUnitCollisionEvent(shape, tileEntity);
+	public static VoxelShape postCollisionEvent(VoxelShape shape, UnitTileEntity tileEntity, Entity entity) {
+		GetUnitCollisionEvent event = new GetUnitCollisionEvent(shape, tileEntity, entity);
 		EVENT_BUS.post(event);
 		return event.getShape();
 	}

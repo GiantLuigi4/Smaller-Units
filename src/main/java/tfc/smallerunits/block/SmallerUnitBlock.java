@@ -1594,7 +1594,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				}
 			}
 		}
-		SmallerUnitsAPI.postCollisionEvent(shape, tileEntity);
+		shape = SmallerUnitsAPI.postCollisionEvent(shape, tileEntity, context.getEntity());
 		return shape;
 	}
 	
