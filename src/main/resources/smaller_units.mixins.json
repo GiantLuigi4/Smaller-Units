@@ -19,9 +19,9 @@
 	"ServerPlayerEntityMixin",
 	"ServerPlayNetHandlerMixin",
 	"SimpleChannelMixin",
-    "WorldAccessor",
-    "ServerWorldAccessor",
-    "CapabilityProviderAccessor"
+	"WorldAccessor",
+	"ServerWorldAccessor",
+	"CapabilityProviderAccessor"
   ],
   "injectors": {
 	"defaultRequire": 0

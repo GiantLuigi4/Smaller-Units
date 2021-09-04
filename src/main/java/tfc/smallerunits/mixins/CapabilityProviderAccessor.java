@@ -8,13 +8,13 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(CapabilityProvider.class)
 public interface CapabilityProviderAccessor {
-    @Accessor
-    @Mutable
-    void setBaseClass(Class<?> baseClass);
+	@Accessor
+	@Mutable
+	void setBaseClass(Class<?> baseClass);
 
-    @Accessor
-    void setCapabilities(CapabilityDispatcher capabilities);
+	@Accessor
+	void setCapabilities(CapabilityDispatcher capabilities);
 
-    @Accessor
-    void setValid(boolean valid);
+	@Accessor
+	void setValid(boolean valid);
 }

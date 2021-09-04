@@ -10,7 +10,7 @@ import java.util.Set;
 
 @Mixin(World.class)
 public interface WorldAccessor {
-    @Accessor
-    @Mutable
-    void setTileEntitiesToBeRemoved(Set<TileEntity> tileEntitiesToBeRemoved);
+	@Accessor
+	@Mutable
+	void setTileEntitiesToBeRemoved(Set<TileEntity> tileEntitiesToBeRemoved);
 }

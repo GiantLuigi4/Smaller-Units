@@ -7,6 +7,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(ServerWorld.class)
 public interface ServerWorldAccessor {
-    @Accessor
-    void setCapabilityData(WorldCapabilityData capabilityData);
+	@Accessor
+	void setCapabilityData(WorldCapabilityData capabilityData);
 }
