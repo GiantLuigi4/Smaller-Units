@@ -20,7 +20,8 @@ Maybe.
 
 **Can I use this in my modpacks?**
 
-Yes, that is why I post mods to curse forge.
+Yes, that is why I post mods to CurseForge.  
+Be cautious with it however.
 
 **Is there somewhere I can talk to the dev(s) in realtime?**
 
@@ -34,4 +35,4 @@ B) Slimevoid seems to have fallen appart
 
 **Is this survival ready?**
 
-*Shrugs.*
+Yes.
