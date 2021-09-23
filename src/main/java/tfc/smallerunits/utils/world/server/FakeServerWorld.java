@@ -65,21 +65,21 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
-import net.minecraftforge.common.capabilities.CapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.common.util.WorldCapabilityData;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.network.PacketDistributor;
-import sun.misc.Unsafe;
 import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.Smallerunits;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.api.placement.UnitPos;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.mixins.CapabilityProviderAccessor;
+import tfc.smallerunits.mixins.ServerWorldAccessor;
+import tfc.smallerunits.mixins.WorldAccessor;
 import tfc.smallerunits.networking.SLittleBlockEventPacket;
 import tfc.smallerunits.networking.SLittleEntityStatusPacket;
 import tfc.smallerunits.networking.SLittleTileEntityUpdatePacket;
@@ -92,7 +92,6 @@ import tfc.smallerunits.utils.world.common.FakeIChunk;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
@@ -102,18 +101,7 @@ import java.util.stream.Stream;
 
 public class FakeServerWorld extends ServerWorld {
 	private static final WorldBorder border = new WorldBorder();
-	private static final Unsafe theUnsafe;
 	private static final LongSet forcedChunks = LongSets.singleton(new ChunkPos(new BlockPos(0, 0, 0)).asLong());
-	
-	static {
-		try {
-			Field f = Unsafe.class.getDeclaredField("theUnsafe");
-			f.setAccessible(true);
-			theUnsafe = (Unsafe) f.get(null);
-		} catch (Throwable err) {
-			throw new RuntimeException(err);
-		}
-	}
 	
 	protected static Profiler blankProfiler = new Profiler(() -> 0, () -> 0, false);
 	public Map<Long, SmallUnit> blockMap;
@@ -727,14 +715,14 @@ public class FakeServerWorld extends ServerWorld {
 			
 			MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 			try {
-				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(World.class, "field_147483_b")), Collections.newSetFromMap(new IdentityHashMap<>()));
-				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(ServerWorld.class, "capabilityData")), new WorldCapabilityData("Smaller Units Ticking World Capability Data"));
-				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(CapabilityProvider.class, "baseClass")), World.class);
+				((WorldAccessor) this).setTileEntitiesToBeRemoved(Collections.newSetFromMap(new IdentityHashMap<>()));
+				((ServerWorldAccessor) this).setCapabilityData(new WorldCapabilityData("Smaller Units Ticking World Capability Data"));
+				((CapabilityProviderAccessor) this).setBaseClass(World.class);
 				AttachCapabilitiesEvent<World> event = new AttachCapabilitiesEvent<>(World.class, this);
 				MinecraftForge.EVENT_BUS.post(event);
 				CapabilityDispatcher dispatcher = new CapabilityDispatcher(event.getCapabilities(), event.getListeners());
-				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(CapabilityProvider.class, "capabilities")), dispatcher);
-				theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(ObfuscationReflectionHelper.findField(CapabilityProvider.class, "valid")), true);
+				((CapabilityProviderAccessor) this).setCapabilities(dispatcher);
+				((CapabilityProviderAccessor) this).setValid(true);
 			} catch (Throwable err) {
 				throw new RuntimeException(err);
 			}

@@ -10,17 +10,16 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.simple.IndexedMessageCodec;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import sun.misc.Unsafe;
 import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.helpers.MinecraftAccessor;
 import tfc.smallerunits.helpers.PacketHacksHelper;
 
-import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -29,25 +28,16 @@ import java.util.function.Supplier;
 
 @Mixin(targets = "net.minecraftforge.fml.network.simple.IndexedMessageCodec$MessageHandler")
 public class IndexedMessageCodecMixin<MSG> {
-	private static final Unsafe theUnsafe;
-	
-	static {
-		try {
-			Field f = Unsafe.class.getDeclaredField("theUnsafe");
-			f.setAccessible(true);
-			theUnsafe = (Unsafe) f.get(null);
-		} catch (Throwable err) {
-			throw new RuntimeException(err);
-		}
-	}
-	
 	@Shadow
+	@Mutable
 	@Final
 	private Optional<BiConsumer<MSG, PacketBuffer>> encoder;
 	@Shadow
+	@Mutable
 	@Final
 	private Optional<Function<PacketBuffer, MSG>> decoder;
 	@Shadow
+	@Mutable
 	@Final
 	private BiConsumer<MSG, Supplier<NetworkEvent.Context>> messageConsumer;
 	
@@ -71,9 +61,9 @@ public class IndexedMessageCodecMixin<MSG> {
 			BiConsumer<MSG, Supplier<NetworkEvent.Context>> oldMessageConsumer = this.messageConsumer;
 			BiConsumer<MSG, Supplier<NetworkEvent.Context>> newMessageConsumer = (msg, context) -> SmallerUnits_consumePacket(oldMessageConsumer, msg, context, isPosPresent, posIfPresent);
 			
-			theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("encoder")), newEncoder);
-			theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("decoder")), newDecoder);
-			theUnsafe.getAndSetObject(this, theUnsafe.objectFieldOffset(this.getClass().getDeclaredField("messageConsumer")), newMessageConsumer);
+			this.encoder = newEncoder;
+			this.decoder = newDecoder;
+			this.messageConsumer = newMessageConsumer;
 		} catch (Throwable ignored) {
 		}
 	}
