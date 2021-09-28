@@ -123,6 +123,8 @@ public class FakeServerWorld extends ServerWorld {
 	public BlockRayTraceResult result;
 	public ArrayList<Entity> entitiesToRemove;
 	private boolean isErrored = false;
+	
+	public HashMap<Long, BlockPos> statesUpdated;
 
 //	private Object2ObjectLinkedOpenHashMap<String, ICapabilityProvider> capabilityObject2ObjectLinkedOpenHashMap;
 	
@@ -344,8 +346,9 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public void markAndNotifyBlock(BlockPos pos, @Nullable Chunk chunk, BlockState blockstate, BlockState state, int flags, int recursionLeft) {
-		owner.markDirty();
-		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
+		statesUpdated.put(pos.toLong(), pos);
+//		owner.markDirty();
+//		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
 	}
 	
 	@Override
@@ -442,8 +445,8 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
-		owner.markDirty();
-		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
+//		owner.markDirty();
+//		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
 		toUpdate.add(pos);
 	}
 	
@@ -543,6 +546,7 @@ public class FakeServerWorld extends ServerWorld {
 			addedTileEntityList = new ArrayList<>();
 			capturedBlockSnapshots = new ArrayList<>();
 			toUpdate = new ArrayList<>();
+			statesUpdated = new HashMap<>();
 			
 			field_241104_N_ = ImmutableList.of();
 			
@@ -1015,9 +1019,9 @@ public class FakeServerWorld extends ServerWorld {
 		if (World.isOutsideBuildHeight(context.posInRealWorld)) {
 			return false;
 		}
-		
-		owner.markDirty();
-		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
+
+//		owner.markDirty();
+//		owner.getWorld().notifyBlockUpdate(owner.getPos(), owner.getBlockState(), owner.getBlockState(), 3);
 		
 		{
 			IChunk chunk = this.chunk;
@@ -1099,6 +1103,7 @@ public class FakeServerWorld extends ServerWorld {
 				} catch (Throwable ignored) {
 				}
 				
+				statesUpdated.put(pos.toLong(), pos);
 				return true;
 			}
 		}

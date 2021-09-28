@@ -68,6 +68,7 @@ public class SLittleTileEntityUpdatePacket implements IPacket {
 			if (te1 == null) return;
 			te1.handleUpdateTag(tileEntity.getFakeWorld().getBlockState(blockPos), nbt);
 			te1.onDataPacket(ctx.get().getNetworkManager(), new SUpdateTileEntityPacket(blockPos, tileEntityType, nbt));
+			te1.setWorldAndPos(tileEntity.getFakeWorld(), blockPos);
 		}
 	}
 }

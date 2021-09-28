@@ -133,15 +133,17 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 				renderBB = shape.getBoundingBox();
 			renderBB = renderBB.offset(value.pos);
 			if (value.tileEntity != null) {
-				AxisAlignedBB bb1 = value.tileEntity.getRenderBoundingBox();
-				renderBB = new AxisAlignedBB(
-						Math.min(renderBB.minX, bb1.minX),
-						Math.min(renderBB.minY, bb1.minY),
-						Math.min(renderBB.minZ, bb1.minZ),
-						Math.max(renderBB.maxX, bb1.maxX),
-						Math.max(renderBB.maxY, bb1.maxY),
-						Math.max(renderBB.maxZ, bb1.maxZ)
-				);
+				if (value.tileEntity.getWorld() != null) {
+					AxisAlignedBB bb1 = value.tileEntity.getRenderBoundingBox();
+					renderBB = new AxisAlignedBB(
+							Math.min(renderBB.minX, bb1.minX),
+							Math.min(renderBB.minY, bb1.minY),
+							Math.min(renderBB.minZ, bb1.minZ),
+							Math.max(renderBB.maxX, bb1.maxX),
+							Math.max(renderBB.maxY, bb1.maxY),
+							Math.max(renderBB.maxZ, bb1.maxZ)
+					);
+				}
 			}
 			if (!value.state.getFluidState().isEmpty()) {
 				AxisAlignedBB bb1 = new AxisAlignedBB(0, 0, 0, 1, value.state.getFluidState().getHeight(), 1);

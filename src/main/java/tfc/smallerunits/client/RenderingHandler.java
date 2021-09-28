@@ -295,7 +295,7 @@ public class RenderingHandler {
 		TileEntity te = Minecraft.getInstance().world.getTileEntity(((BlockRayTraceResult) event.getTarget()).getPos());
 		if (!(te instanceof UnitTileEntity)) return;
 		UnitTileEntity tileEntity = (UnitTileEntity) te;
-		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player.getEntity(), true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.of(context));
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player, true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.of(context));
 		VoxelShape shape;
 		if (raytraceContext.posHit != null) {
 			BlockState state1 = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);

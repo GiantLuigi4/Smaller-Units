@@ -1,8 +1,6 @@
 package tfc.smallerunits.utils;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -11,8 +9,8 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
-import net.minecraftforge.common.ForgeMod;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.utils.compat.RaytraceUtils;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -21,13 +19,10 @@ public class UnitRaytraceHelper {
 	public static UnitRaytraceContext raytraceBlock(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
 		VoxelShape shape = null;
 		
-		Vector3d start1 = entity.getEyePosition(0);
-		double reach = 8;
-		
-		if (entity instanceof PlayerEntity)
-			reach = ((LivingEntity) entity).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
-		Vector3d look = entity.getLookVec().scale(reach);
-		Vector3d end = entity.getEyePosition(0).add(look);
+		Vector3d start1 = RaytraceUtils.getStartVector(entity);
+		double reach = RaytraceUtils.getReach(entity);
+		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
+		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // why..?
 		
 		double bestDist = Double.POSITIVE_INFINITY;
 		
@@ -112,13 +107,10 @@ public class UnitRaytraceHelper {
 	}
 	
 	public static UnitRaytraceContext raytraceBlockWithoutShape(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
-		Vector3d start = entity.getEyePosition(0);
-		double reach = 8;
-		
-		if (entity instanceof PlayerEntity)
-			reach = ((LivingEntity) entity).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
-		Vector3d look = entity.getLookVec().scale(reach);
-		Vector3d end = entity.getEyePosition(0).add(look);
+		Vector3d start = RaytraceUtils.getStartVector(entity);
+		double reach = RaytraceUtils.getReach(entity);
+		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
+		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // why exactly did I do it this way..?
 		
 		double bestDist = Double.POSITIVE_INFINITY;
 		
@@ -206,13 +198,10 @@ public class UnitRaytraceHelper {
 	public static UnitRaytraceContext raytraceFluid(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
 		VoxelShape shape = null;
 		
-		Vector3d start = entity.getEyePosition(0);
-		double reach = 8;
-		
-		if (entity instanceof PlayerEntity)
-			reach = ((LivingEntity) entity).getAttributeValue(ForgeMod.REACH_DISTANCE.get());
-		Vector3d look = entity.getLookVec().scale(reach);
-		Vector3d end = entity.getEyePosition(0).add(look);
+		Vector3d start = RaytraceUtils.getStartVector(entity);
+		double reach = RaytraceUtils.getReach(entity);
+		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
+		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // seriously, why?
 		
 		double bestDist = Double.POSITIVE_INFINITY;
 		

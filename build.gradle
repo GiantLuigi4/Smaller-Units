@@ -13,6 +13,7 @@ buildscript {
 }
 
 apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'java'
 
 version = modVersion
 group = modGroup
@@ -123,7 +124,7 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:jei-238222:3383214')
     runtimeOnly fg.deobf('curse.maven:carryon-274259:3206755')
     runtimeOnly fg.deobf('curse.maven:storagedrawers-223852:3180569')
-    implementation fg.deobf('curse.maven:quark-243121:3393195')
+    compile fg.deobf('curse.maven:quark-243121:3393195')
     runtimeOnly fg.deobf('curse.maven:oddities-301051:3088871')
     runtimeOnly fg.deobf('curse.maven:autoreglib-250363:3326041')
     runtimeOnly fg.deobf('curse.maven:appeng-223794:3354897')
@@ -144,20 +145,29 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:common_capabilities-247007:3292062')
     runtimeOnly fg.deobf('curse.maven:cyclops_core-232758:3336467')
     runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3176033')
-    implementation fg.deobf('curse.maven:redstone_pen-461710:3348960')
-    implementation fg.deobf('curse.maven:ctm-267602:3137659')
-    implementation fg.deobf('curse.maven:tiny_redstone-453746:3347318')
+    compile fg.deobf('curse.maven:redstone_pen-461710:3348960')
+    compile fg.deobf('curse.maven:ctm-267602:3137659')
+    compile fg.deobf('curse.maven:tiny_redstone-453746:3347318')
 
-//    implementation fg.deobf('curse.maven:pokecube-285121:3308917')
+//    compile fg.deobf('curse.maven:pokecube-285121:3308917')
 
     compileOnly fg.deobf('curse.maven:charm-430988:3214651')
 
     compileOnly fg.deobf('curse.maven:shrink-426386:3352335')
     compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
     compileOnly fg.deobf('curse.maven:gullivern-385915:3227241')
-    implementation fg.deobf('curse.maven:pehkui-319596:3351969')
-    implementation fg.deobf('curse.maven:the_one_probe-245211:3319255')
+    compile fg.deobf('curse.maven:pehkui-319596:3351969')
+    compile fg.deobf('curse.maven:the_one_probe-245211:3319255')
     compileOnly fg.deobf("curse.maven:better_fps_graph-399699:3094889")
+
+    compileOnly 'com.github.GiantLuigi4:CollisionReversion:f6098fea56'
+//    runtimeOnly fg.deobf('com.github.GiantLuigi4:CollisionReversion:f6098fea56')
+    compile fg.deobf('curse.maven:hwyla-3033613:3033593')
+
+    // this will only exist while vivecraft does not have an api which is meant to be used
+    // I did this for sake of getting a sense on how to do vivecraft support, and as a for the time being thing
+    // as soon as vivecraft has a proper api, I am removing this and using that
+    compile files("vivecraft_compiletime_api.jar")
 
     compile 'org.spongepowered:mixin:0.8'
 }

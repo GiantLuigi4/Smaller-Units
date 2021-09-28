@@ -25,6 +25,7 @@ import tfc.smallerunits.helpers.PacketHacksHelper;
 import tfc.smallerunits.networking.*;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.renderer.FlywheelProgram;
+import tfc.smallerunits.utils.shapes.CollisionReversionShapeGetter;
 import tfc.smallerunits.utils.threecore.SUResizeType;
 import virtuoel.pehkui.api.ScaleData;
 import virtuoel.pehkui.api.ScaleModifier;
@@ -33,6 +34,9 @@ import virtuoel.pehkui.api.ScaleType;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.concurrent.atomic.AtomicReference;
 
 //import com.tfc.smallerunits.worldgen.WorldTypeRegistry;
@@ -57,13 +61,56 @@ public class Smallerunits {
 			"1"::equals
 	);
 	
+	private static Smallerunits INSTANCE;
+	private final boolean isVivecraftPresent;
+	
 	public Smallerunits() {
+		INSTANCE = this;
+		
 		IEventBus suEventBus = SmallerUnitsAPI.EVENT_BUS;
 		
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
+		
+		{
+			boolean vivecraftPresence = false;
+			try {
+				Class<?> clazz = Class.forName("org.vivecraft.api.VRData");
+				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
+				Method m = clazz.getMethod("getController", int.class);
+				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+					throw new RuntimeException("disable");
+				
+				clazz = Class.forName("org.vivecraft.api.VRData$VRDevicePose");
+				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
+				m = clazz.getMethod("getPosition");
+				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+					throw new RuntimeException("disable");
+				m = clazz.getMethod("getDirection");
+				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+					throw new RuntimeException("disable");
+				
+				clazz = Class.forName("org.vivecraft.gameplay.VRPlayer");
+				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
+				m = clazz.getMethod("get");
+				if (!(Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+					throw new RuntimeException("disable");
+				Field f = clazz.getField("vrdata_world_render");
+				if (!(Modifier.isPublic(f.getModifiers()))) throw new RuntimeException("disable");
+				
+				LOGGER.info("Vivecraft detected; enabling support");
+				vivecraftPresence = true;
+			} catch (Throwable ignored) {
+				ignored.printStackTrace();
+				LOGGER.info("Vivecraft not detected; carrying on as if it is not present");
+			}
+			isVivecraftPresent = vivecraftPresence;
+		}
+		
 		if (ModList.get().isLoaded("pehkui")) {
+			LOGGER.info("Pehkui detected; enabling support");
+			
 			ScaleModifier modifier = new ScaleModifier() {
 				@Override
 				public float modifyScale(ScaleData scaleData, float modifiedScale, float delta) {
@@ -82,6 +129,12 @@ public class Smallerunits {
 		}
 
 //		WorldTypeRegistry.init();
+		
+		if (ModList.get().isLoaded("collision_reversion")) {
+			// if I left the code of that method in the main class, the game would just crash
+			LOGGER.info("Collision Reversion detected; enabling support");
+			CollisionReversionShapeGetter.register();
+		}
 		
 		if (!FMLEnvironment.production && false) {
 			System.setProperty("java.awt.headless", "false");
@@ -160,6 +213,14 @@ public class Smallerunits {
 					packet.handle(ctx);
 				}
 		);
+		NETWORK_INSTANCE.registerMessage(5, SLittleBlockChangePacket.class,
+				SLittleBlockChangePacket::writePacketData,
+				SLittleBlockChangePacket::new,
+				(packet, ctx) -> {
+					ctx.get().setPacketHandled(true);
+					packet.handle(ctx);
+				}
+		);
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,
@@ -198,6 +259,8 @@ public class Smallerunits {
 		}
 		
 		if (ModList.get().isLoaded("threecore")) {
+			LOGGER.info("ThreeCore detected; enabling support");
+			
 			SUResizeType.suSizeChangeTypes.register(bus);
 		}
 		
@@ -206,6 +269,10 @@ public class Smallerunits {
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerTick);
 		
 		MinecraftForge.EVENT_BUS.register(this);
+	}
+	
+	public static boolean isVivecraftPresent() {
+		return INSTANCE.isVivecraftPresent;
 	}
 	
 	private void setup(final FMLCommonSetupEvent event) {

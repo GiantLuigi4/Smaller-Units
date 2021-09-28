@@ -21,14 +21,16 @@ public class CLittleBlockInteractionPacket implements IPacket {
 	double yaw, pitch;
 	// TODO: change to array list
 	BlockPos clickedPos;
+	BlockRayTraceResult result;
 	
-	public CLittleBlockInteractionPacket(Vector3d playerPos, Vector3d playerLookStart, Vector3d playerLookEnd, float yaw, float pitch, BlockPos clickedPos) {
+	public CLittleBlockInteractionPacket(Vector3d playerPos, Vector3d playerLookStart, Vector3d playerLookEnd, float yaw, float pitch, BlockPos clickedPos, BlockRayTraceResult result) {
 		this.playerPos = playerPos;
 		this.playerLookStart = playerLookStart;
 		this.playerLookEnd = playerLookEnd;
 		this.yaw = yaw;
 		this.pitch = pitch;
 		this.clickedPos = clickedPos;
+		this.result = result;
 	}
 	
 	public CLittleBlockInteractionPacket(PacketBuffer buffer) {
@@ -49,6 +51,7 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		clickedPos = buf.readBlockPos();
 		yaw = buf.readDouble();
 		pitch = buf.readDouble();
+		result = buf.readBlockRay();
 	}
 	
 	@Override
@@ -59,6 +62,7 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		buf.writeBlockPos(clickedPos);
 		buf.writeDouble(yaw);
 		buf.writeDouble(pitch);
+		buf.writeBlockRay(result);
 	}
 	
 	@Override
@@ -75,12 +79,15 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		player.rotationPitch = (float) pitch;
 		player.rotationYaw = (float) yaw;
 		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
-		BlockRayTraceResult result = state.getShape(player.world, clickedPos, ISelectionContext.forEntity(player)).rayTrace(playerLookStart, playerLookEnd, clickedPos);
 		if (result == null) {
-			player.setRawPosition(position.getX(), position.getY(), position.getZ());
-			player.rotationPitch = playerPitch;
-			player.rotationYaw = playerYaw;
-			throw new RuntimeException("RayTraceResult is null");
+			BlockRayTraceResult result = state.getShape(player.world, clickedPos, ISelectionContext.forEntity(player)).rayTrace(playerLookStart, playerLookEnd, clickedPos);
+			if (result == null) {
+				player.setRawPosition(position.getX(), position.getY(), position.getZ());
+				player.rotationPitch = playerPitch;
+				player.rotationYaw = playerYaw;
+				throw new RuntimeException("RayTraceResult is null");
+			}
+			this.result = result;
 		}
 		SmallerUnitBlock block = (SmallerUnitBlock) state.getBlock();
 		if (block.doAction(state, player.world, clickedPos, player, Hand.MAIN_HAND, result) == ActionResultType.PASS)
