@@ -131,8 +131,7 @@ public class SLittleBlockChangePacket implements IPacket {
 		}
 		
 		buf.writeInt(pallet.size());
-		for (int i = 0; i < pallet.size(); i++) {
-			Pair<ResourceLocation, String> entry = pallet.get(i);
+		for (Pair<ResourceLocation, String> entry : pallet) {
 			buf.writeResourceLocation(entry.getFirst());
 			buf.writeString(entry.getSecond());
 		}

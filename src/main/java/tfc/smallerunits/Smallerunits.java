@@ -2,11 +2,12 @@ package tfc.smallerunits;
 
 //import com.tfc.smallerunits.client.TickHandler;
 
+import net.minecraft.client.ClientBrandRetriever;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -56,9 +57,9 @@ public class Smallerunits {
 	
 	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation("smaller_units", "main"),
-			() -> "1",
-			"1"::equals,
-			"1"::equals
+			() -> "2",
+			"2"::equals,
+			"2"::equals
 	);
 	
 	private static Smallerunits INSTANCE;
@@ -73,39 +74,56 @@ public class Smallerunits {
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
 		
-		{
+		if (ClientBrandRetriever.getClientModName().equals("vivecraft")) {
 			boolean vivecraftPresence = false;
+			
 			try {
 				Class<?> clazz = Class.forName("org.vivecraft.api.VRData");
 				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
 				Method m = clazz.getMethod("getController", int.class);
 				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new RuntimeException("disable");
+					throw new ReflectiveOperationException("disable");
 				
 				clazz = Class.forName("org.vivecraft.api.VRData$VRDevicePose");
 				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
 				m = clazz.getMethod("getPosition");
 				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new RuntimeException("disable");
+					throw new ReflectiveOperationException("disable");
 				m = clazz.getMethod("getDirection");
 				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new RuntimeException("disable");
+					throw new ReflectiveOperationException("disable");
 				
 				clazz = Class.forName("org.vivecraft.gameplay.VRPlayer");
 				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
 				m = clazz.getMethod("get");
 				if (!(Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new RuntimeException("disable");
+					throw new ReflectiveOperationException("disable");
 				Field f = clazz.getField("vrdata_world_render");
 				if (!(Modifier.isPublic(f.getModifiers()))) throw new RuntimeException("disable");
 				
 				LOGGER.info("Vivecraft detected; enabling support");
 				vivecraftPresence = true;
-			} catch (Throwable ignored) {
-				ignored.printStackTrace();
-				LOGGER.info("Vivecraft not detected; carrying on as if it is not present");
+			} catch (ReflectiveOperationException err) {
+				err.printStackTrace();
+				LOGGER.warn("Vivecraft detected; however, the version of vivecraft which is present does not match with what smaller units expects");
+				
+				String detectedVivecraftVersion = "null";
+				try {
+					Field f = Minecraft.class.getField("minecriftVerString");
+					detectedVivecraftVersion = (String) f.get(Minecraft.getInstance());
+				} catch (Throwable ignored) {
+				}
+				LOGGER.warn("Found: " + detectedVivecraftVersion + ", Expected: " + "Vivecraft 1.16.5 jrbudda-7-5 1.16.5");
+				ModLoader.get().addWarning(
+						new ModLoadingWarning(
+								ModLoadingContext.get().getActiveContainer().getModInfo(),
+								ModLoadingStage.CONSTRUCT, "smallerunits.vivecraft.support.version.error"
+						)
+				);
 			}
 			isVivecraftPresent = vivecraftPresence;
+		} else {
+			isVivecraftPresent = false;
 		}
 		
 		if (ModList.get().isLoaded("pehkui")) {

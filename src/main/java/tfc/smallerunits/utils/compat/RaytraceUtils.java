@@ -24,7 +24,9 @@ public class RaytraceUtils {
 				if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
 					VRPlayer player = VRPlayer.get();
 					// TODO: check that the player is in vr mode
-					return player.vrdata_world_render.getController(0).getPosition();
+					if (player != null && player.vrdata_world_render != null) {
+						return player.vrdata_world_render.getController(0).getPosition();
+					}
 				}
 			}
 		}
@@ -38,7 +40,9 @@ public class RaytraceUtils {
 				if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
 					VRPlayer player = VRPlayer.get();
 					// TODO: check that the player is in vr mode
-					return player.vrdata_world_render.getController(0).getDirection();
+					if (player != null && player.vrdata_world_render != null) {
+						return player.vrdata_world_render.getController(0).getDirection();
+					}
 				}
 			}
 		}

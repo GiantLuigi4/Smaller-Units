@@ -17,7 +17,7 @@ import java.util.function.Predicate;
 
 public class FakeServerTickList<T> extends ServerTickList<T> {
 	private final FakeServerWorld world;
-	private boolean isBlock;
+	private final boolean isBlock;
 	
 	public FakeServerTickList(FakeServerWorld p_i231625_1_, Predicate<T> p_i231625_2_, Function<T, ResourceLocation> p_i231625_3_, Consumer<NextTickListEntry<T>> p_i231625_4_, boolean isBlock) {
 		super(p_i231625_1_, p_i231625_2_, p_i231625_3_, p_i231625_4_);
