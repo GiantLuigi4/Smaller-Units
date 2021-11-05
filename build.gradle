@@ -114,10 +114,11 @@ dependencies {
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
 //    minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
-    minecraft 'net.minecraftforge:forge:1.16.5-36.1.32'
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.0'
 
 //    runtimeOnly fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
-    compileOnly fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.0.3.18")
+//    compile fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.2.4")
+    compile fg.deobf('curse.maven:flywheel-486392:3459739') // heck with maven, just cursemaven it
 
     runtimeOnly fg.deobf('curse.maven:reauth-237701:3105779')
     runtimeOnly fg.deobf('curse.maven:worldmanipulation-414161:3096407')
@@ -136,15 +137,15 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:xnet-260912:3140153')
     runtimeOnly fg.deobf('curse.maven:mcjtylib-233105:3194349')
     runtimeOnly fg.deobf('curse.maven:rftoolsbase-326041:3206945')
-    runtimeOnly fg.deobf('curse.maven:create-328085:3278516') //3278516
+    compile fg.deobf('curse.maven:create-328085:3419412') //3278516
 //    runtimeOnly fg.deobf('curse.maven:botania-225643:3175663')
     runtimeOnly fg.deobf('curse.maven:patchouli-306770:3204037')
-    runtimeOnly fg.deobf('com.github.XFactHD:FramedBlocks:7fda318779')
+    compile fg.deobf('com.github.XFactHD:FramedBlocks:7fda318779')
     runtimeOnly fg.deobf('curse.maven:curios-309927:3186427')
     runtimeOnly fg.deobf('curse.maven:integrated_dyanmics-236307:3376007')
     runtimeOnly fg.deobf('curse.maven:common_capabilities-247007:3292062')
     runtimeOnly fg.deobf('curse.maven:cyclops_core-232758:3336467')
-    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3176033')
+    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3234842')
     compile fg.deobf('curse.maven:redstone_pen-461710:3348960')
     compile fg.deobf('curse.maven:ctm-267602:3137659')
     compile fg.deobf('curse.maven:tiny_redstone-453746:3347318')
@@ -160,7 +161,7 @@ dependencies {
     compile fg.deobf('curse.maven:the_one_probe-245211:3319255')
     compileOnly fg.deobf("curse.maven:better_fps_graph-399699:3094889")
 
-    compileOnly 'com.github.GiantLuigi4:CollisionReversion:f6098fea56'
+    compileOnly 'com.github.GiantLuigi4:CollisionReversion:c42cc51c7f'
 //    runtimeOnly fg.deobf('com.github.GiantLuigi4:CollisionReversion:f6098fea56')
     compile fg.deobf('curse.maven:hwyla-3033613:3033593')
 

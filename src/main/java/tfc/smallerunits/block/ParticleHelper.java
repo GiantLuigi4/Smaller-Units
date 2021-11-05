@@ -14,7 +14,7 @@ public class ParticleHelper {
 				(((hitPos.getY() - 64) + y) / tileEntity.unitsPerBlock) + worldPos.getY(),
 				((hitPos.getZ() + z) / tileEntity.unitsPerBlock) + worldPos.getZ(),
 				0, 0, 0,
-				tileEntity.getFakeWorld().getBlockState(hitPos)
+				(tileEntity.getFakeWorld() == null ? worldObj.getBlockState(worldPos) : tileEntity.getFakeWorld().getBlockState(hitPos))
 		).setBlockPos(worldPos).multiplyVelocity(0.2F * scl).multiplyParticleScaleBy(0.6F * scl);
 		return particle;
 	}

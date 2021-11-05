@@ -46,4 +46,8 @@ public class DefaultedMap<T, V> {
 	public void forEach(BiConsumer<T, V> consumer) {
 		map.forEach(consumer);
 	}
+	
+	public void remove(T type) {
+		map.remove(type);
+	}
 }

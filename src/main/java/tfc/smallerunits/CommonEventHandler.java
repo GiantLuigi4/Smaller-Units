@@ -106,7 +106,7 @@ public class CommonEventHandler {
 				if ((te instanceof UnitTileEntity)) {
 					UnitTileEntity tileEntity = (UnitTileEntity) te;
 					ISelectionContext context = ISelectionContext.forEntity(event.player);
-					UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player.getEntity(), true, manager.destroyPos, Optional.of(context));
+					UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, event.player, true, manager.destroyPos, Optional.of(context));
 					UnitPos pos = (UnitPos) raytraceContext.posHit;
 //					if (!manager.isDestroyingBlock) {
 //						UUID uuid = event.player.getUniqueID();

@@ -29,6 +29,14 @@ public class CollisionReversionShapeGetter {
 			World fakeWorld = tileEntity.getFakeWorld();
 			int upb = tileEntity.unitsPerBlock;
 			for (SmallUnit value : tileEntity.getBlockMap().values()) {
+				if (value.state == null || value.state.isAir()) continue;
+				
+				AxisAlignedBB blockBB = new AxisAlignedBB(0, 0, 0, 1 / (double) upb, 1 / (double) upb, 1 / (double) upb);
+				blockBB = blockBB
+						.offset(context.getPos())
+						.offset(value.pos.getX() / (double) upb, (value.pos.getY() - 64) / (double) upb, value.pos.getZ() / (double) upb);
+				if (!context.raytrace(blockBB)) continue;
+				
 				for (AxisAlignedBB axisAlignedBB : UnitRaytraceHelper.shrink(value.state.getShape(fakeWorld, value.pos, ISelectionContext.dummy()), upb)) {
 					axisAlignedBB = axisAlignedBB.offset(pos).offset(value.pos.getX() / (double) upb, (value.pos.getY() - 64) / (double) upb, value.pos.getZ() / (double) upb);
 					if (axisAlignedBB.intersects(box)) {

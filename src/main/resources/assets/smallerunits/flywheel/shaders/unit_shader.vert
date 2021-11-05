@@ -28,7 +28,7 @@ BlockFrag FLWMain(Vertex v) {
 	#if defined(DEBUG_NORMAL)
 	b.color = vec4(norm, 1.);
 	#else
-	b.color = v.color / diffuse(v.normal);
+	b.color = vec4(v.color.xyz / diffuse(v.normal), v.color.a);
 	#endif
 	
 	return b;

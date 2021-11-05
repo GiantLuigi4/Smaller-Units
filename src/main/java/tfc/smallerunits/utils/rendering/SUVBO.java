@@ -12,7 +12,7 @@ import org.lwjgl.opengl.GL11;
 import java.util.ArrayList;
 import java.util.Optional;
 
-public class SUVBO {
+public class SUVBO extends SURenderable {
 	public ArrayList<BufferStorage> buffers = new ArrayList<>();
 	
 	public void render(MatrixStack matrixStack) {
@@ -80,5 +80,16 @@ public class SUVBO {
 		for (BufferStorage buffer : buffers) {
 			buffer.isPresent = false;
 		}
+	}
+	
+	@Override
+	public void delete() {
+		for (BufferStorage buffer : buffers) buffer.terrainBuffer.get().close();
+		buffers.clear();
+	}
+	
+	@Override
+	public boolean isValid() {
+		return true;
 	}
 }

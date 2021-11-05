@@ -69,6 +69,7 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.common.util.WorldCapabilityData;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.network.PacketDistributor;
@@ -467,6 +468,8 @@ public class FakeServerWorld extends ServerWorld {
 				);
 	}
 	
+	Chunk thisChunk;
+	
 	//Due to usage of theUnsafe, all constructor and field declaration code must be in a method
 	public void init(UnitTileEntity owner) {
 		if (!hasInit) {
@@ -478,6 +481,10 @@ public class FakeServerWorld extends ServerWorld {
 			tileEntityPoses = new ArrayList<>();
 			chunk = new FakeIChunk(this);
 			FakeServerWorld world = this;
+			thisChunk = new FakeChunk(this, new ChunkPos(0, 0), new BiomeContainer(
+					owner.getWorld().func_241828_r().getRegistry(Registry.BIOME_KEY), BIOMES),
+					this
+			);
 			field_241102_C_ = FakeServerChunkProvider.getProvider(this);
 			DelegatedTaskExecutor<Runnable> delegatedtaskexecutor1 = DelegatedTaskExecutor.create(Runnable::run, "light");
 			ITaskExecutor<Unit> unitExecutor = ITaskExecutor.inline("idk", unit -> {
@@ -556,10 +563,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public Chunk getChunk(int chunkX, int chunkZ) {
-		return new FakeChunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(
-				owner.getWorld().func_241828_r().getRegistry(Registry.BIOME_KEY), BIOMES),
-				this
-		);
+		return thisChunk;
 	}
 	
 	@Override
@@ -1514,5 +1518,27 @@ public class FakeServerWorld extends ServerWorld {
 		return new Vector3d(owner.getPos().getX() + x / owner.unitsPerBlock,
 				owner.getPos().getY() + ((y - 64) / owner.unitsPerBlock),
 				owner.getPos().getZ() + z / owner.unitsPerBlock);
+	}
+	
+	public void unload() {
+		{
+			WorldEvent.Unload unload = new WorldEvent.Unload(this);
+			MinecraftForge.EVENT_BUS.post(unload);
+		}
+		if (chunk != null) {
+			{
+				ChunkEvent.Unload unload = new ChunkEvent.Unload(this.getChunk(0, 0));
+				MinecraftForge.EVENT_BUS.post(unload);
+			}
+			for (SmallUnit value : blockMap.values()) {
+				if (value.tileEntity != null) {
+					value.tileEntity.onChunkUnloaded();
+				}
+			}
+		}
+		try {
+			close();
+		} catch (Throwable ignored) {
+		}
 	}
 }

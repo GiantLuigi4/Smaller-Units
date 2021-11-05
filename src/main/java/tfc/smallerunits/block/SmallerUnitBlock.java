@@ -474,6 +474,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			nbt.putInt("upb", tileEntity.unitsPerBlock);
 			stack.getOrCreateTag().put("BlockEntityTag", nbt);
 			player.addItemStackToInventory(stack);
+//			tileEntity.onChunkUnloaded();
 			worldIn.setBlockState(worldPos, Blocks.AIR.getDefaultState());
 			return true;
 		}
@@ -1126,7 +1127,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						SoundType type1 = item.getBlock().getSoundType(statePlace);
 						SoundEvent event = type1.getPlaceSound();
 						tileEntity.worldServer.playSound(
-								null,
+								player,
 								posOffset.getX() + 0.5, posOffset.getY() + 0.5, posOffset.getZ() + 0.5,
 								event, SoundCategory.BLOCKS, type1.getVolume(), type1.getPitch() - 0.25f
 						);

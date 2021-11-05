@@ -216,6 +216,30 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	
 	@Override
 	public void tick() {
+		if (!hasLoaded) {
+			if (!this.world.isRemote) {
+				createServerWorld();
+			} else {
+				if (worldClient == null) {
+					try {
+						worldClient = new AtomicReference<>(new FakeClientWorld(
+								null,
+								new ClientWorld.ClientWorldInfo(getWorld().getDifficulty(), false, true),
+								getWorld().dimension,
+								getWorld().dimensionType,
+								0, () -> new Profiler(() -> 0, () -> 0, false),
+								null, true, 0
+						));
+						worldClient.get().init(this);
+					} catch (Throwable err) {
+						throw new RuntimeException(err);
+					}
+				}
+			}
+			
+			hasLoaded = true;
+		}
+		
 		if (getFakeWorld() == null) return;
 		
 		if (getFakeWorld().isRemote) {
@@ -291,6 +315,22 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 			);
 		}
 		getProfiler().endTick();
+	}
+	
+	/**
+	 * invalidates a tile entity
+	 */
+	@Override
+	public void remove() {
+		super.remove();
+		World fakeWorld = getFakeWorld();
+		if (this.getFakeWorld() != null) {
+			if (fakeWorld instanceof FakeServerWorld) {
+				((FakeServerWorld) fakeWorld).unload();
+			} else {
+				((FakeClientWorld) fakeWorld).unload();
+			}
+		}
 	}
 	
 	@Override
@@ -631,5 +671,15 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		needsRefresh = newValue;
 		if (newValue) SmallerUnitBlock.selectionShapeHashMap.remove(this.getPos());
 		return oldVal;
+	}
+	
+	@Override
+	public void onChunkUnloaded() {
+		World fakeWorld = getFakeWorld();
+		if (fakeWorld instanceof FakeServerWorld) {
+			((FakeServerWorld) fakeWorld).unload();
+		} else {
+			((FakeClientWorld) fakeWorld).unload();
+		}
 	}
 }

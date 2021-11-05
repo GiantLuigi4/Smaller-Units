@@ -38,6 +38,9 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.lighting.WorldLightManager;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.ChunkEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import tfc.smallerunits.SmallerUnitsTESR;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.api.placement.UnitPos;
@@ -66,6 +69,11 @@ public class FakeClientWorld extends ClientWorld {
 		return lightManager;
 	}
 	
+	private static final Biome[] BIOMES = Util.make(new Biome[BiomeContainer.BIOMES_SIZE], (biomes) -> {
+		Arrays.fill(biomes, BiomeRegistry.PLAINS);
+	});
+	Chunk thisChunk;
+	
 	public FakeClientWorld(ClientPlayNetHandler p_i242067_1_, ClientWorldInfo p_i242067_2_, RegistryKey<World> p_i242067_3_, DimensionType p_i242067_4_, int p_i242067_5_, Supplier<IProfiler> p_i242067_6_, WorldRenderer p_i242067_7_, boolean p_i242067_8_, long p_i242067_9_) {
 		super(p_i242067_1_, p_i242067_2_, p_i242067_3_, p_i242067_4_, p_i242067_5_, p_i242067_6_, p_i242067_7_, p_i242067_8_, p_i242067_9_);
 		FakeClientWorld world = this;
@@ -73,7 +81,7 @@ public class FakeClientWorld extends ClientWorld {
 			@Nullable
 			@Override
 			public Chunk getChunk(int chunkX, int chunkZ, ChunkStatus requiredStatus, boolean load) {
-				return new FakeChunk(world, new ChunkPos(chunkX, chunkZ), new BiomeContainer(new ObjectIntIdentityMap<>()), world);
+				return thisChunk;
 			}
 		};
 		blockMap = new HashMap<>();
@@ -82,16 +90,9 @@ public class FakeClientWorld extends ClientWorld {
 //		this.tickableTileEntities = new ArrayList<>();
 	}
 	
-	private static final Biome[] BIOMES = Util.make(new Biome[BiomeContainer.BIOMES_SIZE], (biomes) -> {
-		Arrays.fill(biomes, BiomeRegistry.PLAINS);
-	});
-	
 	@Override
 	public Chunk getChunk(int chunkX, int chunkZ) {
-		return new FakeChunk(this, new ChunkPos(chunkX, chunkZ), new BiomeContainer(
-				owner.getWorld().func_241828_r().getRegistry(Registry.BIOME_KEY), BIOMES),
-				this
-		);
+		return thisChunk;
 	}
 	
 	@Override
@@ -463,6 +464,10 @@ public class FakeClientWorld extends ClientWorld {
 	
 	public void init(UnitTileEntity owner) {
 		this.owner = owner;
+		thisChunk = new FakeChunk(this, new ChunkPos(0, 0), new BiomeContainer(
+				owner.getWorld().func_241828_r().getRegistry(Registry.BIOME_KEY), BIOMES),
+				this
+		);
 		IProfiler profiler = new Profiler(() -> 0, () -> 0, false);
 		this.profiler = () -> profiler;
 	}
@@ -985,6 +990,28 @@ public class FakeClientWorld extends ClientWorld {
 					this.onBlockStateChange(pos, blockstate, blockstate1);
 				}
 			}
+		}
+	}
+	
+	public void unload() {
+		{
+			WorldEvent.Unload unload = new WorldEvent.Unload(this);
+			MinecraftForge.EVENT_BUS.post(unload);
+		}
+		if (thisChunk != null) {
+			{
+				ChunkEvent.Unload unload = new ChunkEvent.Unload(this.getChunk(0, 0));
+				MinecraftForge.EVENT_BUS.post(unload);
+			}
+			for (SmallUnit value : blockMap.values()) {
+				if (value.tileEntity != null) {
+					value.tileEntity.onChunkUnloaded();
+				}
+			}
+		}
+		try {
+			close();
+		} catch (Throwable ignored) {
 		}
 	}
 }
