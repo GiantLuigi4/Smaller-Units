@@ -874,6 +874,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		}
 		if (fakeWorld instanceof FakeServerWorld) {
 			FakeServerWorld serverWorld = ((FakeServerWorld) fakeWorld);
+			if (serverWorld.statesUpdated == null) return;
 			if (!serverWorld.statesUpdated.isEmpty()) {
 				ArrayList<SmallUnit> updates = new ArrayList<>();
 				for (Long aLong : serverWorld.statesUpdated.keySet()) {

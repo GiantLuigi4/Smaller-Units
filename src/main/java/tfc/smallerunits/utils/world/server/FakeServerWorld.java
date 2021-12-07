@@ -863,7 +863,6 @@ public class FakeServerWorld extends ServerWorld {
 //			return;
 //		}
 		
-		// idk how, but it gets to here consistently and crashes
 		blankProfiler.startTick();
 		
 		owner.getWorld().getProfiler().endStartSection("main_tick");

@@ -488,9 +488,20 @@ public class FakeClientWorld extends ClientWorld {
 		super.tick(hasTimeLeft);
 		this.getProfiler().endTick();
 		
-		ArrayList<Integer> toRemove = new ArrayList<>();
-		for (Integer integer : entitiesById.keySet()) if (entitiesById.get(integer).removed) toRemove.add(integer);
-		toRemove.forEach(entitiesById::remove);
+		{
+			ArrayList<Integer> toRemove = new ArrayList<>();
+			for (Integer integer : entitiesById.keySet()) if (entitiesById.get(integer).removed) toRemove.add(integer);
+			toRemove.forEach(entitiesById::remove);
+		}
+		
+		{
+			ArrayList<BlockPos> toRemove = new ArrayList<>();
+			for (SmallUnit value : blockMap.values()) {
+				if (value.state.isAir(this, value.pos))
+					toRemove.add(value.pos);
+			}
+			for (BlockPos pos : toRemove) blockMap.remove(pos.toLong());
+		}
 	}
 	
 	@Override
