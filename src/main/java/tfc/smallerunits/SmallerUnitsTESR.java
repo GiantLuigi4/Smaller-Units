@@ -39,6 +39,8 @@ import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.config.SmallerUnitsConfig;
+import tfc.smallerunits.helpers.ClientUtils;
 import tfc.smallerunits.renderer.FlywheelProgram;
 import tfc.smallerunits.utils.*;
 import tfc.smallerunits.utils.rendering.*;
@@ -73,7 +75,9 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		ArrayList<BlockPos> toRemove = new ArrayList<>();
 		for (BlockPos pos : vertexBufferCacheFree.keySet()) {
 			SURenderable renderable = vertexBufferCacheFree.get(pos);
-			if (!renderable.isValid() || !validator.apply(renderable)) {
+			// TODO: figure out what the heck is causing the renderables to wind up being null, they should never be null
+			if (renderable == null) toRemove.add(pos);
+			else if (!renderable.isValid() || !validator.apply(renderable)) {
 				renderable.delete();
 				toRemove.add(pos);
 			}
@@ -84,9 +88,12 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		toRemove.clear();
 		for (BlockPos pos : vertexBufferCacheUsed.keySet()) {
 			SURenderable renderable = vertexBufferCacheUsed.get(pos);
-			if (!renderable.isValid() || !validator.apply(renderable)) {
-				renderable.delete();
-				toRemove.add(pos);
+			if (renderable == null) toRemove.add(pos);
+			else {
+				if (!renderable.isValid() || !validator.apply(renderable)) {
+					renderable.delete();
+					toRemove.add(pos);
+				}
 			}
 		}
 		for (BlockPos pos : toRemove) {
@@ -97,21 +104,8 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	public static void renderCube(float r, float g, float b, float x, float y, float z, IVertexBuilder builder, int combinedOverlay, int combinedLight, MatrixStack matrixStack, boolean useNormals) {
 		Minecraft.getInstance().getProfiler().startSection("renderSquare1");
 		renderSquare(r, g, b, x, y, z + 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
-		Minecraft.getInstance().getProfiler().endStartSection("renderSquare2");
-		matrixStack.rotate(quat90Y);
-		renderSquare(r, g, b, x - 0.25f, y, z + 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
-		Minecraft.getInstance().getProfiler().endStartSection("renderSquare3");
-		matrixStack.rotate(quat90Y);
-		renderSquare(r, g, b, -0.25f, 0, 0, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
-		Minecraft.getInstance().getProfiler().endStartSection("renderSquare4");
-		matrixStack.rotate(quat90Y);
-		renderSquare(r, g, b, 0, 0, 0, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
-		Minecraft.getInstance().getProfiler().endStartSection("renderSquare5");
-		matrixStack.rotate(quat90X);
-		renderSquare(r, g, b, 0, -0.25f, 0, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
-		Minecraft.getInstance().getProfiler().endStartSection("renderSquare6");
-		matrixStack.rotate(quat180X);
-		renderSquare(r, g, b, 0, 0, 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
+		matrixStack.rotate(new Quaternion(180, 0, -90, true));
+		renderSquare(r, g, b, x, y, z + 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
 		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
@@ -533,16 +527,17 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				tileEntityIn.getBlockMap().clear();
 			}
 		}
-		if (isEmpty) {
+		boolean doRender = isEmpty || ClientUtils.isHammerHeld();
+		if (doRender) {
 			matrixStackIn.push();
 			matrixStackIn.scale(4, 4, 4);
 			RenderSystem.disableTexture();
 			matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-			renderHalf(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, tileEntityIn);
+			renderHalf(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, tileEntityIn, !isEmpty, tileEntityIn.isNatural);
 			matrixStackIn.push();
 			matrixStackIn.translate(tileEntityIn.unitsPerBlock / 4f, 0, tileEntityIn.unitsPerBlock / 4f);
 			matrixStackIn.rotate(new Quaternion(0, 180, 0, true));
-			renderHalf(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, tileEntityIn);
+			renderHalf(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, tileEntityIn, !isEmpty, tileEntityIn.isNatural);
 			matrixStackIn.pop();
 			RenderSystem.enableTexture();
 			matrixStackIn.pop();
@@ -815,46 +810,55 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		return renderedAnything;
 	}
 	
-	public static void renderHalf(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn) {
-		if (tileEntityIn.isNatural) return;
+	public static void renderHalf(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn, boolean isForced, boolean isNat) {
+		if ((tileEntityIn.isNatural && !isForced)) return;
 		Minecraft.getInstance().getProfiler().startSection("renderCorner1");
-		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
+		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCorner2");
 		matrixStackIn.push();
 		matrixStackIn.translate(0, tileEntityIn.unitsPerBlock / 4f, 0);
 		matrixStackIn.rotate(new Quaternion(90, 0, 0, true));
-		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
+		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCorner3");
 		matrixStackIn.pop();
 		matrixStackIn.push();
 		matrixStackIn.translate(0, 0, tileEntityIn.unitsPerBlock / 4f);
 		matrixStackIn.rotate(new Quaternion(0, 90, 0, true));
-		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
+		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCorner4");
 		matrixStackIn.pop();
 		matrixStackIn.push();
 		matrixStackIn.translate(0, tileEntityIn.unitsPerBlock / 4f, tileEntityIn.unitsPerBlock / 4f);
 		matrixStackIn.rotate(new Quaternion(180, 0, 0, true));
-		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
+		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
 		matrixStackIn.pop();
 		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
-	public static void renderCorner(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn) {
+	public static void renderCorner(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, boolean isForced, boolean isNat20) {
 		Minecraft.getInstance().getProfiler().startSection("renderCube1");
 		matrixStackIn.push();
-		matrixStackIn.scale(0.001f, 1, 1);
-		renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
+		matrixStackIn.rotate(new Quaternion(180, 0, -90, true));
+		matrixStackIn.scale(1, 1, 0.0001f);
+		IVertexBuilder builder = bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png")));
+		int r = isForced ? (isNat20 ? 1 : 0) : 1;
+		int g = isForced ? (isNat20 ? 0 : 1) : 1;
+		int b = 0;
+		renderCube(r, g, b, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCube2");
 		matrixStackIn.pop();
+		
 		matrixStackIn.push();
-		matrixStackIn.scale(1, 0.001f, 1);
-		renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
+		matrixStackIn.rotate(quat90X);
+		matrixStackIn.scale(1, 1, 0.001f);
+		renderCube(r, g, b, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCube3");
 		matrixStackIn.pop();
+		
 		matrixStackIn.push();
+		matrixStackIn.rotate(new Quaternion(0, -90, 0, true));
 		matrixStackIn.scale(1, 1, 0.001f);
-		renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
+		renderCube(r, g, b, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCube4");
 		matrixStackIn.pop();
 		Minecraft.getInstance().getProfiler().endSection();

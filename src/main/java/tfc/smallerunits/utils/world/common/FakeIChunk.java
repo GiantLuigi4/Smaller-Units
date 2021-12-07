@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public class FakeIChunk implements IChunk {
-	public final FakeServerWorld owner;
+	public FakeServerWorld owner;
 	private final HashMap<Heightmap.Type, Heightmap> heightmapHashMap = new HashMap<>();
 	
 	public FakeIChunk(FakeServerWorld owner) {
@@ -292,5 +292,10 @@ public class FakeIChunk implements IChunk {
 	
 	@Override
 	public void setStructureReferences(Map<Structure<?>, LongSet> structureReferences) {
+	}
+	
+	public void close() {
+		owner = null;
+		heightmapHashMap.clear();
 	}
 }

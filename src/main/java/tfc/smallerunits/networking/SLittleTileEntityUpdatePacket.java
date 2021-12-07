@@ -1,7 +1,5 @@
 package tfc.smallerunits.networking;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.INetHandler;
 import net.minecraft.network.IPacket;
@@ -10,8 +8,9 @@ import net.minecraft.network.play.server.SUpdateTileEntityPacket;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
-import tfc.smallerunits.block.SmallerUnitBlock;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.function.Supplier;
 
@@ -58,11 +57,13 @@ public class SLittleTileEntityUpdatePacket implements IPacket {
 	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		if (ctx.get().getDirection().getReceptionSide().isClient()) {
-			BlockState state = Minecraft.getInstance().world.getBlockState(updatingPos);
-			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
-			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingPos);
-			if (!(te instanceof UnitTileEntity)) return;
-			UnitTileEntity tileEntity = (UnitTileEntity) te;
+//			BlockState state = Minecraft.getInstance().world.getBlockState(updatingPos);
+//			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
+//			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingPos);
+//			if (!(te instanceof UnitTileEntity)) return;
+//			UnitTileEntity tileEntity = (UnitTileEntity) te;
+			UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(ClientUtils.getWorld(), blockPos);
+			if (tileEntity == null) return;
 			
 			TileEntity te1 = tileEntity.getFakeWorld().getTileEntity(blockPos);
 			if (te1 == null) return;

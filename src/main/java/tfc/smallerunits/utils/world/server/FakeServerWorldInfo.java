@@ -11,6 +11,7 @@ import net.minecraft.world.border.WorldBorder;
 import net.minecraft.world.gen.settings.DimensionGeneratorSettings;
 import net.minecraft.world.storage.IServerWorldInfo;
 import net.minecraft.world.storage.ServerWorldInfo;
+import tfc.smallerunits.mixins.continuity.ServerWorldInfoAccessor;
 
 import java.util.UUID;
 
@@ -20,6 +21,14 @@ public class FakeServerWorldInfo extends ServerWorldInfo {
 	public FakeServerWorldInfo(WorldSettings worldSettings, DimensionGeneratorSettings generatorSettings, Lifecycle lifecycle, FakeServerWorld owner) {
 		super(worldSettings, generatorSettings, lifecycle);
 		this.owner = owner;
+		// I noticed this only because of jvisualvm
+		((ServerWorldInfoAccessor) this).setModded(true);
+		((ServerWorldInfoAccessor) this).setInitialized(true);
+	}
+	
+	public void close() {
+		owner = null;
+		worldSettings = null;
 	}
 	
 	@Override

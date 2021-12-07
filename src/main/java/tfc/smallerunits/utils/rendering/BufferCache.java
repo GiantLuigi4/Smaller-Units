@@ -6,7 +6,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import tfc.smallerunits.SmallerUnitsConfig;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 
 public class BufferCache {
 	public IRenderTypeBuffer buffer;

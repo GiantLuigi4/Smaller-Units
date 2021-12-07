@@ -1,13 +1,18 @@
-package tfc.smallerunits;
+package tfc.smallerunits.config;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class SmallerUnitsConfig {
 	public static final ClientConfig CLIENT;
-	static final ForgeConfigSpec clientSpec;
+	
+	public static final CommonConfig COMMON;
+	
 	public static final SmallerUnitsConfig SERVER;
-	static final ForgeConfigSpec serverSpec;
+	
+	public static final ForgeConfigSpec clientSpec;
+	public static final ForgeConfigSpec commonSpec;
+	public static final ForgeConfigSpec serverSpec;
 	
 	static {
 		{
@@ -20,6 +25,12 @@ public class SmallerUnitsConfig {
 			final Pair<ClientConfig, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(ClientConfig::new);
 			clientSpec = specPair.getRight();
 			CLIENT = specPair.getLeft();
+		}
+		
+		{
+			final Pair<CommonConfig, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(CommonConfig::new);
+			commonSpec = specPair.getRight();
+			COMMON = specPair.getLeft();
 		}
 	}
 	

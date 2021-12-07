@@ -1,19 +1,17 @@
 package tfc.smallerunits.networking;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.INetHandler;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.registries.ForgeRegistries;
-import tfc.smallerunits.block.SmallerUnitBlock;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -57,11 +55,13 @@ public class SLittleEntityStatusPacket implements IPacket {
 	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		if (ctx.get().getDirection().getReceptionSide().isClient()) {
-			BlockState state = Minecraft.getInstance().world.getBlockState(updatingUnit);
-			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
-			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingUnit);
-			if (!(te instanceof UnitTileEntity)) return;
-			UnitTileEntity tileEntity = (UnitTileEntity) te;
+//			BlockState state = Minecraft.getInstance().world.getBlockState(updatingUnit);
+//			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
+//			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingUnit);
+//			if (!(te instanceof UnitTileEntity)) return;
+//			UnitTileEntity tileEntity = (UnitTileEntity) te;
+			UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(ClientUtils.getWorld(), updatingUnit);
+			if (tileEntity == null) return;
 			
 			if (createEntity) {
 				ResourceLocation id = new ResourceLocation(nbt.getString("id"));

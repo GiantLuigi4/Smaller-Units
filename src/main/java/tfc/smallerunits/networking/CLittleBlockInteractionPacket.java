@@ -13,6 +13,8 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.fml.network.NetworkEvent;
 import tfc.smallerunits.block.SmallerUnitBlock;
+import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.function.Supplier;
 
@@ -71,7 +73,20 @@ public class CLittleBlockInteractionPacket implements IPacket {
 	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		PlayerEntity player = ctx.get().getSender();
-		BlockState state = player.world.getBlockState(clickedPos);
+//		BlockState state = player.world.getBlockState(clickedPos);
+		UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(player.getEntityWorld(), clickedPos);
+		if (tileEntity == null) return;
+//		Chunk chunk = (Chunk) player.getEntityWorld().getChunk(clickedPos);
+//		if (chunk == null) return;
+//		LazyOptional<SUCapability> capability = chunk.getCapability(SUCapabilityManager.SUCapability);
+//		UnitTileEntity tileEntity = null;
+//		if (capability.isPresent()) {
+//			SUCapability cap = capability.resolve().get();
+//			tileEntity = cap.getTile(player.getEntityWorld(), clickedPos);
+//		}
+//		if (tileEntity == null) return;
+		
+		BlockState state = tileEntity.getBlockState();
 		if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
 		Vector3d position = player.getPositionVec();
 		float playerYaw = player.rotationYaw;

@@ -108,7 +108,7 @@ public class FakeChunkManager extends ChunkManager {
 	}
 	
 	@Override
-	protected Iterable<ChunkHolder> getLoadedChunksIterable() {
+	public Iterable<ChunkHolder> getLoadedChunksIterable() {
 		return ImmutableSet.of(((FakeTicketManager) provider.ticketManager).getChunkHolder(0));
 	}
 	

@@ -151,7 +151,7 @@ public class FakeChunk extends Chunk {
 		BlockState oldState;
 		if (blockMap.containsKey(pos.toLong())) oldState = blockMap.get(pos.toLong()).state;
 		else oldState = Blocks.AIR.getDefaultState();
-		oldState.onReplaced(world, pos, state, isMoving);
+		if (!state.equals(oldState)) oldState.onReplaced(world, pos, state, isMoving);
 		if (blockMap.containsKey(pos.toLong())) blockMap.get(pos.toLong()).state = state;
 		else blockMap.put(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, getOwner()), state));
 		state.onBlockAdded(world, pos, oldState, isMoving);

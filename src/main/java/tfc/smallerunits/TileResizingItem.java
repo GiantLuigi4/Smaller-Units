@@ -10,7 +10,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
 import tfc.smallerunits.registry.Deferred;
-import tfc.smallerunits.utils.ResizingUtils;
+import tfc.smallerunits.utils.scale.ResizingUtils;
 
 public class TileResizingItem extends Item {
 	private final int scale;

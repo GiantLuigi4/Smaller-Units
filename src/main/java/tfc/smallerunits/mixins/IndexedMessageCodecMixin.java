@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.block.UnitTileEntity;
-import tfc.smallerunits.helpers.MinecraftAccessor;
+import tfc.smallerunits.config.SmallerUnitsConfig;
+import tfc.smallerunits.helpers.ClientUtils;
 import tfc.smallerunits.helpers.PacketHacksHelper;
 
 import java.util.Optional;
@@ -110,7 +110,7 @@ public class IndexedMessageCodecMixin<MSG> {
 		if (isPosPresent.get()) {
 			PlayerEntity playerEntity;
 			if (context.get().getDirection().getOriginationSide().isServer())
-				playerEntity = MinecraftAccessor.getPlayer();
+				playerEntity = ClientUtils.getPlayer();
 			else playerEntity = context.get().getSender();
 			World world = playerEntity.getEntityWorld();
 			TileEntity te = playerEntity.world.getTileEntity(posIfPresent.get());
@@ -120,11 +120,11 @@ public class IndexedMessageCodecMixin<MSG> {
 			}
 			playerEntity.setWorld(((UnitTileEntity) te).getFakeWorld());
 			if (context.get().getDirection().getOriginationSide().isServer()) {
-				MinecraftAccessor.setWorld(((UnitTileEntity) te).getFakeWorld());
+				ClientUtils.setWorld(((UnitTileEntity) te).getFakeWorld());
 			}
 			oldMessageConsumer.accept(msg, context);
 			if (context.get().getDirection().getOriginationSide().isServer()) {
-				MinecraftAccessor.setWorld(world);
+				ClientUtils.setWorld(world);
 			}
 			playerEntity.setWorld(world);
 		} else {

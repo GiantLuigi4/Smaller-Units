@@ -1,12 +1,13 @@
 package tfc.smallerunits.networking;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.INetHandler;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 public class SLittleBlockEventPacket implements IPacket {
 	// TODO: change small block pos to array list
@@ -42,9 +43,13 @@ public class SLittleBlockEventPacket implements IPacket {
 	
 	@Override
 	public void processPacket(INetHandler handler) {
-		TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
-		if (!(tileEntity instanceof UnitTileEntity)) return;
-		UnitTileEntity te = (UnitTileEntity) tileEntity;
-		te.worldClient.get().playEvent(type, smallBlockPos, data);
+//		TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+//		if (!(tileEntity instanceof UnitTileEntity)) return;
+//		UnitTileEntity te = (UnitTileEntity) tileEntity;
+		if (FMLEnvironment.dist.isClient()) {
+			UnitTileEntity te = SUCapabilityManager.getUnitAtBlock(ClientUtils.getWorld(), pos);
+			if (te == null) return;
+			te.getFakeWorld().playEvent(type, smallBlockPos, data);
+		}
 	}
 }

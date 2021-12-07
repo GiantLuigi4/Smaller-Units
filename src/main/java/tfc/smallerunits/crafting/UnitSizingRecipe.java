@@ -8,8 +8,8 @@ import net.minecraft.item.crafting.SpecialRecipe;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
-import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.TileResizingItem;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 
 public class UnitSizingRecipe extends SpecialRecipe {
 	public UnitSizingRecipe(ResourceLocation idIn) {

@@ -73,21 +73,24 @@ import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.network.PacketDistributor;
-import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.Smallerunits;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.api.placement.UnitPos;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.mixins.CapabilityProviderAccessor;
 import tfc.smallerunits.mixins.ServerWorldAccessor;
 import tfc.smallerunits.mixins.WorldAccessor;
+import tfc.smallerunits.mixins.referenceremoval.RaidManagerAccessor;
 import tfc.smallerunits.networking.SLittleBlockEventPacket;
 import tfc.smallerunits.networking.SLittleEntityStatusPacket;
 import tfc.smallerunits.networking.SLittleTileEntityUpdatePacket;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.ExternalUnitInteractionContext;
-import tfc.smallerunits.utils.ResizingUtils;
 import tfc.smallerunits.utils.SmallUnit;
+import tfc.smallerunits.utils.UnsafeUtils;
+import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.world.BlankProfiler;
 import tfc.smallerunits.utils.world.common.FakeChunk;
 import tfc.smallerunits.utils.world.common.FakeIChunk;
 
@@ -104,7 +107,7 @@ public class FakeServerWorld extends ServerWorld {
 	private static final WorldBorder border = new WorldBorder();
 	private static final LongSet forcedChunks = LongSets.singleton(new ChunkPos(new BlockPos(0, 0, 0)).asLong());
 	
-	protected static Profiler blankProfiler = new Profiler(() -> 0, () -> 0, false);
+	protected static final Profiler blankProfiler = new BlankProfiler(() -> 0, () -> 0, false);
 	public Map<Long, SmallUnit> blockMap;
 	public List<SmallUnit> tileEntityChanges;
 	public WorldLightManager lightManager;
@@ -473,14 +476,36 @@ public class FakeServerWorld extends ServerWorld {
 	//Due to usage of theUnsafe, all constructor and field declaration code must be in a method
 	public void init(UnitTileEntity owner) {
 		if (!hasInit) {
+			try {
+				((WorldAccessor) this).setTileEntitiesToBeRemoved(Collections.newSetFromMap(new IdentityHashMap<>()));
+				((ServerWorldAccessor) this).setCapabilityData(new WorldCapabilityData("Smaller Units Ticking World Capability Data"));
+				((CapabilityProviderAccessor) this).setBaseClass(World.class);
+				AttachCapabilitiesEvent<World> event = new AttachCapabilitiesEvent<>(World.class, this);
+				MinecraftForge.EVENT_BUS.post(event);
+				CapabilityDispatcher dispatcher = new CapabilityDispatcher(event.getCapabilities(), event.getListeners());
+				((CapabilityProviderAccessor) this).setCapabilities(dispatcher);
+				((CapabilityProviderAccessor) this).setValid(true);
+			} catch (Throwable err) {
+				throw new RuntimeException(err);
+			}
+
+//			init(owner);
+			dimension = owner.getWorld().dimension;
+			dimensionType = owner.getWorld().dimensionType;
+			raids = new RaidManager(this);
+			isFirstTick = false;
+			server = owner.getWorld().getServer();
+		}
+		
+		if (!hasInit) {
 			tileEntityChanges = new ArrayList<>();
 			this.owner = owner;
 			hasInit = true;
 			field_241102_C_ = null;
 			blockMap = new Long2ObjectArrayMap<>();
 			tileEntityPoses = new ArrayList<>();
-			chunk = new FakeIChunk(this);
 			FakeServerWorld world = this;
+			chunk = new FakeIChunk(this);
 			thisChunk = new FakeChunk(this, new ChunkPos(0, 0), new BiomeContainer(
 					owner.getWorld().func_241828_r().getRegistry(Registry.BIOME_KEY), BIOMES),
 					this
@@ -558,6 +583,13 @@ public class FakeServerWorld extends ServerWorld {
 			field_241104_N_ = ImmutableList.of();
 			
 			eventData = new ArrayList<>();
+			
+			// from tick
+			if (owner.getWorld().getChunkProvider() instanceof ServerChunkProvider) {
+				(this.getChunkProvider()).generator = ((ServerChunkProvider) owner.getWorld().getChunkProvider()).generator;
+			}
+			
+			MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 		}
 	}
 	
@@ -708,19 +740,9 @@ public class FakeServerWorld extends ServerWorld {
 		owner.getWorld().getProfiler().startSection("su_simulation");
 		
 		this.isRemote = this.owner.getWorld().isRemote;
-		owner.getWorld().getProfiler().startSection("firstTick");
+//		owner.getWorld().getProfiler().startSection("firstTick");
+		/*
 		if (isFirstTick) {
-			init(owner);
-			dimension = owner.getWorld().dimension;
-			dimensionType = owner.getWorld().dimensionType;
-			raids = new RaidManager(this);
-			isFirstTick = false;
-			server = owner.getWorld().getServer();
-			
-			if (owner.getWorld().getChunkProvider() instanceof ServerChunkProvider) {
-				(this.getChunkProvider()).generator = ((ServerChunkProvider) owner.getWorld().getChunkProvider()).generator;
-			}
-			
 			MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 			try {
 				((WorldAccessor) this).setTileEntitiesToBeRemoved(Collections.newSetFromMap(new IdentityHashMap<>()));
@@ -734,7 +756,19 @@ public class FakeServerWorld extends ServerWorld {
 			} catch (Throwable err) {
 				throw new RuntimeException(err);
 			}
+			
+			init(owner);
+			dimension = owner.getWorld().dimension;
+			dimensionType = owner.getWorld().dimensionType;
+			raids = new RaidManager(this);
+			isFirstTick = false;
+			server = owner.getWorld().getServer();
+			
+			if (owner.getWorld().getChunkProvider() instanceof ServerChunkProvider) {
+				(this.getChunkProvider()).generator = ((ServerChunkProvider) owner.getWorld().getChunkProvider()).generator;
+			}
 		}
+		 */
 		
 		owner.getWorld().getProfiler().endStartSection("iter_add_entities");
 		for (Entity entity : entitiesToAddArrayList) {
@@ -812,23 +846,24 @@ public class FakeServerWorld extends ServerWorld {
 		}
 		
 		entitiesToRemove.clear();
+
+//		if (this.isRemote) {
+//			owner.getWorld().getProfiler().endStartSection("client_tick");
+//			blankProfiler.startTick();
+//			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this));
+//			for (SmallUnit value : this.blockMap.values()) {
+//				if (value.tileEntity instanceof ITickableTileEntity) {
+//					((ITickableTileEntity) value.tileEntity).tick();
+//				}
+//			}
+//			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this));
+//			blankProfiler.endTick();
+//			owner.getWorld().getProfiler().endSection();
+//			owner.getWorld().getProfiler().endSection();
+//			return;
+//		}
 		
-		if (this.isRemote) {
-			owner.getWorld().getProfiler().endStartSection("client_tick");
-			blankProfiler.startTick();
-			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this));
-			for (SmallUnit value : this.blockMap.values()) {
-				if (value.tileEntity instanceof ITickableTileEntity) {
-					((ITickableTileEntity) value.tileEntity).tick();
-				}
-			}
-			MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this));
-			blankProfiler.endTick();
-			owner.getWorld().getProfiler().endSection();
-			owner.getWorld().getProfiler().endSection();
-			return;
-		}
-		
+		// idk how, but it gets to here consistently and crashes
 		blankProfiler.startTick();
 		
 		owner.getWorld().getProfiler().endStartSection("main_tick");
@@ -953,7 +988,7 @@ public class FakeServerWorld extends ServerWorld {
 			if (te == null) continue;
 			SUpdateTileEntityPacket packet = te.getUpdatePacket();
 			if (packet == null) continue;
-			SLittleTileEntityUpdatePacket packet1 = new SLittleTileEntityUpdatePacket(owner.getPos(), packet.getPos(), packet.getTileEntityType(), packet.getNbtCompound());
+			SLittleTileEntityUpdatePacket packet1 = new SLittleTileEntityUpdatePacket(owner.getPos(), te.getPos(), packet.tileEntityType, packet.nbt);
 			Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.NEAR.with(() ->
 					new PacketDistributor.TargetPoint(
 							owner.getPos().getX(),
@@ -1350,7 +1385,7 @@ public class FakeServerWorld extends ServerWorld {
 	public boolean addEntity(Entity entityIn) {
 		if (!(entityIn instanceof ArmorStandEntity) && (entityIn instanceof LivingEntity || entityIn instanceof ItemEntity || entityIn instanceof ExperienceOrbEntity || entityIn instanceof PotionEntity && entityIn instanceof Comparable) && !(entityIn instanceof PlayerEntity)) {
 //		if (false) {
-			entityIn.teleportKeepLoaded(
+			entityIn.setRawPosition(
 					owner.getPos().getX() + entityIn.getPositionVec().getX() / owner.unitsPerBlock,
 					owner.getPos().getY() + ((entityIn.getPositionVec().getY() - 64) / owner.unitsPerBlock),
 					owner.getPos().getZ() + entityIn.getPositionVec().getZ() / owner.unitsPerBlock
@@ -1536,9 +1571,75 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
+		invalidateCaps();
 		try {
 			close();
-		} catch (Throwable ignored) {
+			field_241102_C_ = null;
+		} catch (Throwable err) {
+			// hahayes
+			UnsafeUtils.throwError(err);
 		}
+		// completely detaches the serverworld info from the server world
+		// even if a mod fails to stop tracking the fake server world, the info won't stick around
+		((FakeServerWorldInfo) worldInfo).close();
+		// below here I'm just gonna null stuff
+		worldInfo = null;
+		field_241103_E_ = null;
+		eventData.clear();
+		eventData = null;
+		worldBorder = null;
+		toUpdate.clear();
+		toUpdate = null;
+		tileEntityPoses.clear();
+		tileEntityPoses = null;
+		tileEntityChanges.clear();
+		tileEntityChanges = null;
+		tickableTileEntities.clear();
+		tickableTileEntities = null;
+		loadedTileEntityList.clear();
+		loadedTileEntityList = null;
+		((FakeServerLightingManager) lightManager).close();
+		lightManager = null;
+		thisChunk = null;
+		statesUpdated.clear();
+		statesUpdated = null;
+		server = null;
+		result = null;
+		rand = null;
+		((RaidManagerAccessor) raids).setWorld(null);
+		raids = null;
+		profiler = null;
+		players.clear();
+		players = null;
+		((FakeServerTickList<?>) pendingBlockTicks).close();
+		pendingBlockTicks = null;
+		((FakeServerTickList<?>) pendingFluidTicks).close();
+		pendingFluidTicks = null;
+		entitiesToRemove.clear();
+		entitiesToRemove = null;
+		entitiesToAddArrayList.clear();
+		entitiesToAddArrayList = null;
+		entitiesByUuid.clear();
+		entitiesByUuid = null;
+		entitiesById.clear();
+		entitiesById = null;
+		entitiesToAdd.clear();
+		entitiesToAdd = null;
+		dimensionType = null;
+		dimension = null;
+		((FakeIChunk) chunk).close();
+		chunk = null;
+		capturedBlockSnapshots.clear();
+		capturedBlockSnapshots = null;
+		blockMap.clear();
+		blockMap = null;
+		blockEventQueue.clear();
+		blockEventQueue = null;
+		addedTileEntityList.clear();
+		addedTileEntityList = null;
+
+//		forcedChunks.clear();
+		tileEntitiesToBeRemoved.clear();
+		owner = null;
 	}
 }

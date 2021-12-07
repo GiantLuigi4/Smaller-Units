@@ -1,4 +1,4 @@
-package tfc.smallerunits.utils.threecore;
+package tfc.smallerunits.utils.scale.threecore;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;

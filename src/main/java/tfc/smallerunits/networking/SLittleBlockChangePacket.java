@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.INetHandler;
 import net.minecraft.network.IPacket;
@@ -18,9 +17,10 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import tfc.smallerunits.api.placement.UnitPos;
-import tfc.smallerunits.block.SmallerUnitBlock;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.helpers.ClientUtils;
 import tfc.smallerunits.utils.SmallUnit;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -167,11 +167,13 @@ public class SLittleBlockChangePacket implements IPacket {
 	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		if (ctx.get().getDirection().getReceptionSide().isClient()) {
-			BlockState state = Minecraft.getInstance().world.getBlockState(pos);
-			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
-			TileEntity te = Minecraft.getInstance().world.getTileEntity(pos);
-			if (!(te instanceof UnitTileEntity)) return;
-			UnitTileEntity tileEntity = (UnitTileEntity) te;
+//			BlockState state = Minecraft.getInstance().world.getBlockState(pos);
+//			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
+//			TileEntity te = Minecraft.getInstance().world.getTileEntity(pos);
+//			if (!(te instanceof UnitTileEntity)) return;
+//			UnitTileEntity tileEntity = (UnitTileEntity) te;
+			UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(ClientUtils.getWorld(), pos);
+			if (tileEntity == null) return;
 			
 			Long2ObjectOpenHashMap<SmallUnit> unitsUpdated = new Long2ObjectOpenHashMap<>();
 			for (SmallUnit unit : units) unitsUpdated.put(unit.pos.toLong(), unit);

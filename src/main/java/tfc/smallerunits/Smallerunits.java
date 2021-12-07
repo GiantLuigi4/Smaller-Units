@@ -5,6 +5,9 @@ package tfc.smallerunits;
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.IBlockReader;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.*;
@@ -19,26 +22,26 @@ import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tfc.collisionreversion.api.CollisionReversionAPI;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.client.RenderingHandler;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.helpers.PacketHacksHelper;
 import tfc.smallerunits.networking.*;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.renderer.FlywheelProgram;
+import tfc.smallerunits.utils.compat.FlywheelEvents;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
+import tfc.smallerunits.utils.scale.pehkui.PehkuiSupport;
+import tfc.smallerunits.utils.scale.threecore.SUResizeType;
 import tfc.smallerunits.utils.shapes.CollisionReversionShapeGetter;
-import tfc.smallerunits.utils.threecore.SUResizeType;
-import virtuoel.pehkui.api.ScaleData;
-import virtuoel.pehkui.api.ScaleModifier;
-import virtuoel.pehkui.api.ScaleRegistries;
-import virtuoel.pehkui.api.ScaleType;
 
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.concurrent.atomic.AtomicReference;
 
 //import com.tfc.smallerunits.worldgen.WorldTypeRegistry;
 
@@ -48,22 +51,38 @@ import java.util.concurrent.atomic.AtomicReference;
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("smallerunits")
 public class Smallerunits {
-	
-	public static final AtomicReference<ScaleModifier> SUScaleModifier = new AtomicReference<>();
-	public static final AtomicReference<ScaleType> SUScaleType = new AtomicReference<>();
-	
 	// Directly reference a log4j logger.
 	public static final Logger LOGGER = LogManager.getLogger();
 	
+	// TODO: semantic version acceptance system thing
+	// if other side is on newer sub version but same major, allow connection
+	// if other side is on newer major, deny
+	// if other side is on older major or older sub version, deny
+	//
+	// 2.1 can connect to 2.0, 2.0 can't connect to 2.1
+	// 3.* can't connect to 2.*
+	// 2.* can't connect to 3.*
 	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation("smaller_units", "main"),
-			() -> "2",
-			"2"::equals,
-			"2"::equals
+			() -> "2.1",
+			"2.1"::equals,
+			"2.1"::equals
 	);
+
+//	public static void onConfigEvent(ModConfig.ModConfigEvent event) {
+//		if (event.getConfig().getModId().equals("smallerunits")) {
+//			CustomArrayList.growthRate = (Integer) Config.COMMON.listGrowthRate.get() - 1;
+//			CustomArrayList.minGrowth = (Integer)Config.COMMON.minGrowth.get();
+//		}
+//	}
 	
 	private static Smallerunits INSTANCE;
 	private final boolean isVivecraftPresent;
+	private static boolean isCollisionReversionPresent = false;
+	
+	public static boolean isVivecraftPresent() {
+		return INSTANCE.isVivecraftPresent;
+	}
 	
 	public Smallerunits() {
 		INSTANCE = this;
@@ -74,81 +93,69 @@ public class Smallerunits {
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
 		
-		if (ClientBrandRetriever.getClientModName().equals("vivecraft")) {
-			boolean vivecraftPresence = false;
-			
-			try {
-				Class<?> clazz = Class.forName("org.vivecraft.api.VRData");
-				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
-				Method m = clazz.getMethod("getController", int.class);
-				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new ReflectiveOperationException("disable");
+		if (FMLEnvironment.dist.isClient()) {
+			if (ClientBrandRetriever.getClientModName().equals("vivecraft")) {
+				boolean vivecraftPresence = false;
 				
-				clazz = Class.forName("org.vivecraft.api.VRData$VRDevicePose");
-				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
-				m = clazz.getMethod("getPosition");
-				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new ReflectiveOperationException("disable");
-				m = clazz.getMethod("getDirection");
-				if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new ReflectiveOperationException("disable");
-				
-				clazz = Class.forName("org.vivecraft.gameplay.VRPlayer");
-				if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
-				m = clazz.getMethod("get");
-				if (!(Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-					throw new ReflectiveOperationException("disable");
-				Field f = clazz.getField("vrdata_world_render");
-				if (!(Modifier.isPublic(f.getModifiers()))) throw new RuntimeException("disable");
-				
-				LOGGER.info("Vivecraft detected; enabling support");
-				vivecraftPresence = true;
-			} catch (ReflectiveOperationException err) {
-				err.printStackTrace();
-				LOGGER.warn("Vivecraft detected; however, the version of vivecraft which is present does not match with what smaller units expects");
-				
-				String detectedVivecraftVersion = "null";
 				try {
-					Field f = Minecraft.class.getField("minecriftVerString");
-					detectedVivecraftVersion = (String) f.get(Minecraft.getInstance());
-				} catch (Throwable ignored) {
+					Class<?> clazz = Class.forName("org.vivecraft.api.VRData");
+					if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
+					Method m = clazz.getMethod("getController", int.class);
+					if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+						throw new ReflectiveOperationException("disable");
+					
+					clazz = Class.forName("org.vivecraft.api.VRData$VRDevicePose");
+					if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
+					m = clazz.getMethod("getPosition");
+					if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+						throw new ReflectiveOperationException("disable");
+					m = clazz.getMethod("getDirection");
+					if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+						throw new ReflectiveOperationException("disable");
+					
+					clazz = Class.forName("org.vivecraft.gameplay.VRPlayer");
+					if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
+					m = clazz.getMethod("get");
+					if (!(Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
+						throw new ReflectiveOperationException("disable");
+					Field f = clazz.getField("vrdata_world_render");
+					if (!(Modifier.isPublic(f.getModifiers()))) throw new RuntimeException("disable");
+					
+					LOGGER.info("Vivecraft detected; enabling support");
+					vivecraftPresence = true;
+				} catch (ReflectiveOperationException err) {
+					err.printStackTrace();
+					LOGGER.warn("Vivecraft detected; however, the version of vivecraft which is present does not match with what smaller units expects");
+					
+					String detectedVivecraftVersion = "null";
+					try {
+						Field f = Minecraft.class.getField("minecriftVerString");
+						detectedVivecraftVersion = (String) f.get(Minecraft.getInstance());
+					} catch (Throwable ignored) {
+					}
+					LOGGER.warn("Found: " + detectedVivecraftVersion + ", Expected: " + "Vivecraft 1.16.5 jrbudda-7-5 1.16.5");
+					ModLoader.get().addWarning(
+							new ModLoadingWarning(
+									ModLoadingContext.get().getActiveContainer().getModInfo(),
+									ModLoadingStage.CONSTRUCT, "smallerunits.vivecraft.support.version.error"
+							)
+					);
 				}
-				LOGGER.warn("Found: " + detectedVivecraftVersion + ", Expected: " + "Vivecraft 1.16.5 jrbudda-7-5 1.16.5");
-				ModLoader.get().addWarning(
-						new ModLoadingWarning(
-								ModLoadingContext.get().getActiveContainer().getModInfo(),
-								ModLoadingStage.CONSTRUCT, "smallerunits.vivecraft.support.version.error"
-						)
-				);
+				isVivecraftPresent = vivecraftPresence;
+			} else {
+				isVivecraftPresent = false;
 			}
-			isVivecraftPresent = vivecraftPresence;
 		} else {
-			isVivecraftPresent = false;
+			isVivecraftPresent = false; // TODO: when vivecraft gets an API, use that to test for vivecraft
 		}
 		
-		if (ModList.get().isLoaded("pehkui")) {
-			LOGGER.info("Pehkui detected; enabling support");
-			
-			ScaleModifier modifier = new ScaleModifier() {
-				@Override
-				public float modifyScale(ScaleData scaleData, float modifiedScale, float delta) {
-					return SUScaleType.get().getScaleData(scaleData.getEntity()).getScale(delta) * modifiedScale;
-				}
-			};
-			ScaleRegistries.SCALE_MODIFIERS.put(new ResourceLocation("smallerunits:su_resize"), modifier);
-			SUScaleModifier.set(modifier);
-			ScaleType type = ScaleType.Builder.create()
-					.affectsDimensions()
-					.addDependentModifier(SUScaleModifier.get())
-					.build();
-			ScaleRegistries.SCALE_TYPES.put(new ResourceLocation("smallerunits:su_resize"), type);
-			ScaleType.BASE.getDefaultBaseValueModifiers().add(modifier);
-			SUScaleType.set(type);
-		}
+		PehkuiSupport.setup();
 
 //		WorldTypeRegistry.init();
 		
-		if (ModList.get().isLoaded("collision_reversion")) {
+		isCollisionReversionPresent = ModList.get().isLoaded("collision_reversion");
+		
+		if (isCollisionReversionPresent) {
 			// if I left the code of that method in the main class, the game would just crash
 			LOGGER.info("Collision Reversion detected; enabling support");
 			CollisionReversionShapeGetter.register();
@@ -195,8 +202,11 @@ public class Smallerunits {
 				SLittleBlockEventPacket::writePacketData,
 				SLittleBlockEventPacket::new,
 				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.processPacket(null);
+					// TODO: make all packets only set the packet handled if it's on the right side
+					if (ctx.get().getDirection().getReceptionSide().isClient()) {
+						packet.processPacket(null);
+						ctx.get().setPacketHandled(true);
+					}
 				}
 		);
 		NETWORK_INSTANCE.registerMessage(1, CLittleBlockInteractionPacket.class,
@@ -239,6 +249,14 @@ public class Smallerunits {
 					packet.handle(ctx);
 				}
 		);
+		NETWORK_INSTANCE.registerMessage(6, STileNBTPacket.class,
+				STileNBTPacket::writePacketData,
+				STileNBTPacket::new,
+				(packet, ctx) -> {
+					ctx.get().setPacketHandled(true);
+					packet.handle(ctx);
+				}
+		);
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,
@@ -263,6 +281,7 @@ public class Smallerunits {
 		CraftingRegistry.recipeSerializers.register(bus);
 		
 		ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, SmallerUnitsConfig.serverSpec);
+		ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, SmallerUnitsConfig.commonSpec);
 		
 		if (FMLEnvironment.dist.isClient()) {
 			ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, SmallerUnitsConfig.clientSpec);
@@ -273,6 +292,7 @@ public class Smallerunits {
 			
 			if (ModList.get().isLoaded("flywheel")) {
 				bus.addListener(FlywheelProgram::onFlywheelInit);
+				MinecraftForge.EVENT_BUS.addListener(FlywheelEvents::onReloadRenderers);
 			}
 		}
 		
@@ -285,15 +305,38 @@ public class Smallerunits {
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onSneakClick);
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerInteract);
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerTick);
+		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onWorldTick);
+		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerBreakBlock);
+		MinecraftForge.EVENT_BUS.addListener(SUCapabilityManager::onChunkWatchEvent);
+		MinecraftForge.EVENT_BUS.addGenericListener(Chunk.class, CommonEventHandler::onAttachCapabilities);
 		
 		MinecraftForge.EVENT_BUS.register(this);
 	}
 	
-	public static boolean isVivecraftPresent() {
-		return INSTANCE.isVivecraftPresent;
+	public static boolean useSelectionReversion(IBlockReader worldIn) {
+		return isCollisionReversionPresent && (
+				javaWhyAreDumb$1() && (
+						!(worldIn instanceof World) ||
+								((World) worldIn).isRemote));
+	}
+	
+	private static boolean javaWhyAreDumb$1() {
+		return CollisionReversionAPI.useSelection();
+	}
+	
+	private static boolean javaWhyAreDumb$2() {
+		return CollisionReversionAPI.useCollision();
+	}
+	
+	public static boolean useCollisionReversion(IBlockReader worldIn) {
+		return isCollisionReversionPresent && (
+				javaWhyAreDumb$2() && (
+						!(worldIn instanceof World) ||
+								((World) worldIn).isRemote));
 	}
 	
 	private void setup(final FMLCommonSetupEvent event) {
+		SUCapabilityManager.register();
 	}
 	
 	public static void onNetworkEvent(NetworkEvent.ServerCustomPayloadEvent event) {

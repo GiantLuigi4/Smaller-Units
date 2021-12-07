@@ -19,10 +19,31 @@ public class UnitRaytraceHelper {
 	public static UnitRaytraceContext raytraceBlock(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
 		VoxelShape shape = null;
 		
-		Vector3d start1 = RaytraceUtils.getStartVector(entity);
-		double reach = RaytraceUtils.getReach(entity);
-		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
-		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+		Vector3d start1;
+		Vector3d look;
+		Vector3d end;
+		if (entity != null) {
+			start1 = RaytraceUtils.getStartVector(entity);
+			double reach = RaytraceUtils.getReach(entity);
+			look = RaytraceUtils.getLookVector(entity).scale(reach);
+			end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+		} else {
+			if (contextOptional.isPresent()) {
+				entity = contextOptional.get().getEntity();
+				if (entity != null) {
+					start1 = RaytraceUtils.getStartVector(entity);
+					double reach = RaytraceUtils.getReach(entity);
+					look = RaytraceUtils.getLookVector(entity).scale(reach);
+					end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+				} else {
+					UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
+					return context;
+				}
+			} else {
+				UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
+				return context;
+			}
+		}
 		
 		double bestDist = Double.POSITIVE_INFINITY;
 		
@@ -171,7 +192,7 @@ public class UnitRaytraceHelper {
 			}
 		}
 		
-		UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
+		UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), hitPos == null ? new BlockPos(-100, -100, -100) : hitPos, hitVec == null ? new Vector3d(-100, -100, -100) : hitVec);
 		context.hitFace = hitFace;
 		context.posHit = hitPos;
 		return context;

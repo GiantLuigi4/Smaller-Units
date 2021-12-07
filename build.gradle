@@ -118,18 +118,19 @@ dependencies {
 
 //    runtimeOnly fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
 //    compile fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.2.4")
-    compile fg.deobf('curse.maven:flywheel-486392:3459739') // heck with maven, just cursemaven it
+    compile fg.deobf('curse.maven:flywheel-486392:3535459') // heck with maven, just cursemaven it
 
-    runtimeOnly fg.deobf('curse.maven:reauth-237701:3105779')
+//    runtimeOnly fg.deobf('curse.maven:reauth-237701:3105779')
+    runtimeOnly fg.deobf('curse.maven:reauth-513857:3507476')
     runtimeOnly fg.deobf('curse.maven:worldmanipulation-414161:3096407')
     runtimeOnly fg.deobf('curse.maven:jei-238222:3383214')
     runtimeOnly fg.deobf('curse.maven:carryon-274259:3206755')
     runtimeOnly fg.deobf('curse.maven:storagedrawers-223852:3180569')
-    compile fg.deobf('curse.maven:quark-243121:3393195')
+    runtimeOnly fg.deobf('curse.maven:quark-243121:3393195')
     runtimeOnly fg.deobf('curse.maven:oddities-301051:3088871')
     runtimeOnly fg.deobf('curse.maven:autoreglib-250363:3326041')
     runtimeOnly fg.deobf('curse.maven:appeng-223794:3354897')
-    runtimeOnly fg.deobf('curse.maven:refinedstorage-243076:3196167')
+    compile fg.deobf('curse.maven:refinedstorage-243076:3196167')
 //    runtimeOnly fg.deobf('curse.maven:pymtech-316946:3163217')
     runtimeOnly fg.deobf('curse.maven:compactstorage-223703:3209571')
     runtimeOnly fg.deobf('curse.maven:mekanism-268560:3183270')
@@ -137,18 +138,23 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:xnet-260912:3140153')
     runtimeOnly fg.deobf('curse.maven:mcjtylib-233105:3194349')
     runtimeOnly fg.deobf('curse.maven:rftoolsbase-326041:3206945')
-    compile fg.deobf('curse.maven:create-328085:3419412') //3278516
+
+    // if I use old create, I need to use old C&B
+    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3234842')
+    compile fg.deobf('curse.maven:create-328085:3278516')
+//    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3510598')
+//    compile fg.deobf('curse.maven:create-328085:3536025') //3278516
+
 //    runtimeOnly fg.deobf('curse.maven:botania-225643:3175663')
     runtimeOnly fg.deobf('curse.maven:patchouli-306770:3204037')
-    compile fg.deobf('com.github.XFactHD:FramedBlocks:7fda318779')
+    runtimeOnly fg.deobf('curse.maven:framedblocks-441647:3499681')
     runtimeOnly fg.deobf('curse.maven:curios-309927:3186427')
     runtimeOnly fg.deobf('curse.maven:integrated_dyanmics-236307:3376007')
     runtimeOnly fg.deobf('curse.maven:common_capabilities-247007:3292062')
     runtimeOnly fg.deobf('curse.maven:cyclops_core-232758:3336467')
-    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3234842')
-    compile fg.deobf('curse.maven:redstone_pen-461710:3348960')
-    compile fg.deobf('curse.maven:ctm-267602:3137659')
-    compile fg.deobf('curse.maven:tiny_redstone-453746:3347318')
+    runtimeOnly fg.deobf('curse.maven:redstone_pen-461710:3348960')
+    runtimeOnly fg.deobf('curse.maven:ctm-267602:3137659')
+    runtimeOnly fg.deobf('curse.maven:tiny_redstone-453746:3347318')
 
 //    compile fg.deobf('curse.maven:pokecube-285121:3308917')
 
@@ -157,12 +163,18 @@ dependencies {
     compileOnly fg.deobf('curse.maven:shrink-426386:3352335')
     compileOnly fg.deobf('curse.maven:threecore-349285:3187033')
     compileOnly fg.deobf('curse.maven:gullivern-385915:3227241')
-    compile fg.deobf('curse.maven:pehkui-319596:3351969')
+//    compile fg.deobf('curse.maven:pehkui_old-319596:3351969')
+    compile fg.deobf('curse.maven:pehkui_new-319596:3545512')
     compile fg.deobf('curse.maven:the_one_probe-245211:3319255')
     compileOnly fg.deobf("curse.maven:better_fps_graph-399699:3094889")
 
-    compileOnly 'com.github.GiantLuigi4:CollisionReversion:c42cc51c7f'
-//    runtimeOnly fg.deobf('com.github.GiantLuigi4:CollisionReversion:f6098fea56')
+//    compileOnly 'com.github.GiantLuigi4:CollisionReversion:c42cc51c7f'
+//    compileOnly 'com.github.GiantLuigi4:CollisionReversion:c7b1d4f020'
+    // currently forge gradle does not work with jitpack
+    // in order to get collision reversion to load in dev envro, I had to build it without remapping it
+    // then use the files dependency type to load it in
+    compile files('CollisionReversion-1.0-SNAPSHOT.zip')
+//    compile fg.deobf('com.github.GiantLuigi4:CollisionReversion:08cf9671bf')
     compile fg.deobf('curse.maven:hwyla-3033613:3033593')
 
     // this will only exist while vivecraft does not have an api which is meant to be used

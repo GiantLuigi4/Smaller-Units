@@ -17,8 +17,8 @@ import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.math.vector.Vector4f;
 import net.minecraft.world.LightType;
 import org.lwjgl.opengl.GL11;
-import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.block.SmallerUnitBlock;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.utils.world.client.FakeClientWorld;
 
 import java.util.ArrayList;

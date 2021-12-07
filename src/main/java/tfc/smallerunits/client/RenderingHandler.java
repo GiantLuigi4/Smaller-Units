@@ -14,10 +14,14 @@ import net.minecraft.fluid.FlowingFluid;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.math.shapes.IBooleanFunction;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
+import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.LightType;
@@ -26,14 +30,16 @@ import net.minecraftforge.client.event.DrawHighlightEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.SmallerUnitsTESR;
 import tfc.smallerunits.block.SmallerUnitBlock;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.helpers.BufferCacheHelper;
-import tfc.smallerunits.mixins.WorldRendererMixin;
+import tfc.smallerunits.mixins.WorldRendererAccessor;
 import tfc.smallerunits.utils.UnitRaytraceContext;
 import tfc.smallerunits.utils.UnitRaytraceHelper;
+import tfc.smallerunits.utils.compat.RaytraceUtils;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.rendering.BufferCache;
 import tfc.smallerunits.utils.world.client.FakeClientWorld;
 
@@ -49,7 +55,7 @@ public class RenderingHandler {
 	}
 	
 	public static void onRenderWorldLastNew(RenderWorldLastEvent event) {
-		if (!((WorldRendererMixin) event.getContext()).getWorld().equals(Minecraft.getInstance().world) || hasChecked)
+		if (!((WorldRendererAccessor) event.getContext()).getWorld().equals(Minecraft.getInstance().world) || hasChecked)
 			return;
 		hasChecked = true;
 		//TODO: force vanilla renderer to work in fake world
@@ -83,7 +89,8 @@ public class RenderingHandler {
 		{
 			ArrayList<BlockPos> toFree = new ArrayList<>();
 			SmallerUnitsTESR.vertexBufferCacheUsed.forEach((pos, buffer) -> {
-				TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+//				TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+				TileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(((WorldRendererAccessor) event.getContext()).getWorld(), pos);
 				if (tileEntity == null || !clippinghelper.isBoundingBoxInFrustum(tileEntity.getRenderBoundingBox())) {
 					toFree.add(pos);
 				}
@@ -96,7 +103,8 @@ public class RenderingHandler {
 		{
 			ArrayList<BlockPos> toSetInUse = new ArrayList<>();
 			SmallerUnitsTESR.vertexBufferCacheFree.forEach((pos, buffer) -> {
-				TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+//				TileEntity tileEntity = Minecraft.getInstance().world.getTileEntity(pos);
+				TileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(((WorldRendererAccessor) event.getContext()).getWorld(), pos);
 				if (tileEntity != null && clippinghelper.isBoundingBoxInFrustum(tileEntity.getRenderBoundingBox())) {
 					toSetInUse.add(pos);
 				}
@@ -218,8 +226,13 @@ public class RenderingHandler {
 	public static void onDrawSelectionBox(DrawHighlightEvent event) {
 		if (!SmallerUnitsConfig.CLIENT.useExperimentalSelection.get()) return;
 		if (!(event.getTarget() instanceof BlockRayTraceResult)) return;
-		BlockState state = Minecraft.getInstance().world.getBlockState(((BlockRayTraceResult) event.getTarget()).getPos());
-		if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
+//		BlockState state = Minecraft.getInstance().world.getBlockState(((BlockRayTraceResult) event.getTarget()).getPos());
+//		if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
+		
+		UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos());
+		if (tileEntity == null) return;
+		BlockState state = tileEntity.getBlockState();
+		
 		event.getMatrix().push();
 
 //		UnitTileEntity tileEntity = (UnitTileEntity) Minecraft.getInstance().player.getEntityWorld().getTileEntity(((BlockRayTraceResult) event.getTarget()).getPos());
@@ -291,15 +304,16 @@ public class RenderingHandler {
 				return false;
 			}
 		};
+
 //		VoxelShape shape = SmallerUnitBlock.getShapeOld(state, Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos(), context);
-		TileEntity te = Minecraft.getInstance().world.getTileEntity(((BlockRayTraceResult) event.getTarget()).getPos());
-		if (!(te instanceof UnitTileEntity)) return;
-		UnitTileEntity tileEntity = (UnitTileEntity) te;
+//		TileEntity te = Minecraft.getInstance().world.getTileEntity(((BlockRayTraceResult) event.getTarget()).getPos());
+//		if (!(te instanceof UnitTileEntity)) return;
+//		UnitTileEntity tileEntity = (UnitTileEntity) te;
 		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player, true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.of(context));
 		VoxelShape shape;
 		if (raytraceContext.posHit != null) {
 			BlockState state1 = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);
-			shape = state1.getShape(((UnitTileEntity) te).getFakeWorld(), raytraceContext.posHit, context);
+			shape = state1.getShape(tileEntity.getFakeWorld(), raytraceContext.posHit, context);
 			if (shape.isEmpty()) {
 				shape = SmallerUnitBlock.getShapeOld(state, Minecraft.getInstance().world, ((BlockRayTraceResult) event.getTarget()).getPos(), context);
 				raytraceContext.posHit = null;
@@ -321,15 +335,119 @@ public class RenderingHandler {
 					raytraceContext.posHit.getZ()
 			);
 		}
-		Matrix4f matrix4f = event.getMatrix().getLast().getMatrix();
-		float red = 0;
-		float green = 0;
-		float blue = 0;
-		float alpha = 0.5f;
-		shape.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
-			builder.pos(matrix4f, (float) (x1), (float) (y1), (float) (z1)).color(red, green, blue, alpha).endVertex();
-			builder.pos(matrix4f, (float) (x2), (float) (y2), (float) (z2)).color(red, green, blue, alpha).endVertex();
-		});
+		
+		boolean doShow = raytraceContext.vecHit == null && false;
+		{
+			BlockState state1 = Minecraft.getInstance().world.getBlockState(((BlockRayTraceResult) event.getTarget()).getPos());
+			VoxelShape shape1 = state1.getBlock().getBlock().getShape(
+					state1, Minecraft.getInstance().world,
+					((BlockRayTraceResult) event.getTarget()).getPos(),
+					ISelectionContext.forEntity(event.getInfo().getRenderViewEntity())
+			);
+			if (false) {
+				Vector3d startVec = RaytraceUtils.getStartVector(
+						event.getInfo().getRenderViewEntity()
+				);
+				
+				if (!doShow) {
+					Entity entity = event.getInfo().getRenderViewEntity();
+					
+					BlockState state2 = entity.getEntityWorld().getBlockState(((BlockRayTraceResult) event.getTarget()).getPos());
+					VoxelShape shape2 = state2.getBlock().getShape(state2, entity.getEntityWorld(), ((BlockRayTraceResult) event.getTarget()).getPos(), ISelectionContext.forEntity(entity));
+					
+					Vector3d start = RaytraceUtils.getStartVector(entity);
+					Vector3d end = start.add(RaytraceUtils.getLookVector(entity).scale(RaytraceUtils.getReach(entity)));
+					// VoxelShape$raytrace is obnoxious
+					Vector3d resultHit = null;
+					double bestDist = Double.POSITIVE_INFINITY;
+					for (AxisAlignedBB axisAlignedBB : shape2.toBoundingBoxList()) {
+						Optional<Vector3d> hit = axisAlignedBB.offset(((BlockRayTraceResult) event.getTarget()).getPos()).rayTrace(start, end);
+						if (hit.isPresent()) {
+							Vector3d hitVec = hit.get();
+							double dist = hitVec.distanceTo(start);
+							if (dist < bestDist) {
+								bestDist = hitVec.distanceTo(start);
+								resultHit = hit.get();
+							}
+						}
+					}
+					Vector3d finalResultHit = resultHit;
+					
+					double d0;
+					if (finalResultHit == null) d0 = event.getTarget().getHitVec().distanceTo(startVec);
+					else d0 = finalResultHit.distanceTo(startVec);
+					double d1 = raytraceContext.vecHit.distanceTo(startVec);
+					doShow = d0 <= d1;
+				}
+				
+				if (doShow) {
+					Matrix4f matrix4f = event.getMatrix().getLast().getMatrix();
+					float red = 0;
+					float green = 0;
+					float blue = 0;
+					float alpha = 0.5f;
+					
+					double sclMul = 1d / tileEntity.unitsPerBlock;
+					double sclDiv = tileEntity.unitsPerBlock;
+					
+					Vector3d vector3d = event.getTarget().getHitVec().subtract(
+							((BlockRayTraceResult) event.getTarget()).getPos().getX(),
+							((BlockRayTraceResult) event.getTarget()).getPos().getY(),
+							((BlockRayTraceResult) event.getTarget()).getPos().getZ()
+					);
+					vector3d = vector3d.mul(sclDiv, sclDiv, sclDiv);
+					vector3d = new Vector3d(
+							Math.floor(vector3d.x),
+							Math.floor(vector3d.y),
+							Math.floor(vector3d.z)
+					);
+					vector3d = vector3d.mul(sclMul, sclMul, sclMul);
+					
+					if (
+							((BlockRayTraceResult) event.getTarget()).getFace() == Direction.UP ||
+									((BlockRayTraceResult) event.getTarget()).getFace() == Direction.EAST ||
+									((BlockRayTraceResult) event.getTarget()).getFace() == Direction.SOUTH
+					) {
+						vector3d = vector3d.add(
+								((BlockRayTraceResult) event.getTarget()).getFace().getXOffset() * -sclMul,
+								((BlockRayTraceResult) event.getTarget()).getFace().getYOffset() * -sclMul,
+								((BlockRayTraceResult) event.getTarget()).getFace().getZOffset() * -sclMul
+						);
+					}
+					
+					VoxelShape shape2 = VoxelShapes.create(
+							vector3d.x,
+							vector3d.y,
+							vector3d.z,
+							vector3d.x + sclMul,
+							vector3d.y + sclMul,
+							vector3d.z + sclMul
+					);
+					
+					shape2 = VoxelShapes.combine(shape1, shape2, IBooleanFunction.AND);
+					
+					shape2.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
+						builder.pos(matrix4f, (float) (x1), (float) (y1), (float) (z1)).color(red, green, blue, alpha).endVertex();
+						builder.pos(matrix4f, (float) (x2), (float) (y2), (float) (z2)).color(red, green, blue, alpha).endVertex();
+					});
+
+//					if (event.isCancelable()) event.setCanceled(true);
+//					event.getMatrix().pop();
+//					return;
+				}
+			}
+		}
+		if (!doShow) {
+			Matrix4f matrix4f = event.getMatrix().getLast().getMatrix();
+			float red = 0;
+			float green = 0;
+			float blue = 0;
+			float alpha = 0.5f;
+			shape.forEachEdge((x1, y1, z1, x2, y2, z2) -> {
+				builder.pos(matrix4f, (float) (x1), (float) (y1), (float) (z1)).color(red, green, blue, alpha).endVertex();
+				builder.pos(matrix4f, (float) (x2), (float) (y2), (float) (z2)).color(red, green, blue, alpha).endVertex();
+			});
+		}
 		if (event.isCancelable()) event.setCanceled(true);
 		event.getMatrix().pop();
 	}

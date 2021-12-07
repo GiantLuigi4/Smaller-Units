@@ -20,18 +20,16 @@ public class BufferStorage implements Comparable<BufferStorage>, Comparator<Buff
 	
 	@Override
 	public int compareTo(BufferStorage o) {
+		// TODO: move to RenderTypeHelper
 		RenderType otherType = o.renderType;
 		if (otherType == renderType) return 0;
-		if (renderType == RenderTypeHelper.getType(RenderType.getTranslucent())) return 1;
-		if (renderType == RenderTypeHelper.getType(RenderType.getSolid())) return -1;
-		if (otherType == RenderTypeHelper.getType(RenderType.getTranslucent())) return -1;
-		if (otherType == RenderTypeHelper.getType(RenderType.getCutoutMipped())) return -1;
-//		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getTranslucent())) {
-//			if (RenderTypeHelper.getType(renderType) == RenderTypeHelper.getType(RenderType.getTranslucent())) {
-//				return 0;
-//			}
-//			return 1;
-//		}
+		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(renderType)) return 0;
+		if (RenderTypeHelper.getType(renderType) == RenderTypeHelper.getType(RenderType.getTranslucent())) return 1;
+		if (RenderTypeHelper.getType(renderType) == RenderTypeHelper.getType(RenderType.getCutoutMipped())) return 1;
+		if (RenderTypeHelper.getType(renderType) == RenderTypeHelper.getType(RenderType.getCutout())) return 1;
+		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getTranslucent())) return -1;
+		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getCutoutMipped())) return -1;
+		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getCutout())) return -1;
 		return 0;
 	}
 	

@@ -3,26 +3,8 @@
   "package": "tfc.smallerunits.mixins",
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
-  "client": [
-	"ClientPlayNetHandlerMixin",
-	"GameRendererMixin",
-	"MinecraftMixin",
-	"ModelDataManagerMixin",
-	"TileEntityRendererDispatcherMixin",
-	"WorldRendererMixin"
-  ],
-  "mixins": [
-	"ContainerMixin",
-	"ContainerMixin2",
-	"IndexedMessageCodecMixin",
-	"PlayerEntityMixin",
-	"ServerPlayerEntityMixin",
-	"ServerPlayNetHandlerMixin",
-	"SimpleChannelMixin",
-	"WorldAccessor",
-	"ServerWorldAccessor",
-	"CapabilityProviderAccessor"
-  ],
+  "client": ["ClientPlayNetHandlerMixin", "GameRendererMixin", "MinecraftMixin", "ModelDataManagerMixin", "TileEntityRendererDispatcherMixin", "WorldRendererAccessor", "rendering.unit_in_block.ChunkRenderCacheAccessor", "rendering.unit_in_block.ChunkRenderMixin", "rendering.unit_in_block.RebuildTaskMixin", "rendering.unit_in_block.WorldRendererMixin", "ticking.ChunkArrayAccessor"],
+  "mixins": ["CapabilityProviderAccessor", "ContainerMixin", "ContainerMixin2", "IndexedMessageCodecMixin", "PlayerEntityMixin", "ServerPlayerEntityMixin", "ServerPlayNetHandlerMixin", "ServerWorldAccessor", "SimpleChannelMixin", "WorldAccessor", "continuity.ServerWorldInfoAccessor", "referenceremoval.RaidManagerAccessor", "referenceremoval.ServerTickListAccessor", "shapes.AbstractBlockStateMixin", "shapes.VoxelShapesMixin"],
   "injectors": {
 	"defaultRequire": 0
   },

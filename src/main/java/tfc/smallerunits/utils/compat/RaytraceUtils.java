@@ -17,6 +17,17 @@ import tfc.smallerunits.Smallerunits;
  * C) me to figure out how to compile against the vivecraft API
  */
 public class RaytraceUtils {
+	public static float getPct(Entity entity) {
+		if (true) return 1;
+		if (entity == null) return 0;
+		if (FMLEnvironment.dist.isClient()) {
+			if (entity.getEntityWorld().isRemote) {
+				return Minecraft.getInstance().getRenderPartialTicks();
+			}
+		}
+		return 0;
+	}
+	
 	public static Vector3d getStartVector(Entity entity) {
 		if (Smallerunits.isVivecraftPresent()) {
 			// TODO: vivecraft compat
@@ -30,7 +41,7 @@ public class RaytraceUtils {
 				}
 			}
 		}
-		return entity.getEyePosition(0);
+		return entity.getEyePosition(getPct(entity));
 	}
 	
 	public static Vector3d getLookVector(Entity entity) {
@@ -46,7 +57,7 @@ public class RaytraceUtils {
 				}
 			}
 		}
-		return entity.getLookVec();
+		return entity.getLook(getPct(entity));
 	}
 	
 	public static double getReach(Entity entity) {

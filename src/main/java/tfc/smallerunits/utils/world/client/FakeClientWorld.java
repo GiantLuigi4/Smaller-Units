@@ -48,6 +48,7 @@ import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.ExternalUnitInteractionContext;
 import tfc.smallerunits.utils.SmallUnit;
+import tfc.smallerunits.utils.UnsafeUtils;
 import tfc.smallerunits.utils.world.common.FakeChunk;
 
 import javax.annotation.Nullable;
@@ -924,9 +925,9 @@ public class FakeClientWorld extends ClientWorld {
 					}
 				}
 //				}
-				
-				if (this.getTileEntity(pos) != null)
-					this.getTileEntity(pos).markDirty();
+
+//				if (this.getTileEntity(pos) != null)
+//					this.getTileEntity(pos).markDirty();
 				
 				this.markAndNotifyBlock(pos, chunk, blockstate, state, flags, recursionLeft);
 				
@@ -1011,7 +1012,9 @@ public class FakeClientWorld extends ClientWorld {
 		}
 		try {
 			close();
-		} catch (Throwable ignored) {
+		} catch (Throwable err) {
+			// hahayes
+			UnsafeUtils.throwError(err);
 		}
 	}
 }

@@ -30,16 +30,21 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.NextTickListEntry;
 import net.minecraft.world.TickPriority;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.util.Constants;
+import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import sun.misc.Unsafe;
 import tfc.smallerunits.Smallerunits;
+import tfc.smallerunits.helpers.ClientUtils;
 import tfc.smallerunits.networking.SLittleEntityUpdatePacket;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.SmallUnit;
 import tfc.smallerunits.utils.UnitPallet;
+import tfc.smallerunits.utils.data.SUCapability;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.world.client.FakeClientWorld;
 import tfc.smallerunits.utils.world.common.FakeDimensionSavedData;
 import tfc.smallerunits.utils.world.server.FakeServerWorld;
@@ -50,6 +55,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 
+// TODO: make this not be a tile entity
+// TODO: learn data fixers
 public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	private static final Unsafe theUnsafe;
 	public boolean isNatural = false;
@@ -182,6 +189,19 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		}
 		if (bb == null) {
 			bb = new AxisAlignedBB(getPos().getX(), getPos().getY(), getPos().getZ(), getPos().getX() + 1, getPos().getY() + 1, getPos().getZ() + 1);
+		}
+		if (FMLEnvironment.dist.isClient()) {
+			if (ClientUtils.isHammerHeld()) {
+				AxisAlignedBB renderBB = new AxisAlignedBB(getPos().getX(), getPos().getY(), getPos().getZ(), getPos().getX() + 1, getPos().getY() + 1, getPos().getZ() + 1);
+				bb = new AxisAlignedBB(
+						Math.min(renderBB.minX, bb.minX),
+						Math.min(renderBB.minY, bb.minY),
+						Math.min(renderBB.minZ, bb.minZ),
+						Math.max(renderBB.maxX, bb.maxX),
+						Math.max(renderBB.maxY, bb.maxY),
+						Math.max(renderBB.maxZ, bb.maxZ)
+				);
+			}
 		}
 		return bb;
 	}
@@ -322,6 +342,10 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	 */
 	@Override
 	public void remove() {
+		if (this.isRemoved()) {
+			super.remove();
+			return;
+		}
 		super.remove();
 		World fakeWorld = getFakeWorld();
 		if (this.getFakeWorld() != null) {
@@ -626,6 +650,19 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		super.handleUpdateTag(state, tag);
 	}
 	
+	@Override
+	public BlockState getBlockState() {
+		Chunk chunk = (Chunk) getWorld().getChunk(getPos());
+		if (chunk == null) return super.getBlockState();
+		LazyOptional<SUCapability> capability = chunk.getCapability(SUCapabilityManager.SUCapability);
+		if (capability.isPresent()) {
+			SUCapability cap = capability.resolve().get();
+			if (cap.getTile(getWorld(), getPos()) == null) return super.getBlockState();
+			else return Deferred.UNIT.get().getDefaultState();
+		}
+		return Deferred.UNIT.get().getDefaultState();
+	}
+	
 	@Nullable
 	@Override
 	public SUpdateTileEntityPacket getUpdatePacket() {
@@ -679,7 +716,7 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		if (fakeWorld instanceof FakeServerWorld) {
 			((FakeServerWorld) fakeWorld).unload();
 		} else {
-			((FakeClientWorld) fakeWorld).unload();
+			ClientUtils.unloadWorld(fakeWorld);
 		}
 	}
 }

@@ -42,16 +42,18 @@ import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.BlockSnapshot;
 import net.minecraftforge.event.ForgeEventFactory;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.network.PacketDistributor;
 import tfc.collisionreversion.api.CollisionReversionAPI;
-import tfc.smallerunits.SmallerUnitsConfig;
 import tfc.smallerunits.Smallerunits;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.api.placement.UnitPos;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.helpers.ContainerMixinHelper;
 import tfc.smallerunits.helpers.PacketHacksHelper;
 import tfc.smallerunits.networking.CLittleBlockInteractionPacket;
@@ -59,6 +61,7 @@ import tfc.smallerunits.networking.SLittleBlockChangePacket;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.*;
 import tfc.smallerunits.utils.compat.RaytraceUtils;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.world.server.FakeServerWorld;
 
 import javax.annotation.Nullable;
@@ -154,30 +157,55 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	public static VoxelShape getShapeOld(BlockState state, IBlockReader reader, BlockPos pos, ISelectionContext context) {
 		VoxelShape shape;
+
+//		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
+//
+//		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity))
+//			return Deferred.UNIT.get().getShape(state, reader, pos, context);
+//
+//		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
-		
-		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity))
-			return Deferred.UNIT.get().getShape(state, reader, pos, context);
-		
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		UnitTileEntity tileEntity;
+		if (!(reader instanceof World)) {
+			{
+				TileEntity te = reader.getTileEntity(pos);
+				if (!(te instanceof UnitTileEntity)) return VoxelShapes.create(0, 0, 0, 1, 1, 1);
+				tileEntity = (UnitTileEntity) te;
+			}
+		} else {
+			tileEntity = SUCapabilityManager.getUnitAtBlock((World) reader, pos);
+			if (tileEntity == null) return VoxelShapes.create(0, 0, 0, 1, 1, 1);
+		}
 		
 		shape = UnitRaytraceHelper.raytraceBlock(tileEntity, context.getEntity(), true, pos, Optional.of(context)).shapeHit;
 		
 		if (!shape.isEmpty()) return shape;
 		
-		Vector3d start = RaytraceUtils.getStartVector(context.getEntity());
-		double reach = RaytraceUtils.getReach(context.getEntity());
-		Vector3d look = RaytraceUtils.getLookVector(context.getEntity()).scale(reach);
-		Vector3d end = RaytraceUtils.getStartVector(context.getEntity()).add(look);
+		Vector3d start;
+		Vector3d look;
+		Vector3d end;
+		Entity entity = context.getEntity();
+		if (entity != null) {
+			start = RaytraceUtils.getStartVector(entity);
+			double reach = RaytraceUtils.getReach(entity);
+			look = RaytraceUtils.getLookVector(entity).scale(reach);
+			end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+		} else {
+			return VoxelShapes.empty();
+		}
 		
 		for (Direction dir : Direction.values()) {
 			BlockPos pos1 = pos.offset(dir);
 			BlockState state1 = reader.getBlockState(pos1);
+
+//			if (reader instanceof World) {
+//				UnitTileEntity tileEntity1 = SUCapabilityManager.getUnitAtBlock((World) reader, pos1);
+//				if (tileEntity1 != null) continue;
+//			}
 			
 			if (state1.getBlock() instanceof SmallerUnitBlock) continue;
 			
-			VoxelShape raytraceShape = state1.getRaytraceShape(reader, pos, context);
+			VoxelShape raytraceShape = state1.getBlock().getShape(state1, reader, pos1, context);
 			boolean isHit = false;
 			
 			Vector3d hit = null;
@@ -294,17 +322,23 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						)
 		) {
 			UnitTileEntity tileEntity;
-			{
-				TileEntity te = worldIn.getTileEntity(pos);
-				if (!(te instanceof UnitTileEntity)) return super.getShape(state, worldIn, pos, context);
-				tileEntity = (UnitTileEntity) te;
+			if (!(worldIn instanceof World)) {
+				{
+					TileEntity te = worldIn.getTileEntity(pos);
+					if (!(te instanceof UnitTileEntity)) return super.getShape(state, worldIn, pos, context);
+					tileEntity = (UnitTileEntity) te;
+				}
+			} else {
+				tileEntity = SUCapabilityManager.getUnitAtBlock((World) worldIn, pos);
+				if (tileEntity == null) return super.getShape(state, worldIn, pos, context);
 			}
+			
 			VoxelShape shape2 = VoxelShapes.empty();
 			for (Direction dir : Direction.values()) {
 				BlockPos pos1 = pos.offset(dir);
 				BlockState state1 = worldIn.getBlockState(pos1);
 				if (state1.getBlock() instanceof SmallerUnitBlock) continue;
-				VoxelShape shape3 = state1.getShape(worldIn, pos1);
+				VoxelShape shape3 = state1.getBlock().getShape(state1, worldIn, pos1, ISelectionContext.dummy());
 				shape3 = shape3.withOffset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset());
 				{
 					float minX = 0 / (float) tileEntity.unitsPerBlock;
@@ -451,9 +485,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		BlockState state1 = tileEntity.getFakeWorld().getBlockState(hitPos);
 		
 		float amt = state1.getPlayerRelativeBlockHardness(player, tileEntity.getFakeWorld(), hitPos);
-		System.out.println(1 / amt);
+//		System.out.println(1 / amt);
 		amt *= tileEntity.unitsPerBlock;
-		System.out.println(1 / amt);
+//		System.out.println(1 / amt);
 		return amt;
 	}
 	
@@ -462,11 +496,14 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (worldIn.isRemote)
 			return false;
 		
-		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
-		if (!(tileEntityUncasted instanceof UnitTileEntity))
-			return true;
-		
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(worldIn, worldPos);
+		// TODO: decide upon true or false
+		if (tileEntity == null) return true;
+//		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
+//		if (!(tileEntityUncasted instanceof UnitTileEntity))
+//			return true;
+//
+//		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
 		if (tileEntity.getBlockMap().isEmpty()) {
 			ItemStack stack = new ItemStack(Deferred.UNITITEM.get());
@@ -475,6 +512,8 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			stack.getOrCreateTag().put("BlockEntityTag", nbt);
 			player.addItemStackToInventory(stack);
 //			tileEntity.onChunkUnloaded();
+			tileEntity.remove();
+			worldIn.removeTileEntity(worldPos);
 			worldIn.setBlockState(worldPos, Blocks.AIR.getDefaultState());
 			return true;
 		}
@@ -604,6 +643,12 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		}
 		PacketHacksHelper.unitPos = new UnitPos(worldPos.getX(), worldPos.getY(), worldPos.getZ(), worldPos, tileEntity.unitsPerBlock);
 		canRemove = !player.getHeldItem(Hand.MAIN_HAND).onBlockStartBreak(raytraceContext.posHit, player);
+
+//		PlayerInteractEvent.LeftClickBlock event = new PlayerInteractEvent.LeftClickBlock(
+//				player, raytraceContext.posHit, raytraceContext.hitFace.get()
+//		);
+//		MinecraftForge.EVENT_BUS.post(event);
+//		canRemove = canCollide && !event.isCanceled();
 		PacketHacksHelper.unitPos = null;
 		
 		if (FMLEnvironment.dist.isClient()) {
@@ -616,8 +661,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		if (player.isCreative()) {
 			return canRemove;
 		}
-		
-		return true;
+
+//		return true;
+		return canRemove;
 	}
 	
 	@Override
@@ -682,7 +728,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			ItemStack stack = super.getPickBlock(state, target, world, pos, player);
 			if (Screen.hasControlDown()) {
 				CompoundNBT tileNBT = tileEntityUncasted.write(new CompoundNBT());
-				System.out.println(tileNBT);
+//				System.out.println(tileNBT);
 				stack.getOrCreateTag().put("BlockEntityTag", tileNBT);
 				CompoundNBT compoundnbt1 = new CompoundNBT();
 				ListNBT listnbt = new ListNBT();
@@ -706,7 +752,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			ItemStack stack = super.getPickBlock(state, target, world, pos, player);
 			if (Screen.hasControlDown()) {
 				CompoundNBT tileNBT = tileEntityUncasted.write(new CompoundNBT());
-				System.out.println(tileNBT);
+//				System.out.println(tileNBT);
 				stack.getOrCreateTag().put("BlockEntityTag", tileNBT);
 				CompoundNBT compoundnbt1 = new CompoundNBT();
 				ListNBT listnbt = new ListNBT();
@@ -810,10 +856,16 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	@Override
 	public void tick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
 		super.tick(state, worldIn, pos, rand);
-		worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
-		TileEntity tileEntity = worldIn.getTileEntity(pos);
-		if (!(tileEntity instanceof UnitTileEntity)) return;
-		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
+		
+		// TODO: move off of world tick list completely
+		if (worldIn.getBlockState(pos).getBlock() instanceof SmallerUnitBlock)
+			worldIn.getPendingBlockTicks().scheduleTick(pos, this, 1, TickPriority.HIGH);
+//		TileEntity tileEntity = worldIn.getTileEntity(pos);
+//		if (!(tileEntity instanceof UnitTileEntity)) return;
+//		UnitTileEntity tileEntity1 = (UnitTileEntity) tileEntity;
+		UnitTileEntity tileEntity1 = SUCapabilityManager.getUnitAtBlock(worldIn, pos);
+		if (tileEntity1 == null) return;
+		
 		World fakeWorld = tileEntity1.getFakeWorld();
 		if (fakeWorld != null) {
 			if (tileEntity1.isNatural && tileEntity1.getBlockMap().isEmpty()) {
@@ -842,11 +894,56 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	}
 	
 	public ActionResultType doAction(BlockState state, World worldIn, BlockPos worldPos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
-		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
-		if (!(tileEntityUncasted instanceof UnitTileEntity))
-			return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
+//		TileEntity tileEntityUncasted = worldIn.getTileEntity(worldPos);
+//		if (!(tileEntityUncasted instanceof UnitTileEntity))
+//			return super.onBlockActivated(state, worldIn, worldPos, player, handIn, hit);
+
+//		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
 		
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(player.getEntityWorld(), worldPos);
+		if (tileEntity == null) return ActionResultType.FAIL;
+		
+		{
+			PlayerEntity entity = player;
+			
+			BlockState state1 = entity.getEntityWorld().getBlockState(worldPos);
+			VoxelShape shape = state1.getBlock().getShape(state1, entity.getEntityWorld(), worldPos, ISelectionContext.forEntity(entity));
+			
+			Vector3d start = RaytraceUtils.getStartVector(entity);
+			Vector3d end = start.add(RaytraceUtils.getLookVector(entity).scale(RaytraceUtils.getReach(entity)));
+			// VoxelShape$raytrace is obnoxious
+			Vector3d resultHit = null;
+			double bestDist = Double.POSITIVE_INFINITY;
+			for (AxisAlignedBB axisAlignedBB : shape.toBoundingBoxList()) {
+				Optional<Vector3d> hitOptional = axisAlignedBB.offset(worldPos).rayTrace(start, end);
+				if (hitOptional.isPresent()) {
+					Vector3d hitVec = hitOptional.get();
+					double dist = hitVec.distanceTo(start);
+					if (dist < bestDist) {
+						bestDist = hitVec.distanceTo(start);
+						resultHit = hitOptional.get();
+					}
+				}
+			}
+			Vector3d finalResultHit = resultHit;
+			if (finalResultHit != null) {
+//				result = new RayTraceResult(resultHit) {
+//					@Override
+//					public Type getType() {
+//						return finalResultHit == null ? Type.MISS : Type.BLOCK;
+//					}
+//
+//					/**
+//					 * Returns the hit position of the raycast, in absolute world coordinates
+//					 */
+//					@Override
+//					public Vector3d getHitVec() {
+//						return finalResultHit;
+//					}
+//				};
+				hit.hitInfo = finalResultHit;
+			}
+		}
 		
 		if (tileEntity.getFakeWorld() == null) return ActionResultType.FAIL;
 
@@ -900,6 +997,47 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			);
 			
 			raytraceContext.posHit = hitPos;
+		} else {
+			double dist0 = raytraceContext.vecHit.distanceTo(RaytraceUtils.getStartVector(player));
+			double dist1 = (hit.hitInfo == null ? hit.getHitVec() : (Vector3d) hit.hitInfo).distanceTo(RaytraceUtils.getStartVector(player));
+			if (dist0 <= dist1) {
+			} else if (
+					raytraceContext.vecHit.getX() != -100 &&
+							raytraceContext.vecHit.getY() != -100 &&
+							raytraceContext.vecHit.getZ() != -100
+			) {
+				{
+					double sclMul = 1d / tileEntity.unitsPerBlock;
+					double sclDiv = tileEntity.unitsPerBlock;
+					
+					Vector3d vector3d = (hit.hitInfo == null ? hit.getHitVec() : (Vector3d) hit.hitInfo).subtract(
+							hit.getPos().getX(),
+							hit.getPos().getY(),
+							hit.getPos().getZ()
+					);
+					raytraceContext.vecHit = vector3d.add(0, 64, 0);
+					vector3d = vector3d.mul(sclDiv, sclDiv, sclDiv);
+					vector3d = new Vector3d(
+							Math.floor(vector3d.x),
+							Math.floor(vector3d.y),
+							Math.floor(vector3d.z)
+					);
+//					vector3d = vector3d.mul(sclMul, sclMul, sclMul);
+					
+					if (
+							(hit).getFace() == Direction.UP ||
+									(hit).getFace() == Direction.EAST ||
+									(hit).getFace() == Direction.SOUTH
+					) {
+						vector3d = vector3d.add(
+								(hit).getFace().getXOffset() * -sclMul,
+								(hit).getFace().getYOffset() * -sclMul,
+								(hit).getFace().getZOffset() * -sclMul
+						);
+					}
+					raytraceContext.posHit = new BlockPos(vector3d).add(0, 64, 0).offset(hit.getFace());
+				}
+			}
 		}
 
 //		if (worldIn.isRemote) {
@@ -994,8 +1132,14 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 			;
 			if (raytraceContext.hitFace.orElse(hit.getFace()).equals(Direction.UP)) {
 				raytraceContext.vecHit = raytraceContext.vecHit.subtract(0, -(1d / 16) / 4, 0);
+			} else {
+				raytraceContext.posHit = raytraceContext.posHit.up();
 			}
-			raytraceContext.posHit = raytraceContext.posHit.up();
+			if (raytraceContext.hitFace.orElse(hit.getFace()).equals(Direction.SOUTH)) {
+				raytraceContext.posHit = raytraceContext.posHit.north();
+			} else if (raytraceContext.hitFace.orElse(hit.getFace()).equals(Direction.EAST)) {
+				raytraceContext.posHit = raytraceContext.posHit.west();
+			}
 			isEdge = true;
 		}
 		raytraceContext.vecHit = raytraceContext.vecHit
@@ -1303,9 +1447,16 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 						Minecraft.getInstance().world = tileEntity.worldClient.get();
 					}
 					ActionResultType type = ActionResultType.PASS;
-					type = stack.getItem().onItemUse(context);
-					if (currWorld.isRemote) {
-						Minecraft.getInstance().world = (ClientWorld) currWorld;
+					try {
+						type = stack.getItem().onItemUse(context);
+						if (currWorld.isRemote) {
+							Minecraft.getInstance().world = (ClientWorld) currWorld;
+						}
+					} catch (Throwable err) {
+						StringBuilder builder = new StringBuilder(err.getClass().getName()).append(": ").append(err.getMessage());
+						for (StackTraceElement element : err.getStackTrace())
+							builder.append("\n").append(element.toString());
+						LOGGER.error(builder.toString());
 					}
 					player.world = currWorld;
 					PacketHacksHelper.unitPos = null;
@@ -1344,13 +1495,24 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	@Override
 	public VoxelShape getRayTraceShape(BlockState state, IBlockReader reader, BlockPos pos, ISelectionContext context) {
 		VoxelShape shape;
-		
-		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
-		
-		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity))
-			return super.getShape(state, reader, pos, context);
-		
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+
+//		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
+//
+//		if (context.getEntity() == null || !(tileEntityUncasted instanceof UnitTileEntity))
+//			return super.getShape(state, reader, pos, context);
+//
+//		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		UnitTileEntity tileEntity;
+		if (!(reader instanceof World)) {
+			{
+				TileEntity te = reader.getTileEntity(pos);
+				if (!(te instanceof UnitTileEntity)) return super.getRayTraceShape(state, reader, pos, context);
+				tileEntity = (UnitTileEntity) te;
+			}
+		} else {
+			tileEntity = SUCapabilityManager.getUnitAtBlock((World) reader, pos);
+			if (tileEntity == null) return super.getRayTraceShape(state, reader, pos, context);
+		}
 		
 		if ((!(reader instanceof ServerWorld)) && (!(reader instanceof World) || !((World) reader).isRemote || SmallerUnitsConfig.CLIENT.useExperimentalSelection.get())) {
 			if (selectionShapeHashMap.size() > 20) {
@@ -1452,9 +1614,15 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 				BlockPos pos1 = pos.offset(dir);
 				BlockState state1 = reader.getBlockState(pos1);
 				if (state1.getBlock() instanceof SmallerUnitBlock) continue;
+
+//				if (reader instanceof World) {
+//					UnitTileEntity tileEntity1 = SUCapabilityManager.getUnitAtBlock((World) reader, pos1);
+//					if (tileEntity1 != null) continue;
+//				}
+
 //				VoxelShape shape1 = state1.getRayTraceShape(reader, pos1);
 //				if (shape1.isEmpty()) shape1 = state1.getShape(reader, pos1);
-				VoxelShape shape1 = state1.getShape(reader, pos1);
+				VoxelShape shape1 = state1.getBlock().getShape(state1, reader, pos1, context);
 				shape1 = shape1.withOffset(dir.getXOffset(), dir.getYOffset(), dir.getZOffset());
 				{
 					float minX = 0 / (float) tileEntity.unitsPerBlock;
@@ -1493,9 +1661,18 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	@Override
 	public VoxelShape getCollisionShape(BlockState state, IBlockReader reader, BlockPos pos, ISelectionContext context) {
-		TileEntity tileEntityUncasted = reader.getTileEntity(pos);
-		if (!(tileEntityUncasted instanceof UnitTileEntity)) return virtuallyEmptyShape;
-		UnitTileEntity tileEntity = (UnitTileEntity) tileEntityUncasted;
+		if (Smallerunits.useCollisionReversion(reader)) {
+			return VoxelShapes.empty();
+		}
+		UnitTileEntity tileEntity;
+		if (reader instanceof World) {
+			tileEntity = SUCapabilityManager.getUnitAtBlock((World) reader, pos);
+			if (tileEntity == null) return VoxelShapes.empty();
+		} else {
+			TileEntity tileEntityUncasted = reader.getTileEntity(pos);
+			if (!(tileEntityUncasted instanceof UnitTileEntity)) return virtuallyEmptyShape;
+			tileEntity = (UnitTileEntity) tileEntityUncasted;
+		}
 		
 		CompoundNBT nbt = tileEntity.serializeNBT();
 		
@@ -1672,6 +1849,9 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 	
 	@Override
 	public VoxelShape getCollisionShape(BlockState state, IBlockReader reader, BlockPos pos) {
+		if (Smallerunits.useCollisionReversion(reader)) {
+			return VoxelShapes.empty();
+		}
 		return getCollisionShape(state, reader, pos, new ISelectionContext() {
 			@Override
 			public boolean getPosY() {
@@ -1777,5 +1957,93 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 		tileEntity.getFakeWorld().getBlockState(hitPos).onBlockClicked(
 				tileEntity.getFakeWorld(), hitPos, player
 		);
+	}
+	
+	public boolean onInteract(PlayerEntity player, World world, UnitTileEntity tileEntity, BlockPos worldPos) {
+		if (true) return true;
+		if (player == null || player.getPositionVec() == null) return false;
+		
+		UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlock(tileEntity, player, true, worldPos, Optional.empty());
+		
+		raytraceContext.posHit = raytraceContext.posHit.offset(raytraceContext.hitFace.orElse(Direction.UP));
+		raytraceContext.vecHit = raytraceContext.vecHit
+				.subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ())
+				.subtract(raytraceContext.posHit.getX() / ((float) tileEntity.unitsPerBlock), (raytraceContext.posHit.getY() - 64) / ((float) tileEntity.unitsPerBlock), raytraceContext.posHit.getZ() / ((float) tileEntity.unitsPerBlock))
+		;
+		raytraceContext.vecHit = raytraceContext.vecHit.scale(tileEntity.unitsPerBlock).add(raytraceContext.posHit.getX(), raytraceContext.posHit.getY(), raytraceContext.posHit.getZ());
+		Direction face = raytraceContext.hitFace.orElse(Direction.UP);
+		raytraceContext.posHit = raytraceContext.posHit.offset(face.getOpposite());
+		
+		tileEntity.setRaytraceResult(new BlockRayTraceResult(
+				raytraceContext.vecHit,
+				face,
+				raytraceContext.posHit,
+				ticksRandomly
+		));
+		
+		RayTraceResult result;
+		if (FMLEnvironment.dist.isClient()) {
+			result = Minecraft.getInstance().objectMouseOver;
+			Minecraft.getInstance().objectMouseOver = tileEntity.getResult();
+		} else {
+			result = new BlockRayTraceResult(
+					raytraceContext.vecHit, raytraceContext.hitFace.orElseGet(() -> Direction.UP),
+					raytraceContext.posHit, false
+			);
+		}
+		Vector3d playerPos = player.getPositionVec();
+		World currentWorld = player.world;
+		player.setWorld(tileEntity.getFakeWorld());
+		
+		{
+			Vector3d miniWorldPos = player.getPositionVec().subtract(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+			player.setRawPosition(miniWorldPos.getX(), miniWorldPos.getY(), miniWorldPos.getZ());
+		}
+		boolean canRemove = true;
+		
+		if (PacketHacksHelper.unitPos != null) {
+			while (PacketHacksHelper.unitPos != null) {
+				try {
+					Thread.sleep(1);
+				} catch (Throwable ignored) {
+				}
+			}
+		}
+		PacketHacksHelper.unitPos = new UnitPos(worldPos.getX(), worldPos.getY(), worldPos.getZ(), worldPos, tileEntity.unitsPerBlock);
+//		canRemove = !player.getHeldItem(Hand.MAIN_HAND).onBlockStartBreak(raytraceContext.posHit, player);
+		
+		if (!(result instanceof BlockRayTraceResult)) {
+			result = new BlockRayTraceResult(
+					raytraceContext.vecHit, raytraceContext.hitFace.orElseGet(() -> Direction.UP),
+					raytraceContext.posHit, false
+			);
+		}
+		
+		BlockItemUseContext context = new BlockItemUseContext(
+				player, Hand.MAIN_HAND, player.getHeldItem(Hand.MAIN_HAND),
+				(BlockRayTraceResult) result
+		);
+//		if (tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit).isReplaceable(
+//		));
+		PlayerInteractEvent.RightClickBlock event = new PlayerInteractEvent.RightClickBlock(
+				player, Hand.MAIN_HAND, context.getPos(), (BlockRayTraceResult) result
+		);
+		MinecraftForge.EVENT_BUS.post(event);
+		canRemove = canRemove && !event.isCanceled();
+		PacketHacksHelper.unitPos = null;
+		
+		if (FMLEnvironment.dist.isClient()) {
+			Minecraft.getInstance().objectMouseOver = result;
+		}
+		player.setWorld(currentWorld);
+		player.setRawPosition(playerPos.getX(), playerPos.getY(), playerPos.getZ());
+		player.recenterBoundingBox();
+		
+		if (player.isCreative()) {
+			return canRemove;
+		}
+
+//		return true;
+		return canRemove;
 	}
 }

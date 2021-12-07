@@ -30,57 +30,54 @@ import tfc.smallerunits.utils.rendering.RenderTypeHelper;
 import java.util.List;
 import java.util.Random;
 
+import static tfc.smallerunits.SmallerUnitsTESR.renderCube;
+
 //TODO: convert to dynamically baked models
 public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 	public static void renderHalf(MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedOverlayIn, int combinedLightIn, int unitsPerBlock) {
-		Minecraft.getInstance().getProfiler().startSection("renderCorner1");
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCorner2");
 		matrixStackIn.push();
 		matrixStackIn.translate(0, unitsPerBlock / 4f, 0);
 		matrixStackIn.rotate(new Quaternion(90, 0, 0, true));
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCorner3");
 		matrixStackIn.pop();
 		matrixStackIn.push();
 		matrixStackIn.translate(0, 0, unitsPerBlock / 4f);
 		matrixStackIn.rotate(new Quaternion(0, 90, 0, true));
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCorner4");
 		matrixStackIn.pop();
 		matrixStackIn.push();
 		matrixStackIn.translate(0, unitsPerBlock / 4f, unitsPerBlock / 4f);
 		matrixStackIn.rotate(new Quaternion(180, 0, 0, true));
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn);
 		matrixStackIn.pop();
-		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	public static void renderCorner(MatrixStack matrixStackIn, IRenderTypeBuffer bufferIn, int combinedOverlayIn, int combinedLightIn) {
-		Minecraft.getInstance().getProfiler().startSection("renderCube1");
 		matrixStackIn.push();
-		matrixStackIn.scale(0.001f, 1, 1);
-		SmallerUnitsTESR.renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCube2");
+		matrixStackIn.rotate(new Quaternion(180, 0, -90, true));
+		matrixStackIn.scale(1, 1, 0.0001f);
+		IVertexBuilder builder = bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png")));
+		renderCube(1, 1, 0, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		matrixStackIn.pop();
+		
 		matrixStackIn.push();
-		matrixStackIn.scale(1, 0.001f, 1);
-		SmallerUnitsTESR.renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCube3");
-		matrixStackIn.pop();
-		matrixStackIn.push();
+		matrixStackIn.rotate(new Quaternion(90, 0, 0, true));
 		matrixStackIn.scale(1, 1, 0.001f);
-		SmallerUnitsTESR.renderCube(1, 1, 0, 0, 0, 0, bufferIn.getBuffer(RenderType.getEntitySolid(new ResourceLocation("textures/block/white_concrete.png"))), combinedOverlayIn, combinedLightIn, matrixStackIn, true);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCube4");
+		renderCube(1, 1, 0, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
 		matrixStackIn.pop();
-		Minecraft.getInstance().getProfiler().endSection();
+		
+		matrixStackIn.push();
+		matrixStackIn.rotate(new Quaternion(0, -90, 0, true));
+		matrixStackIn.scale(1, 1, 0.001f);
+		renderCube(1, 1, 0, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
+		matrixStackIn.pop();
 	}
 	
+	// TODO: VBOS
 	@Override
 	public void func_239207_a_(ItemStack stack, ItemCameraTransforms.TransformType p_239207_2_, MatrixStack matrixStack, IRenderTypeBuffer buffer, int combinedLight, int combinedOverlay) {
 		super.func_239207_a_(stack, p_239207_2_, matrixStack, buffer, combinedLight, combinedOverlay);
-		
-		Minecraft.getInstance().getProfiler().startSection("smallerUnitsISTER");
 		
 		CompoundNBT nbt;
 		//Carry on compat
@@ -101,10 +98,8 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 		
 		int unitsPerBlock = nbt.getInt("upb");
 		
-		Minecraft.getInstance().getProfiler().startSection("constructPallet");
 		UnitPallet pallet = new UnitPallet(nbt.getCompound("containedUnits"), null, BlockPos.ZERO, unitsPerBlock);
 		
-		Minecraft.getInstance().getProfiler().endStartSection("doRender");
 		matrixStack.push();
 		matrixStack.scale(1f / unitsPerBlock, 1f / unitsPerBlock, 1f / unitsPerBlock);
 		IVertexBuilder builder1 = buffer.getBuffer(RenderTypeHelper.getType(RenderType.getTranslucent()));
@@ -320,7 +315,6 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 //
 //			matrixStack.pop();
 //		}
-		Minecraft.getInstance().getProfiler().endStartSection("drawEmpty");
 		if (pallet.posUnitMap.isEmpty()) {
 			matrixStack.push();
 			matrixStack.scale(4, 4, 4);
@@ -344,9 +338,6 @@ public class SmallerUnitISTER extends ItemStackTileEntityRenderer {
 			Minecraft.getInstance().fontRenderer.renderString("1/" + unitsPerBlock, 0, 0, 16777215, true, matrixStack.getLast().getMatrix(), buffer, false, 0, combinedLight);
 			matrixStack.pop();
 		}
-		
-		Minecraft.getInstance().getProfiler().endSection();
-		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	private void vert(float x, float y, float z, int light, int overlay, float u, float v, float nx, float ny, float nz, IVertexBuilder builder1, MatrixStack matrixStack, int color) {

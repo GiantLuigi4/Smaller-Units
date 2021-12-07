@@ -23,6 +23,7 @@ import tfc.smallerunits.utils.world.common.FakeDimensionSavedData;
 import tfc.smallerunits.utils.world.common.FakeTicketManager;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
@@ -48,11 +49,21 @@ public class FakeServerChunkProvider extends ServerChunkProvider {
 		super(p_i232603_1_, p_i232603_2_, p_i232603_3_, p_i232603_4_, p_i232603_5_, p_i232603_6_, p_i232603_7_, p_i232603_8_, p_i232603_9_, p_i232603_10_);
 	}
 	
+	// I don't need this
+	@Override
+	public void save(boolean flush) {
+	}
+	
+	@Override
+	public void tickChunks() {
+		// TODO: figure out if there's a reason to call this
+//		super.tickChunks();
+	}
+	
 	public static ServerChunkProvider getProvider(FakeServerWorld world) {
 		try {
 			FakeServerChunkProvider provider = (FakeServerChunkProvider) theUnsafe.allocateInstance(FakeServerChunkProvider.class);
 			
-			provider.theChunk = world.getChunk(0, 0);
 			provider.world = world;
 			provider.ticketManager = (FakeTicketManager) theUnsafe.allocateInstance(FakeTicketManager.class);
 			((FakeTicketManager) provider.ticketManager).provider = provider;
@@ -60,7 +71,6 @@ public class FakeServerChunkProvider extends ServerChunkProvider {
 			provider.chunkManager = (FakeChunkManager) theUnsafe.allocateInstance(FakeChunkManager.class);
 			((FakeChunkManager) provider.chunkManager).provider = provider;
 			((FakeChunkManager) provider.chunkManager).world = world;
-			((FakeChunkManager) provider.chunkManager).init();
 			provider.savedData = new FakeDimensionSavedData(null, null, () -> world.owner.dataNBT);
 			
 			return provider;
@@ -79,6 +89,10 @@ public class FakeServerChunkProvider extends ServerChunkProvider {
 	@Override
 	public void tick(BooleanSupplier hasTimeLeft) {
 		this.world.getProfiler().endStartSection("chunks");
+		if (theChunk == null) {
+			theChunk = world.getChunk(0, 0);
+			((FakeChunkManager) chunkManager).init();
+		}
 		this.tickChunks();
 		this.world.getProfiler().endStartSection("unload");
 	}
@@ -93,6 +107,13 @@ public class FakeServerChunkProvider extends ServerChunkProvider {
 	@Override
 	public Chunk getChunkNow(int chunkX, int chunkZ) {
 		return theChunk;
+	}
+	
+	@Override
+	public void close() throws IOException {
+//		this.chunkManager.close();
+		world = null;
+		theChunk = null;
 	}
 	
 	@Override

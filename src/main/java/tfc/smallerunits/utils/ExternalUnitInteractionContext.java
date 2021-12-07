@@ -25,6 +25,7 @@ public class ExternalUnitInteractionContext {
 		this.stateInRealWorld = stateInRealWorld;
 	}
 	
+	// TODO: rewrite this nonsense
 	public ExternalUnitInteractionContext(FakeServerWorld world, BlockPos pos) {
 		int y = pos.getY() - 64;
 		if (
@@ -116,6 +117,7 @@ public class ExternalUnitInteractionContext {
 				this.posInFakeWorld = pos;
 				posInRealWorld = westPos;
 				stateInRealWorld = Blocks.BEDROCK.getDefaultState();
+				// TODO: figure out how to check for touching collision boxes... somehow
 				teInRealWorld = world.owner.getWorld().getTileEntity(westPos);
 				return;
 			}

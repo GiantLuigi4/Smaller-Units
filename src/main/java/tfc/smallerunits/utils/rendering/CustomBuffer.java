@@ -16,7 +16,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector4f;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import tfc.smallerunits.SmallerUnitsConfig;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 
 import java.util.*;
 import java.util.stream.Collectors;

@@ -6,6 +6,8 @@ import java.util.HashMap;
 
 public class PacketHacksHelper {
 	// TODO: convert to array list
+//	public static ThreadLocal<BlockPos> unitPos = new ThreadLocal<>();
+	// TODO: try ThreadLocal
 	public static BlockPos unitPos = null;
 	
 	private static final HashMap<Object, BlockPos> map = new HashMap<>();

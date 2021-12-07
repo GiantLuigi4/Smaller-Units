@@ -1,4 +1,4 @@
-package tfc.smallerunits.utils;
+package tfc.smallerunits.utils.scale;
 
 import net.gigabit101.shrink.api.ShrinkAPI;
 import net.minecraft.entity.Entity;
@@ -8,8 +8,8 @@ import net.minecraftforge.fml.ModList;
 import net.teamfruit.gulliver.GulliverSize;
 import net.teamfruit.gulliver.attributes.Attributes;
 import net.threetag.threecore.capability.CapabilitySizeChanging;
-import tfc.smallerunits.Smallerunits;
-import tfc.smallerunits.utils.threecore.SUResizeType;
+import tfc.smallerunits.utils.scale.pehkui.PehkuiSupport;
+import tfc.smallerunits.utils.scale.threecore.SUResizeType;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,7 +39,7 @@ public class ResizingUtils {
 			if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 				GulliverSize.changeSize((LivingEntity) entity, 1);
 			}
-			Smallerunits.SUScaleType.get().getScaleData(entity).setTargetScale(newSize);
+			PehkuiSupport.SUScaleType.get().getScaleData(entity).setTargetScale(newSize);
 		} else if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 			if (ModList.get().isLoaded("threecore")) {
 				entity.getCapability(CapabilitySizeChanging.SIZE_CHANGING).ifPresent((cap) -> {
@@ -72,7 +72,7 @@ public class ResizingUtils {
 	public static float getSize(Entity entity) {
 		AtomicReference<Float> size = new AtomicReference<>(1f);
 		if (ModList.get().isLoaded("pehkui"))
-			size.set(size.get() * Smallerunits.SUScaleType.get().getScaleData(entity).getTargetScale());
+			size.set(size.get() * PehkuiSupport.SUScaleType.get().getScaleData(entity).getTargetScale());
 		if (ModList.get().isLoaded("gulliver") && entity instanceof LivingEntity) {
 			if (((LivingEntity) entity).getAttribute(Attributes.ENTITY_HEIGHT.get()) != null) {
 				AttributeModifier modifier = ((LivingEntity) entity).getAttribute(Attributes.ENTITY_HEIGHT.get()).getModifier(uuidHeight);
@@ -110,7 +110,7 @@ public class ResizingUtils {
 	public static void resizeForUnit(Entity entity, float amt) {
 		//TODO: chiseled me integration
 		if (ModList.get().isLoaded("pehkui")) {
-			Smallerunits.SUScaleType.get().getScaleData(entity).setScale(amt);
+			PehkuiSupport.SUScaleType.get().getScaleData(entity).setScale(amt);
 		} else if (ModList.get().isLoaded("gullivern")) {
 			GulliverSize.changeSize((LivingEntity) entity, amt);
 		} else if (ModList.get().isLoaded("threecore")) {
