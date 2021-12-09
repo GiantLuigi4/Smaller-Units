@@ -9,6 +9,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.World;
+import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
@@ -36,19 +37,23 @@ public class TileResizingItem extends Item {
 	
 	@Override
 	public boolean hitEntity(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-		if (ResizingUtils.isResizingModPresent()) {
-			if (target instanceof PlayerEntity && attacker instanceof ServerPlayerEntity) {
-				((ServerPlayerEntity) attacker).getAdvancements().grantCriterion(((ServerPlayerEntity) attacker).getServerWorld().getServer().getAdvancementManager().getAdvancement(new ResourceLocation("smallerunits:rude")), "strike_player");
+		if (SmallerUnitsConfig.COMMON.allowResizeOther.get()) {
+			if (ResizingUtils.isResizingModPresent()) {
+				if (target instanceof PlayerEntity && attacker instanceof ServerPlayerEntity) {
+					((ServerPlayerEntity) attacker).getAdvancements().grantCriterion(((ServerPlayerEntity) attacker).getServerWorld().getServer().getAdvancementManager().getAdvancement(new ResourceLocation("smallerunits:rude")), "strike_player");
+				}
 			}
+			ResizingUtils.resize(target, getScale());
 		}
-		ResizingUtils.resize(target, getScale());
 		return true;
 	}
 	
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
-		if (playerIn.isSneaking()) {
-			ResizingUtils.resize(playerIn, getScale());
+		if (SmallerUnitsConfig.COMMON.allowResizeSelf.get()) {
+			if (playerIn.isSneaking()) {
+				ResizingUtils.resize(playerIn, getScale());
+			}
 		}
 		return super.onItemRightClick(worldIn, playerIn, handIn);
 	}

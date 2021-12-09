@@ -44,20 +44,15 @@ public class SmallerUnitsConfig {
 		
 		minUPB = builder
 				.comment("Minimum Units Per Block")
-				.comment("Default: 2")
-				.comment("Minimum: 1")
-				.comment("Maximum: 16")
 				.translation("config.smaller_units.min_upb")
 				.defineInRange("MinUPB", 2, 1, 16);
 		
 		maxUPB = builder
-				.comment("Maximum Units Per Block")
-				.comment("The more units in one block, the laggier it is on client")
-				.comment("Serverside, it's relatively unimpactful")
-				.comment("")
-				.comment("Default: 16")
-				.comment("Minimum: 2")
-				.comment("Maximum: 256")
+				.comment(
+						"Maximum Units Per Block\n" +
+								"The more units in one block, the laggier it is on client\n" +
+								"Serverside, it's relatively unimpactful"
+				)
 				.translation("config.smaller_units.max_upb")
 				.defineInRange("MaxUPB", 16, 2, 256);
 		
@@ -67,15 +62,12 @@ public class SmallerUnitsConfig {
 		
 		lightingUpdatesPerTick = builder
 				.comment("How many lighting updates should occur on each small unit block per tick, lower values might cause plants to grow in dark spots but cause less lag, higher values cause more lag but work better")
-				.comment("Default: 10")
-				.comment("Minimum: 1")
-				.comment("Maximum: 200")
 				.translation("config.smaller_units.lighting_updates_per_tick")
 				.defineInRange("LightingUpdatesPerTick", 10, 1, 200);
 		
-		builder.comment("Potentially Broken Stuff, mostly invasive stuff").push("Compatibility Hacks");
-		
 		builder.pop();
+		
+		builder.comment("Potentially Broken Stuff, mostly invasive stuff").push("Compatibility Hacks");
 		
 		usePacketHandlerHacks = builder
 				.comment("Whether or not Smaller Units should use a hacky method of tying packets sent by small blocks to the tile entity of the small world which holds the block\nMay be very broken with some mods")
@@ -90,6 +82,7 @@ public class SmallerUnitsConfig {
 		public final ForgeConfigSpec.BooleanValue useExperimentalRendererPt2;
 		public final ForgeConfigSpec.BooleanValue useVBOS;
 		public final ForgeConfigSpec.BooleanValue useExperimentalSelection;
+		public final ForgeConfigSpec.BooleanValue forcedIndicators;
 		public final ForgeConfigSpec.IntValue lightingUpdatesPerFrame;
 		
 		public ClientConfig(ForgeConfigSpec.Builder builder) {
@@ -104,7 +97,7 @@ public class SmallerUnitsConfig {
 					.translation("config.smaller_units.experimental_renderer_pt2")
 					.define("ExperimentalRendererPt2", false);
 			useVBOS = builder
-					.comment("Buggy, higher GPU usage, better performance (will destroy your game if there are too many unit tile entities or you reload textures too much)")
+					.comment("Higher GPU usage, but far better performance\nMore accurate to vanilla as well")
 					.translation("config.smaller_units.use_vbos")
 					.define("UseVOBS", true);
 			useExperimentalSelection = builder
@@ -118,6 +111,10 @@ public class SmallerUnitsConfig {
 					.comment("Maximum: 200")
 					.translation("config.smaller_units.lighting_updates_per_frame")
 					.defineInRange("LightingUpdatesPerFrame", 10, 1, 200);
+			forcedIndicators = builder
+					.comment("When holding a hammer, should SU show forced incdicators on non-empty units")
+					.translation("config.smaller_units.forced_indicators")
+					.define("ForcedIndicators", true);
 			
 			builder.pop();
 		}

@@ -204,6 +204,114 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 ////		tileEntityIn.worldServer.animateTick();
 //
 		
+		
+		matrixStackIn.push();
+		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+		for (SmallUnit value : tileEntityIn.getBlockMap().values()) {
+			if (value.tileEntity != null) {
+				tileEntityIn.getFakeWorld().isRemote = true;
+				matrixStackIn.push();
+				matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
+				TileEntity tileEntity = value.tileEntity;
+				TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(tileEntity);
+				int matrixSize = matrixStackIn.stack.size();
+				boolean isExceptionPresent = false;
+				String exceptionAt = "";
+				if (renderer != null) {
+					try {
+						renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn.getWrapped(),
+								LightTexture.packLight(
+										Math.max(LightTexture.getLightBlock(combinedLightIn), tileEntityIn.getFakeWorld().getLightFor(LightType.BLOCK, value.pos)),
+										Math.max(LightTexture.getLightSky(combinedLightIn), tileEntityIn.getFakeWorld().getLightFor(LightType.SKY, value.pos))
+								), combinedOverlayIn);
+					} catch (Throwable ignored) {
+						isExceptionPresent = true;
+						for (StackTraceElement element : ignored.getStackTrace()) {
+							if (element.getClassName().equals(renderer.getClass().getName())) {
+								exceptionAt = element.getClassName() + "." + element.getMethodName() + "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
+							}
+						}
+					}
+				}
+				if (matrixSize != matrixStackIn.stack.size()) {
+					LOGGER.log(Level.WARN, ("What's going on? Tile Entity renderer for " + tileEntity.getType().getRegistryName() + " missed " + (matrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
+				}
+				while (matrixStackIn.stack.size() != matrixSize) {
+					matrixStackIn.pop();
+				}
+				matrixStackIn.pop();
+			}
+		}
+		matrixStackIn.pop();
+
+
+//		matrixStackIn.push();
+//		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+		
+		for (Entity entity : tileEntityIn.getEntitiesById().values()) {
+			MatrixStack finalMatrixStackIn = new MatrixStack();
+			finalMatrixStackIn.stack.add(oldStack.getLast());
+			
+			finalMatrixStackIn.push();
+			finalMatrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+			finalMatrixStackIn.translate(
+					(MathHelper.lerp(partialTicks, entity.lastTickPosX, entity.getPositionVec().getX())),
+					(MathHelper.lerp(partialTicks, entity.lastTickPosY, entity.getPositionVec().getY())) - 64,
+					(MathHelper.lerp(partialTicks, entity.lastTickPosZ, entity.getPositionVec().getZ()))
+			);
+			EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) Minecraft.getInstance().getRenderManager().getRenderer(entity);
+			int matrixSize = finalMatrixStackIn.stack.size();
+			boolean isExceptionPresent = false;
+			String exceptionAt = "";
+			try {
+				if (Minecraft.getInstance().getRenderManager().isDebugBoundingBox()) {
+					IVertexBuilder builder = bufferIn.getBuffer(RenderType.getLines());
+					AxisAlignedBB bb = entity.getBoundingBox();
+					finalMatrixStackIn.push();
+					finalMatrixStackIn.translate(-entity.getPosX(), -entity.getPosY(), -entity.getPosZ());
+					WorldRenderer.drawBoundingBox(finalMatrixStackIn, builder, bb, 1, 1, 1, 1.0F);
+					if (entity instanceof LivingEntity) {
+						bb = new AxisAlignedBB(
+								entity.getEyePosition(partialTicks).x - (entity.getSize(entity.getPose()).width / 2),
+								entity.getEyePosition(partialTicks).y,
+								entity.getEyePosition(partialTicks).z - (entity.getSize(entity.getPose()).width / 2),
+								entity.getEyePosition(partialTicks).x + (entity.getSize(entity.getPose()).width / 2),
+								entity.getEyePosition(partialTicks).y + 0.1f,
+								entity.getEyePosition(partialTicks).z + (entity.getSize(entity.getPose()).width / 2)
+						);
+						WorldRenderer.drawBoundingBox(finalMatrixStackIn, builder, bb, 1, 0, 0, 1.0F);
+					}
+					Vector3d vector3d = entity.getLook(partialTicks);
+					finalMatrixStackIn.pop();
+					Matrix4f matrix4f = finalMatrixStackIn.getLast().getMatrix();
+					builder.pos(matrix4f, 0.0F, entity.getEyeHeight(), 0.0F).color(0, 0, 255, 255).endVertex();
+					builder.pos(matrix4f, (float) (vector3d.x * 2.0D), (float) ((double) entity.getEyeHeight() + vector3d.y * 2.0D), (float) (vector3d.z * 2.0D)).color(0, 0, 255, 255).endVertex();
+				}
+				Vector3d offset = renderer.getRenderOffset(entity, partialTicks);
+				finalMatrixStackIn.translate(offset.getX(), offset.getY(), offset.getZ());
+				int light = LightTexture.packLight(
+						Math.max(LightTexture.getLightBlock(combinedLightIn), entity.getEntityWorld().getLightFor(LightType.BLOCK, entity.getPosition())),
+						Math.max(LightTexture.getLightSky(combinedLightIn), entity.getEntityWorld().getLightFor(LightType.SKY, entity.getPosition()))
+				);
+				renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, bufferIn.getWrapped(), light);
+			} catch (Throwable err) {
+				isExceptionPresent = true;
+				for (StackTraceElement element : err.getStackTrace()) {
+					if (element.getClassName().equals(renderer.getClass().getName())) {
+						exceptionAt = element.getClassName() + "." + element.getMethodName() + "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
+					}
+				}
+			}
+			if (matrixSize != finalMatrixStackIn.stack.size()) {
+				LOGGER.log(Level.WARN, ("What's going on? Entity renderer for " + entity.getType().getRegistryName() + " missed " + (finalMatrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
+			}
+			while (finalMatrixStackIn.stack.size() != matrixSize) {
+				finalMatrixStackIn.pop();
+			}
+			finalMatrixStackIn.pop();
+		}
+		
+		
 		boolean isFlywheelSupported = ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && Backend.isFlywheelWorld(tileEntityIn.getWorld());
 		
 		if (isFlywheelSupported) closeRenderables((renderable) -> renderable instanceof SUFLWVBO);
@@ -475,45 +583,6 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		
 		matrixStackIn = oldStack;
 		
-		matrixStackIn.push();
-		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-		for (SmallUnit value : tileEntityIn.getBlockMap().values()) {
-			if (value.tileEntity != null) {
-				tileEntityIn.getFakeWorld().isRemote = true;
-				matrixStackIn.push();
-				matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
-				TileEntity tileEntity = value.tileEntity;
-				TileEntityRenderer<TileEntity> renderer = TileEntityRendererDispatcher.instance.getRenderer(tileEntity);
-				int matrixSize = matrixStackIn.stack.size();
-				boolean isExceptionPresent = false;
-				String exceptionAt = "";
-				if (renderer != null) {
-					try {
-						renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn.getWrapped(),
-								LightTexture.packLight(
-										Math.max(LightTexture.getLightBlock(combinedLightIn), tileEntityIn.getFakeWorld().getLightFor(LightType.BLOCK, value.pos)),
-										Math.max(LightTexture.getLightSky(combinedLightIn), tileEntityIn.getFakeWorld().getLightFor(LightType.SKY, value.pos))
-								), combinedOverlayIn);
-					} catch (Throwable ignored) {
-						isExceptionPresent = true;
-						for (StackTraceElement element : ignored.getStackTrace()) {
-							if (element.getClassName().equals(renderer.getClass().getName())) {
-								exceptionAt = element.getClassName() + "." + element.getMethodName() + "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
-							}
-						}
-					}
-				}
-				if (matrixSize != matrixStackIn.stack.size()) {
-					LOGGER.log(Level.WARN, ("What's going on? Tile Entity renderer for " + tileEntity.getType().getRegistryName() + " missed " + (matrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
-				}
-				while (matrixStackIn.stack.size() != matrixSize) {
-					matrixStackIn.pop();
-				}
-				matrixStackIn.pop();
-			}
-		}
-		matrixStackIn.pop();
-		
 		boolean isEmpty = tileEntityIn.getBlockMap().isEmpty();
 		if (!isEmpty) {
 			isEmpty = true;
@@ -541,72 +610,6 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			matrixStackIn.pop();
 			RenderSystem.enableTexture();
 			matrixStackIn.pop();
-		}
-
-//		matrixStackIn.push();
-//		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-		
-		for (Entity entity : tileEntityIn.getEntitiesById().values()) {
-			MatrixStack finalMatrixStackIn = new MatrixStack();
-			finalMatrixStackIn.stack.add(oldStack.getLast());
-			
-			finalMatrixStackIn.push();
-			finalMatrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-			finalMatrixStackIn.translate(
-					(MathHelper.lerp(partialTicks, entity.lastTickPosX, entity.getPositionVec().getX())),
-					(MathHelper.lerp(partialTicks, entity.lastTickPosY, entity.getPositionVec().getY())) - 64,
-					(MathHelper.lerp(partialTicks, entity.lastTickPosZ, entity.getPositionVec().getZ()))
-			);
-			EntityRenderer<Entity> renderer = (EntityRenderer<Entity>) Minecraft.getInstance().getRenderManager().getRenderer(entity);
-			int matrixSize = finalMatrixStackIn.stack.size();
-			boolean isExceptionPresent = false;
-			String exceptionAt = "";
-			try {
-				if (Minecraft.getInstance().getRenderManager().isDebugBoundingBox()) {
-					IVertexBuilder builder = bufferIn.getBuffer(RenderType.getLines());
-					AxisAlignedBB bb = entity.getBoundingBox();
-					finalMatrixStackIn.push();
-					finalMatrixStackIn.translate(-entity.getPosX(), -entity.getPosY(), -entity.getPosZ());
-					WorldRenderer.drawBoundingBox(finalMatrixStackIn, builder, bb, 1, 1, 1, 1.0F);
-					if (entity instanceof LivingEntity) {
-						bb = new AxisAlignedBB(
-								entity.getEyePosition(partialTicks).x - (entity.getSize(entity.getPose()).width / 2),
-								entity.getEyePosition(partialTicks).y,
-								entity.getEyePosition(partialTicks).z - (entity.getSize(entity.getPose()).width / 2),
-								entity.getEyePosition(partialTicks).x + (entity.getSize(entity.getPose()).width / 2),
-								entity.getEyePosition(partialTicks).y + 0.1f,
-								entity.getEyePosition(partialTicks).z + (entity.getSize(entity.getPose()).width / 2)
-						);
-						WorldRenderer.drawBoundingBox(finalMatrixStackIn, builder, bb, 1, 0, 0, 1.0F);
-					}
-					Vector3d vector3d = entity.getLook(partialTicks);
-					finalMatrixStackIn.pop();
-					Matrix4f matrix4f = finalMatrixStackIn.getLast().getMatrix();
-					builder.pos(matrix4f, 0.0F, entity.getEyeHeight(), 0.0F).color(0, 0, 255, 255).endVertex();
-					builder.pos(matrix4f, (float) (vector3d.x * 2.0D), (float) ((double) entity.getEyeHeight() + vector3d.y * 2.0D), (float) (vector3d.z * 2.0D)).color(0, 0, 255, 255).endVertex();
-				}
-				Vector3d offset = renderer.getRenderOffset(entity, partialTicks);
-				finalMatrixStackIn.translate(offset.getX(), offset.getY(), offset.getZ());
-				int light = LightTexture.packLight(
-						Math.max(LightTexture.getLightBlock(combinedLightIn), entity.getEntityWorld().getLightFor(LightType.BLOCK, entity.getPosition())),
-						Math.max(LightTexture.getLightSky(combinedLightIn), entity.getEntityWorld().getLightFor(LightType.SKY, entity.getPosition()))
-				);
-				renderer.render(entity, entity.getYaw(partialTicks), partialTicks, finalMatrixStackIn, bufferIn.getWrapped(), light);
-			} catch (Throwable err) {
-				isExceptionPresent = true;
-				for (StackTraceElement element : err.getStackTrace()) {
-					if (element.getClassName().equals(renderer.getClass().getName())) {
-						exceptionAt = element.getClassName() + "." + element.getMethodName() + "(" + element.getFileName() + ":" + element.getLineNumber() + ")";
-					}
-				}
-			}
-			if (matrixSize != finalMatrixStackIn.stack.size()) {
-				LOGGER.log(Level.WARN, ("What's going on? Entity renderer for " + entity.getType().getRegistryName() + " missed " + (finalMatrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
-			}
-			while (finalMatrixStackIn.stack.size() != matrixSize) {
-				finalMatrixStackIn.pop();
-			}
-			finalMatrixStackIn.pop();
 		}
 		
 		SmallerUnitsAPI.postRenderUnitLast(bufferIn.buffer, tileEntityIn);
@@ -811,7 +814,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	}
 	
 	public static void renderHalf(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn, boolean isForced, boolean isNat) {
-		if ((tileEntityIn.isNatural && !isForced)) return;
+		if ((tileEntityIn.isNatural && (!SmallerUnitsConfig.CLIENT.forcedIndicators.get() || !isForced))) return;
 		Minecraft.getInstance().getProfiler().startSection("renderCorner1");
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
 		Minecraft.getInstance().getProfiler().endStartSection("renderCorner2");

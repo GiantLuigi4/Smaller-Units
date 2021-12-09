@@ -313,8 +313,9 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 
 //			if (value.getDataManager().isDirty()) {
 //				value.getDataManager().setClean();
-			//TODO: change this to send packets to update only the specific entity being updated
-			if (getFakeWorld().getGameTime() % value.getType().getUpdateFrequency() == 0) {
+			// TODO: change this to send packets to update only the specific entity being updated
+			// TODO: figure this the heck out
+			if ((getFakeWorld().getGameTime()) % Math.max(1, (value.getType().getUpdateFrequency() / 20)) == 0) {
 				updatePackets.add(Pair.of(value.getUniqueID(), value.serializeNBT()));
 			}
 //			if (world.isRemote) {

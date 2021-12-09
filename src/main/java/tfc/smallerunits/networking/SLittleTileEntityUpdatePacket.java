@@ -62,7 +62,7 @@ public class SLittleTileEntityUpdatePacket implements IPacket {
 //			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingPos);
 //			if (!(te instanceof UnitTileEntity)) return;
 //			UnitTileEntity tileEntity = (UnitTileEntity) te;
-			UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(ClientUtils.getWorld(), blockPos);
+			UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(ClientUtils.getWorld(), updatingPos);
 			if (tileEntity == null) return;
 			
 			TileEntity te1 = tileEntity.getFakeWorld().getTileEntity(blockPos);

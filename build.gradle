@@ -168,6 +168,9 @@ dependencies {
     compile fg.deobf('curse.maven:the_one_probe-245211:3319255')
     compileOnly fg.deobf("curse.maven:better_fps_graph-399699:3094889")
 
+//    runtimeOnly fg.deobf("curse.maven:supplementaries-412082:3544548")
+//    runtimeOnly fg.deobf("curse.maven:selene-499980:3517008")
+
 //    compileOnly 'com.github.GiantLuigi4:CollisionReversion:c42cc51c7f'
 //    compileOnly 'com.github.GiantLuigi4:CollisionReversion:c7b1d4f020'
     // currently forge gradle does not work with jitpack

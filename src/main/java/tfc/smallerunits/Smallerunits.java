@@ -149,7 +149,7 @@ public class Smallerunits {
 			isVivecraftPresent = false; // TODO: when vivecraft gets an API, use that to test for vivecraft
 		}
 		
-		PehkuiSupport.setup();
+		if (ModList.get().isLoaded("pehkui")) PehkuiSupport.setup();
 
 //		WorldTypeRegistry.init();
 		

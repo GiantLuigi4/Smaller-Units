@@ -21,8 +21,8 @@ public class ModelStorage implements Comparable<ModelStorage>, Comparator<ModelS
 		if (RenderTypeHelper.getType(renderType) == RenderTypeHelper.getType(RenderType.getCutoutMipped())) return 1;
 		if (RenderTypeHelper.getType(renderType) == RenderTypeHelper.getType(RenderType.getCutout())) return 1;
 		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getTranslucent())) return -1;
-		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getCutoutMipped())) return -1;
-		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getCutout())) return -1;
+		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getCutoutMipped())) return 1;
+		if (RenderTypeHelper.getType(otherType) == RenderTypeHelper.getType(RenderType.getCutout())) return 1;
 //		if (renderType == RenderTypeHelper.getType(RenderType.getCutout())) {
 //			if (otherType == RenderType.getTranslucent()) return 1;
 //			if (otherType != RenderType.getSolid()) return 1;

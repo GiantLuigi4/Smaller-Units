@@ -7,6 +7,8 @@ public class CommonConfig {
 	public final ForgeConfigSpec.BooleanValue slightlyAsyncCollision;
 	public final ForgeConfigSpec.IntValue asyncThreshold;
 	public final ForgeConfigSpec.IntValue maxThreads;
+	public final ForgeConfigSpec.BooleanValue allowResizeOther;
+	public final ForgeConfigSpec.BooleanValue allowResizeSelf;
 	
 	public CommonConfig(ForgeConfigSpec.Builder builder) {
 		builder.comment("Eventually this'll be moved to client and server separately instead of being common\nThese options mean nothing if collision reversion is not present").push("Collision Settings");
@@ -25,6 +27,20 @@ public class CommonConfig {
 				.comment("The max number of threads to use for shape retrieval\nThere is no way to accurately measure the \"ideal\" value for this setting other than to use trial and error and see what performs best")
 				.translation("config.smaller_units.thread_limit")
 				.defineInRange("ThreadLimit", 4, 1, 16);
+		
+		builder.pop();
+		
+		builder.comment("Entity Resizing Mod Integration Features").push("ResizingFeatures");
+		
+		allowResizeOther = builder
+				.comment("If Smaller Units should allow you to resize other entities using the hammers")
+				.translation("config.smaller_units.resize_other")
+				.define("AllowResizeOther", true);
+		
+		allowResizeSelf = builder
+				.comment("If Smaller Units should allow you to resize yourself using the hammers")
+				.translation("config.smaller_units.resize_self")
+				.define("AllowResizeSelf", true);
 		
 		builder.pop();
 	}
