@@ -6,6 +6,7 @@ import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
+import tfc.collisionreversion.api.ContextAABB;
 import tfc.collisionreversion.api.ILegacyContext;
 import tfc.collisionreversion.api.lookup.CollisionLookup;
 import tfc.collisionreversion.api.lookup.SelectionLookup;
@@ -14,11 +15,13 @@ import tfc.collisionreversion.utils.CommonUtils;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.utils.SmallUnit;
+import tfc.smallerunits.utils.UnitRaytraceContext;
 import tfc.smallerunits.utils.UnitRaytraceHelper;
 import tfc.smallerunits.utils.async.AsyncDispatcher;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.List;
+import java.util.Optional;
 
 public class CollisionReversionShapeGetter {
 	private static final ThreadLocal<AsyncDispatcher> dispatcher = ThreadLocal.withInitial(() -> new AsyncDispatcher("Collision Filler Group").resize(4));
@@ -76,7 +79,14 @@ public class CollisionReversionShapeGetter {
 			for (AxisAlignedBB axisAlignedBB : UnitRaytraceHelper.shrink(shape, upb)) {
 				axisAlignedBB = axisAlignedBB.offset(pos).offset(value.pos.getX() / (double) upb, (value.pos.getY() - 64) / (double) upb, value.pos.getZ() / (double) upb);
 				if (axisAlignedBB.intersects(box)) {
-					boxes.add(axisAlignedBB);
+					ContextAABB ctxAABB = new ContextAABB(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ);
+					Optional<Vector3d> vec = axisAlignedBB.rayTrace(context.getStart(), context.getEnd());
+					vec.ifPresent(vector3d -> ctxAABB.setContext(
+							new UnitRaytraceContext(
+									shape, value.pos, vector3d
+							)
+					));
+					boxes.add(ctxAABB);
 				}
 			}
 		}

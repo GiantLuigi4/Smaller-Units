@@ -245,13 +245,15 @@ public class FakeServerWorld extends ServerWorld {
 		return chunk;
 	}
 	
+	ArrayList<TileEntity> removedTiles;
+	
 	@Override
 	public void removeTileEntity(BlockPos pos) {
 		SmallUnit unit = blockMap.getOrDefault(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, owner), Blocks.AIR.getDefaultState()));
 		loadedTileEntityList.remove(unit.tileEntity);
 		tileEntityChanges.add(unit);
 		if (unit.tileEntity != null)
-			unit.tileEntity.remove();
+			removedTiles.add(unit.tileEntity);
 		unit.tileEntity = null;
 	}
 	
@@ -498,6 +500,7 @@ public class FakeServerWorld extends ServerWorld {
 		}
 		
 		if (!hasInit) {
+			removedTiles = new ArrayList<>();
 			tileEntityChanges = new ArrayList<>();
 			this.owner = owner;
 			hasInit = true;
@@ -844,6 +847,11 @@ public class FakeServerWorld extends ServerWorld {
 					)), updatePacket
 			);
 		}
+		
+		for (TileEntity removedTile : removedTiles) {
+			removedTile.remove();
+		}
+		removedTiles.clear();
 		
 		entitiesToRemove.clear();
 

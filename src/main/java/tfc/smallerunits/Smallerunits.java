@@ -4,6 +4,7 @@ package tfc.smallerunits;
 
 import net.minecraft.client.ClientBrandRetriever;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.PlayerController;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
@@ -36,6 +37,7 @@ import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.scale.pehkui.PehkuiSupport;
 import tfc.smallerunits.utils.scale.threecore.SUResizeType;
 import tfc.smallerunits.utils.shapes.CollisionReversionShapeGetter;
+import tfc.smallerunits.utils.tracking.PlayerDataManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -54,6 +56,8 @@ public class Smallerunits {
 	// Directly reference a log4j logger.
 	public static final Logger LOGGER = LogManager.getLogger();
 	
+	public static final String networkingVersion = "2.2";
+	
 	// TODO: semantic version acceptance system thing
 	// if other side is on newer sub version but same major, allow connection
 	// if other side is on newer major, deny
@@ -64,11 +68,62 @@ public class Smallerunits {
 	// 2.* can't connect to 3.*
 	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation("smaller_units", "main"),
-			() -> "2.1",
-			"2.1"::equals,
-			"2.1"::equals
+			() -> networkingVersion,
+			(s) -> compareVersionsInverse(networkingVersion, s),
+			(s) -> compareVersions(networkingVersion, s)
 	);
+	
+	public static boolean compareVersions(String str0, String str1) {
+		String[] ver0 = parseVersion(str0);
+		String[] ver1 = parseVersion(str1);
+		ver0 = addPlaceholders(ver0, ver1);
+		ver1 = addPlaceholders(ver1, ver0);
+		
+		if (!ver0[0].equals(ver1[0])) return false;
+		
+		for (int i = 0; i < ver0.length; i++) {
+			if (Integer.parseInt(ver0[i]) < Integer.parseInt(ver1[i]))
+				return false;
+		}
+		return true;
+	}
+	
+	public static boolean compareVersionsInverse(String str0, String str1) {
+		String[] ver0 = parseVersion(str0);
+		String[] ver1 = parseVersion(str1);
+		ver0 = addPlaceholders(ver0, ver1);
+		ver1 = addPlaceholders(ver1, ver0);
+		
+		if (!ver0[0].equals(ver1[0])) return false;
+		
+		for (int i = 0; i < ver0.length; i++) {
+			if (Integer.parseInt(ver0[i]) < Integer.parseInt(ver1[i]))
+				return true;
+		}
+		return true;
+	}
+	
+	public static String[] addPlaceholders(String[] ver0, String[] ver1) {
+		int len = Math.max(ver0.length, ver1.length);
+		String[] strs = new String[len];
+		for (int i = 0; i < len; i++) {
+			if (i < ver0.length) {
+				strs[i] = ver0[i];
+			} else {
+				strs[i] = "0";
+			}
+		}
+		return strs;
+	}
+	
+	public static String[] parseVersion(String input) {
+		if (input.contains(".")) {
+			return input.split("\\.");
+		}
+		return new String[]{input};
+	}
 
+	// wat? lol
 //	public static void onConfigEvent(ModConfig.ModConfigEvent event) {
 //		if (event.getConfig().getModId().equals("smallerunits")) {
 //			CustomArrayList.growthRate = (Integer) Config.COMMON.listGrowthRate.get() - 1;
@@ -87,6 +142,7 @@ public class Smallerunits {
 	public Smallerunits() {
 		INSTANCE = this;
 		
+		// make sure the SU event bus is loaded and whatnot
 		IEventBus suEventBus = SmallerUnitsAPI.EVENT_BUS;
 		
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -149,8 +205,6 @@ public class Smallerunits {
 			isVivecraftPresent = false; // TODO: when vivecraft gets an API, use that to test for vivecraft
 		}
 		
-		if (ModList.get().isLoaded("pehkui")) PehkuiSupport.setup();
-
 //		WorldTypeRegistry.init();
 		
 		isCollisionReversionPresent = ModList.get().isLoaded("collision_reversion");
@@ -257,6 +311,14 @@ public class Smallerunits {
 					packet.handle(ctx);
 				}
 		);
+		NETWORK_INSTANCE.registerMessage(7, CBreakLittleBlockStatusPacket.class,
+				CBreakLittleBlockStatusPacket::writePacketData,
+				CBreakLittleBlockStatusPacket::new,
+				(packet, ctx) -> {
+					ctx.get().setPacketHandled(true);
+					packet.handle(ctx);
+				}
+		);
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,
@@ -337,6 +399,7 @@ public class Smallerunits {
 	
 	private void setup(final FMLCommonSetupEvent event) {
 		SUCapabilityManager.register();
+		if (ModList.get().isLoaded("pehkui")) PehkuiSupport.setup();
 	}
 	
 	public static void onNetworkEvent(NetworkEvent.ServerCustomPayloadEvent event) {

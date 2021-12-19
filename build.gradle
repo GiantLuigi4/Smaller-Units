@@ -114,14 +114,14 @@ dependencies {
     // that the dep is a ForgeGradle 'patcher' dependency. And it's patches will be applied.
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
 //    minecraft 'net.minecraftforge:forge:1.16.4-35.1.37'
-    minecraft 'net.minecraftforge:forge:1.16.5-36.2.0'
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.20'
 
 //    runtimeOnly fg.deobf('com.github.LOLatom:DeltaLib:af0fbfd07d')
 //    compile fg.deobf("com.jozufozu.flywheel:Flywheel:1.16-0.2.4")
     compile fg.deobf('curse.maven:flywheel-486392:3535459') // heck with maven, just cursemaven it
 
 //    runtimeOnly fg.deobf('curse.maven:reauth-237701:3105779')
-    runtimeOnly fg.deobf('curse.maven:reauth-513857:3507476')
+    runtimeOnly fg.deobf('curse.maven:oauth2-513857:3507476')
     runtimeOnly fg.deobf('curse.maven:worldmanipulation-414161:3096407')
     runtimeOnly fg.deobf('curse.maven:jei-238222:3383214')
     runtimeOnly fg.deobf('curse.maven:carryon-274259:3206755')
