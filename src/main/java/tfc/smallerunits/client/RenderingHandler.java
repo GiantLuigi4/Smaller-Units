@@ -39,6 +39,7 @@ import tfc.smallerunits.mixins.WorldRendererAccessor;
 import tfc.smallerunits.utils.UnitRaytraceContext;
 import tfc.smallerunits.utils.UnitRaytraceHelper;
 import tfc.smallerunits.utils.compat.RaytraceUtils;
+import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.rendering.BufferCache;
 import tfc.smallerunits.utils.world.client.FakeClientWorld;
@@ -310,8 +311,10 @@ public class RenderingHandler {
 //		if (!(te instanceof UnitTileEntity)) return;
 //		UnitTileEntity tileEntity = (UnitTileEntity) te;
 		UnitRaytraceContext raytraceContext;
-		if (event.getTarget().hitInfo instanceof UnitRaytraceContext) raytraceContext = (UnitRaytraceContext) event.getTarget().hitInfo;
-		else raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player, true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.of(context));
+		if (event.getTarget().hitInfo instanceof UnitRaytraceContext)
+			raytraceContext = (UnitRaytraceContext) event.getTarget().hitInfo;
+		else
+			raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player, true, ((BlockRayTraceResult) event.getTarget()).getPos(), Optional.of(context), Optional.of(SUVRPlayer.getPlayer$(Minecraft.getInstance().player)));
 		VoxelShape shape;
 		if (raytraceContext.posHit != null) {
 			BlockState state1 = tileEntity.getFakeWorld().getBlockState(raytraceContext.posHit);

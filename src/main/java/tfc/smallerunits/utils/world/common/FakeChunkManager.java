@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.concurrent.ThreadTaskExecutor;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.village.PointOfInterestManager;
@@ -15,15 +16,14 @@ import net.minecraft.world.chunk.IChunkLightProvider;
 import net.minecraft.world.chunk.listener.IChunkStatusListener;
 import net.minecraft.world.gen.ChunkGenerator;
 import net.minecraft.world.gen.feature.template.TemplateManager;
-import net.minecraft.world.server.ChunkHolder;
-import net.minecraft.world.server.ChunkManager;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraft.world.server.ServerWorldLightManager;
+import net.minecraft.world.server.*;
 import net.minecraft.world.storage.DimensionSavedDataManager;
 import net.minecraft.world.storage.SaveFormat;
 import net.minecraftforge.fml.ModList;
 import sun.misc.Unsafe;
+import tfc.smallerunits.utils.world.server.BlankPOIManager;
 import tfc.smallerunits.utils.world.server.FakeServerChunkProvider;
+import tfc.smallerunits.utils.world.server.FakeServerWorld;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.Executor;
@@ -57,6 +57,12 @@ public class FakeChunkManager extends ChunkManager {
 	
 	@Override
 	public Stream<ServerPlayerEntity> getTrackingPlayers(ChunkPos pos, boolean boundaryOnly) {
+		if (provider.world instanceof FakeServerWorld) {
+			TileEntity te = ((FakeServerWorld) provider.world).owner;
+			return ((ServerChunkProvider) te.getWorld().getChunkProvider()).chunkManager.getTrackingPlayers(
+					new ChunkPos(te.getPos()), boundaryOnly
+			);
+		}
 		return Stream.empty();
 	}
 	
@@ -82,7 +88,8 @@ public class FakeChunkManager extends ChunkManager {
 		if (!hasInit) {
 			this.entities = new Int2ObjectOpenHashMap<>();
 			try {
-				pointOfInterestManager = (PointOfInterestManager) theUnsafe.allocateInstance(PointOfInterestManager.class);
+				pointOfInterestManager = (PointOfInterestManager) theUnsafe.allocateInstance(BlankPOIManager.class);
+//				pointOfInterestManager = (PointOfInterestManager) theUnsafe.allocateInstance(PointOfInterestManager.class);
 				this.ticketManager = new FakeProxyTicketManager(Runnable::run, Runnable::run);
 				this.lightManager = (ServerWorldLightManager) provider.theChunk.getWorld().getLightManager();
 				this.mainThread = executor;

@@ -58,4 +58,3 @@ public abstract class SUDataSerializer<T> {
 	
 	public abstract T read(byte[] bytes);
 }
-a

@@ -1,7 +1,6 @@
 package tfc.smallerunits.utils.rendering;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.RenderType;
@@ -14,10 +13,16 @@ import java.util.Optional;
 
 public class SUVBO extends SURenderable {
 	public ArrayList<BufferStorage> buffers = new ArrayList<>();
+	int countPresent = 0;
 	
 	public void render(MatrixStack matrixStack) {
+		if (buffers.isEmpty()) return;
+		if (countPresent == 0) return;
+		
+		Minecraft.getInstance().getProfiler().startSection("vbos");
 		buffers.sort(BufferStorage::compareTo);
 		Minecraft.getInstance().getProfiler().startSection("renderVBOs");
+		
 		boolean isFirst = true;
 		for (BufferStorage storage : buffers) {
 			if (!storage.isPresent) continue;
@@ -27,32 +32,49 @@ public class SUVBO extends SURenderable {
 			} else {
 				Minecraft.getInstance().getProfiler().endStartSection("renderVBO_" + RenderTypeHelper.getTypeName(storage.renderType));
 			}
+			
+			Minecraft.getInstance().getProfiler().startSection("setType");
 			VertexBuffer buffer = storage.terrainBuffer.get();
 			RenderType type = RenderTypeHelper.getType(storage.renderType);
 			matrixStack.push();
 			buffer.bindBuffer();
 			type.setupRenderState();
 			DefaultVertexFormats.BLOCK.setupBufferState(0L);
-			RenderSystem.shadeModel(GL11.GL_SMOOTH);
+//			RenderSystem.shadeModel(GL11.GL_SMOOTH);
+			Minecraft.getInstance().getProfiler().endStartSection("drawCall");
 			buffer.draw(matrixStack.getLast().getMatrix(), GL11.GL_QUADS);
-			VertexBuffer.unbindBuffer();
-			RenderSystem.clearCurrentColor();
+			Minecraft.getInstance().getProfiler().endStartSection("clearType");
+//			RenderSystem.clearCurrentColor();
 			type.clearRenderState();
 			matrixStack.pop();
+			Minecraft.getInstance().getProfiler().endSection();
 		}
+		VertexBuffer.unbindBuffer();
+		
+		Minecraft.getInstance().getProfiler().endSection();
 		Minecraft.getInstance().getProfiler().endSection();
 		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	public void uploadTerrain(RenderType renderType, BufferBuilder bufferBuilder) {
-		if (bufferBuilder.isDrawing())
-			bufferBuilder.finishDrawing();
-		else return;
+		if (bufferBuilder != null) {
+			if (bufferBuilder.isDrawing())
+				bufferBuilder.finishDrawing();
+			else return;
+		}
+		
+		Minecraft.getInstance().getProfiler().startSection("vbos");
 		if (bufferBuilder != null) {
 			for (BufferStorage buffer : buffers) {
 				if (buffer.renderType.equals(renderType)) {
+					Minecraft.getInstance().getProfiler().startSection("genAndUpload");
+					
 					(buffer.terrainBuffer.get()).upload(bufferBuilder);
+					if (!buffer.isPresent) countPresent++;
 					buffer.isPresent = true;
+					
+					Minecraft.getInstance().getProfiler().endSection();
+					Minecraft.getInstance().getProfiler().endSection();
 					return;
 				}
 			}
@@ -60,10 +82,15 @@ public class SUVBO extends SURenderable {
 			for (BufferStorage buffer : buffers) {
 				if (buffer.renderType.equals(renderType)) {
 					buffer.isPresent = false;
+					countPresent--;
+					
+					Minecraft.getInstance().getProfiler().endSection();
 					return;
 				}
 			}
 		}
+		
+		Minecraft.getInstance().getProfiler().startSection("uploadVBO");
 		BufferStorage storage = new BufferStorage();
 		storage.renderType = renderType;
 //		BufferBuilder.State state = bufferBuilder.getVertexState();
@@ -72,8 +99,11 @@ public class SUVBO extends SURenderable {
 //		bufferBuilder.setVertexState(state);
 //		MemoryUtil.memFree(bufferBuilder.getNextBuffer().getSecond());
 		storage.terrainBuffer = Optional.of(buffer);
+		if (bufferBuilder != null) countPresent++;
 		storage.isPresent = bufferBuilder != null;
 		buffers.add(storage);
+		Minecraft.getInstance().getProfiler().endSection();
+		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	public void markAllUnused() {

@@ -151,18 +151,18 @@ public class FakeClientWorld extends ClientWorld {
 		return result == null ? super.rayTraceBlocks(context) : result;
 	}
 	
+	@Nullable
+	@Override
+	public BlockRayTraceResult rayTraceBlocks(Vector3d startVec, Vector3d endVec, BlockPos pos, VoxelShape shape, BlockState state) {
+		return result == null ? super.rayTraceBlocks(startVec, endVec, pos, shape, state) : result;
+	}
+	
 	public DimensionRenderInfo func_239132_a_() {
 		if (owner.getWorld() == null) {
 			return new DimensionRenderInfo.Overworld();
 		}
 		DimensionRenderInfo info = ((ClientWorld) this.owner.getWorld()).func_239132_a_();
 		return info == null ? new DimensionRenderInfo.Overworld() : info;
-	}
-	
-	@Nullable
-	@Override
-	public BlockRayTraceResult rayTraceBlocks(Vector3d startVec, Vector3d endVec, BlockPos pos, VoxelShape shape, BlockState state) {
-		return result == null ? super.rayTraceBlocks(startVec, endVec, pos, shape, state) : result;
 	}
 	
 	@Override
@@ -414,6 +414,11 @@ public class FakeClientWorld extends ClientWorld {
 			if (unit.tileEntity != null)
 				unit.tileEntity.remove();
 			unit.tileEntity = null;
+		}
+		if (tileEntityIn != null) {
+			tileEntityIn.setWorldAndPos(this, pos);
+//			tileEntityIn.updateContainingBlockInfo();
+			tileEntityIn.cachedBlockState = this.getBlockState(pos);
 		}
 
 //		tileEntityChanges.add(unit);
@@ -1027,5 +1032,10 @@ public class FakeClientWorld extends ClientWorld {
 			// hahayes
 			UnsafeUtils.throwError(err);
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return "FakeClientWorld@" + owner.getPos();
 	}
 }

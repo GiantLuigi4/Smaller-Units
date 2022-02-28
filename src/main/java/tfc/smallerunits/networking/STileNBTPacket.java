@@ -1,20 +1,19 @@
 package tfc.smallerunits.networking;
 
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.INetHandler;
-import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkEvent;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.networking.util.Packet;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-public class STileNBTPacket implements IPacket {
+public class STileNBTPacket extends Packet {
 	public HashMap<BlockPos, CompoundNBT> tileMap;
 	
 	public STileNBTPacket(HashMap<BlockPos, CompoundNBT> map) {
@@ -43,12 +42,8 @@ public class STileNBTPacket implements IPacket {
 	}
 	
 	@Override
-	public void processPacket(INetHandler handler) {
-	
-	}
-	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
-		if (ctx.get().getDirection().getReceptionSide().isClient()) {
+		if (checkClient(ctx.get())) {
 			for (BlockPos pos : tileMap.keySet()) {
 				World world = ClientUtils.getWorld();
 				UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(world, pos);

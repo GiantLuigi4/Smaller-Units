@@ -62,6 +62,11 @@ public class SUCapabilityManager {
 						new STileNBTPacket(tileMap)
 				);
 			}
+			Chunk chunk = event.getWorld().getChunkAt(event.getPos().asBlockPos());
+			for (BlockPos tileEntitiesPo : chunk.getTileEntitiesPos()) {
+				UnitTileEntity te = getUnitAtBlock(event.getWorld(), tileEntitiesPo);
+				if (te != null) te.onTrack(event.getPlayer());
+			}
 		}
 	}
 	

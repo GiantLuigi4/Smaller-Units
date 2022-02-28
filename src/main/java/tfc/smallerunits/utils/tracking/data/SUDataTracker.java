@@ -1,17 +1,14 @@
 package tfc.smallerunits.utils.tracking.data;
 
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.datasync.IDataSerializer;
+import net.minecraft.util.ResourceLocation;
 
 import java.util.HashMap;
 
 public class SUDataTracker {
-	private static int id = Integer.MIN_VALUE;
-	
-	private static <T> SUDataParameter<T> createParameter(IDataSerializer<T> serializer) {
-		return new SUDataParameter<>(serializer, id++);
+	public static <T> SUDataParameter<T> createParameter(SUDataSerializer<T> serializer, ResourceLocation name) {
+		return new SUDataParameter<>(serializer, name);
 	}
 	
 	private final HashMap<SUDataParameter<?>, DataInfo<?>> parameters = new HashMap<>();
@@ -35,8 +32,9 @@ public class SUDataTracker {
 				pair.isDirty = true;
 				pair.value = value;
 			}
+			return;
 		}
-		throw new RuntimeException("");
+		throw new RuntimeException("Parameter: \"" + parameter.getName() + "\" is not registered");
 	}
 	
 	public <T> T get(SUDataParameter<T> parameter) {
@@ -45,12 +43,14 @@ public class SUDataTracker {
 	}
 	
 	public CompoundNBT serialize() {
+		CompoundNBT nbt = new CompoundNBT();
 		parameters.forEach((param, data) -> {
 			if (data.isDirty) {
 				byte[] bytes = param.serialize$(data.value);
 				// TODO;
+				nbt.putByteArray(param.getName(), bytes);
 			}
 		});
+		return nbt;
 	}
 }
-a

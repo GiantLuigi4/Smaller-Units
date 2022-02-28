@@ -4,17 +4,22 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.vivecraft.gameplay.VRPlayer;
 import tfc.smallerunits.Smallerunits;
+import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
+import tfc.smallerunits.utils.compat.vr.vivecraft.ViveSettings;
 
 /**
  * created due to the fact that compat with vivecraft would need one of three things:
  * A) a complete rewrite of smaller units
  * B) a complete rewrite of vivecraft selection logic and likely also a sizeable rewrite of vivecraft rendering
  * C) me to figure out how to compile against the vivecraft API
+ * <p>
+ * I went with C
  */
 public class RaytraceUtils {
 	public static float getPct(Entity entity) {
@@ -28,16 +33,26 @@ public class RaytraceUtils {
 		return 0;
 	}
 	
+	private static final int LEFT = 0;
+	private static final int RIGHT = 0;
+	
 	public static Vector3d getStartVector(Entity entity) {
 		if (Smallerunits.isVivecraftPresent()) {
 			// TODO: vivecraft compat
-			if (FMLEnvironment.dist.isClient()) {
+			if (FMLEnvironment.dist.isClient() && entity.getEntityWorld().isRemote) {
 				if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
 					VRPlayer player = VRPlayer.get();
 					// TODO: check that the player is in vr mode
+					System.out.println(player);
 					if (player != null && player.vrdata_world_render != null) {
-						return player.vrdata_world_render.getController(0).getPosition();
+						return player.vrdata_world_render.getController(ViveSettings.isReverseHands() ? LEFT : RIGHT).getPosition();
 					}
+				}
+			} else {
+				if (entity instanceof ServerPlayerEntity) {
+					SUVRPlayer vivePlayer = SUVRPlayer.getPlayer((ServerPlayerEntity) entity);
+					if (vivePlayer != null)
+						return vivePlayer.getControllerPos(0);
 				}
 			}
 		}
@@ -47,13 +62,19 @@ public class RaytraceUtils {
 	public static Vector3d getLookVector(Entity entity) {
 		if (Smallerunits.isVivecraftPresent()) {
 			// TODO: vivecraft compat
-			if (FMLEnvironment.dist.isClient()) {
+			if (FMLEnvironment.dist.isClient() && entity.getEntityWorld().isRemote) {
 				if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
 					VRPlayer player = VRPlayer.get();
 					// TODO: check that the player is in vr mode
 					if (player != null && player.vrdata_world_render != null) {
-						return player.vrdata_world_render.getController(0).getDirection();
+						return player.vrdata_world_render.getController(ViveSettings.isReverseHands() ? LEFT : RIGHT).getDirection();
 					}
+				}
+			} else {
+				if (entity instanceof ServerPlayerEntity) {
+					SUVRPlayer vivePlayer = SUVRPlayer.getPlayer((ServerPlayerEntity) entity);
+					if (vivePlayer != null)
+						return vivePlayer.getControllerAngle(0);
 				}
 			}
 		}

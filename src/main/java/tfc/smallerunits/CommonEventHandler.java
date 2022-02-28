@@ -38,6 +38,7 @@ import tfc.smallerunits.mixins.ticking.ChunkArrayAccessor;
 import tfc.smallerunits.utils.UnitRaytraceContext;
 import tfc.smallerunits.utils.UnitRaytraceHelper;
 import tfc.smallerunits.utils.compat.RaytraceUtils;
+import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
 import tfc.smallerunits.utils.data.CapabilityProvider;
 import tfc.smallerunits.utils.data.SUCapability;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
@@ -69,7 +70,7 @@ public class CommonEventHandler {
 	// TODO: request datapackets upon comming with 64 blocks
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
 		if (FMLEnvironment.dist.isClient()) {
-			if (event.player == Minecraft.getInstance().player) {
+			if (event.player == ClientUtils.getPlayer()) {
 				if (!(Minecraft.getInstance().objectMouseOver instanceof BlockRayTraceResult)) return;
 				World world = event.player.world;
 				BlockPos destroyPos = ((BlockRayTraceResult) Minecraft.getInstance().objectMouseOver).getPos();
@@ -79,7 +80,15 @@ public class CommonEventHandler {
 					if ((te instanceof UnitTileEntity)) {
 						UnitTileEntity tileEntity = (UnitTileEntity) te;
 						ISelectionContext context = ISelectionContext.forEntity(event.player);
-						UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, Minecraft.getInstance().player.getEntity(), true, destroyPos, Optional.of(context));
+						UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(
+								tileEntity,
+//								Minecraft.getInstance().player.getEntity(), // why
+								event.player,
+								true,
+								destroyPos,
+								Optional.of(context),
+								Optional.of(SUVRPlayer.getPlayer$(event.player))
+						);
 						UnitPos pos = (UnitPos) raytraceContext.posHit;
 						BlockPos pos1 = lastMiningPos;
 						if (pos1 != null && !pos1.equals(pos)) {
@@ -109,7 +118,14 @@ public class CommonEventHandler {
 				if ((te instanceof UnitTileEntity)) {
 					UnitTileEntity tileEntity = (UnitTileEntity) te;
 					ISelectionContext context = ISelectionContext.forEntity(event.player);
-					UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(tileEntity, event.player, true, manager.destroyPos, Optional.of(context));
+					UnitRaytraceContext raytraceContext = UnitRaytraceHelper.raytraceBlockWithoutShape(
+							tileEntity,
+							event.player,
+							true,
+							manager.destroyPos,
+							Optional.of(context),
+							Optional.of(SUVRPlayer.getPlayer$(event.player))
+					);
 					UnitPos pos = (UnitPos) raytraceContext.posHit;
 //					if (!manager.isDestroyingBlock) {
 //						UUID uuid = event.player.getUniqueID();
@@ -352,7 +368,8 @@ public class CommonEventHandler {
 		
 		UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(
 				tileEntity, entity, true,
-				event.getPos(), Optional.of(ISelectionContext.forEntity(entity))
+				event.getPos(), Optional.of(ISelectionContext.forEntity(entity)),
+				Optional.of(SUVRPlayer.getPlayer$(event.entity))
 		);
 		
 		boolean isSUBlock = false;

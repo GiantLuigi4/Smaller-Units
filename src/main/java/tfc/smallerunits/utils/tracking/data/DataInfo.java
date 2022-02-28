@@ -4,4 +4,3 @@ public class DataInfo<T> {
 	protected boolean isDirty;
 	protected T value;
 }
-a

@@ -13,7 +13,11 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.renderer.model.BakedQuad;
+import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.client.renderer.model.ModelBakery;
+import net.minecraft.client.renderer.texture.AtlasTexture;
+import net.minecraft.client.renderer.texture.Texture;
 import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
@@ -23,6 +27,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
@@ -43,6 +48,7 @@ import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.helpers.ClientUtils;
 import tfc.smallerunits.renderer.FlywheelProgram;
 import tfc.smallerunits.utils.*;
+import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
 import tfc.smallerunits.utils.rendering.*;
 import tfc.smallerunits.utils.world.client.FakeClientWorld;
 import tfc.smallerunits.utils.world.client.SmallBlockReader;
@@ -102,7 +108,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	}
 	
 	public static void renderCube(float r, float g, float b, float x, float y, float z, IVertexBuilder builder, int combinedOverlay, int combinedLight, MatrixStack matrixStack, boolean useNormals) {
-		Minecraft.getInstance().getProfiler().startSection("renderSquare1");
+		Minecraft.getInstance().getProfiler().startSection("renderEmptySquares");
 		renderSquare(r, g, b, x, y, z + 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
 		matrixStack.rotate(new Quaternion(180, 0, -90, true));
 		renderSquare(r, g, b, x, y, z + 0.25f, builder, combinedOverlay, combinedLight, matrixStack, useNormals);
@@ -189,6 +195,10 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			tileEntityIn.worldServer = null;
 			tileEntityIn.handleUpdateTag(tileEntityIn.getBlockState(), tag);
 		}
+		
+		if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
+			vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.remove(tileEntityIn.getPos()));
+		}
 
 //		CompoundNBT nbt = tileEntityIn.serializeNBT();
 //
@@ -204,11 +214,13 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 ////		tileEntityIn.worldServer.animateTick();
 //
 		
-		
+		Minecraft.getInstance().getProfiler().startSection("tileEntities");
 		matrixStackIn.push();
 		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 		for (SmallUnit value : tileEntityIn.getBlockMap().values()) {
 			if (value.tileEntity != null) {
+				Minecraft.getInstance().getProfiler().startSection(() -> value.tileEntity.getType().getRegistryName().toString());
+				Minecraft.getInstance().getProfiler().startSection("setup");
 				tileEntityIn.getFakeWorld().isRemote = true;
 				matrixStackIn.push();
 				matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
@@ -217,6 +229,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				int matrixSize = matrixStackIn.stack.size();
 				boolean isExceptionPresent = false;
 				String exceptionAt = "";
+				Minecraft.getInstance().getProfiler().endStartSection("draw");
 				if (renderer != null) {
 					try {
 						renderer.render(tileEntity, partialTicks, matrixStackIn, bufferIn.getWrapped(),
@@ -233,6 +246,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 						}
 					}
 				}
+				Minecraft.getInstance().getProfiler().endSection();
 				if (matrixSize != matrixStackIn.stack.size()) {
 					LOGGER.log(Level.WARN, ("What's going on? Tile Entity renderer for " + tileEntity.getType().getRegistryName() + " missed " + (matrixStackIn.stack.size() - matrixSize) + " pops." + (isExceptionPresent ? (" An exception was thrown:\n" + exceptionAt) : " No exceptions were found.")));
 				}
@@ -240,14 +254,16 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					matrixStackIn.pop();
 				}
 				matrixStackIn.pop();
+				Minecraft.getInstance().getProfiler().endSection();
 			}
 		}
 		matrixStackIn.pop();
-
+		Minecraft.getInstance().getProfiler().endSection();
 
 //		matrixStackIn.push();
 //		matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 		
+		Minecraft.getInstance().getProfiler().startSection("entities");
 		for (Entity entity : tileEntityIn.getEntitiesById().values()) {
 			MatrixStack finalMatrixStackIn = new MatrixStack();
 			finalMatrixStackIn.stack.add(oldStack.getLast());
@@ -310,13 +326,16 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			}
 			finalMatrixStackIn.pop();
 		}
-		
+		Minecraft.getInstance().getProfiler().endSection();
 		
 		boolean isFlywheelSupported = ModList.get().isLoaded("flywheel") && Backend.getInstance().canUseVBOs() && Backend.isFlywheelWorld(tileEntityIn.getWorld());
 		
+		Minecraft.getInstance().getProfiler().startSection("clearRenderables");
 		if (isFlywheelSupported) closeRenderables((renderable) -> renderable instanceof SUFLWVBO);
 		else closeRenderables((renderable) -> renderable instanceof SUVBO);
+		Minecraft.getInstance().getProfiler().endSection();
 		
+		Minecraft.getInstance().getProfiler().startSection("testResortNeeded");
 		boolean needsResort = false;
 		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:refresh_check");
 		{
@@ -345,19 +364,27 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				}
 			}
 		}
+		Minecraft.getInstance().getProfiler().endSection();
+		
+		Minecraft.getInstance().getProfiler().startSection("blocks");
 		if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:light");
 		tileEntityIn.worldClient.get().lightManager.tick(SmallerUnitsConfig.CLIENT.lightingUpdatesPerFrame.get(), true, true);
 		// TODO: make it render without vbos if the player is not in the same world
 		if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
-		if (tileEntityIn.getWorld() != null && tileEntityIn.getWorld().equals(Minecraft.getInstance().world) && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
-			boolean isRefreshing = tileEntityIn.needsRefresh(false) || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos());
-			if (isRefreshing || needsResort || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
-				if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
-					vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
-				}
-				{
-					HashMap<RenderType, BufferBuilder> buffersUsed = new HashMap<>();
-					boolean renderedAnything = renderWorld(tileEntityIn, isRefreshing, isFlywheelSupported ? buffersFlw : buffers, buffersUsed);
+		if (!tileEntityIn.getBlockMap().isEmpty()) {
+			if (
+					tileEntityIn.getWorld() != null &&
+							tileEntityIn.getWorld().equals(Minecraft.getInstance().world) &&
+							SmallerUnitsConfig.CLIENT.useVBOS.get()
+			) {
+				boolean isRefreshing = tileEntityIn.needsRefresh(false) || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos());
+				if (isRefreshing || needsResort || !vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+					if (vertexBufferCacheFree.containsKey(tileEntityIn.getPos())) {
+						vertexBufferCacheUsed.put(tileEntityIn.getPos(), vertexBufferCacheFree.get(tileEntityIn.getPos()));
+					}
+					{
+						HashMap<RenderType, BufferBuilder> buffersUsed = new HashMap<>();
+						boolean renderedAnything = renderWorld(tileEntityIn, isRefreshing, isFlywheelSupported ? buffersFlw : buffers, buffersUsed);
 
 //					if (ModList.get().isLoaded("flywheel") && false) {
 //						for (CustomBuffer.CustomVertexBuilder builder : redirection.builders) {
@@ -396,32 +423,32 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //							mdl.delete();
 //						}
 //					} else
-					if (isFlywheelSupported) {
-						SURenderable suvbo;
-						if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
-							if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
-								suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-							else suvbo = new SUFLWVBO();
-						} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-						if (suvbo == null) suvbo = new SUFLWVBO();
-						if (isRefreshing) suvbo.markAllUnused();
-						SURenderable finalSuvbo = suvbo;
-						
-						buffersUsed.forEach((type, buffer) -> {
-							if (FlywheelProgram.UNIT != null) {
-								if (RenderTypeHelper.isTransparent(type)) {
+						if (isFlywheelSupported) {
+							SURenderable suvbo;
+							if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+								if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
+									suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+								else suvbo = new SUFLWVBO();
+							} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+							if (suvbo == null) suvbo = new SUFLWVBO();
+							if (isRefreshing) suvbo.markAllUnused();
+							SURenderable finalSuvbo = suvbo;
+							
+							buffersUsed.forEach((type, buffer) -> {
+								if (FlywheelProgram.UNIT != null) {
+									if (RenderTypeHelper.isTransparent(type)) {
+										if (ModList.get().isLoaded("better_fps_graph"))
+											Profiler.addSection("su:sort_quads", 0.2, 0.5, 0.7);
+										buffer.sortVertexData(
+												(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
+												(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
+												(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
+										);
+									}
 									if (ModList.get().isLoaded("better_fps_graph"))
-										Profiler.addSection("su:sort_quads", 0.2, 0.5, 0.7);
-									buffer.sortVertexData(
-											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
-											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
-											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
-									);
-								}
-								if (ModList.get().isLoaded("better_fps_graph"))
-									Profiler.addSection("su:upload_vbo", 0.2, 0.2, 0.7);
-								finalSuvbo.uploadTerrain(type, buffer);
-								if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
+										Profiler.addSection("su:upload_vbo", 0.2, 0.2, 0.7);
+									finalSuvbo.uploadTerrain(type, buffer);
+									if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 
 //								SmallerUnitsProgram shader = FlywheelProgram.UNIT.getProgram(new ResourceLocation("smallerunits:unit_shader"));
 //								shader.bind();
@@ -452,57 +479,65 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 //								if (vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
 //									vertexBufferCacheFree.put(tileEntityIn.getPos(), vertexBufferCacheUsed.remove(tileEntityIn.getPos()));
 //								}
-							}
-							
-							if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
-						});
-						vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
-					} else {
-						if (renderedAnything && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
-							SURenderable suvbo;
-							if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
-								if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
-									suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-								else suvbo = new SUVBO();
-							} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
-							if (suvbo == null) suvbo = new SUVBO();
-							if (isRefreshing) suvbo.markAllUnused();
-							SURenderable finalSuvbo = suvbo;
-							buffers.forEach((type, buffer) -> {
-								if (RenderTypeHelper.isTransparent(type)) {
+								}
+								
+								if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
+							});
+							vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
+						} else {
+							if (renderedAnything && SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+								SURenderable suvbo;
+								if (!vertexBufferCacheUsed.containsKey(tileEntityIn.getPos())) {
+									if (isRefreshing && vertexBufferCacheUsed.containsKey(tileEntityIn.getPos()))
+										suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+									else suvbo = new SUVBO();
+								} else suvbo = vertexBufferCacheUsed.remove(tileEntityIn.getPos());
+								if (suvbo == null) suvbo = new SUVBO();
+								if (isRefreshing) suvbo.markAllUnused();
+								SURenderable finalSuvbo = suvbo;
+								buffers.forEach((type, buffer) -> {
+									if (RenderTypeHelper.isTransparent(type)) {
+										if (ModList.get().isLoaded("better_fps_graph"))
+											Profiler.addSection("su:sort_quads", 0.2, 0.5, 0.7);
+										buffer.sortVertexData(
+												(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
+												(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
+												(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
+										);
+									}
 									if (ModList.get().isLoaded("better_fps_graph"))
-										Profiler.addSection("su:sort_quads", 0.2, 0.5, 0.7);
+										Profiler.addSection("su:upload_vbo", 0.2, 0.2, 0.7);
+									finalSuvbo.uploadTerrain(type, buffer);
+									if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
+								});
+								vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
+							} else {
+								buffers.forEach((type, buffer) -> {
 									buffer.sortVertexData(
 											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
 											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
 											(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
 									);
-								}
-								if (ModList.get().isLoaded("better_fps_graph"))
-									Profiler.addSection("su:upload_vbo", 0.2, 0.2, 0.7);
-								finalSuvbo.uploadTerrain(type, buffer);
-								if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
-							});
-							vertexBufferCacheUsed.put(tileEntityIn.getPos(), suvbo);
-						} else {
-							buffers.forEach((type, buffer) -> {
-								buffer.sortVertexData(
-										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getX() - tileEntityIn.getPos().getX(),
-										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getY() - tileEntityIn.getPos().getY(),
-										(float) Minecraft.getInstance().getRenderManager().info.getProjectedView().getZ() - tileEntityIn.getPos().getZ()
-								);
-								RenderSystem.pushMatrix();
-								RenderSystem.loadIdentity();
-								RenderSystem.multMatrix(oldStack.getLast().getMatrix());
-								type.finish(buffer,
-										0, 0, 0
-								);
-								RenderSystem.popMatrix();
-							});
+									RenderSystem.pushMatrix();
+									RenderSystem.loadIdentity();
+									RenderSystem.multMatrix(oldStack.getLast().getMatrix());
+									type.finish(buffer,
+											0, 0, 0
+									);
+									RenderSystem.popMatrix();
+								});
+							}
 						}
 					}
-				}
-				if (SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+					if (SmallerUnitsConfig.CLIENT.useVBOS.get()) {
+						if (ModList.get().isLoaded("better_fps_graph"))
+							Profiler.addSection("su:draw_vbo", 0.4, 0.2, 0.8);
+						matrixStackIn = oldStack;
+						SURenderable vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
+						if (vbo != null) vbo.render(matrixStackIn);
+						if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
+					}
+				} else {
 					if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:draw_vbo", 0.4, 0.2, 0.8);
 					matrixStackIn = oldStack;
 					SURenderable vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
@@ -510,79 +545,145 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 					if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
 				}
 			} else {
-				if (ModList.get().isLoaded("better_fps_graph")) Profiler.addSection("su:draw_vbo", 0.4, 0.2, 0.8);
-				matrixStackIn = oldStack;
-				SURenderable vbo = vertexBufferCacheUsed.get(tileEntityIn.getPos());
-				if (vbo != null) vbo.render(matrixStackIn);
-				if (ModList.get().isLoaded("better_fps_graph")) Profiler.endSection();
-			}
-		} else {
-			BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
-			FakeClientWorld fakeWorld = ((FakeClientWorld) tileEntityIn.getFakeWorld());
-			matrixStackIn.push();
-			matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-			for (SmallUnit value : fakeWorld.blockMap.values()) {
+				BlockRendererDispatcher dispatcher = Minecraft.getInstance().getBlockRendererDispatcher();
+				FakeClientWorld fakeWorld = ((FakeClientWorld) tileEntityIn.getFakeWorld());
 				matrixStackIn.push();
-				matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
-				RenderType type = RenderType.getSolid();
-				for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
-					if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType))
-						type = blockRenderType;
-				IVertexBuilder buffer = bufferIn.getBuffer(type);
-				dispatcher.renderModel(value.state, value.pos, fakeWorld, matrixStackIn, buffer, true, new Random(value.pos.toLong()));
+				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+				for (SmallUnit value : fakeWorld.blockMap.values()) {
+					matrixStackIn.push();
+					matrixStackIn.translate(value.pos.getX(), value.pos.getY() - 64, value.pos.getZ());
+					RenderType type = RenderType.getSolid();
+					for (RenderType blockRenderType : RenderType.getBlockRenderTypes())
+						if (RenderTypeLookup.canRenderInLayer(value.state, blockRenderType))
+							type = blockRenderType;
+					IVertexBuilder buffer = bufferIn.getBuffer(type);
+					dispatcher.renderModel(value.state, value.pos, fakeWorld, matrixStackIn, buffer, true, new Random(value.pos.toLong()));
+					matrixStackIn.pop();
+				}
 				matrixStackIn.pop();
 			}
-			matrixStackIn.pop();
 		}
+		Minecraft.getInstance().getProfiler().endSection();
 		
+		Minecraft.getInstance().getProfiler().startSection("getAtlasSize");
+		Texture texture = Minecraft.getInstance().getTextureManager().getTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, texture.getGlTextureId());
+		int width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+		int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+		
+		Minecraft.getInstance().getProfiler().endStartSection("destroyProgress");
 		for (SortedSet<DestroyBlockProgress> value : Minecraft.getInstance().worldRenderer.damageProgress.values()) {
 			for (DestroyBlockProgress destroyBlockProgress : value) {
 				if (destroyBlockProgress.getPosition().equals(tileEntityIn.getPos())) {
 					int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
 					Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
-					UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(tileEntityIn, entity, false, tileEntityIn.getPos(), Optional.empty());
+					UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(
+							tileEntityIn,
+							entity,
+							false,
+							tileEntityIn.getPos(),
+							Optional.empty(),
+							Optional.of(SUVRPlayer.getPlayer$(entity))
+					);
 					BlockState miningState = tileEntityIn.getFakeWorld().getBlockState(context.posHit);
+					Minecraft.getInstance().getProfiler().startSection("setup_" + miningState.toString());
 					matrixStackIn.push();
 					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
 					matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
-					CustomBuffer.CustomVertexBuilder builder = new CustomBuffer.CustomVertexBuilder(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
-					Minecraft.getInstance().getBlockRendererDispatcher().renderModel(
-							miningState,
-							context.posHit, tileEntityIn.getFakeWorld(),
-							new MatrixStack(), builder, true,
-							new Random(context.posHit.toLong()),
-							EmptyModelData.INSTANCE
-					);
-					IVertexBuilder builder1 = bufferIn.getBuffer(builder.type);
-					int index = 0;
-					for (CustomBuffer.Vertex vert : builder.vertices) {
-						int amt = 1;
-						float u = vert.u * 128;
-						float v = vert.v * 128;
-						Vector4f vector4f = new Vector4f((float) vert.x, (float) vert.y, (float) vert.z, 1);
-						vector4f.transform(matrixStackIn.getLast().getMatrix());
-						builder1.addVertex(
-								(float) vector4f.getX(),
-								(float) vector4f.getY(),
-								(float) vector4f.getZ(),
-								(float) (vert.r * amt) / 255f,
-								(float) (vert.g * amt) / 255f,
-								(float) (vert.b * amt) / 255f,
-								vert.a / 255f,
-								u, v,
-								combinedOverlayIn, combinedLightIn,
-								vert.nx, vert.ny, vert.nz
-						);
-						index++;
-						if (index == 4) index = 0;
+					Minecraft.getInstance().getProfiler().endStartSection("getModel");
+					IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelShapes().getModel(miningState);
+					Minecraft.getInstance().getProfiler().endStartSection("getAllQuads");
+					
+					IModelData data = EmptyModelData.INSTANCE;
+					TileEntity te = tileEntityIn.getTileEntity(context.posHit);
+					if (te != null) data = te.getModelData();
+					data = model.getModelData(tileEntityIn.getFakeWorld(), context.posHit, miningState, data);
+					
+					ArrayList<BakedQuad> allQuads = new ArrayList<>();
+					for (RenderType blockRenderType : RenderType.getBlockRenderTypes()) {
+						ForgeHooksClient.setRenderLayer(blockRenderType);
+						for (Direction direction : Direction.values())
+							for (BakedQuad quad : model.getQuads(miningState, direction, new Random(miningState.getPositionRandom(context.posHit)), data))
+								if (!allQuads.contains(quad))
+									allQuads.add(quad);
+						for (BakedQuad quad : model.getQuads(miningState, null, new Random(miningState.getPositionRandom(context.posHit)), data))
+							if (!allQuads.contains(quad))
+								allQuads.add(quad);
 					}
+					ForgeHooksClient.setRenderLayer(null);
+					
+					Minecraft.getInstance().getProfiler().endStartSection("draw");
+					{
+						IVertexBuilder builder1 = bufferIn.getBuffer(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+						for (BakedQuad quad : allQuads) {
+							// quad unpacking
+							float x = 0, y = 0, z = 0;
+							float u = 0, v = 0;
+							float nx = 0, ny = 0, nz = 0;
+							for (int i1 = 0; i1 < quad.getVertexData().length; i1++) {
+								int vertexDatum = quad.getVertexData()[i1];
+								float f = Float.intBitsToFloat(vertexDatum);
+								
+								short vElement = (short) (i1 % 8);
+								
+								// wow this looks so much better in J16
+								switch (vElement) {
+									// get vertex position
+									case 0:
+										x = f;
+										break;
+									case 1:
+										y = f;
+										break;
+									case 2:
+										z = f;
+										break;
+									// texture coords
+									case 4:
+										u = f;
+										break;
+									case 5:
+										v = f;
+										break;
+									case 7:
+										float left = quad.getSprite().getMinU();
+										float sizeX = (quad.getSprite().getMaxU() - quad.getSprite().getMinU());
+										float right = quad.getSprite().getMinV();
+										float sizeY = (quad.getSprite().getMaxV() - quad.getSprite().getMinV());
+										
+										// normalize the vertex's texture coords
+										u = (u - left) / sizeX;
+										v = (v - right) / sizeY;
+										
+										Vector4f vector4f = new Vector4f((float) x, (float) y, (float) z, 1);
+										vector4f.transform(matrixStackIn.getLast().getMatrix());
+										builder1.addVertex(
+												vector4f.getX(),
+												vector4f.getY(),
+												vector4f.getZ(),
+												1,
+												1,
+												1,
+												1,
+												u, v,
+												combinedOverlayIn, combinedLightIn,
+												nx, ny, nz
+										);
+										break;
+								}
+							}
+						}
+					}
+					Minecraft.getInstance().getProfiler().endSection();
 					matrixStackIn.pop();
 				}
 			}
 		}
+		Minecraft.getInstance().getProfiler().endSection();
 		
 		matrixStackIn = oldStack;
 		
+		Minecraft.getInstance().getProfiler().startSection("checkEmpty");
 		boolean isEmpty = tileEntityIn.getBlockMap().isEmpty();
 		if (!isEmpty) {
 			isEmpty = true;
@@ -596,6 +697,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				tileEntityIn.getBlockMap().clear();
 			}
 		}
+		Minecraft.getInstance().getProfiler().endStartSection("renderEmpty");
 		boolean doRender = isEmpty || ClientUtils.isHammerHeld();
 		if (doRender) {
 			matrixStackIn.push();
@@ -612,17 +714,21 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 			matrixStackIn.pop();
 		}
 		
+		Minecraft.getInstance().getProfiler().endStartSection("RULE");
 		SmallerUnitsAPI.postRenderUnitLast(bufferIn.buffer, tileEntityIn);
+		Minecraft.getInstance().getProfiler().endSection();
 		
 		tileEntityIn.getProfiler().endTick();
 //		oldStack.pop();
 		
 		if (Minecraft.getInstance().getRenderManager().isDebugBoundingBox()) {
+			Minecraft.getInstance().getProfiler().startSection("drawRenderShape");
 			IVertexBuilder lines = bufferIn.getBuffer(RenderType.getLines());
 			WorldRenderer.drawBoundingBox(
 					matrixStackIn, lines,
 					tileEntityIn.getRenderBoundingBox().offset(-tileEntityIn.getPos().getX(), -tileEntityIn.getPos().getY(), -tileEntityIn.getPos().getZ()), 0.5f, 0, 0.5f, 1
 			);
+			Minecraft.getInstance().getProfiler().endSection();
 		}
 //		if (!Minecraft.getInstance().debugRenderer.toggleChunkBorders()) {
 //			for (int x = 0; x <= tileEntityIn.unitsPerBlock; x++) {
@@ -815,31 +921,38 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	
 	public static void renderHalf(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, UnitTileEntity tileEntityIn, boolean isForced, boolean isNat) {
 		if ((tileEntityIn.isNatural && (!SmallerUnitsConfig.CLIENT.forcedIndicators.get() || !isForced))) return;
-		Minecraft.getInstance().getProfiler().startSection("renderCorner1");
+//		Minecraft.getInstance().getProfiler().startSection("halves");
+//		Minecraft.getInstance().getProfiler().startSection("first corner");
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCorner2");
+//		Minecraft.getInstance().getProfiler().endStartSection("second corner");
+		
 		matrixStackIn.push();
 		matrixStackIn.translate(0, tileEntityIn.unitsPerBlock / 4f, 0);
 		matrixStackIn.rotate(new Quaternion(90, 0, 0, true));
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCorner3");
+//		Minecraft.getInstance().getProfiler().endStartSection("third corner");
+		
 		matrixStackIn.pop();
 		matrixStackIn.push();
 		matrixStackIn.translate(0, 0, tileEntityIn.unitsPerBlock / 4f);
 		matrixStackIn.rotate(new Quaternion(0, 90, 0, true));
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCorner4");
+//		Minecraft.getInstance().getProfiler().endStartSection("fourth corner");
+		
 		matrixStackIn.pop();
 		matrixStackIn.push();
 		matrixStackIn.translate(0, tileEntityIn.unitsPerBlock / 4f, tileEntityIn.unitsPerBlock / 4f);
 		matrixStackIn.rotate(new Quaternion(180, 0, 0, true));
 		renderCorner(matrixStackIn, bufferIn, combinedOverlayIn, combinedLightIn, isForced, isNat);
+		
 		matrixStackIn.pop();
-		Minecraft.getInstance().getProfiler().endSection();
+//		Minecraft.getInstance().getProfiler().endSection();
+//		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	public static void renderCorner(MatrixStack matrixStackIn, BufferCache bufferIn, int combinedOverlayIn, int combinedLightIn, boolean isForced, boolean isNat20) {
-		Minecraft.getInstance().getProfiler().startSection("renderCube1");
+//		Minecraft.getInstance().getProfiler().startSection("corners");
+//		Minecraft.getInstance().getProfiler().startSection("first cube");
 		matrixStackIn.push();
 		matrixStackIn.rotate(new Quaternion(180, 0, -90, true));
 		matrixStackIn.scale(1, 1, 0.0001f);
@@ -848,23 +961,23 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		int g = isForced ? (isNat20 ? 0 : 1) : 1;
 		int b = 0;
 		renderCube(r, g, b, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCube2");
+//		Minecraft.getInstance().getProfiler().endStartSection("second cube");
 		matrixStackIn.pop();
 		
 		matrixStackIn.push();
 		matrixStackIn.rotate(quat90X);
 		matrixStackIn.scale(1, 1, 0.001f);
 		renderCube(r, g, b, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCube3");
+//		Minecraft.getInstance().getProfiler().endStartSection("third cube");
 		matrixStackIn.pop();
 		
 		matrixStackIn.push();
 		matrixStackIn.rotate(new Quaternion(0, -90, 0, true));
 		matrixStackIn.scale(1, 1, 0.001f);
 		renderCube(r, g, b, 0, 0, 0, builder, combinedOverlayIn, combinedLightIn, matrixStackIn, true);
-		Minecraft.getInstance().getProfiler().endStartSection("renderCube4");
 		matrixStackIn.pop();
-		Minecraft.getInstance().getProfiler().endSection();
+//		Minecraft.getInstance().getProfiler().endSection();
+//		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	@Override
@@ -872,7 +985,9 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		if (SmallerUnitsConfig.CLIENT.useExperimentalRendererPt2.get()) return;
 		if (!bufferIn.getClass().equals(IRenderTypeBuffer.Impl.class))
 			bufferIn = Minecraft.getInstance().getRenderTypeBuffers().getBufferSource();
+		Minecraft.getInstance().getProfiler().startSection("renderSU");
 		render(tileEntityIn, partialTicks, matrixStackIn, new BufferCache(bufferIn, matrixStackIn), combinedLightIn, combinedOverlayIn);
+		Minecraft.getInstance().getProfiler().endSection();
 //		render(tileEntityIn, partialTicks, matrixStackIn, BufferCacheHelper.cache, combinedLightIn, combinedOverlayIn);
 	}
 }

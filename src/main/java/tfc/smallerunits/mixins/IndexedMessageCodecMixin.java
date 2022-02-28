@@ -19,6 +19,7 @@ import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.helpers.ClientUtils;
 import tfc.smallerunits.helpers.PacketHacksHelper;
+import tfc.smallerunits.utils.accessor.WorldWrappedContext;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,6 +27,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+// TODO: accept block pos written on client->server packet
+// TODO: track the position which a GUI was opened from and make it so all packets sent in the GUIs code are redirected
 @Mixin(targets = "net.minecraftforge.fml.network.simple.IndexedMessageCodec$MessageHandler")
 public class IndexedMessageCodecMixin<MSG> {
 	@Shadow
@@ -46,6 +49,8 @@ public class IndexedMessageCodecMixin<MSG> {
 		if (!messageType.toString().contains("OpenContainer")) {
 			if (messageType == null || messageType.toString().startsWith("class net.minecraftforge.fml")) return;
 		}
+		if (messageType == null || messageType.toString().startsWith("class com.techjar.vivecraftforge.network.packet."))
+			return;
 		
 		try {
 			Optional<BiConsumer<MSG, PacketBuffer>> oldEncoder = this.encoder;
@@ -112,6 +117,7 @@ public class IndexedMessageCodecMixin<MSG> {
 			if (context.get().getDirection().getOriginationSide().isServer())
 				playerEntity = ClientUtils.getPlayer();
 			else playerEntity = context.get().getSender();
+			((WorldWrappedContext) context.get()).SmallerUnits_setParentWorld(playerEntity.world);
 			World world = playerEntity.getEntityWorld();
 			TileEntity te = playerEntity.world.getTileEntity(posIfPresent.get());
 			if (!(te instanceof UnitTileEntity)) {

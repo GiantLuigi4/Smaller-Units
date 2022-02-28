@@ -40,6 +40,7 @@ import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.DynamicRegistries;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.village.PointOfInterestManager;
 import net.minecraft.world.*;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeContainer;
@@ -73,11 +74,14 @@ import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.network.PacketDistributor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tfc.smallerunits.Smallerunits;
 import tfc.smallerunits.api.SmallerUnitsAPI;
 import tfc.smallerunits.api.placement.UnitPos;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.config.SmallerUnitsConfig;
+import tfc.smallerunits.helpers.PacketHacksHelper;
 import tfc.smallerunits.mixins.CapabilityProviderAccessor;
 import tfc.smallerunits.mixins.ServerWorldAccessor;
 import tfc.smallerunits.mixins.WorldAccessor;
@@ -92,6 +96,7 @@ import tfc.smallerunits.utils.UnsafeUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.world.BlankProfiler;
 import tfc.smallerunits.utils.world.common.FakeChunk;
+import tfc.smallerunits.utils.world.common.FakeChunkManager;
 import tfc.smallerunits.utils.world.common.FakeIChunk;
 
 import javax.annotation.Nonnull;
@@ -106,6 +111,8 @@ import java.util.stream.Stream;
 public class FakeServerWorld extends ServerWorld {
 	private static final WorldBorder border = new WorldBorder();
 	private static final LongSet forcedChunks = LongSets.singleton(new ChunkPos(new BlockPos(0, 0, 0)).asLong());
+	
+	private static final Logger LOGGER = LogManager.getLogger();
 	
 	protected static final Profiler blankProfiler = new BlankProfiler(() -> 0, () -> 0, false);
 	public Map<Long, SmallUnit> blockMap;
@@ -221,6 +228,7 @@ public class FakeServerWorld extends ServerWorld {
 				unit.tileEntity.remove();
 			unit.tileEntity = null;
 		}
+		if (tileEntityIn != null) tileEntityIn.setWorldAndPos(this, pos);
 		
 		tileEntityChanges.add(unit);
 	}
@@ -228,6 +236,11 @@ public class FakeServerWorld extends ServerWorld {
 	@Override
 	public RecipeManager getRecipeManager() {
 		return owner.getWorld().getRecipeManager();
+	}
+	
+	@Override
+	public BlockRayTraceResult rayTraceBlocks(RayTraceContext context) {
+		return result == null ? super.rayTraceBlocks(context) : result;
 	}
 	
 	@Override
@@ -271,6 +284,7 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
+		if (owner == null) return Blocks.AIR.getDefaultState();
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
 		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {
@@ -346,8 +360,7 @@ public class FakeServerWorld extends ServerWorld {
 	@Nullable
 	@Override
 	public BlockRayTraceResult rayTraceBlocks(Vector3d startVec, Vector3d endVec, BlockPos pos, VoxelShape shape, BlockState state) {
-		return result;
-//		return super.rayTraceBlocks(startVec, endVec, pos, shape, state);
+		return result == null ? super.rayTraceBlocks(startVec, endVec, pos, shape, state) : result;
 	}
 	
 	@Override
@@ -448,6 +461,17 @@ public class FakeServerWorld extends ServerWorld {
 	}
 	
 	public ArrayList<BlockPos> toUpdate;
+	
+	public void onStartTracking(PlayerEntity entity) {
+		for (SmallUnit unit : blockMap.values()) {
+			TileEntity te = unit.tileEntity;
+			if (te == null) continue;
+			SUpdateTileEntityPacket packet = te.getUpdatePacket();
+			if (packet == null) continue;
+			SLittleTileEntityUpdatePacket packet1 = new SLittleTileEntityUpdatePacket(owner.getPos(), te.getPos(), packet.tileEntityType, packet.nbt);
+			Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayerEntity) entity), packet1);
+		}
+	}
 	
 	@Override
 	public void notifyBlockUpdate(BlockPos pos, BlockState oldState, BlockState newState, int flags) {
@@ -849,7 +873,15 @@ public class FakeServerWorld extends ServerWorld {
 		}
 		
 		for (TileEntity removedTile : removedTiles) {
-			removedTile.remove();
+			// unfortunately, this is required
+			try {
+				removedTile.remove();
+			} catch (Throwable err) {
+				StringBuilder builder = new StringBuilder(err.getClass().getName()).append(": ").append(err.getMessage());
+				for (StackTraceElement element : err.getStackTrace())
+					builder.append("\n\t").append(element.toString());
+				LOGGER.error(builder.toString());
+			}
 		}
 		removedTiles.clear();
 		
@@ -876,7 +908,6 @@ public class FakeServerWorld extends ServerWorld {
 		owner.getWorld().getProfiler().endStartSection("main_tick");
 		if (!isErrored) {
 			try {
-				// TODO: figure out why the world capabilities are being stupid
 				MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this));
 				super.tick(hasTimeLeft);
 				
@@ -988,7 +1019,7 @@ public class FakeServerWorld extends ServerWorld {
 		
 		blankProfiler.endTick();
 		owner.getWorld().getProfiler().endSection();
-		owner.getWorld().getProfiler().endSection();
+//		owner.getWorld().getProfiler().endSection();
 		
 		for (BlockPos pos : toUpdate) {
 			TileEntity te = getTileEntity(pos);
@@ -1180,6 +1211,7 @@ public class FakeServerWorld extends ServerWorld {
 		}
 		for (SmallUnit tileEntityChange : tileEntityChanges) {
 			if (tileEntityChange.pos.equals(pos)) {
+				if (tileEntityChange.tileEntity == null) return tileEntityChange.oldTE;
 				return tileEntityChange.tileEntity;
 			}
 		}
@@ -1269,6 +1301,8 @@ public class FakeServerWorld extends ServerWorld {
 						state.updateDiagonalNeighbors(this, pos, i, recursionLeft - 1);
 					}
 					
+					if (blockstate == null) blockstate = Blocks.AIR.getDefaultState();
+					if (blockstate1 == null) blockstate1 = Blocks.AIR.getDefaultState();
 					this.onBlockStateChange(pos, blockstate, blockstate1);
 				}
 			}
@@ -1318,6 +1352,14 @@ public class FakeServerWorld extends ServerWorld {
 	}
 	
 	@Override
+	public PointOfInterestManager getPointOfInterestManager() {
+		((FakeServerChunkProvider) field_241102_C_).world = this;
+		((FakeServerChunkProvider) field_241102_C_).theChunk = thisChunk;
+		((FakeChunkManager) field_241102_C_.chunkManager).init();
+		return getChunkProvider().getPointOfInterestManager();
+	}
+	
+	@Override
 	public void playEvent(int type, BlockPos pos, int data) {
 		eventData.add(new BlockEventData(pos, getBlockState(pos).getBlock(), type, data));
 //		System.out.println(type + ", " + pos + ", " + data);
@@ -1327,6 +1369,8 @@ public class FakeServerWorld extends ServerWorld {
 				owner.getPos().getY() + ((double) pos.getY() / owner.unitsPerBlock),
 				owner.getPos().getZ() + ((double) pos.getZ() / owner.unitsPerBlock)
 		);
+		BlockPos packetPos = PacketHacksHelper.unitPos;
+		PacketHacksHelper.unitPos = null;
 		SLittleBlockEventPacket packet = new SLittleBlockEventPacket(owner.getPos(), pos, type, data);
 		for (ServerPlayerEntity player : server.getPlayerList().getPlayers()) {
 			if (player.world == this) {
@@ -1343,6 +1387,7 @@ public class FakeServerWorld extends ServerWorld {
 				}
 			}
 		}
+		PacketHacksHelper.unitPos = packetPos;
 //		Smallerunits.NETWORK_INSTANCE.send(
 //				PacketDistributor.NEAR.with(
 //						() -> new PacketDistributor.TargetPoint(

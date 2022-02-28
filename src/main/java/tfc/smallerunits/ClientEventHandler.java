@@ -23,6 +23,7 @@ import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.utils.UnitRaytraceContext;
 import tfc.smallerunits.utils.UnitRaytraceHelper;
 import tfc.smallerunits.utils.compat.RaytraceUtils;
+import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.Optional;
@@ -146,7 +147,8 @@ public class ClientEventHandler {
 						tileEntity,
 						event.entity,
 						true, event.result.getPos(),
-						Optional.of(ISelectionContext.forEntity(event.entity))
+						Optional.of(ISelectionContext.forEntity(event.entity)),
+						Optional.of(SUVRPlayer.getPlayer$(event.entity))
 				);
 //				context.vecHit = new Vector3d(
 //						Math.round(context.vecHit.x * 100) / 100d,

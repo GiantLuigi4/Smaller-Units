@@ -1,20 +1,20 @@
 package tfc.smallerunits.networking;
 
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.INetHandler;
-import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.play.server.SUpdateTileEntityPacket;
+import net.minecraft.tileentity.CommandBlockTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.network.NetworkEvent;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.networking.util.Packet;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.function.Supplier;
 
-public class SLittleTileEntityUpdatePacket implements IPacket {
+public class SLittleTileEntityUpdatePacket extends Packet {
 	// TODO: convert to ArrayList
 	private BlockPos updatingPos;
 	private BlockPos blockPos;
@@ -32,7 +32,7 @@ public class SLittleTileEntityUpdatePacket implements IPacket {
 	}
 	
 	public SLittleTileEntityUpdatePacket(PacketBuffer buffer) {
-		readPacketData(buffer);
+		super(buffer);
 	}
 	
 	@Override
@@ -52,11 +52,8 @@ public class SLittleTileEntityUpdatePacket implements IPacket {
 	}
 	
 	@Override
-	public void processPacket(INetHandler handler) {
-	}
-	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
-		if (ctx.get().getDirection().getReceptionSide().isClient()) {
+		if (checkClient(ctx.get())) {
 //			BlockState state = Minecraft.getInstance().world.getBlockState(updatingPos);
 //			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
 //			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingPos);
@@ -70,6 +67,9 @@ public class SLittleTileEntityUpdatePacket implements IPacket {
 			te1.handleUpdateTag(tileEntity.getFakeWorld().getBlockState(blockPos), nbt);
 			te1.onDataPacket(ctx.get().getNetworkManager(), new SUpdateTileEntityPacket(blockPos, tileEntityType, nbt));
 			te1.setWorldAndPos(tileEntity.getFakeWorld(), blockPos);
+			
+			// yay, classloading is fun
+			if (te1 instanceof CommandBlockTileEntity && ClientUtils.isScreenCmdScreen()) ClientUtils.updateCmdScreen();
 		}
 	}
 }

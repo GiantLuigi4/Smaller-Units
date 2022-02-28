@@ -6,8 +6,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.INetHandler;
-import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.state.Property;
 import net.minecraft.tileentity.TileEntity;
@@ -19,6 +17,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import tfc.smallerunits.api.placement.UnitPos;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.networking.util.Packet;
 import tfc.smallerunits.utils.SmallUnit;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
@@ -26,7 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.function.Supplier;
 
-public class SLittleBlockChangePacket implements IPacket {
+public class SLittleBlockChangePacket extends Packet {
 	public ArrayList<SmallUnit> units;
 	public HashMap<Long, CompoundNBT> nbtLookup = new HashMap<>();
 	public BlockPos pos;
@@ -39,7 +38,7 @@ public class SLittleBlockChangePacket implements IPacket {
 	}
 	
 	public SLittleBlockChangePacket(PacketBuffer buffer) {
-		readPacketData(buffer);
+		super(buffer);
 	}
 	
 	@Override
@@ -162,11 +161,8 @@ public class SLittleBlockChangePacket implements IPacket {
 	}
 	
 	@Override
-	public void processPacket(INetHandler handler) {
-	}
-	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
-		if (ctx.get().getDirection().getReceptionSide().isClient()) {
+		if (checkClient(ctx.get())) {
 //			BlockState state = Minecraft.getInstance().world.getBlockState(pos);
 //			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
 //			TileEntity te = Minecraft.getInstance().world.getTileEntity(pos);
@@ -187,7 +183,13 @@ public class SLittleBlockChangePacket implements IPacket {
 						if (!value.tileEntity.getType().isValidBlock(value.state.getBlock())) {
 //							tileEntity.getFakeWorld().removeTileEntity(value.pos);
 							value.oldTE = value.tileEntity;
-							value.tileEntity = null;
+							if (value.state.hasTileEntity()) {
+								value.tileEntity = value.state.createTileEntity(tileEntity.getFakeWorld());
+								if (value.tileEntity != null)
+									value.tileEntity.setWorldAndPos(tileEntity.getFakeWorld(), value.pos);
+							} else {
+								value.tileEntity = null;
+							}
 						}
 					} else {
 						if (value.state.hasTileEntity()) {

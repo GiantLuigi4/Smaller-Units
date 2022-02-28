@@ -156,7 +156,14 @@ public class FakeChunk extends Chunk {
 		else blockMap.put(pos.toLong(), new SmallUnit(SmallerUnitsAPI.createPos(pos, getOwner()), state));
 		state.onBlockAdded(world, pos, oldState, isMoving);
 		if (world instanceof FakeServerWorld) ((FakeServerWorld) world).toUpdate.add(pos);
-		return state;
+		
+		TileEntity oldTe = world.getTileEntity(pos);
+		if (world instanceof FakeServerWorld || oldTe == null || !oldTe.getType().isValidBlock(state.getBlock())) {
+			TileEntity te = state.createTileEntity(world);
+			if (te != null) world.setTileEntity(pos, te);
+		}
+		
+		return oldState;
 	}
 	
 	private UnitTileEntity getOwner() {

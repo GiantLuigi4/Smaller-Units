@@ -2,8 +2,6 @@ package tfc.smallerunits.networking;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.INetHandler;
-import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -11,12 +9,13 @@ import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.networking.util.Packet;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.UUID;
 import java.util.function.Supplier;
 
-public class SLittleEntityStatusPacket implements IPacket {
+public class SLittleEntityStatusPacket extends Packet {
 	// TODO: change to array list
 	BlockPos updatingUnit;
 	boolean createEntity;
@@ -32,7 +31,7 @@ public class SLittleEntityStatusPacket implements IPacket {
 	}
 	
 	public SLittleEntityStatusPacket(PacketBuffer buffer) {
-		readPacketData(buffer);
+		super(buffer);
 	}
 	
 	@Override
@@ -50,11 +49,8 @@ public class SLittleEntityStatusPacket implements IPacket {
 	}
 	
 	@Override
-	public void processPacket(INetHandler handler) {
-	}
-	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
-		if (ctx.get().getDirection().getReceptionSide().isClient()) {
+		if (checkClient(ctx.get())) {
 //			BlockState state = Minecraft.getInstance().world.getBlockState(updatingUnit);
 //			if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
 //			TileEntity te = Minecraft.getInstance().world.getTileEntity(updatingUnit);

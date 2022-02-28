@@ -14,7 +14,6 @@ public class NBTStripper {
 		containedUnits.put("states", units.getCompound("states"));
 		ListNBT units1 = units.getList("units", Constants.NBT.TAG_COMPOUND);
 		ListNBT unitsCopy = new ListNBT();
-		
 		for (INBT inbt : units1) {
 			CompoundNBT nbt1 = ((CompoundNBT) inbt).copy();
 			nbt1.remove("tileNBT");
@@ -25,7 +24,8 @@ public class NBTStripper {
 		
 		for (String key : input.keySet()) {
 			if (!key.equals("containedUnits")) {
-				output.put(key, input.get(key).copy());
+				INBT nbt = input.get(key);
+				if (nbt != null) output.put(key, nbt.copy());
 			}
 		}
 		

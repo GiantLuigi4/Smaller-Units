@@ -1,11 +1,14 @@
 package tfc.smallerunits.utils.shapes;
 
+import net.minecraft.profiler.IProfiler;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.shapes.VoxelShape;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import tfc.collisionreversion.api.ContextAABB;
 import tfc.collisionreversion.api.ILegacyContext;
 import tfc.collisionreversion.api.lookup.CollisionLookup;
@@ -20,17 +23,16 @@ import tfc.smallerunits.utils.UnitRaytraceHelper;
 import tfc.smallerunits.utils.async.AsyncDispatcher;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class CollisionReversionShapeGetter {
 	private static final ThreadLocal<AsyncDispatcher> dispatcher = ThreadLocal.withInitial(() -> new AsyncDispatcher("Collision Filler Group").resize(4));
 	
-	public static void register() {
-		SelectionLookup.registerBoxFiller(CollisionReversionShapeGetter::fillSelection);
-		VisualShapeLookup.registerBoxFiller(CollisionReversionShapeGetter::fillVisual);
-		CollisionLookup.registerBoxFiller(CollisionReversionShapeGetter::fillCollision);
-	}
+	private static HashMap<BlockPos, AxisAlignedBB> closestBB = new HashMap<>();
 	
 	public static void fillSelection(ILegacyContext context) {
 		fill(context, false);
@@ -40,23 +42,72 @@ public class CollisionReversionShapeGetter {
 		fill(context, true);
 	}
 	
+	public static void register() {
+		SelectionLookup.registerBoxFiller(CollisionReversionShapeGetter::fillSelection);
+		VisualShapeLookup.registerBoxFiller(CollisionReversionShapeGetter::fillVisual);
+		CollisionLookup.registerBoxFiller(CollisionReversionShapeGetter::fillCollision);
+		
+		MinecraftForge.EVENT_BUS.addListener(CollisionReversionShapeGetter::postTick);
+	}
+	
+	public static void postTick(TickEvent.ClientTickEvent event) {
+		if (event.phase == TickEvent.Phase.END) {
+			closestBB.clear();
+		}
+	}
+	
+	// TODO: cache the list to something for the tick
 	public static void fill(ILegacyContext context, boolean isVisual) {
+		IProfiler profiler = context.getWorld().getProfiler();
+		
+		profiler.startSection("raytrace_V:" + isVisual);
+		profiler.startSection("setup");
 		List<AxisAlignedBB> boxes = context.getBoxes();
 		AxisAlignedBB box = context.boundingBox();
 		
 		World world = context.getWorld();
 		BlockPos pos = context.getPos();
 		UnitTileEntity tileEntity;
-		{
-			tileEntity = SUCapabilityManager.getUnitAtBlock(world, pos);
-			if (tileEntity == null) return;
+		
+		// mods like raytracing over and over again client side
+		profiler.endStartSection("checkCache");
+		if (world.isRemote && !isVisual) {
+			if (closestBB.containsKey(pos)) {
+				AxisAlignedBB bb = closestBB.get(pos);
+				if (bb != null) boxes.add(bb);
+				profiler.endSection();
+				profiler.endSection();
+				return;
+			}
 		}
+		
+		{
+			profiler.endStartSection("findUnit");
+			tileEntity = SUCapabilityManager.getUnitAtBlock(world, pos);
+			if (tileEntity == null) {
+				profiler.endSection();
+				profiler.endSection();
+				return;
+			}
+		}
+		
+		profiler.endStartSection("setup");
 		World fakeWorld = tileEntity.getFakeWorld();
 		int upb = tileEntity.unitsPerBlock;
-		for (SmallUnit value : tileEntity.getBlockMap().values()) {
+		
+		AtomicReference<AxisAlignedBB> closest = new AtomicReference<>();
+		AtomicReference<Double> closestDist = new AtomicReference<>(Double.POSITIVE_INFINITY);
+		
+		profiler.endStartSection("raytrace");
+		profiler.startSection("getUnits");
+		Collection<SmallUnit> units = tileEntity.getBlockMap().values();
+		profiler.endSection();
+		for (SmallUnit value : units) {
 			// ... why does this null check exist? lol
-			if (value.state == null || value.state.isAir()) continue;
+			profiler.startSection("nullCheck");
+			if (value.state.isAir()) continue;
 			
+			profiler.endStartSection("checkBox");
 			AxisAlignedBB blockBB =
 					new AxisAlignedBB(
 							0, 0, 0,
@@ -69,27 +120,56 @@ public class CollisionReversionShapeGetter {
 							(value.pos.getY() - 64) / (double) upb,
 							value.pos.getZ() / (double) upb
 					);
-			if (!context.raytrace(blockBB)) continue;
+			if (!context.raytrace(blockBB) && !blockBB.contains(context.getStart())) {
+				profiler.endSection();
+				continue;
+			}
 			
 			VoxelShape shape;
 			
+			profiler.endStartSection("getShape");
 			if (isVisual) shape = value.state.getRaytraceShape(fakeWorld, value.pos, ISelectionContext.dummy());
 			else shape = value.state.getShape(fakeWorld, value.pos, ISelectionContext.dummy());
 			
-			for (AxisAlignedBB axisAlignedBB : UnitRaytraceHelper.shrink(shape, upb)) {
+			profiler.endStartSection("raytracePrecise");
+			profiler.startSection("shrinkBoxes");
+			List<AxisAlignedBB> shrunkenBoxes = UnitRaytraceHelper.shrink(shape, upb);
+			profiler.endSection();
+			for (AxisAlignedBB axisAlignedBB : shrunkenBoxes) {
+				profiler.startSection("offset");
 				axisAlignedBB = axisAlignedBB.offset(pos).offset(value.pos.getX() / (double) upb, (value.pos.getY() - 64) / (double) upb, value.pos.getZ() / (double) upb);
+				profiler.endStartSection("checkInBox");
 				if (axisAlignedBB.intersects(box)) {
+					profiler.endStartSection("addBox");
 					ContextAABB ctxAABB = new ContextAABB(axisAlignedBB.minX, axisAlignedBB.minY, axisAlignedBB.minZ, axisAlignedBB.maxX, axisAlignedBB.maxY, axisAlignedBB.maxZ);
 					Optional<Vector3d> vec = axisAlignedBB.rayTrace(context.getStart(), context.getEnd());
-					vec.ifPresent(vector3d -> ctxAABB.setContext(
-							new UnitRaytraceContext(
-									shape, value.pos, vector3d
-							)
-					));
+					vec.ifPresent(vector3d -> {
+						ctxAABB.setContext(
+								new UnitRaytraceContext(
+										shape, value.pos, vector3d
+								)
+						);
+						if (world.isRemote && !isVisual) {
+							double dist = vector3d.distanceTo(context.getStart());
+							if (closestDist.get() > dist) {
+								closestDist.set(dist);
+								closest.set(ctxAABB);
+							}
+						}
+					});
 					boxes.add(ctxAABB);
 				}
+				profiler.endSection();
 			}
+			profiler.endSection();
 		}
+		
+		if (world.isRemote && !isVisual) {
+			closestBB.put(pos, closest.get());
+		}
+		
+		profiler.endSection();
+		profiler.endSection();
 	}
 	
 	public static void fillCollision(ILegacyContext context) {

@@ -19,8 +19,11 @@ public class SUFLWVBO extends SURenderable {
 	public ArrayList<ModelStorage> buffers = new ArrayList<>();
 	
 	public void render(MatrixStack matrixStack) {
+		if (buffers.isEmpty()) return;
+		Minecraft.getInstance().getProfiler().startSection("vbos");
 		buffers.sort(ModelStorage::compareTo);
 		Minecraft.getInstance().getProfiler().startSection("renderVBOs");
+		
 		SmallerUnitsProgram shader = FlywheelProgram.UNIT.getProgram(new ResourceLocation("smallerunits:unit_shader"));
 		boolean isFirst = true;
 		
@@ -42,30 +45,44 @@ public class SUFLWVBO extends SURenderable {
 			} else {
 				Minecraft.getInstance().getProfiler().endStartSection("renderVBO_" + RenderTypeHelper.getTypeName(storage.renderType));
 			}
-			storage.renderType.setupRenderState();
+			Minecraft.getInstance().getProfiler().startSection("setType");
+			RenderType type = RenderTypeHelper.getType(storage.renderType);
+			type.setupRenderState();
 			storage.model.setupState();
+			Minecraft.getInstance().getProfiler().endStartSection("drawCall");
 			storage.model.drawCall();
+			Minecraft.getInstance().getProfiler().endStartSection("clearType");
 			storage.model.clearState();
-			storage.renderType.clearRenderState();
+			type.clearRenderState();
+			Minecraft.getInstance().getProfiler().endSection();
 		}
 		
 		shader.unbind();
 		
 		Minecraft.getInstance().getProfiler().endSection();
 		Minecraft.getInstance().getProfiler().endSection();
+		Minecraft.getInstance().getProfiler().endSection();
+//		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	public void uploadTerrain(RenderType renderType, BufferBuilder bufferBuilder) {
-		if (bufferBuilder.isDrawing())
-			bufferBuilder.finishDrawing();
-		else return;
+		if (bufferBuilder != null) {
+			if (bufferBuilder.isDrawing())
+				bufferBuilder.finishDrawing();
+			else return;
+		}
+		Minecraft.getInstance().getProfiler().startSection("vbos");
 		if (bufferBuilder != null) {
 			for (ModelStorage buffer : buffers) {
 				if (buffer.renderType.equals(renderType)) {
+					Minecraft.getInstance().getProfiler().startSection("delVbo");
 					(buffer.model).delete();
+					Minecraft.getInstance().getProfiler().endStartSection("genAndUpload");
 					IndexedModel mdl = new IndexedModel(new SUModel(FlywheelVertexFormats.BLOCK, bufferBuilder));
 					buffer.model = mdl;
 					buffer.isPresent = true;
+					Minecraft.getInstance().getProfiler().endSection();
+					Minecraft.getInstance().getProfiler().endSection();
 					return;
 				}
 			}
@@ -73,10 +90,12 @@ public class SUFLWVBO extends SURenderable {
 			for (ModelStorage buffer : buffers) {
 				if (buffer.renderType.equals(renderType)) {
 					buffer.isPresent = false;
+					Minecraft.getInstance().getProfiler().endSection();
 					return;
 				}
 			}
 		}
+		Minecraft.getInstance().getProfiler().startSection("uploadVBO");
 		ModelStorage storage = new ModelStorage();
 		storage.renderType = renderType;
 //		BufferBuilder.State state = bufferBuilder.getVertexState();
@@ -88,6 +107,8 @@ public class SUFLWVBO extends SURenderable {
 		storage.model = mdl;
 		storage.isPresent = bufferBuilder != null;
 		buffers.add(storage);
+		Minecraft.getInstance().getProfiler().endSection();
+		Minecraft.getInstance().getProfiler().endSection();
 	}
 	
 	public void markAllUnused() {
@@ -105,6 +126,7 @@ public class SUFLWVBO extends SURenderable {
 	@Override
 	public boolean isValid() {
 		for (ModelStorage buffer : buffers) {
+			if (buffer.model.getVertexCount() == 0) continue;
 			if (!buffer.model.valid()) return false;
 		}
 		return true;

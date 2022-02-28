@@ -117,6 +117,7 @@ public class UnitPallet {
 				}
 				te.read(unit.state, teNBT);
 				unit.tileEntity = te;
+				te.cachedBlockState = posUnitMap.get(pos.toLong()).state;
 				if (world != null) unit.tileEntity.setWorldAndPos(world, pos);
 			}
 		}

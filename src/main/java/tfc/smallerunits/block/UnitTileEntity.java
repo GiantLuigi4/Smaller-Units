@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
@@ -208,6 +209,10 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 	
 	public IProfiler getProfiler() {
 		return worldClient != null ? worldClient.get().profiler.get() : worldServer.profiler.get();
+	}
+	
+	public IProfiler getWorldProfiler() {
+		return getWorld().getProfiler();
 	}
 	
 	public Map<Long, SmallUnit> getBlockMap() {
@@ -664,6 +669,14 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		return Deferred.UNIT.get().getDefaultState();
 	}
 	
+	public BlockState getBlockState(BlockPos pos) {
+		return getFakeWorld().getBlockState(pos);
+	}
+	
+	public TileEntity getTileEntity(BlockPos pos) {
+		return getFakeWorld().getTileEntity(pos);
+	}
+	
 	@Nullable
 	@Override
 	public SUpdateTileEntityPacket getUpdatePacket() {
@@ -719,5 +732,10 @@ public class UnitTileEntity extends TileEntity implements ITickableTileEntity {
 		} else {
 			ClientUtils.unloadWorld(fakeWorld);
 		}
+	}
+	
+	public void onTrack(ServerPlayerEntity player) {
+		World world = getFakeWorld();
+		if (world instanceof FakeServerWorld) ((FakeServerWorld) world).onStartTracking(player);
 	}
 }

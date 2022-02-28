@@ -129,7 +129,7 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:quark-243121:3393195')
     runtimeOnly fg.deobf('curse.maven:oddities-301051:3088871')
     runtimeOnly fg.deobf('curse.maven:autoreglib-250363:3326041')
-    runtimeOnly fg.deobf('curse.maven:appeng-223794:3354897')
+    compile fg.deobf('curse.maven:appeng-223794:3354897')
     compile fg.deobf('curse.maven:refinedstorage-243076:3196167')
 //    runtimeOnly fg.deobf('curse.maven:pymtech-316946:3163217')
     runtimeOnly fg.deobf('curse.maven:compactstorage-223703:3209571')
@@ -140,9 +140,9 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:rftoolsbase-326041:3206945')
 
     // if I use old create, I need to use old C&B
-    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3234842')
+    compile fg.deobf('curse.maven:chiselandbits-231095:3234842')
     compile fg.deobf('curse.maven:create-328085:3278516')
-//    runtimeOnly fg.deobf('curse.maven:chiselandbits-231095:3510598')
+//    compile fg.deobf('curse.maven:chiselandbits-231095:3510598')
 //    compile fg.deobf('curse.maven:create-328085:3536025') //3278516
 
 //    runtimeOnly fg.deobf('curse.maven:botania-225643:3175663')
@@ -155,6 +155,11 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:redstone_pen-461710:3348960')
     runtimeOnly fg.deobf('curse.maven:ctm-267602:3137659')
     runtimeOnly fg.deobf('curse.maven:tiny_redstone-453746:3347318')
+
+    runtimeOnly fg.deobf('curse.maven:vfxgen-521724:3446310')
+
+    compile fg.deobf('curse.maven:tcon-74072:3576393')
+    compile fg.deobf('curse.maven:mantle-74924:3576386')
 
 //    compile fg.deobf('curse.maven:pokecube-285121:3308917')
 
@@ -176,14 +181,17 @@ dependencies {
     // currently forge gradle does not work with jitpack
     // in order to get collision reversion to load in dev envro, I had to build it without remapping it
     // then use the files dependency type to load it in
-    compile files('CollisionReversion-1.0-SNAPSHOT.zip')
+    compile files('CollisionReversion-1.0-SNAPSHOT-deobf.jar')
 //    compile fg.deobf('com.github.GiantLuigi4:CollisionReversion:08cf9671bf')
     compile fg.deobf('curse.maven:hwyla-3033613:3033593')
+    compile fg.deobf('curse.maven:VFE-325360:3107340')
 
     // this will only exist while vivecraft does not have an api which is meant to be used
     // I did this for sake of getting a sense on how to do vivecraft support, and as a for the time being thing
     // as soon as vivecraft has a proper api, I am removing this and using that
     compile files("vivecraft_compiletime_api.jar")
+//    compile fg.deobf(files("minecrift-1.16.5-jrbudda-7-8b.jar"))
+
 
     compile 'org.spongepowered:mixin:0.8'
 }

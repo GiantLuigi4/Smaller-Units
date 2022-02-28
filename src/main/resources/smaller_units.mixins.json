@@ -4,44 +4,54 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "smaller_units.refmap.json",
   "client": [
-    "ClientPlayNetHandlerMixin",
-    "GameRendererMixin",
-    "MinecraftMixin",
-    "ModelDataManagerMixin",
-    "TileEntityRendererDispatcherMixin",
-    "WorldRendererAccessor",
-    
-    "rendering.unit_in_block.ChunkRenderCacheAccessor",
-    "rendering.unit_in_block.ChunkRenderMixin",
-    "rendering.unit_in_block.RebuildTaskMixin",
-    "rendering.unit_in_block.WorldRendererMixin",
-    
-    "ticking.ChunkArrayAccessor",
-    
-    "breaking.PlayerControllerMixin"
+	"ClientPlayNetHandlerMixin",
+	"GameRendererMixin",
+	"MinecraftMixin",
+	"ModelDataManagerMixin",
+	"TileEntityRendererDispatcherMixin",
+	"WorldRendererAccessor",
+	"rendering.unit_in_block.ChunkRenderCacheAccessor",
+	"rendering.unit_in_block.ChunkRenderMixin",
+	"rendering.unit_in_block.RebuildTaskMixin",
+	"rendering.unit_in_block.WorldRendererMixin",
+	"screens.client.AbstractCommandBlockScreenAccessor",
+	"screens.client.CommandBlockScreenMixin",
+	"screens.client.EditStructureScreenMixin",
+	"screens.client.SignEditorScreenMixin",
+	"ticking.ChunkArrayAccessor"
   ],
   "mixins": [
-    "CapabilityProviderAccessor",
-    "ContainerMixin",
-    "ContainerMixin2",
-    "IndexedMessageCodecMixin",
-    "PlayerEntityMixin",
-    "ServerPlayerEntityMixin",
-    "ServerPlayNetHandlerMixin",
-    "ServerWorldAccessor",
-    "SimpleChannelMixin",
-    "WorldAccessor",
-    
-    "continuity.ServerWorldInfoAccessor",
-    
-    "referenceremoval.RaidManagerAccessor",
-    "referenceremoval.ServerTickListAccessor",
-    
-    "shapes.AbstractBlockStateMixin",
-    "shapes.VoxelShapesMixin",
-    
-    "tracking.EntityAccessor",
-    "tracking.PlayerEntityMixin"
+	"CapabilityProviderAccessor",
+	"ContainerMixin",
+	"ContainerMixin2",
+	"IndexedMessageCodecMixin",
+	"PlayerEntityMixin",
+	"ServerPlayerEntityMixin",
+	"ServerPlayNetHandlerMixin",
+	"ServerWorldAccessor",
+	"SimpleChannelMixin",
+	"WorldAccessor",
+ 
+	"continuity.ServerWorldInfoAccessor",
+ 
+	"dev.access.TileEntityAccessor",
+	"dev.create.SmartTileEntityMixin",
+ 
+	"referenceremoval.RaidManagerAccessor",
+	"referenceremoval.ServerTickListAccessor",
+ 
+	"screens.BrewingStandTileEntityMixin",
+	"screens.FurnaceTileEntityMixin",
+	"screens.LecternTileEntityMixin",
+	"screens.LecternTileEntityMixin$LecternInventoryMixin",
+	"screens.LockableLootTileEntityMixin",
+	"screens.RepairContainerMixin",
+	"screens.ServerPlayerEntityMixin",
+  
+	"shapes.AbstractBlockStateMixin",
+	"shapes.VoxelShapesMixin",
+  
+	"tracking.NetworkContextMixin"
   ],
   "injectors": {
 	"defaultRequire": 0

@@ -1,74 +1,87 @@
 package tfc.smallerunits.mixins.tracking;
 
-import com.mojang.authlib.GameProfile;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.datasync.DataParameter;
-import net.minecraft.network.datasync.DataSerializers;
-import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.utils.accessor.SUTracked;
+import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.tracking.PlayerDataManager;
-
-import static tfc.smallerunits.utils.tracking.PlayerDataManager.*;
+import tfc.smallerunits.utils.tracking.data.SUDataTracker;
 
 @Mixin(PlayerEntity.class)
-public class PlayerEntityMixin {
-	@Shadow @Final private static DataParameter<Float> ABSORPTION;
+public class PlayerEntityMixin implements SUTracked {
 	@Unique
-	private static final DataParameter<Byte> SU_MINING_PROGRESS = EntityDataManager.createKey(PlayerEntity.class, DataSerializers.BYTE);
+	private SUDataTracker tracker;
 	@Unique
-	private static final DataParameter<BlockPos> SU_MINING_POSITION = EntityDataManager.createKey(PlayerEntity.class, DataSerializers.BLOCK_POS);
+	private double progressVal = 0;
 	@Unique
-	private static final DataParameter<BlockPos> SU_MINING_POSITION2 = EntityDataManager.createKey(PlayerEntity.class, DataSerializers.BLOCK_POS);
-
-	static {
-		PlayerDataManager.setParameters(SU_MINING_PROGRESS, SU_MINING_POSITION, SU_MINING_POSITION2);
+	private boolean hasFinished = false;
+	
+	@Override
+	public SUDataTracker SmallerUnits_getTracker() {
+		return tracker;
 	}
-
-	@Unique
-	private EntityDataManager dataManager;
-
-	@Inject(at = @At("TAIL"), method = "registerData")
+	
+	@Inject(at = @At("HEAD"), method = "registerData")
 	public void preRegisterData(CallbackInfo ci) {
-		dataManager = ((EntityAccessor) this).SmallerUnits_getDataManager();
-		assert ABSORPTION != null;
-		//noinspection ConstantConditions
-		assert SU_MINING_PROGRESS != null;
-		assert dataManager != null;
-		//noinspection ConstantConditions
-		assert this != null;
-		dataManager.register(SU_MINING_PROGRESS, (byte) -1);
-		dataManager.register(SU_MINING_POSITION, new BlockPos(0, 0, 0));
-		dataManager.register(SU_MINING_POSITION2, new BlockPos(0, 0, 0));
+		if (tracker == null) tracker = new SUDataTracker((Entity) (Object) this);
+		tracker.register(PlayerDataManager.POS0, new BlockPos(0, 0, 0));
+		tracker.register(PlayerDataManager.POS1, new BlockPos(0, 0, 0));
+		tracker.register(PlayerDataManager.PROGRESS, (byte) -1);
 	}
-
-	@Unique
-	public void setMiningProgress(byte amt) {
-		this.dataManager.set(SU_MINING_PROGRESS, amt);
+	
+	@Override
+	public boolean SmallerUnits_hasFinished() {
+		return hasFinished;
 	}
-
-	@Unique
-	// pos in fake world
-	public void setMiningPosition(BlockPos pos) {
-		this.dataManager.set(SU_MINING_POSITION, pos);
+	
+	@Override
+	public void SmallerUnits_setHasFinished(boolean hasFinished) {
+		this.hasFinished = hasFinished;
 	}
-
-	@Unique
-	// pos in real world
-	public void setMiningPosition2(BlockPos pos) {
-		this.dataManager.set(SU_MINING_POSITION2, pos);
-	}
-
+	
 	@Inject(at = @At("HEAD"), method = "tick")
 	public void preTick(CallbackInfo ci) {
-
+		if (tracker.get(PlayerDataManager.PROGRESS) != -1) {
+			BlockPos worldPos = tracker.get(PlayerDataManager.POS0);
+			BlockPos littlePos = tracker.get(PlayerDataManager.POS1);
+			
+			PlayerEntity player = ((PlayerEntity) (Object) this);
+			World world = player.getEntityWorld();
+			UnitTileEntity te = SUCapabilityManager.getUnitAtBlock(world, worldPos);
+			if (te != null) {
+				BlockState state = te.getBlockState(littlePos);
+				double hardness = state.getPlayerRelativeBlockHardness(player, te.getFakeWorld(), littlePos);
+				tracker.set(PlayerDataManager.PROGRESS, (byte) (hardness * 7));
+				progressVal += hardness;
+				if (hasFinished && progressVal >= 1) {
+					progressVal = 0;
+					
+					te.getBlockState().removedByPlayer(
+							world, worldPos, player,
+							true, Fluids.EMPTY.getDefaultState()
+					);
+					
+					tracker.set(PlayerDataManager.POS0, new BlockPos(0, 0, 0));
+					tracker.set(PlayerDataManager.POS1, new BlockPos(0, 0, 0));
+					tracker.set(PlayerDataManager.PROGRESS, (byte) -1);
+				}
+			} else {
+				tracker.set(PlayerDataManager.POS0, new BlockPos(0, 0, 0));
+				tracker.set(PlayerDataManager.POS1, new BlockPos(0, 0, 0));
+				tracker.set(PlayerDataManager.PROGRESS, (byte) -1);
+			}
+			
+			// TODO: tracker.sync()
+		}
 	}
 }
-a

@@ -11,38 +11,50 @@ import net.minecraft.util.math.shapes.VoxelShapes;
 import net.minecraft.util.math.vector.Vector3d;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.utils.compat.RaytraceUtils;
+import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
+import tfc.smallerunits.utils.compat.vr.UnkownVRPlayer;
 
 import java.util.ArrayList;
 import java.util.Optional;
 
 public class UnitRaytraceHelper {
-	public static UnitRaytraceContext raytraceBlock(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
+	public static UnitRaytraceContext raytraceBlock(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional, Optional<SUVRPlayer> vrPlayer) {
 		VoxelShape shape = null;
 		
 		Vector3d start1;
 		Vector3d look;
 		Vector3d end;
-		if (entity != null) {
-			start1 = RaytraceUtils.getStartVector(entity);
-			double reach = RaytraceUtils.getReach(entity);
-			look = RaytraceUtils.getLookVector(entity).scale(reach);
-			end = RaytraceUtils.getStartVector(entity).add(look); // why..?
-		} else {
-			if (contextOptional.isPresent()) {
-				entity = contextOptional.get().getEntity();
-				if (entity != null) {
-					start1 = RaytraceUtils.getStartVector(entity);
-					double reach = RaytraceUtils.getReach(entity);
-					look = RaytraceUtils.getLookVector(entity).scale(reach);
-					end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+		if (!vrPlayer.isPresent()) {
+			if (entity != null) {
+				start1 = RaytraceUtils.getStartVector(entity);
+				double reach = RaytraceUtils.getReach(entity);
+				look = RaytraceUtils.getLookVector(entity).scale(reach);
+				end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+			} else {
+				if (contextOptional.isPresent()) {
+					entity = contextOptional.get().getEntity();
+					if (entity != null) {
+						start1 = RaytraceUtils.getStartVector(entity);
+						double reach = RaytraceUtils.getReach(entity);
+						look = RaytraceUtils.getLookVector(entity).scale(reach);
+						end = RaytraceUtils.getStartVector(entity).add(look); // why..?
+					} else {
+						UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
+						return context;
+					}
 				} else {
 					UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
 					return context;
 				}
-			} else {
-				UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
-				return context;
 			}
+		} else {
+			start1 = vrPlayer.get().getControllerPos(0);
+			double reach;
+			if (contextOptional.isPresent()) if (entity == null) entity = contextOptional.get().getEntity();
+			if (entity == null) reach = 7;
+			else reach = RaytraceUtils.getReach(entity);
+			look = vrPlayer.get().getControllerAngle(0).scale(reach);
+			end = start1.add(look);
 		}
 		
 		double bestDist = Double.POSITIVE_INFINITY;
@@ -127,11 +139,16 @@ public class UnitRaytraceHelper {
 		return context;
 	}
 	
-	public static UnitRaytraceContext raytraceBlockWithoutShape(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
-		Vector3d start = RaytraceUtils.getStartVector(entity);
+	public static UnitRaytraceContext raytraceBlockWithoutShape(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional, Optional<SUVRPlayer> vrPlayer) {
+		if (!vrPlayer.isPresent())
+			vrPlayer = Optional.of(new UnkownVRPlayer(RaytraceUtils.getStartVector(entity), RaytraceUtils.getLookVector(entity)));
+//		Vector3d start = RaytraceUtils.getStartVector(entity);
+		Vector3d start = vrPlayer.get().getControllerPos(0);
 		double reach = RaytraceUtils.getReach(entity);
-		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
-		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // why exactly did I do it this way..?
+//		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
+		Vector3d look = vrPlayer.get().getControllerAngle(0).scale(reach);
+//		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // why exactly did I do it this way..?
+		Vector3d end = start.add(look); // yes I often leave comment code
 		
 		double bestDist = Double.POSITIVE_INFINITY;
 		
@@ -216,13 +233,19 @@ public class UnitRaytraceHelper {
 		return newBoundingBoxes;
 	}
 	
-	public static UnitRaytraceContext raytraceFluid(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional) {
-		VoxelShape shape = null;
+	public static UnitRaytraceContext raytraceFluid(UnitTileEntity tileEntity, Entity entity, boolean includeGround, BlockPos pos, Optional<ISelectionContext> contextOptional, Optional<SUVRPlayer> vrPlayer) {
+		if (!vrPlayer.isPresent())
+			vrPlayer = Optional.of(new UnkownVRPlayer(RaytraceUtils.getStartVector(entity), RaytraceUtils.getLookVector(entity)));
 		
-		Vector3d start = RaytraceUtils.getStartVector(entity);
+		VoxelShape shape = null;
+
+//		Vector3d start = RaytraceUtils.getStartVector(entity);
+		Vector3d start = vrPlayer.get().getControllerPos(0);
 		double reach = RaytraceUtils.getReach(entity);
-		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
-		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // seriously, why?
+//		Vector3d look = RaytraceUtils.getLookVector(entity).scale(reach);
+		Vector3d look = vrPlayer.get().getControllerAngle(0).scale(reach);
+//		Vector3d end = RaytraceUtils.getStartVector(entity).add(look); // seriously, why?
+		Vector3d end = start.add(look); // there, more sane
 		
 		double bestDist = Double.POSITIVE_INFINITY;
 		
@@ -266,7 +289,7 @@ public class UnitRaytraceHelper {
 			}
 		}
 		
-		UnitRaytraceContext result1 = raytraceBlockWithoutShape(tileEntity, entity, true, pos, contextOptional);
+		UnitRaytraceContext result1 = raytraceBlockWithoutShape(tileEntity, entity, true, pos, contextOptional, vrPlayer);
 		
 		UnitRaytraceContext context = new UnitRaytraceContext(VoxelShapes.empty(), new BlockPos(-100, -100, -100), new Vector3d(-100, -100, -100));
 		context.hitFace = hitFace;

@@ -2,16 +2,15 @@ package tfc.smallerunits;
 
 //import com.tfc.smallerunits.client.TickHandler;
 
-import net.minecraft.client.ClientBrandRetriever;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.PlayerController;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.*;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -30,20 +29,22 @@ import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.helpers.PacketHacksHelper;
 import tfc.smallerunits.networking.*;
+import tfc.smallerunits.networking.screens.CUpdateLittleCommandBlockPacket;
+import tfc.smallerunits.networking.screens.CUpdateLittleSignPacket;
+import tfc.smallerunits.networking.screens.CUpdateLittleStructureBlockPacket;
+import tfc.smallerunits.networking.screens.SOpenLittleSignPacket;
+import tfc.smallerunits.networking.util.SimpleChannelWrapper;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.renderer.FlywheelProgram;
 import tfc.smallerunits.utils.compat.FlywheelEvents;
+import tfc.smallerunits.utils.compat.vr.vivecraft.MinecriftDetector;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 import tfc.smallerunits.utils.scale.pehkui.PehkuiSupport;
 import tfc.smallerunits.utils.scale.threecore.SUResizeType;
 import tfc.smallerunits.utils.shapes.CollisionReversionShapeGetter;
-import tfc.smallerunits.utils.tracking.PlayerDataManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 
 //import com.tfc.smallerunits.worldgen.WorldTypeRegistry;
 
@@ -56,88 +57,24 @@ public class Smallerunits {
 	// Directly reference a log4j logger.
 	public static final Logger LOGGER = LogManager.getLogger();
 	
-	public static final String networkingVersion = "2.2";
+	public static final String networkingVersion = "3.0.1";
 	
-	// TODO: semantic version acceptance system thing
-	// if other side is on newer sub version but same major, allow connection
-	// if other side is on newer major, deny
-	// if other side is on older major or older sub version, deny
+	protected static String serverVersion = "";
+	// main.server_sub.client_sub
 	//
-	// 2.1 can connect to 2.0, 2.0 can't connect to 2.1
-	// 3.* can't connect to 2.*
-	// 2.* can't connect to 3.*
+	// main gets bumped when a new packet is added or a packet is changed without backwards compat
+	// client_sub gets bumped when a client packet is changed but has backwards compat
+	// server_sub gets bumped when a server packet is changed but has backwards compat
 	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
 			new ResourceLocation("smaller_units", "main"),
 			() -> networkingVersion,
-			(s) -> compareVersionsInverse(networkingVersion, s),
-			(s) -> compareVersions(networkingVersion, s)
+			(s) -> compareVersionsClient(networkingVersion, s),
+			(s) -> compareVersionsServer(networkingVersion, s)
 	);
-	
-	public static boolean compareVersions(String str0, String str1) {
-		String[] ver0 = parseVersion(str0);
-		String[] ver1 = parseVersion(str1);
-		ver0 = addPlaceholders(ver0, ver1);
-		ver1 = addPlaceholders(ver1, ver0);
-		
-		if (!ver0[0].equals(ver1[0])) return false;
-		
-		for (int i = 0; i < ver0.length; i++) {
-			if (Integer.parseInt(ver0[i]) < Integer.parseInt(ver1[i]))
-				return false;
-		}
-		return true;
-	}
-	
-	public static boolean compareVersionsInverse(String str0, String str1) {
-		String[] ver0 = parseVersion(str0);
-		String[] ver1 = parseVersion(str1);
-		ver0 = addPlaceholders(ver0, ver1);
-		ver1 = addPlaceholders(ver1, ver0);
-		
-		if (!ver0[0].equals(ver1[0])) return false;
-		
-		for (int i = 0; i < ver0.length; i++) {
-			if (Integer.parseInt(ver0[i]) < Integer.parseInt(ver1[i]))
-				return true;
-		}
-		return true;
-	}
-	
-	public static String[] addPlaceholders(String[] ver0, String[] ver1) {
-		int len = Math.max(ver0.length, ver1.length);
-		String[] strs = new String[len];
-		for (int i = 0; i < len; i++) {
-			if (i < ver0.length) {
-				strs[i] = ver0[i];
-			} else {
-				strs[i] = "0";
-			}
-		}
-		return strs;
-	}
-	
-	public static String[] parseVersion(String input) {
-		if (input.contains(".")) {
-			return input.split("\\.");
-		}
-		return new String[]{input};
-	}
-
-	// wat? lol
-//	public static void onConfigEvent(ModConfig.ModConfigEvent event) {
-//		if (event.getConfig().getModId().equals("smallerunits")) {
-//			CustomArrayList.growthRate = (Integer) Config.COMMON.listGrowthRate.get() - 1;
-//			CustomArrayList.minGrowth = (Integer)Config.COMMON.minGrowth.get();
-//		}
-//	}
-	
 	private static Smallerunits INSTANCE;
-	private final boolean isVivecraftPresent;
 	private static boolean isCollisionReversionPresent = false;
-	
-	public static boolean isVivecraftPresent() {
-		return INSTANCE.isVivecraftPresent;
-	}
+	private final boolean isVFEUsed;
+	private final boolean isVivecraftPresent;
 	
 	public Smallerunits() {
 		INSTANCE = this;
@@ -149,62 +86,20 @@ public class Smallerunits {
 		bus.addListener(this::setup);
 		bus.addListener(this::doClientStuff);
 		
-		if (FMLEnvironment.dist.isClient()) {
-			if (ClientBrandRetriever.getClientModName().equals("vivecraft")) {
-				boolean vivecraftPresence = false;
-				
-				try {
-					Class<?> clazz = Class.forName("org.vivecraft.api.VRData");
-					if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
-					Method m = clazz.getMethod("getController", int.class);
-					if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-						throw new ReflectiveOperationException("disable");
-					
-					clazz = Class.forName("org.vivecraft.api.VRData$VRDevicePose");
-					if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
-					m = clazz.getMethod("getPosition");
-					if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-						throw new ReflectiveOperationException("disable");
-					m = clazz.getMethod("getDirection");
-					if (!(!Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-						throw new ReflectiveOperationException("disable");
-					
-					clazz = Class.forName("org.vivecraft.gameplay.VRPlayer");
-					if (!Modifier.isPublic(clazz.getModifiers())) throw new RuntimeException("disable");
-					m = clazz.getMethod("get");
-					if (!(Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())))
-						throw new ReflectiveOperationException("disable");
-					Field f = clazz.getField("vrdata_world_render");
-					if (!(Modifier.isPublic(f.getModifiers()))) throw new RuntimeException("disable");
-					
-					LOGGER.info("Vivecraft detected; enabling support");
-					vivecraftPresence = true;
-				} catch (ReflectiveOperationException err) {
-					err.printStackTrace();
-					LOGGER.warn("Vivecraft detected; however, the version of vivecraft which is present does not match with what smaller units expects");
-					
-					String detectedVivecraftVersion = "null";
-					try {
-						Field f = Minecraft.class.getField("minecriftVerString");
-						detectedVivecraftVersion = (String) f.get(Minecraft.getInstance());
-					} catch (Throwable ignored) {
-					}
-					LOGGER.warn("Found: " + detectedVivecraftVersion + ", Expected: " + "Vivecraft 1.16.5 jrbudda-7-5 1.16.5");
-					ModLoader.get().addWarning(
-							new ModLoadingWarning(
-									ModLoadingContext.get().getActiveContainer().getModInfo(),
-									ModLoadingStage.CONSTRUCT, "smallerunits.vivecraft.support.version.error"
-							)
-					);
-				}
-				isVivecraftPresent = vivecraftPresence;
-			} else {
-				isVivecraftPresent = false;
+		{
+			boolean vivecraft = false;
+			boolean vfe = false;
+			if (FMLEnvironment.dist.isClient()) {
+				vivecraft = MinecriftDetector.testClient();
 			}
-		} else {
-			isVivecraftPresent = false; // TODO: when vivecraft gets an API, use that to test for vivecraft
+			if (!FMLEnvironment.dist.isClient() || !FMLEnvironment.production) { // I need to be able to test stuff easily
+				// on server, this is what it is
+				vfe = vivecraft = ModList.get().isLoaded("vivecraftforgeextensions");
+			}
+			isVivecraftPresent = vivecraft;
+			isVFEUsed = vfe;
 		}
-		
+
 //		WorldTypeRegistry.init();
 		
 		isCollisionReversionPresent = ModList.get().isLoaded("collision_reversion");
@@ -252,73 +147,28 @@ public class Smallerunits {
 			System.setProperty("java.awt.headless", "true");
 		}
 		
-		NETWORK_INSTANCE.registerMessage(0, SLittleBlockEventPacket.class,
-				SLittleBlockEventPacket::writePacketData,
+		SimpleChannelWrapper wrapper = new SimpleChannelWrapper(NETWORK_INSTANCE);
+		wrapper.registerMsg(SLittleBlockEventPacket.class,
 				SLittleBlockEventPacket::new,
 				(packet, ctx) -> {
 					// TODO: make all packets only set the packet handled if it's on the right side
 					if (ctx.get().getDirection().getReceptionSide().isClient()) {
-						packet.processPacket(null);
+						packet.handle(ctx);
 						ctx.get().setPacketHandled(true);
 					}
 				}
 		);
-		NETWORK_INSTANCE.registerMessage(1, CLittleBlockInteractionPacket.class,
-				CLittleBlockInteractionPacket::writePacketData,
-				CLittleBlockInteractionPacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
-		NETWORK_INSTANCE.registerMessage(2, SLittleEntityUpdatePacket.class,
-				SLittleEntityUpdatePacket::writePacketData,
-				SLittleEntityUpdatePacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
-		NETWORK_INSTANCE.registerMessage(3, SLittleEntityStatusPacket.class,
-				SLittleEntityStatusPacket::writePacketData,
-				SLittleEntityStatusPacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
-		NETWORK_INSTANCE.registerMessage(4, SLittleTileEntityUpdatePacket.class,
-				SLittleTileEntityUpdatePacket::writePacketData,
-				SLittleTileEntityUpdatePacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
-		NETWORK_INSTANCE.registerMessage(5, SLittleBlockChangePacket.class,
-				SLittleBlockChangePacket::writePacketData,
-				SLittleBlockChangePacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
-		NETWORK_INSTANCE.registerMessage(6, STileNBTPacket.class,
-				STileNBTPacket::writePacketData,
-				STileNBTPacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
-		NETWORK_INSTANCE.registerMessage(7, CBreakLittleBlockStatusPacket.class,
-				CBreakLittleBlockStatusPacket::writePacketData,
-				CBreakLittleBlockStatusPacket::new,
-				(packet, ctx) -> {
-					ctx.get().setPacketHandled(true);
-					packet.handle(ctx);
-				}
-		);
+		wrapper.registerMsg(CLittleBlockInteractionPacket.class, CLittleBlockInteractionPacket::new);
+		wrapper.registerMsg(SLittleEntityUpdatePacket.class, SLittleEntityUpdatePacket::new);
+		wrapper.registerMsg(SLittleEntityStatusPacket.class, SLittleEntityStatusPacket::new);
+		wrapper.registerMsg(SLittleTileEntityUpdatePacket.class, SLittleTileEntityUpdatePacket::new);
+		wrapper.registerMsg(SLittleBlockChangePacket.class, SLittleBlockChangePacket::new);
+		wrapper.registerMsg(STileNBTPacket.class, STileNBTPacket::new);
+		wrapper.registerMsg(CBreakLittleBlockStatusPacket.class, CBreakLittleBlockStatusPacket::new);
+		wrapper.registerMsg(CUpdateLittleCommandBlockPacket.class, CUpdateLittleCommandBlockPacket::new);
+		wrapper.registerMsg(SOpenLittleSignPacket.class, SOpenLittleSignPacket::new);
+		wrapper.registerMsg(CUpdateLittleSignPacket.class, CUpdateLittleSignPacket::new);
+		wrapper.registerMsg(CUpdateLittleStructureBlockPacket.class, CUpdateLittleStructureBlockPacket::new);
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,
@@ -364,8 +214,8 @@ public class Smallerunits {
 			SUResizeType.suSizeChangeTypes.register(bus);
 		}
 		
-		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onSneakClick);
-		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerInteract);
+		MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGHEST, CommonEventHandler::onSneakClick);
+		MinecraftForge.EVENT_BUS.addListener(EventPriority.HIGHEST, CommonEventHandler::onPlayerInteract);
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerTick);
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onWorldTick);
 		MinecraftForge.EVENT_BUS.addListener(CommonEventHandler::onPlayerBreakBlock);
@@ -375,6 +225,99 @@ public class Smallerunits {
 		MinecraftForge.EVENT_BUS.register(this);
 	}
 	
+	// wat? lol
+//	public static void onConfigEvent(ModConfig.ModConfigEvent event) {
+//		if (event.getConfig().getModId().equals("smallerunits")) {
+//			CustomArrayList.growthRate = (Integer) Config.COMMON.listGrowthRate.get() - 1;
+//			CustomArrayList.minGrowth = (Integer)Config.COMMON.minGrowth.get();
+//		}
+//	}
+	
+	public static String getServerVersion() {
+		return serverVersion;
+	}
+	
+	public static String[] addPlaceholders(String[] ver0, String[] ver1) {
+		int len = Math.max(ver0.length, ver1.length);
+		String[] strs = new String[len];
+		for (int i = 0; i < len; i++) {
+			if (i < ver0.length) {
+				strs[i] = ver0[i];
+			} else {
+				strs[i] = "0";
+			}
+		}
+		return strs;
+	}
+	
+	public static String[] parseVersion(String input) {
+		if (input.contains(".")) {
+			return input.split("\\.");
+		}
+		return new String[]{input};
+	}
+	
+	public static boolean compareVersionsServer(String str0, String str1) {
+		if (str1.contains("compat")) return true;
+		str0 = str0.split("compat")[0];
+		str1 = str0.split("compat")[0];
+		String[] serverVer = parseVersion(str0);
+		String[] clientVer = parseVersion(str1);
+		serverVer = addPlaceholders(serverVer, clientVer);
+		clientVer = addPlaceholders(clientVer, serverVer);
+		Smallerunits.serverVersion = str0;
+		
+		if (serverVer.length == 0 || clientVer.length == 0) return false;
+		if (!serverVer[0].equals(clientVer[0])) return false;
+		
+		if (serverVer.length < 2 || clientVer.length < 2) return false;
+		// server uses newer server sub than client
+		// client is allowed
+		if (Integer.parseInt(clientVer[1]) >= Integer.parseInt(serverVer[1])) return true;
+		if (serverVer.length > 2 && clientVer.length > 2) {
+			// server uses older client version than client
+			// client is allowed
+			if (Integer.parseInt(clientVer[2]) <= Integer.parseInt(serverVer[2])) return false;
+		} else {
+			// client does not have sub but server does
+			// client uses older client networking version
+			// client is allowed
+			if (serverVer.length > clientVer.length) return false;
+		}
+		return false;
+	}
+	
+	public static boolean isVivecraftPresent() {
+		return INSTANCE.isVivecraftPresent;
+	}
+	
+	public static boolean compareVersionsClient(String str0, String str1) {
+		if (str0.contains("compat")) return true;
+		str0 = str0.split("compat")[0];
+		str1 = str0.split("compat")[0];
+		String[] clientVer = parseVersion(str0);
+		String[] serverVer = parseVersion(str1);
+		clientVer = addPlaceholders(clientVer, serverVer);
+		serverVer = addPlaceholders(serverVer, clientVer);
+		Smallerunits.serverVersion = str1;
+		
+		if (clientVer.length == 0 || serverVer.length == 0) return false;
+		if (!clientVer[0].equals(serverVer[0])) return false;
+		
+		if (clientVer.length < 2 || serverVer.length < 2) return false;
+		if (Integer.parseInt(serverVer[1]) <= Integer.parseInt(clientVer[1])) return true;
+		if (clientVer.length > 2 && serverVer.length > 2) {
+			if (Integer.parseInt(serverVer[2]) >= Integer.parseInt(clientVer[2])) return false;
+		} else {
+			if (clientVer.length > serverVer.length) return false;
+		}
+		return false;
+	}
+	
+	public static boolean isVFEPresent() {
+		return INSTANCE.isVFEUsed;
+	}
+	
 	public static boolean useSelectionReversion(IBlockReader worldIn) {
 		return isCollisionReversionPresent && (
 				javaWhyAreDumb$1() && (
@@ -382,6 +325,7 @@ public class Smallerunits {
 								((World) worldIn).isRemote));
 	}
 	
+	// I appear to also be dumb, considering the fact that I seem to have forgotten to type "you"
 	private static boolean javaWhyAreDumb$1() {
 		return CollisionReversionAPI.useSelection();
 	}
@@ -390,9 +334,20 @@ public class Smallerunits {
 		return CollisionReversionAPI.useCollision();
 	}
 	
+	private static boolean javaWhyAreDumb$3() {
+		return CollisionReversionAPI.useVisualShapeReversion();
+	}
+	
 	public static boolean useCollisionReversion(IBlockReader worldIn) {
 		return isCollisionReversionPresent && (
 				javaWhyAreDumb$2() && (
+						!(worldIn instanceof World) ||
+								((World) worldIn).isRemote));
+	}
+	
+	public static boolean useVisualShapeReversion(IBlockReader worldIn) {
+		return isCollisionReversionPresent && (
+				javaWhyAreDumb$3() && (
 						!(worldIn instanceof World) ||
 								((World) worldIn).isRemote));
 	}

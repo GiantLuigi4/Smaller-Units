@@ -7,6 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.helpers.ContainerMixinHelper;
+import tfc.smallerunits.utils.accessor.IAmContainer;
 
 @Mixin({
 		PlayerContainer.class,
@@ -27,8 +28,13 @@ import tfc.smallerunits.helpers.ContainerMixinHelper;
 public class ContainerMixin2 {
 	@Inject(at = @At("HEAD"), method = "canInteractWith", cancellable = true)
 	public void canInteract(PlayerEntity playerIn, CallbackInfoReturnable<Boolean> cir) {
-		if (!ContainerMixinHelper.getNaturallyClosable((Container) (Object) this)) {
-			cir.setReturnValue(true);
+		// this uh... this kinda passes all checks above... 100% of the time...
+		if (!ContainerMixinHelper.isVanilla((Container) (Object) this)) {
+			if (this instanceof IAmContainer) {
+				if (!((IAmContainer) this).SmallerUnits_canCloseNaturally()) {
+					cir.setReturnValue(true);
+				}
+			}
 		}
 	}
 }

@@ -2,8 +2,6 @@ package tfc.smallerunits.networking;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.INetHandler;
-import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
@@ -12,20 +10,25 @@ import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.shapes.ISelectionContext;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraftforge.fml.network.NetworkEvent;
+import tfc.smallerunits.Smallerunits;
 import tfc.smallerunits.block.SmallerUnitBlock;
 import tfc.smallerunits.block.UnitTileEntity;
+import tfc.smallerunits.networking.util.HitContext;
+import tfc.smallerunits.networking.util.Packet;
+import tfc.smallerunits.utils.compat.vr.UnkownVRPlayer;
 import tfc.smallerunits.utils.data.SUCapabilityManager;
 
 import java.util.function.Supplier;
 
-public class CLittleBlockInteractionPacket implements IPacket {
+public class CLittleBlockInteractionPacket extends Packet {
 	Vector3d playerPos, lookVector, playerLookStart, playerLookEnd;
 	double yaw, pitch;
 	// TODO: change to array list
 	BlockPos clickedPos;
+	BlockPos smallPos = null;
 	BlockRayTraceResult result;
 	
-	public CLittleBlockInteractionPacket(Vector3d playerPos, Vector3d playerLookStart, Vector3d playerLookEnd, float yaw, float pitch, BlockPos clickedPos, BlockRayTraceResult result) {
+	public CLittleBlockInteractionPacket(Vector3d playerPos, Vector3d playerLookStart, Vector3d playerLookEnd, float yaw, float pitch, BlockPos clickedPos, BlockRayTraceResult result, BlockPos smallPos) {
 		this.playerPos = playerPos;
 		this.playerLookStart = playerLookStart;
 		this.playerLookEnd = playerLookEnd;
@@ -33,10 +36,11 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		this.pitch = pitch;
 		this.clickedPos = clickedPos;
 		this.result = result;
+		this.smallPos = smallPos;
 	}
 	
 	public CLittleBlockInteractionPacket(PacketBuffer buffer) {
-		readPacketData(buffer);
+		super(buffer);
 	}
 	
 	public static void writeVector3d(PacketBuffer buffer, Vector3d vector) {
@@ -54,6 +58,34 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		yaw = buf.readDouble();
 		pitch = buf.readDouble();
 		result = buf.readBlockRay();
+		
+		int size = buf.nioBuffer().capacity();
+		HitContext context = new HitContext();
+		context.vrPlayer = new UnkownVRPlayer(
+//				new Vector3d(buf.readDouble(), buf.readDouble(), buf.readDouble()),
+//				new Vector3d(buf.readDouble(), buf.readDouble(), buf.readDouble())
+				playerLookStart, playerLookEnd
+		);
+		if (size > 1) {
+			String extensions = buf.readString();
+			for (String s : extensions.split(",")) {
+				if (s.trim().equals("")) continue;
+				if (s.equals("SmallPos")) context.hitPos = smallPos = buf.readBlockPos();
+				if (s.equals("VR")) {
+					context.vrPlayer = new UnkownVRPlayer(
+							new Vector3d(buf.readDouble(), buf.readDouble(), buf.readDouble()),
+							new Vector3d(buf.readDouble(), buf.readDouble(), buf.readDouble())
+					);
+				}
+			}
+			System.out.println(context);
+		}
+		result.hitInfo = context;
+		
+		// capacity is amount unread, it seems
+//		int size = buf.nioBuffer().capacity();
+		// yes, this is kinda needed
+//		if (size == 8) result.hitInfo = smallPos = buf.readBlockPos();
 	}
 	
 	@Override
@@ -65,12 +97,33 @@ public class CLittleBlockInteractionPacket implements IPacket {
 		buf.writeDouble(yaw);
 		buf.writeDouble(pitch);
 		buf.writeBlockRay(result);
+		
+		if (!Smallerunits.getServerVersion().equals("3.0.0")) {
+			StringBuilder extensions = new StringBuilder();
+			
+			if (smallPos != null) extensions.append("SmallPos,");
+//			if (Smallerunits.isVivecraftPresent()) extensions.append("VR,");
+			buf.writeString(extensions.toString());
+			
+			// SmallPos extension
+			if (smallPos != null) buf.writeBlockPos(smallPos);
+			// VR extension
+//			if (Smallerunits.isVivecraftPresent()) {
+//				Vector3d start = RaytraceUtils.getStartVector(ClientUtils.getPlayer());
+//				Vector3d look = RaytraceUtils.getLookVector(ClientUtils.getPlayer());
+//				buf.writeDouble(start.x);
+//				buf.writeDouble(start.y);
+//				buf.writeDouble(start.z);
+//				buf.writeDouble(look.x);
+//				buf.writeDouble(look.y);
+//				buf.writeDouble(look.z);
+//			}
+		}
+
+//		if (smallPos != null) buf.writeBlockPos(smallPos);
 	}
 	
 	@Override
-	public void processPacket(INetHandler handler) {
-	}
-	
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		PlayerEntity player = ctx.get().getSender();
 //		BlockState state = player.world.getBlockState(clickedPos);
