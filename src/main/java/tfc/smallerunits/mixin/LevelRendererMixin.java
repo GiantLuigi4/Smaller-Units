@@ -1,0 +1,79 @@
+package tfc.smallerunits.mixin;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexBuffer;
+import com.mojang.math.Matrix4f;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(LevelRenderer.class)
+public class LevelRendererMixin {
+	@Unique
+	public ChunkRenderDispatcher.RenderChunk renderChunk;
+	
+	// TODO: move off of redirect
+	// even js coremods are better than a redirect imo
+	// granted those aren't exactly able to be ported to fabric
+	// and if I'm not gonna be the one porting SU to fabric, I don't wanna force someone else to port js coremods to fabric
+	@Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;getBuffer(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexBuffer;"))
+	public VertexBuffer preRenderLayer(ChunkRenderDispatcher.RenderChunk instance, RenderType p_112808_) {
+		return (renderChunk = instance).getBuffer(p_112808_);
+	}
+	
+	@Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawChunkLayer()V"), method = "renderChunkLayer")
+	public void preDrawLayer(RenderType j, PoseStack d0, double d1, double d2, double i, Matrix4f k, CallbackInfo ci) {
+		if (j == RenderType.solid()) {
+			BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
+			d0.pushPose();
+			BlockPos origin = renderChunk.getOrigin();
+			d0.translate(
+					origin.getX() - d1,
+					origin.getY() - d2,
+					origin.getZ() - i
+			);
+			d0.scale(1f / 4, 1f / 4, 1f / 4);
+			d0.translate(0, 3, 0);
+			dispatcher.renderSingleBlock(
+					Blocks.GRASS_BLOCK.defaultBlockState(),
+					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
+					LightTexture.pack(15, 15),
+					OverlayTexture.NO_OVERLAY
+			);
+			d0.translate(0, -1, 0);
+			dispatcher.renderSingleBlock(
+					Blocks.DIRT.defaultBlockState(),
+					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
+					LightTexture.pack(15, 15),
+					OverlayTexture.NO_OVERLAY
+			);
+			d0.translate(0, -1, 0);
+			dispatcher.renderSingleBlock(
+					Blocks.DIRT.defaultBlockState(),
+					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
+					LightTexture.pack(15, 15),
+					OverlayTexture.NO_OVERLAY
+			);
+			d0.translate(0, -1, 0);
+			dispatcher.renderSingleBlock(
+					Blocks.STONE.defaultBlockState(),
+					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
+					LightTexture.pack(15, 15),
+					OverlayTexture.NO_OVERLAY
+			);
+			d0.popPose();
+		}
+	}
+}

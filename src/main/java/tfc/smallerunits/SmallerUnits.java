@@ -19,6 +19,7 @@ public class SmallerUnits {
 		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
 		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 		// bus.addListener(this::setup)
+		Registry.BLOCK_REGISTER.register(modBus);
 	}
 	
 	private void setup(final FMLCommonSetupEvent event) {
