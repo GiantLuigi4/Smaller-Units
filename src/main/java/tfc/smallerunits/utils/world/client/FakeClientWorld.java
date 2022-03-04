@@ -435,6 +435,7 @@ public class FakeClientWorld extends ClientWorld {
 	}
 	
 	public BlockState getBlockState(BlockPos pos) {
+		if (pos == null) return Blocks.AIR.getDefaultState();
 		ExternalUnitInteractionContext context = new ExternalUnitInteractionContext(this, pos);
 		if (context.posInRealWorld != null && context.posInFakeWorld != null) {
 			if (context.stateInRealWorld != null) {

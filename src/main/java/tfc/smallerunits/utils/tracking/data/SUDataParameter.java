@@ -19,6 +19,10 @@ public class SUDataParameter<T> {
 		return serializer.serialize(value);
 	}
 	
+	public T deserialize(byte[] value) {
+		return serializer.read(value);
+	}
+	
 	public String getName() {
 		return location.toString();
 	}

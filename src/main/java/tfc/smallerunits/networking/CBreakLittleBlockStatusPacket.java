@@ -55,6 +55,11 @@ public class CBreakLittleBlockStatusPacket extends Packet {
 	@Override
 	public void handle(Supplier<NetworkEvent.Context> ctx) {
 		PlayerEntity player = ctx.get().getSender();
+		if (status == -1) {
+			PlayerDataManager.setMiningProgress(player, -1);
+			PlayerDataManager.setMiningPosition(player, new BlockPos(0, 0, 0));
+			PlayerDataManager.setMiningPosition2(player, new BlockPos(0, 0, 0));
+		}
 		World world = player.getEntityWorld();
 		UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(world, clickedPos);
 		if (tileEntity == null) return;
@@ -62,19 +67,21 @@ public class CBreakLittleBlockStatusPacket extends Packet {
 		if (!(state.getBlock() instanceof SmallerUnitBlock)) return;
 		
 		if (status == 0) {
-			PlayerDataManager.setMiningProgress(player, 0);
+			PlayerDataManager.setMiningProgress(player, -2); // -2 == start
 			PlayerDataManager.setMiningPosition(player, clickedPos);
 			PlayerDataManager.setMiningPosition2(player, tinyPos);
-		} else if (status == 1) {
+		} else if (status == 1 || status == 100) {
 			PlayerDataManager.markFinished(player);
 			if (tileEntity.getBlockState(tinyPos).getPlayerRelativeBlockHardness(
 					player, tileEntity.getFakeWorld(), tinyPos
-			) >= 1) {
+			) > 1) {
 				PlayerDataManager.setMiningProgress(player, 100); // TODO: 100->force complete
-				PlayerDataManager.setMiningPosition(player, new BlockPos(0, 0, 0));
-				PlayerDataManager.setMiningPosition2(player, new BlockPos(0, 0, 0));
+				PlayerDataManager.setMiningPosition(player, clickedPos);
+				PlayerDataManager.setMiningPosition2(player, tinyPos);
+//				PlayerDataManager.setMiningPosition(player, new BlockPos(0, 0, 0));
+//				PlayerDataManager.setMiningPosition2(player, new BlockPos(0, 0, 0));
 			} else {
-				PlayerDataManager.setMiningProgress(player, -1);
+//				PlayerDataManager.setMiningProgress(player, -1);
 			}
 		} else {
 			PlayerDataManager.setMiningProgress(player, -1);

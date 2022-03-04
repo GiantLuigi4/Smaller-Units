@@ -22,6 +22,7 @@ import tfc.smallerunits.utils.compat.vr.vivecraft.ViveSettings;
  * I went with C
  */
 public class RaytraceUtils {
+	// don't ask
 	public static float getPct(Entity entity) {
 		if (true) return 1;
 		if (entity == null) return 0;
@@ -38,22 +39,24 @@ public class RaytraceUtils {
 	
 	public static Vector3d getStartVector(Entity entity) {
 		if (Smallerunits.isVivecraftPresent()) {
-			// TODO: vivecraft compat
-			if (FMLEnvironment.dist.isClient() && entity.getEntityWorld().isRemote) {
-				if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
-					VRPlayer player = VRPlayer.get();
-					// TODO: check that the player is in vr mode
-					System.out.println(player);
-					if (player != null && player.vrdata_world_render != null) {
-						return player.vrdata_world_render.getController(ViveSettings.isReverseHands() ? LEFT : RIGHT).getPosition();
+			try {
+				if (FMLEnvironment.dist.isClient() && entity.getEntityWorld().isRemote) {
+					if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
+						VRPlayer player = VRPlayer.get();
+						// TODO: check that the player is in vr mode
+						if (player != null && player.vrdata_world_render != null) {
+							return player.vrdata_world_render.getController(ViveSettings.isReverseHands() ? LEFT : RIGHT).getPosition();
+						}
+					}
+				} else {
+					if (entity instanceof ServerPlayerEntity) {
+						SUVRPlayer vivePlayer = SUVRPlayer.getPlayer((ServerPlayerEntity) entity);
+						if (vivePlayer != null)
+							return vivePlayer.getControllerPos(0);
 					}
 				}
-			} else {
-				if (entity instanceof ServerPlayerEntity) {
-					SUVRPlayer vivePlayer = SUVRPlayer.getPlayer((ServerPlayerEntity) entity);
-					if (vivePlayer != null)
-						return vivePlayer.getControllerPos(0);
-				}
+			} catch (Throwable ignored) {
+				if (!FMLEnvironment.production) System.out.println("Race conditions go brr!");
 			}
 		}
 		return entity.getEyePosition(getPct(entity));
@@ -61,21 +64,24 @@ public class RaytraceUtils {
 	
 	public static Vector3d getLookVector(Entity entity) {
 		if (Smallerunits.isVivecraftPresent()) {
-			// TODO: vivecraft compat
-			if (FMLEnvironment.dist.isClient() && entity.getEntityWorld().isRemote) {
-				if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
-					VRPlayer player = VRPlayer.get();
-					// TODO: check that the player is in vr mode
-					if (player != null && player.vrdata_world_render != null) {
-						return player.vrdata_world_render.getController(ViveSettings.isReverseHands() ? LEFT : RIGHT).getDirection();
+			try {
+				if (FMLEnvironment.dist.isClient() && entity.getEntityWorld().isRemote) {
+					if (Minecraft.getInstance().player.getUniqueID().equals(entity.getUniqueID())) {
+						VRPlayer player = VRPlayer.get();
+						// TODO: check that the player is in vr mode
+						if (player != null && player.vrdata_world_render != null) {
+							return player.vrdata_world_render.getController(ViveSettings.isReverseHands() ? LEFT : RIGHT).getDirection();
+						}
+					}
+				} else {
+					if (entity instanceof ServerPlayerEntity) {
+						SUVRPlayer vivePlayer = SUVRPlayer.getPlayer((ServerPlayerEntity) entity);
+						if (vivePlayer != null)
+							return vivePlayer.getControllerAngle(0);
 					}
 				}
-			} else {
-				if (entity instanceof ServerPlayerEntity) {
-					SUVRPlayer vivePlayer = SUVRPlayer.getPlayer((ServerPlayerEntity) entity);
-					if (vivePlayer != null)
-						return vivePlayer.getControllerAngle(0);
-				}
+			} catch (Throwable ignored) {
+				if (!FMLEnvironment.production) System.out.println("Race conditions go brr!");
 			}
 		}
 		return entity.getLook(getPct(entity));

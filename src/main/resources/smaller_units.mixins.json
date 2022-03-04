@@ -10,6 +10,8 @@
 	"ModelDataManagerMixin",
 	"TileEntityRendererDispatcherMixin",
 	"WorldRendererAccessor",
+	"breaking.MinecraftMixin",
+	"breaking.PlayerControllerMixin",
 	"rendering.unit_in_block.ChunkRenderCacheAccessor",
 	"rendering.unit_in_block.ChunkRenderMixin",
 	"rendering.unit_in_block.RebuildTaskMixin",
@@ -34,8 +36,8 @@
  
 	"continuity.ServerWorldInfoAccessor",
  
-	"dev.access.TileEntityAccessor",
-	"dev.create.SmartTileEntityMixin",
+	//	"dev.access.TileEntityAccessor",
+	//	"dev.create.SmartTileEntityMixin",
  
 	"referenceremoval.RaidManagerAccessor",
 	"referenceremoval.ServerTickListAccessor",
@@ -51,7 +53,8 @@
 	"shapes.AbstractBlockStateMixin",
 	"shapes.VoxelShapesMixin",
   
-	"tracking.NetworkContextMixin"
+	"tracking.NetworkContextMixin",
+	"tracking.PlayerEntityMixin"
   ],
   "injectors": {
 	"defaultRequire": 0

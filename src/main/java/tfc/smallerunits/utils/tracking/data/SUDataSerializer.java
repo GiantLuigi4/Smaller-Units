@@ -24,7 +24,7 @@ public abstract class SUDataSerializer<T> {
 	public static final SUDataSerializer<Byte> BYTE = new SUDataSerializer<Byte>() {
 		@Override
 		public byte[] serialize(Byte obj) {
-			return new byte[obj];
+			return new byte[]{obj};
 		}
 		
 		@Override
@@ -35,10 +35,10 @@ public abstract class SUDataSerializer<T> {
 	
 	// https://stackoverflow.com/a/7619315
 	public static int readInt(int indx, byte[] bytes) {
-		return ((bytes[0] & 0xFF) << 24) |
-				((bytes[1] & 0xFF) << 16) |
-				((bytes[2] & 0xFF) << 8) |
-				((bytes[3] & 0xFF) << 0);
+		return ((bytes[indx] & 0xFF) << 24) |
+				((bytes[indx + 1] & 0xFF) << 16) |
+				((bytes[indx + 2] & 0xFF) << 8) |
+				((bytes[indx + 3] & 0xFF) << 0);
 	}
 	
 	// https://stackoverflow.com/a/7619315

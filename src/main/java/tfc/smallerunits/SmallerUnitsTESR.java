@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.IVertexBuilder;
 import com.mojang.datafixers.util.Pair;
 import com.tfc.better_fps_graph.API.Profiler;
 import it.unimi.dsi.fastutil.Function;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
@@ -43,9 +44,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.opengl.GL11;
 import tfc.smallerunits.api.SmallerUnitsAPI;
+import tfc.smallerunits.api.placement.UnitPos;
 import tfc.smallerunits.block.UnitTileEntity;
 import tfc.smallerunits.config.SmallerUnitsConfig;
 import tfc.smallerunits.helpers.ClientUtils;
+import tfc.smallerunits.networking.tracking.SSyncSUData;
 import tfc.smallerunits.renderer.FlywheelProgram;
 import tfc.smallerunits.utils.*;
 import tfc.smallerunits.utils.compat.vr.SUVRPlayer;
@@ -76,6 +79,7 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 	
 	//	private static final IRenderTypeBuffer buffers = new RenderTypeBuffers().getBufferSource();
 	private static final DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<RenderType, BufferBuilder>().setDefaultVal(() -> new BufferBuilder(16));
+	public static DestroyBlockProgress breakProgress;
 	
 	public static void closeRenderables(Function<SURenderable, Boolean> validator) {
 		ArrayList<BlockPos> toRemove = new ArrayList<>();
@@ -572,111 +576,124 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 		int height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
 		
 		Minecraft.getInstance().getProfiler().endStartSection("destroyProgress");
-		for (SortedSet<DestroyBlockProgress> value : Minecraft.getInstance().worldRenderer.damageProgress.values()) {
-			for (DestroyBlockProgress destroyBlockProgress : value) {
-				if (destroyBlockProgress.getPosition().equals(tileEntityIn.getPos())) {
-					int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
-					Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
-					UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(
-							tileEntityIn,
-							entity,
-							false,
-							tileEntityIn.getPos(),
-							Optional.empty(),
-							Optional.of(SUVRPlayer.getPlayer$(entity))
-					);
-					BlockState miningState = tileEntityIn.getFakeWorld().getBlockState(context.posHit);
-					Minecraft.getInstance().getProfiler().startSection("setup_" + miningState.toString());
-					matrixStackIn.push();
-					matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
-					matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
-					Minecraft.getInstance().getProfiler().endStartSection("getModel");
-					IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelShapes().getModel(miningState);
-					Minecraft.getInstance().getProfiler().endStartSection("getAllQuads");
-					
-					IModelData data = EmptyModelData.INSTANCE;
-					TileEntity te = tileEntityIn.getTileEntity(context.posHit);
-					if (te != null) data = te.getModelData();
-					data = model.getModelData(tileEntityIn.getFakeWorld(), context.posHit, miningState, data);
-					
-					ArrayList<BakedQuad> allQuads = new ArrayList<>();
-					for (RenderType blockRenderType : RenderType.getBlockRenderTypes()) {
-						ForgeHooksClient.setRenderLayer(blockRenderType);
-						for (Direction direction : Direction.values())
-							for (BakedQuad quad : model.getQuads(miningState, direction, new Random(miningState.getPositionRandom(context.posHit)), data))
-								if (!allQuads.contains(quad))
-									allQuads.add(quad);
-						for (BakedQuad quad : model.getQuads(miningState, null, new Random(miningState.getPositionRandom(context.posHit)), data))
+		// well then...
+		Long2ObjectMap<SortedSet<DestroyBlockProgress>> bpaowfoewWhyMustThisBeALocal =
+				Minecraft.getInstance()
+						.worldRenderer
+						.damageProgress;
+		ArrayList<DestroyBlockProgress> progresses = new ArrayList<>();
+		if (bpaowfoewWhyMustThisBeALocal.containsKey(tileEntityIn.getPos().toLong()))
+			progresses.addAll(bpaowfoewWhyMustThisBeALocal.get(tileEntityIn.getPos().toLong()));
+		if (SSyncSUData.suBreakingProgress.containsKey(tileEntityIn.getPos()))
+			progresses.addAll(SSyncSUData.suBreakingProgress.get(tileEntityIn.getPos()));
+		if (breakProgress != null) progresses.add(breakProgress);
+		for (DestroyBlockProgress destroyBlockProgress : progresses) {
+			if (destroyBlockProgress.getPosition().equals(tileEntityIn.getPos())) {
+				int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
+				phase = Math.min(phase, 7);
+				Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
+				UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(
+						tileEntityIn,
+						entity,
+						false,
+						tileEntityIn.getPos(),
+						Optional.empty(),
+						Optional.of(SUVRPlayer.getPlayer$(entity))
+				);
+				if (destroyBlockProgress.getPosition() instanceof UnitPos) {
+					context.posHit = ((UnitPos) destroyBlockProgress.getPosition()).realPos;
+				}
+				BlockState miningState = tileEntityIn.getFakeWorld().getBlockState(context.posHit);
+				Minecraft.getInstance().getProfiler().startSection("setup_" + miningState.toString());
+				matrixStackIn.push();
+				matrixStackIn.scale(1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock, 1f / tileEntityIn.unitsPerBlock);
+				matrixStackIn.translate(context.posHit.getX(), context.posHit.getY() - 64, context.posHit.getZ());
+				Minecraft.getInstance().getProfiler().endStartSection("getModel");
+				IBakedModel model = Minecraft.getInstance().getBlockRendererDispatcher().getBlockModelShapes().getModel(miningState);
+				Minecraft.getInstance().getProfiler().endStartSection("getAllQuads");
+				
+				IModelData data = EmptyModelData.INSTANCE;
+				TileEntity te = tileEntityIn.getTileEntity(context.posHit);
+				if (te != null) data = te.getModelData();
+				data = model.getModelData(tileEntityIn.getFakeWorld(), context.posHit, miningState, data);
+				
+				ArrayList<BakedQuad> allQuads = new ArrayList<>();
+				for (RenderType blockRenderType : RenderType.getBlockRenderTypes()) {
+					ForgeHooksClient.setRenderLayer(blockRenderType);
+					for (Direction direction : Direction.values())
+						for (BakedQuad quad : model.getQuads(miningState, direction, new Random(miningState.getPositionRandom(context.posHit)), data))
 							if (!allQuads.contains(quad))
 								allQuads.add(quad);
-					}
-					ForgeHooksClient.setRenderLayer(null);
-					
-					Minecraft.getInstance().getProfiler().endStartSection("draw");
-					{
-						IVertexBuilder builder1 = bufferIn.getBuffer(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
-						for (BakedQuad quad : allQuads) {
-							// quad unpacking
-							float x = 0, y = 0, z = 0;
-							float u = 0, v = 0;
-							float nx = 0, ny = 0, nz = 0;
-							for (int i1 = 0; i1 < quad.getVertexData().length; i1++) {
-								int vertexDatum = quad.getVertexData()[i1];
-								float f = Float.intBitsToFloat(vertexDatum);
-								
-								short vElement = (short) (i1 % 8);
-								
-								// wow this looks so much better in J16
-								switch (vElement) {
-									// get vertex position
-									case 0:
-										x = f;
-										break;
-									case 1:
-										y = f;
-										break;
-									case 2:
-										z = f;
-										break;
-									// texture coords
-									case 4:
-										u = f;
-										break;
-									case 5:
-										v = f;
-										break;
-									case 7:
-										float left = quad.getSprite().getMinU();
-										float sizeX = (quad.getSprite().getMaxU() - quad.getSprite().getMinU());
-										float right = quad.getSprite().getMinV();
-										float sizeY = (quad.getSprite().getMaxV() - quad.getSprite().getMinV());
-										
-										// normalize the vertex's texture coords
-										u = (u - left) / sizeX;
-										v = (v - right) / sizeY;
-										
-										Vector4f vector4f = new Vector4f((float) x, (float) y, (float) z, 1);
-										vector4f.transform(matrixStackIn.getLast().getMatrix());
-										builder1.addVertex(
-												vector4f.getX(),
-												vector4f.getY(),
-												vector4f.getZ(),
-												1,
-												1,
-												1,
-												1,
-												u, v,
-												combinedOverlayIn, combinedLightIn,
-												nx, ny, nz
-										);
-										break;
-								}
+					for (BakedQuad quad : model.getQuads(miningState, null, new Random(miningState.getPositionRandom(context.posHit)), data))
+						if (!allQuads.contains(quad))
+							allQuads.add(quad);
+				}
+				ForgeHooksClient.setRenderLayer(null);
+				
+				Minecraft.getInstance().getProfiler().endStartSection("draw");
+				{
+					IVertexBuilder builder1 = bufferIn.getBuffer(ModelBakery.DESTROY_RENDER_TYPES.get(phase + 1));
+					for (BakedQuad quad : allQuads) {
+						// quad unpacking
+						float x = 0, y = 0, z = 0;
+						float u = 0, v = 0;
+						float nx = 0, ny = 0, nz = 0;
+						for (int i1 = 0; i1 < quad.getVertexData().length; i1++) {
+							int vertexDatum = quad.getVertexData()[i1];
+							float f = Float.intBitsToFloat(vertexDatum);
+							
+							short vElement = (short) (i1 % 8);
+							
+							// wow this looks so much better in J16
+							switch (vElement) {
+								// get vertex position
+								case 0:
+									x = f;
+									break;
+								case 1:
+									y = f;
+									break;
+								case 2:
+									z = f;
+									break;
+								// texture coords
+								case 4:
+									u = f;
+									break;
+								case 5:
+									v = f;
+									break;
+								case 7:
+									float left = quad.getSprite().getMinU();
+									float sizeX = (quad.getSprite().getMaxU() - quad.getSprite().getMinU());
+									float right = quad.getSprite().getMinV();
+									float sizeY = (quad.getSprite().getMaxV() - quad.getSprite().getMinV());
+									
+									// normalize the vertex's texture coords
+									u = (u - left) / sizeX;
+									v = (v - right) / sizeY;
+									
+									Vector4f vector4f = new Vector4f((float) x, (float) y, (float) z, 1);
+									vector4f.transform(matrixStackIn.getLast().getMatrix());
+									builder1.addVertex(
+											vector4f.getX(),
+											vector4f.getY(),
+											vector4f.getZ(),
+											1,
+											1,
+											1,
+											1,
+											u, v,
+											combinedOverlayIn, combinedLightIn,
+											nx, ny, nz
+									);
+									break;
 							}
 						}
 					}
-					Minecraft.getInstance().getProfiler().endSection();
-					matrixStackIn.pop();
 				}
+				Minecraft.getInstance().getProfiler().endSection();
+				matrixStackIn.pop();
 			}
 		}
 		Minecraft.getInstance().getProfiler().endSection();

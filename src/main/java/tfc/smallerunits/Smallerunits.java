@@ -33,6 +33,7 @@ import tfc.smallerunits.networking.screens.CUpdateLittleCommandBlockPacket;
 import tfc.smallerunits.networking.screens.CUpdateLittleSignPacket;
 import tfc.smallerunits.networking.screens.CUpdateLittleStructureBlockPacket;
 import tfc.smallerunits.networking.screens.SOpenLittleSignPacket;
+import tfc.smallerunits.networking.tracking.SSyncSUData;
 import tfc.smallerunits.networking.util.SimpleChannelWrapper;
 import tfc.smallerunits.registry.Deferred;
 import tfc.smallerunits.renderer.FlywheelProgram;
@@ -57,7 +58,7 @@ public class Smallerunits {
 	// Directly reference a log4j logger.
 	public static final Logger LOGGER = LogManager.getLogger();
 	
-	public static final String networkingVersion = "3.0.1";
+	public static final String networkingVersion = "3.1.1";
 	
 	protected static String serverVersion = "";
 	// main.server_sub.client_sub
@@ -169,6 +170,7 @@ public class Smallerunits {
 		wrapper.registerMsg(SOpenLittleSignPacket.class, SOpenLittleSignPacket::new);
 		wrapper.registerMsg(CUpdateLittleSignPacket.class, CUpdateLittleSignPacket::new);
 		wrapper.registerMsg(CUpdateLittleStructureBlockPacket.class, CUpdateLittleStructureBlockPacket::new);
+		wrapper.registerMsg(SSyncSUData.class, SSyncSUData::new);
 
 //		NETWORK_INSTANCE.registerMessage(
 //				0,

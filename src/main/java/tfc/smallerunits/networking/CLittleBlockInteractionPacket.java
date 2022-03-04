@@ -78,7 +78,7 @@ public class CLittleBlockInteractionPacket extends Packet {
 					);
 				}
 			}
-			System.out.println(context);
+//			System.out.println(context);
 		}
 		result.hitInfo = context;
 		
