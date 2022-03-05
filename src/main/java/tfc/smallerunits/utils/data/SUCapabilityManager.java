@@ -33,7 +33,6 @@ public class SUCapabilityManager {
 	
 	@CapabilityInject(SUCapability.class)
 	private static void onCapabilityInject(Capability<SUCapability> capability) {
-//		LOGGER.info("Received IEnergyStorage capability '{}': enabling Forge Energy support", capability);
 		SUCapability = capability;
 	}
 	
