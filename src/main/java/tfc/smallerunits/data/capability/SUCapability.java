@@ -1,17 +1,42 @@
 package tfc.smallerunits.data.capability;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.util.INBTSerializable;
+import org.lwjgl.system.MathUtil;
+import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.utils.math.Math1D;
 
 public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag> {
 	@Override
 	public CompoundTag serializeNBT() {
-		System.out.println("h");
-		return new CompoundTag();
+		CompoundTag tag = new CompoundTag();
+		for (int i = 0; i < spaceMap.length; i++) {
+			UnitSpace unitSpace = spaceMap[i];
+			if (unitSpace != null) tag.put(String.valueOf(i), unitSpace.serialize());
+		}
+		return tag;
 	}
 	
 	@Override
 	public void deserializeNBT(CompoundTag nbt) {
-		System.out.println("h");
+	}
+	
+	private final UnitSpace[] spaceMap = new UnitSpace[16 * 16 * 16];
+	
+	@Override
+	public void removeUnit(BlockPos pos) {
+		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		System.out.println(spaceMap[indx]);
+		spaceMap[indx] = null;
+		System.out.println(spaceMap[indx]);
+	}
+	
+	@Override
+	public void makeUnit(BlockPos pos) {
+		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		System.out.println(spaceMap[indx]);
+		spaceMap[indx] = new UnitSpace();
+		System.out.println(spaceMap[indx]);
 	}
 }
