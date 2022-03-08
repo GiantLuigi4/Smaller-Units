@@ -27,16 +27,18 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	@Override
 	public void removeUnit(BlockPos pos) {
 		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
-		System.out.println(spaceMap[indx]);
 		spaceMap[indx] = null;
-		System.out.println(spaceMap[indx]);
 	}
 	
 	@Override
 	public void makeUnit(BlockPos pos) {
 		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
-		System.out.println(spaceMap[indx]);
 		spaceMap[indx] = new UnitSpace();
-		System.out.println(spaceMap[indx]);
+	}
+	
+	@Override
+	public UnitSpace getOrMakeUnit(BlockPos pos) {
+		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace() : spaceMap[indx];
 	}
 }
