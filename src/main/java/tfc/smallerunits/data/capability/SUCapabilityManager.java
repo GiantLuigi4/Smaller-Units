@@ -20,8 +20,6 @@ import net.minecraftforge.event.world.ChunkWatchEvent;
 // this whole class is basically just a wrapper around forge's method of storing additional data to a chunk
 // on fabric, it should either be pretty similar or simpler
 public class SUCapabilityManager {
-	private static final CapabilityProvider provider = new CapabilityProvider();
-	
 	/**
 	 * attaches an SUCapability to a chunk
 	 * attempts to optimize for performance in the parent world and for memory in the unit world
@@ -31,11 +29,11 @@ public class SUCapabilityManager {
 		// TODO: check if the chunk is an instance of a SU chunk
 		// if it is and instance of a SU chunk, use lightweightProvider (optimized for memory usage)
 		// elsewise, use provider (optimized for speed)
-		// I'm not sure if CCA supports this
-		// if it does not, when porting to fabric, choose either lightweightProvider or provider
 		event.addCapability(
 				new ResourceLocation("smallerunits", "unit_space_cap"),
-				provider
+				// I find it a bit ridiculous that I need a whole provider for every single chunk in the world...
+				// but I guess it makes sense
+				new CapabilityProvider(new SUCapability())
 		);
 	}
 	

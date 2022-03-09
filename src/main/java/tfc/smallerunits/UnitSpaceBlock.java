@@ -37,6 +37,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		if (chunk instanceof LevelChunk) {
 			ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) chunk);
 			capability.removeUnit(pPos);
+			chunk.setUnsaved(true);
 		}
 	}
 	
@@ -47,6 +48,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		if (chunk instanceof LevelChunk) {
 			ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) chunk);
 			capability.makeUnit(pPos);
+			chunk.setUnsaved(true);
 		}
 	}
 	

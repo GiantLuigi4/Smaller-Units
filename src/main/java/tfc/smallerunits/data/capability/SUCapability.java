@@ -3,7 +3,6 @@ package tfc.smallerunits.data.capability;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.util.INBTSerializable;
-import org.lwjgl.system.MathUtil;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.utils.math.Math1D;
 
@@ -19,7 +18,10 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	}
 	
 	@Override
-	public void deserializeNBT(CompoundTag nbt) {
+	public void deserializeNBT(CompoundTag tag) {
+		for (String allKey : tag.getAllKeys()) {
+			spaceMap[Integer.parseInt(allKey)] = UnitSpace.fromNBT(tag.getCompound(allKey));
+		}
 	}
 	
 	private final UnitSpace[] spaceMap = new UnitSpace[16 * 16 * 16];

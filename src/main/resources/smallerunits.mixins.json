@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "smallerunits.refmap.json",
   "mixins": [
+    "ChunkSerializerAccessor"
   ],
   "client": [
     "LevelRendererMixin"
