@@ -19,13 +19,16 @@ public class SUChunkRender {
 		this.chunk = chunk;
 	}
 	
-	public void draw(ChunkRenderDispatcher.RenderChunk renderChunk) {
+	public void draw(ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type) {
 		int yRL = renderChunk.getOrigin().getY();
 		int yRM = renderChunk.getOrigin().getY() + 16;
 		for (Pair<BlockPos, BufferStorage> buffer : buffers) {
 			if (buffer.getFirst().getY() > yRM || buffer.getFirst().getY() < yRL) continue;
-			VertexBuffer buffer1 = buffer.getSecond().getBuffer(RenderType.solid());
-			buffer1.drawChunkLayer();
+			BufferStorage strg = buffer.getSecond();
+			if (strg.hasActive(type)) {
+				VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
+				buffer1.drawChunkLayer();
+			}
 		}
 	}
 	

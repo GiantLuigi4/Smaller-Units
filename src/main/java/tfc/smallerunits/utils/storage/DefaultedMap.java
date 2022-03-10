@@ -4,11 +4,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class DefaultedMap<T, V> {
 	private final Map<T, V> map;
-	private Supplier<V> defaultVal;
+	private Function<T, V> defaultVal;
 	
 	public DefaultedMap(Map<T, V> map) {
 		this.map = map;
@@ -19,6 +20,11 @@ public class DefaultedMap<T, V> {
 	}
 	
 	public DefaultedMap<T, V> setDefaultVal(Supplier<V> defaultVal) {
+		this.defaultVal = (t) -> defaultVal.get();
+		return this;
+	}
+	
+	public DefaultedMap<T, V> setDefaultVal(Function<T, V> defaultVal) {
 		this.defaultVal = defaultVal;
 		return this;
 	}
@@ -35,7 +41,7 @@ public class DefaultedMap<T, V> {
 	}
 	
 	public V get(T key) {
-		if (!map.containsKey(key)) map.put(key, defaultVal.get());
+		if (!map.containsKey(key)) map.put(key, defaultVal.apply(key));
 		return map.get(key);
 	}
 	

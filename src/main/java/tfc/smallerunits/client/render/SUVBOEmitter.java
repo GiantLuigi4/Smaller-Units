@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -46,7 +47,12 @@ public class SUVBOEmitter {
 				Math1D.chunkMod(pos.getZ(), 16)
 		);
 		stack.scale(0.25f, 0.25f, 0.25f);
-		buffers.get(RenderType.solid()).begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
+		buffers.setDefaultVal((type) -> {
+			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
+			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+			return builder;
+		});
 		for (int x = 0; x < 16; x++) {
 			for (int y = 0; y < 16; y++) {
 				for (int z = 0; z < 16; z++) {
@@ -55,15 +61,19 @@ public class SUVBOEmitter {
 					if (block.isAir()) continue;
 					stack.pushPose();
 					stack.translate(x, y, z);
-					dispatcher.getModelRenderer().renderModel(
-							stack.last(),
-							buffers.get(RenderType.solid()),
-							block,
-							dispatcher.getBlockModel(block),
-							1, 1, 1, LightTexture.FULL_SKY,
-							OverlayTexture.NO_OVERLAY,
-							EmptyModelData.INSTANCE
-					);
+					for (RenderType chunkBufferLayer : RenderType.chunkBufferLayers()) {
+						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
+							dispatcher.getModelRenderer().renderModel(
+									stack.last(),
+									buffers.get(chunkBufferLayer),
+									block,
+									dispatcher.getBlockModel(block),
+									1, 1, 1, LightTexture.FULL_SKY,
+									OverlayTexture.NO_OVERLAY,
+									EmptyModelData.INSTANCE
+							);
+						}
+					}
 					stack.popPose();
 				}
 			}

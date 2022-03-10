@@ -41,50 +41,11 @@ public class LevelRendererMixin {
 	
 	@Inject(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawChunkLayer()V"), method = "renderChunkLayer")
 	public void preDrawLayer(RenderType j, PoseStack d0, double d1, double d2, double i, Matrix4f k, CallbackInfo ci) {
-		if (j == RenderType.solid()) {
-//			BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
-			BlockPos origin = renderChunk.getOrigin();
-			ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
-			SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
-			if (capable == null)
-				((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
-			SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk);
-//			d0.pushPose();
-//			d0.translate(
-//					origin.getX() - d1,
-//					origin.getY() - d2,
-//					origin.getZ() - i
-//			);
-//			d0.scale(1f / 4, 1f / 4, 1f / 4);
-//			d0.translate(0, 3, 0);
-//			dispatcher.renderSingleBlock(
-//					Blocks.GRASS_BLOCK.defaultBlockState(),
-//					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
-//					LightTexture.pack(15, 15),
-//					OverlayTexture.NO_OVERLAY
-//			);
-//			d0.translate(0, -1, 0);
-//			dispatcher.renderSingleBlock(
-//					Blocks.DIRT.defaultBlockState(),
-//					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
-//					LightTexture.pack(15, 15),
-//					OverlayTexture.NO_OVERLAY
-//			);
-//			d0.translate(0, -1, 0);
-//			dispatcher.renderSingleBlock(
-//					Blocks.DIRT.defaultBlockState(),
-//					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
-//					LightTexture.pack(15, 15),
-//					OverlayTexture.NO_OVERLAY
-//			);
-//			d0.translate(0, -1, 0);
-//			dispatcher.renderSingleBlock(
-//					Blocks.STONE.defaultBlockState(),
-//					d0, Minecraft.getInstance().renderBuffers().bufferSource(),
-//					LightTexture.pack(15, 15),
-//					OverlayTexture.NO_OVERLAY
-//			);
-//			d0.popPose();
-		}
+		BlockPos origin = renderChunk.getOrigin();
+		ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
+		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
+		if (capable == null)
+			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
+		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, j);
 	}
 }

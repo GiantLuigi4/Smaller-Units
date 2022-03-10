@@ -35,4 +35,8 @@ public class BufferStorage {
 		buffer1.upload(buffer);
 		buffer.clear();
 	}
+	
+	public boolean hasActive(RenderType type) {
+		return buffersActive.containsKey(type);
+	}
 }
