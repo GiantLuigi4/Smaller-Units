@@ -163,6 +163,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	protected double collideX(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
+		// TODO: what the heck is a AxisCycle
 //		return super.collideX(pMovementAxis, pCollisionBox, pDesiredOffset);
 		return pDesiredOffset;
 	}
