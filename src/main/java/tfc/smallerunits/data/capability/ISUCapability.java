@@ -14,4 +14,10 @@ public interface ISUCapability {
 	CompoundTag serializeNBT();
 	
 	void deserializeNBT(CompoundTag nbt);
+	
+	UnitSpace[] getUnits();
+	
+	void setUnit(BlockPos realPos, UnitSpace space);
+	
+	UnitSpace getUnit(BlockPos pos);
 }

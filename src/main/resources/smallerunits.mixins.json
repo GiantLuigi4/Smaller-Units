@@ -2,13 +2,16 @@
   "required": true,
   "minVersion": "0.8",
   "package": "tfc.smallerunits.mixin",
-  "compatibilityLevel": "JAVA_8",
+  "compatibilityLevel": "JAVA_17",
   "refmap": "smallerunits.refmap.json",
   "mixins": [
     "ChunkSerializerAccessor"
   ],
   "client": [
-    "LevelRendererMixin"
+    "LevelRendererMixin",
+    "data.CompiledChunkMixin",
+    "data.LevelChunkMixin",
+    "data.LevelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

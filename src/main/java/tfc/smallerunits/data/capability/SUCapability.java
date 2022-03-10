@@ -24,7 +24,14 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 		}
 	}
 	
+	private int countSpacesFilled = 0;
 	private final UnitSpace[] spaceMap = new UnitSpace[16 * 16 * 16];
+	
+	@Override
+	public void setUnit(BlockPos pos, UnitSpace space) {
+		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		spaceMap[indx] = space;
+	}
 	
 	@Override
 	public void removeUnit(BlockPos pos) {
@@ -35,12 +42,23 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	@Override
 	public void makeUnit(BlockPos pos) {
 		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
-		spaceMap[indx] = new UnitSpace();
+		spaceMap[indx] = new UnitSpace(pos);
 	}
 	
 	@Override
 	public UnitSpace getOrMakeUnit(BlockPos pos) {
 		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
-		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace() : spaceMap[indx];
+		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace(pos) : spaceMap[indx];
+	}
+	
+	@Override
+	public UnitSpace[] getUnits() {
+		return spaceMap;
+	}
+	
+	@Override
+	public UnitSpace getUnit(BlockPos pos) {
+		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		return spaceMap[indx];
 	}
 }
