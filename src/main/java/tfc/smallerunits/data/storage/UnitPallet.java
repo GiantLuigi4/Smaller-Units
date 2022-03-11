@@ -2,19 +2,19 @@ package tfc.smallerunits.data.storage;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.logging.LogUtils;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tfc.smallerunits.UnitSpace;
 
 import java.util.HashMap;
 
 // mojang's one is weird, it seems?
 public class UnitPallet {
-	private static final Logger LOGGER = LogUtils.getLogger();
+	private static final Logger LOGGER = LoggerFactory.getLogger("SU:UnitPallet");
 	HashMap<Integer, Integer> indexToIdMap;
 	HashMap<BlockState, Integer> stateToIdMap;
 	HashMap<Integer, BlockState> idToStateMap = new HashMap<>();

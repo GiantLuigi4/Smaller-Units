@@ -18,7 +18,6 @@ import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
-import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
@@ -42,11 +41,12 @@ public class SUVBOEmitter {
 		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
 		PoseStack stack = new PoseStack();
 		stack.translate(
-				Math1D.chunkMod(pos.getX(), 16),
-				Math1D.chunkMod(pos.getY(), 16),
-				Math1D.chunkMod(pos.getZ(), 16)
+				pos.getX() - chunk.getPos().getMinBlockX(),
+				pos.getY() < 0 ? (16 - pos.getY() % 16) : (pos.getY() % 16),
+				pos.getZ() - chunk.getPos().getMinBlockZ()
 		);
-		stack.scale(0.25f, 0.25f, 0.25f);
+		float scl = 1f / space.unitsPerBlock;
+		stack.scale(scl, scl, scl);
 		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
 		buffers.setDefaultVal((type) -> {
 			BufferBuilder builder = SUVBOEmitter.buffers.get(type);

@@ -21,20 +21,26 @@ public class SyncPacket extends Packet {
 	private static final ArrayList<SyncPacket> deferred = new ArrayList<>();
 	UnitPallet pallet;
 	BlockPos realPos;
+	int upb;
 	
 	public SyncPacket(UnitSpace space) {
 		pallet = space.getPallet();
 		realPos = space.pos;
+		upb = space.unitsPerBlock;
 	}
 	
 	public SyncPacket(FriendlyByteBuf buf) {
 		super(buf);
 		pallet = UnitPallet.fromNBT(buf.readNbt());
 		realPos = buf.readBlockPos();
+		upb = buf.readInt();
 	}
 	
 	public static void tick(TickEvent.ClientTickEvent event) {
 		ArrayList<SyncPacket> toRemove = new ArrayList<>();
+		if (Minecraft.getInstance().screen != null) {
+			return;
+		}
 		for (SyncPacket syncPacket : deferred) {
 			ChunkAccess access = Minecraft.getInstance().level.getChunk(syncPacket.realPos);
 			if (access instanceof EmptyLevelChunk) continue;
@@ -43,6 +49,7 @@ public class SyncPacket extends Packet {
 			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 //			if (cap == null) return;
 			UnitSpace space = new UnitSpace(syncPacket.realPos);
+			space.unitsPerBlock = syncPacket.upb;
 			space.loadPallet(syncPacket.pallet);
 			cap.setUnit(syncPacket.realPos, space);
 			((SUCapableChunk) chunk).markDirty(syncPacket.realPos);
@@ -57,6 +64,7 @@ public class SyncPacket extends Packet {
 		super.write(buf);
 		buf.writeNbt(pallet.toNBT());
 		buf.writeBlockPos(realPos);
+		buf.writeInt(upb);
 	}
 	
 	@Override

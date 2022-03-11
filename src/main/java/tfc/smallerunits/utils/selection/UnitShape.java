@@ -1,7 +1,9 @@
 package tfc.smallerunits.utils.selection;
 
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleList;
+import net.minecraft.Util;
 import net.minecraft.core.AxisCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -17,31 +19,44 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+// best of 1.18 and 1.12, neat
 public class UnitShape extends VoxelShape {
-	private final ArrayList<AABB> boxes = new ArrayList<>();
-	private AABB totalBB = new AABB(
-			Double.POSITIVE_INFINITY,
-			Double.POSITIVE_INFINITY,
-			Double.POSITIVE_INFINITY,
-			Double.NEGATIVE_INFINITY,
-			Double.NEGATIVE_INFINITY,
-			Double.NEGATIVE_INFINITY
-	);
+	private final ArrayList<UnitBox> boxes = new ArrayList<>();
+	private AABB totalBB = null;
 	
 	public UnitShape() {
 		super(null);
 	}
 	
-	public void addBox(AABB box) {
-		boxes.add(box);
-		totalBB = new AABB(
-				Math.min(totalBB.minX, box.minX),
-				Math.min(totalBB.minY, box.minY),
-				Math.min(totalBB.minZ, box.minZ),
-				Math.min(totalBB.maxX, box.maxX),
-				Math.min(totalBB.maxY, box.maxY),
-				Math.min(totalBB.maxZ, box.maxZ)
-		);
+	private static double swivelOffset(AxisCycle axiscycle, AABB pCollisionBox, AABB box, double offsetX) {
+		Direction.Axis xSwivel = axiscycle.cycle(Direction.Axis.X);
+		Direction.Axis ySwivel = axiscycle.cycle(Direction.Axis.Y);
+		Direction.Axis zSwivel = axiscycle.cycle(Direction.Axis.Z);
+		
+		double tMaxX = box.max(xSwivel);
+		double tMinX = box.min(xSwivel);
+		double tMaxY = box.max(zSwivel);
+		double tMinY = box.min(zSwivel);
+		double tMinZ = box.min(ySwivel);
+		double tMaxZ = box.max(ySwivel);
+		double oMaxY = pCollisionBox.max(zSwivel);
+		double oMaxX = pCollisionBox.max(xSwivel);
+		double oMinX = pCollisionBox.min(xSwivel);
+		double oMaxZ = pCollisionBox.max(ySwivel);
+		double oMinZ = pCollisionBox.min(ySwivel);
+		double oMinY = pCollisionBox.min(zSwivel);
+		if (oMaxY > tMinY && oMinY < tMaxY && oMaxZ > tMinZ && oMinZ < tMaxZ) {
+			if (offsetX > 0.0D && oMaxX <= tMinX) {
+				double deltaX = tMinX - oMaxX;
+				
+				if (deltaX < offsetX) return deltaX;
+			} else if (offsetX < 0.0D && oMinX >= tMaxX) {
+				double deltaX = tMaxX - oMinX;
+				
+				if (deltaX > offsetX) return deltaX;
+			}
+		}
+		return offsetX;
 	}
 	
 	@Override
@@ -85,14 +100,35 @@ public class UnitShape extends VoxelShape {
 		return arrayList;
 	}
 	
-	@Override
-	public AABB bounds() {
-		return totalBB;
+	private static boolean swivelCheck(AxisCycle axiscycle, AABB pCollisionBox, AABB box) {
+		Direction.Axis ySwivel = axiscycle.cycle(Direction.Axis.Y);
+		Direction.Axis zSwivel = axiscycle.cycle(Direction.Axis.Z);
+		
+		double tMaxY = box.max(zSwivel);
+		double tMinY = box.min(zSwivel);
+		double tMinZ = box.min(ySwivel);
+		double tMaxZ = box.max(ySwivel);
+		double oMaxY = pCollisionBox.max(zSwivel);
+		double oMaxZ = pCollisionBox.max(ySwivel);
+		double oMinZ = pCollisionBox.min(ySwivel);
+		double oMinY = pCollisionBox.min(zSwivel);
+		return oMaxY > tMinY && oMinY < tMaxY && oMaxZ > tMinZ && oMinZ < tMaxZ;
 	}
 	
-	@Override
-	public List<AABB> toAabbs() {
-		return boxes;
+	public void addBox(UnitBox box) {
+		boxes.add(box);
+		if (totalBB == null) {
+			totalBB = box;
+		} else {
+			totalBB = new AABB(
+					Math.min(totalBB.minX, box.minX),
+					Math.min(totalBB.minY, box.minY),
+					Math.min(totalBB.minZ, box.minZ),
+					Math.max(totalBB.maxX, box.maxX),
+					Math.max(totalBB.maxY, box.maxY),
+					Math.max(totalBB.maxZ, box.maxZ)
+			);
+		}
 	}
 	
 	@Override
@@ -128,32 +164,10 @@ public class UnitShape extends VoxelShape {
 		return Mth.binarySearch(0, size(pAxis) + 1, (p_166066_) -> pPosition < this.get(pAxis, p_166066_)) - 1;
 	}
 	
-	@Nullable
-	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
-		if (this.isEmpty()) {
-			return null;
-		} else {
-			Vec3 vec3 = pEndVec.subtract(pStartVec);
-			if (vec3.lengthSqr() < 1.0E-7D) {
-				return null;
-			} else {
-				Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
-//				return this.shape.isFullWide(this.findIndex(Direction.Axis.X, vec31.x - (double) pPos.getX()), this.findIndex(Direction.Axis.Y, vec31.y - (double) pPos.getY()), this.findIndex(Direction.Axis.Z, vec31.z - (double) pPos.getZ())) ? new BlockHitResult(vec31, Direction.getNearest(vec3.x, vec3.y, vec3.z).getOpposite(), pPos, true) : AABB.clip(this.toAabbs(), pStartVec, pEndVec, pPos);
-				for (AABB box : boxes) {
-					box = box.move(pPos);
-					if (box.contains(pStartVec)) {
-						Optional<Vec3> vec = box.clip(vec31, pEndVec);
-						return new BlockHitResult(
-								vec.orElse(vec31),
-								Direction.getNearest(vec3.x, vec3.y, vec3.z).getOpposite(),
-								pPos,
-								true
-						);
-					}
-				}
-				return AABB.clip(this.toAabbs(), pStartVec, pEndVec, pPos);
-			}
-		}
+	@Override
+	public AABB bounds() {
+		if (this.isEmpty()) throw Util.pauseInIde(new UnsupportedOperationException("No bounds for empty shape."));
+		return totalBB;
 	}
 	
 	@Override
@@ -162,15 +176,87 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	@Override
+	public List<AABB> toAabbs() {
+		return ImmutableList.copyOf(boxes);
+	}
+	
+	@Nullable
+	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
+		if (this.isEmpty()) return null;
+		
+		Vec3 vec3 = pEndVec.subtract(pStartVec);
+		if (vec3.lengthSqr() < 1.0E-7D) return null;
+		
+		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
+		
+		for (UnitBox box : boxes) {
+			box = (UnitBox) box.move(pPos);
+			Optional<Vec3> vec = box.clip(pStartVec, pEndVec);
+			return new UnitHitResult(
+					vec.orElse(vec31),
+					Direction.getNearest(vec3.x, vec3.y, vec3.z).getOpposite(),
+					pPos,
+					true,
+					box.pos
+			);
+		}
+		
+		if (this.totalBB.contains(pStartVec)) {
+			for (UnitBox box : boxes) {
+				box = (UnitBox) box.move(pPos);
+				if (box.contains(pStartVec)) {
+					Optional<Vec3> vec = box.clip(vec31, pEndVec);
+					return new UnitHitResult(
+							vec.orElse(vec31),
+							Direction.getNearest(vec3.x, vec3.y, vec3.z).getOpposite(),
+							pPos,
+							true,
+							box.pos
+					);
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	@Override
 	protected double collideX(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
-		// TODO: what the heck is a AxisCycle
-//		return super.collideX(pMovementAxis, pCollisionBox, pDesiredOffset);
+		if (this.isEmpty()) return pDesiredOffset;
+		else if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
+		
+		AxisCycle axiscycle = pMovementAxis.inverse();
+		
+		if (swivelCheck(axiscycle, pCollisionBox, this.totalBB)) {
+			for (AABB box : boxes) {
+				pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, box, pDesiredOffset);
+				if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
+			}
+		}
 		return pDesiredOffset;
+	}
+	
+	@Override
+	public VoxelShape move(double pXOffset, double pYOffset, double pZOffset) {
+		UnitShape copy = new UnitShape();
+		for (AABB box : boxes) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
+		return copy;
 	}
 	
 	@Override
 	public VoxelShape getFaceShape(Direction pSide) {
 		// TODO: figure out what the heck this does
 		return this;
+	}
+	
+	public Boolean intersects(VoxelShape pShape2) {
+		for (AABB toAabb : pShape2.toAabbs()) {
+			for (AABB box : boxes) {
+				if (box.intersects(toAabb)) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 }

@@ -66,6 +66,23 @@ public class SUCapabilityManager {
 		return chunk.getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
 	}
 	
+	public static ISUCapability getCapability(Level lvl, ChunkAccess chunk) {
+		if (chunk instanceof LevelChunk) return getCapability((LevelChunk) chunk);
+		return getCapability(lvl.getChunkAt(chunk.getPos().getWorldPosition()));
+	}
+	
+	/**
+	 * basically; I'm too lazy to fully port unimportant stuff sometimes
+	 * This will likely be slower than calling the overload which takes a chunk
+	 * Reason: this runs validation even if it doesn't need to, and if you already have the chunk, then you don't need to get the chunk again
+	 * This method will get the chunk, validate it, return it's capability
+	 */
+	public static ISUCapability getCapability(Level world, ChunkPos pos) {
+		ChunkAccess access = world.getChunk(/* CC safety */ pos.getWorldPosition());
+		if (!(access instanceof LevelChunk)) return getCapability(world.getChunkAt(pos.getWorldPosition()));
+		return ((LevelChunk) access).getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
+	}
+	
 	// for CCA, most of this stuff can be automated via an AutoSyncedComponent
 	// as for the BE tracking stuff, I believe this would come in handy,
 	// https://github.com/OnyxStudios/Cardinal-Components-API/blob/d059688e5329be0e6e3dc9f09af9c165767701e6/cardinal-components-chunk/src/main/java/dev/onyxstudios/cca/api/v3/chunk/ChunkSyncCallback.java#L35-L39
@@ -96,19 +113,5 @@ public class SUCapabilityManager {
 			}
 			// TODO: create packet
 		}
-	}
-	
-	/**
-	 * basically; I'm too lazy to fully port unimportant stuff sometimes
-	 * This will likely be slower than calling the overload which takes a chunk
-	 * Reason: this runs validation even if it doesn't need to, and if you already have the chunk, then you don't need to get the chunk again
-	 * This method will get the chunk, validate it, return it's capability
-	 */
-	@Deprecated(forRemoval = true)
-	public static ISUCapability getCapability(Level world, ChunkPos pos) {
-		ChunkAccess access = world.getChunk(/* CC safety */ pos.getWorldPosition());
-		// potentially redundant validation
-		if (!(access instanceof LevelChunk)) return null;
-		return ((LevelChunk) access).getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
 	}
 }
