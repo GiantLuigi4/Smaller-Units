@@ -1,10 +1,13 @@
 package tfc.smallerunits;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -19,6 +22,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -27,9 +31,11 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.ForgeMod;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.utils.selection.UnitBox;
+import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
 import java.util.function.BiConsumer;
@@ -226,5 +232,21 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	@Override
 	public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
 		return null;
+	}
+	
+	@Override
+	public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
+		if (pHit instanceof UnitHitResult) {
+			BlockPos pos = ((UnitHitResult) pHit).geetBlockPos();
+			LevelChunk chnk = pLevel.getChunkAt(pPos);
+			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+			ItemStack itm = pPlayer.getItemInHand(pHand);
+			if (itm.getItem() instanceof BlockItem) {
+				space.setState(pos.relative(pHit.getDirection()), ((BlockItem) itm.getItem()).getBlock());
+				((SUCapableChunk) chnk).markDirty(pPos);
+			}
+			return InteractionResult.CONSUME;
+		}
+		return super.use(pState, pLevel, pPos, pPlayer, pHand, pHit);
 	}
 }

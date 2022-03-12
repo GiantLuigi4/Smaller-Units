@@ -33,7 +33,13 @@ public class SUChunkRender {
 	}
 	
 	public void addBuffers(BlockPos pos, BufferStorage genBuffers) {
-		buffers.add(Pair.of(pos, genBuffers));
+		for (Pair<BlockPos, BufferStorage> buffer : buffers) {
+			if (buffer.getFirst().equals(pos)) {
+				buffers.remove(buffer.getFirst());
+				break;
+			}
+		}
+		if (genBuffers != null) buffers.add(Pair.of(pos, genBuffers));
 		isDirty = true;
 	}
 }

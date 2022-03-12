@@ -6,7 +6,14 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 public class UnitHitResult extends BlockHitResult {
+	BlockPos unit;
+	
 	public UnitHitResult(Vec3 pLocation, Direction pDirection, BlockPos pBlockPos, boolean pInside, BlockPos unit) {
 		super(pLocation, pDirection, pBlockPos, pInside);
+		this.unit = unit;
+	}
+	
+	public BlockPos geetBlockPos() {
+		return unit;
 	}
 }
