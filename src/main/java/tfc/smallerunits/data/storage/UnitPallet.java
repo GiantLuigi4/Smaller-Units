@@ -1,5 +1,6 @@
 package tfc.smallerunits.data.storage;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
@@ -49,14 +50,38 @@ public class UnitPallet {
 			pallet.indexToIdMap.put(Integer.parseInt(allKey), indices.getInt(allKey));
 		/* read map of index to state pallet index */
 		CompoundTag states = tag.getCompound("states");
+		Gson gson = new Gson();
 		for (String allKey : states.getAllKeys()) {
+			String aKey = allKey;
 			JsonObject element = new JsonObject();
 			element.addProperty("Name", allKey);
+			if (allKey.contains("&:&")) {
+				String[] split = allKey.split("&:&");
+				allKey = split[0];
+				element.remove("Name");
+				element.addProperty("Name", allKey);
+				String prop = split[1];
+				try {
+//					ByteArrayInputStream in = new ByteArrayInputStream(prop.getBytes());
+//					DeflaterInputStream inputStream = new DeflaterInputStream(in);
+//					int b;
+//					ByteArrayOutputStream out = new ByteArrayOutputStream();
+//					while ((b = inputStream.read()) != -1) out.write(b);
+//					String str = out.toString();
+//					out.close();
+//					out.flush();
+//					inputStream.close();
+//					prop = str;
+					element.getAsJsonObject().add("Properties", gson.fromJson(prop, JsonObject.class));
+				} catch (Throwable ignored) {
+					ignored.printStackTrace();
+				}
+			}
 			BlockState state = BlockState.CODEC
 					.decode(JsonOps.INSTANCE, element)
 					.getOrThrow(false, LOGGER::error)
 					.getFirst();
-			pallet.stateToIdMap.put(state, states.getInt(allKey));
+			pallet.stateToIdMap.put(state, states.getInt(aKey));
 		}
 		pallet.populateIdToStateMap();
 		return pallet;
@@ -81,6 +106,20 @@ public class UnitPallet {
 					.encode(state, JsonOps.INSTANCE, new JsonObject())
 					.getOrThrow(false, LOGGER::error);
 			String dat = obj.getAsJsonObject().get("Name").getAsJsonPrimitive().getAsString();
+			if (obj.getAsJsonObject().has("Properties")) {
+				try {
+					String prop = obj.getAsJsonObject().getAsJsonObject("Properties").toString();
+//					ByteArrayOutputStream out = new ByteArrayOutputStream();
+//					DeflaterOutputStream outputStream = new DeflaterOutputStream(out);
+//					outputStream.write(prop.getBytes());
+//					outputStream.finish();
+//					prop = out.toString();
+					dat += "&:&" + prop;
+//					outputStream.close();
+//					outputStream.flush();
+				} catch (Throwable ignored) {
+				}
+			}
 			states.putInt(dat, id);
 		}
 		tag.put("states", states);

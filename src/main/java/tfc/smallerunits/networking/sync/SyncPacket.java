@@ -44,11 +44,10 @@ public class SyncPacket extends Packet {
 		for (SyncPacket syncPacket : deferred) {
 			ChunkAccess access = Minecraft.getInstance().level.getChunk(syncPacket.realPos);
 			if (access instanceof EmptyLevelChunk) continue;
-			if (!(access instanceof LevelChunk)) continue;
-			LevelChunk chunk = (LevelChunk) access;
+			if (!(access instanceof LevelChunk chunk)) continue;
 			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 //			if (cap == null) return;
-			UnitSpace space = new UnitSpace(syncPacket.realPos);
+			UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
 			space.unitsPerBlock = syncPacket.upb;
 			space.loadPallet(syncPacket.pallet);
 			cap.setUnit(syncPacket.realPos, space);

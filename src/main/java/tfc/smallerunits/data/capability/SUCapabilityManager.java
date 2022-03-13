@@ -37,7 +37,7 @@ public class SUCapabilityManager {
 				new ResourceLocation("smallerunits", "unit_space_cap"),
 				// I find it a bit ridiculous that I need a whole provider for every single chunk in the world...
 				// but I guess it makes sense
-				new CapabilityProvider(new SUCapability())
+				new CapabilityProvider(new SUCapability(event.getObject().getLevel()))
 		);
 	}
 	
@@ -99,7 +99,7 @@ public class SUCapabilityManager {
 	 *
 	 * @param event the event saying that the chunk has started to be tracked
 	 */
-	public static void onChunkWatchEvent(ChunkWatchEvent event) {
+	public static void onChunkWatchEvent(ChunkWatchEvent.Watch event) {
 		if (event.getPlayer() != null) {
 			ISUCapability capability = SUCapabilityManager.getCapability(event.getWorld(), event.getPos());
 			if (capability == null) return;

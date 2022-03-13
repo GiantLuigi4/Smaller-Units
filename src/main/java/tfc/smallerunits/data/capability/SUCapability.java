@@ -2,11 +2,18 @@ package tfc.smallerunits.data.capability;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.common.util.INBTSerializable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.utils.math.Math1D;
 
 public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag> {
+	final Level level;
+	
+	public SUCapability(Level level) {
+		this.level = level;
+	}
+	
 	@Override
 	public CompoundTag serializeNBT() {
 		CompoundTag tag = new CompoundTag();
@@ -20,7 +27,7 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	@Override
 	public void deserializeNBT(CompoundTag tag) {
 		for (String allKey : tag.getAllKeys()) {
-			spaceMap[Integer.parseInt(allKey)] = UnitSpace.fromNBT(tag.getCompound(allKey));
+			spaceMap[Integer.parseInt(allKey)] = UnitSpace.fromNBT(tag.getCompound(allKey), level);
 		}
 	}
 	
@@ -42,13 +49,13 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	@Override
 	public void makeUnit(BlockPos pos) {
 		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
-		spaceMap[indx] = new UnitSpace(pos);
+		spaceMap[indx] = new UnitSpace(pos, level);
 	}
 	
 	@Override
 	public UnitSpace getOrMakeUnit(BlockPos pos) {
 		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
-		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace(pos) : spaceMap[indx];
+		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace(pos, level) : spaceMap[indx];
 	}
 	
 	@Override

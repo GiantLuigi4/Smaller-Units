@@ -1,18 +1,17 @@
 package tfc.smallerunits.client.render;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
@@ -23,11 +22,13 @@ import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 public class SUVBOEmitter {
 	private static final ArrayList<BufferStorage> vbosFree = new ArrayList<>();
 	private static final Object lock = new Object();
 	private static final DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<RenderType, BufferBuilder>().setDefaultVal(() -> new BufferBuilder(16));
+	private static final ChunkBufferBuilderPack bufferBuilderPack = new ChunkBufferBuilderPack();
 	
 	private final HashMap<BlockPos, BufferStorage> used = new HashMap<>();
 	private final HashMap<BlockPos, BufferStorage> free = new HashMap<>();
@@ -55,35 +56,47 @@ public class SUVBOEmitter {
 		stack.scale(scl, scl, scl);
 		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
 		buffers.setDefaultVal((type) -> {
-			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
+//			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
+			BufferBuilder builder = bufferBuilderPack.builder(type);
 			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 			return builder;
 		});
-		for (int x = 0; x < 16; x++) {
-			for (int y = 0; y < 16; y++) {
-				for (int z = 0; z < 16; z++) {
-					int indx = (((x * 16) + y) * 16) + z;
-					BlockState block = states[indx];
-					if (block.isAir()) continue;
-					stack.pushPose();
-					stack.translate(x, y, z);
-					for (RenderType chunkBufferLayer : RenderType.chunkBufferLayers()) {
+		MultiBufferSource bufferSource = new MultiBufferSource() {
+			@Override
+			public VertexConsumer getBuffer(RenderType pRenderType) {
+				return buffers.get(pRenderType);
+			}
+		};
+		int upb = space.unitsPerBlock;
+		for (RenderType chunkBufferLayer : RenderType.chunkBufferLayers()) {
+			ForgeHooksClient.setRenderType(chunkBufferLayer);
+			for (int x = 0; x < upb; x++) {
+				for (int y = 0; y < upb; y++) {
+					for (int z = 0; z < upb; z++) {
+						int indx = (((x * upb) + y) * upb) + z;
+						BlockState block = states[indx];
+						if (block.getRenderShape() != RenderShape.MODEL) continue;
+						if (block.isAir()) continue;
 						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
-							dispatcher.getModelRenderer().renderModel(
-									stack.last(),
+							stack.pushPose();
+							stack.translate(x, y, z);
+//							IModelData data = EmptyModelData.INSTANCE;
+//							if (value.tileEntity != null) data = value.tileEntity.getModelData();
+							BlockPos rPos = new BlockPos(x, y, z);
+							dispatcher.renderBatched(
+									block, space.getOffsetPos(rPos),
+									space.myLevel, stack,
 									buffers.get(chunkBufferLayer),
-									block,
-									dispatcher.getBlockModel(block),
-									1, 1, 1, LightTexture.FULL_SKY,
-									OverlayTexture.NO_OVERLAY,
-									EmptyModelData.INSTANCE
+									true, new Random(space.getOffsetPos(rPos).asLong()),
+									EmptyModelData.INSTANCE // TODO
 							);
+							stack.popPose();
 						}
 					}
-					stack.popPose();
 				}
 			}
 		}
+		ForgeHooksClient.setRenderType(null);
 		buffers.forEach(storage::upload);
 		
 		return storage;

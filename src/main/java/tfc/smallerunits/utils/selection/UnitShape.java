@@ -13,6 +13,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -25,7 +26,8 @@ public class UnitShape extends VoxelShape {
 	private AABB totalBB = null;
 	
 	public UnitShape() {
-		super(null);
+		super(new UnitDiscreteShape(0, 0, 0));
+		((UnitDiscreteShape) ((VoxelShapeAccessor) this).getShape()).sp = this;
 	}
 	
 	private static double swivelOffset(AxisCycle axiscycle, AABB pCollisionBox, AABB box, double offsetX) {
@@ -191,26 +193,12 @@ public class UnitShape extends VoxelShape {
 		
 		double dbest = Double.POSITIVE_INFINITY;
 		UnitHitResult h = null;
-		double[] percent = new double[1];
-		double d0 = pStartVec.x - pEndVec.x;
-		double d1 = pStartVec.y - pEndVec.y;
-		double d2 = pStartVec.z - pEndVec.z;
-		for (UnitBox box : boxes) {
-			box = (UnitBox) box.move(pPos);
-//			Optional<Vec3> vec = box.clip(pStartVec, pEndVec);
-			Direction direction = AABB.getDirection(box, pStartVec, percent, (Direction) null, d0, d1, d2);
-			double percentile = percent[0];
-			if (direction == null) continue;
-			Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
-			double d = vec.distanceTo(pStartVec);
-			if (d < dbest) {
-				h = new UnitHitResult(vec, direction, pPos, true, box.pos);
-				dbest = d;
-			}
-		}
-		if (h != null) return h;
+		double[] percent = {1};
+		double d0 = pEndVec.x - pStartVec.x;
+		double d1 = pEndVec.y - pStartVec.y;
+		double d2 = pEndVec.z - pStartVec.z;
 		
-		if (this.totalBB.contains(pStartVec)) {
+		if (this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
 			for (UnitBox box : boxes) {
 				box = (UnitBox) box.move(pPos);
 				if (box.contains(pStartVec)) {
@@ -226,7 +214,29 @@ public class UnitShape extends VoxelShape {
 			}
 		}
 		
+		for (UnitBox box : boxes) {
+			box = (UnitBox) box.move(pPos);
+			Direction direction = AABB.getDirection(box, pStartVec, percent, (Direction) null, d0, d1, d2);
+			double percentile = percent[0];
+			percent[0] = 1;
+			if (direction == null) continue;
+			Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
+			double d = vec.distanceTo(pStartVec);
+			if (d < dbest) {
+				h = new UnitHitResult(vec, direction, pPos, true, box.pos);
+				dbest = d;
+			}
+		}
+		if (h != null) return h;
+		
 		return null;
+	}
+	
+	@Override
+	public VoxelShape optimize() {
+		UnitShape copy = new UnitShape();
+		for (AABB box : boxes) copy.addBox((UnitBox) box);
+		return this;
 	}
 	
 	@Override

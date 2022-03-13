@@ -1,6 +1,8 @@
 package tfc.smallerunits;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -9,10 +11,12 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -30,6 +34,7 @@ import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -38,6 +43,7 @@ import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
+import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -113,12 +119,12 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 						x / upbDouble, y / upbDouble, z / upbDouble,
 						(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
 				);
-				return box.clip(fStartVec, endVec).isPresent();
+				return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
 			}, (pos, state) -> {
 				int x = pos.getX();
 				int y = pos.getY();
 				int z = pos.getZ();
-				VoxelShape sp = state.getShape(null, null);
+				VoxelShape sp = state.getShape(space.myLevel, space.getOffsetPos(pos));
 				for (AABB toAabb : sp.toAabbs()) {
 					toAabb = toAabb.move(x, y, z);
 					UnitBox b = new UnitBox(
@@ -169,7 +175,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				int x = pos.getX();
 				int y = pos.getY();
 				int z = pos.getZ();
-				VoxelShape sp = state.getCollisionShape(null, null);
+				VoxelShape sp = state.getCollisionShape(space.myLevel, space.getOffsetPos(pos));
 				for (AABB toAabb : sp.toAabbs()) {
 					toAabb = toAabb.move(x, y, z);
 					UnitBox b = new UnitBox(
@@ -201,6 +207,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			for (int y = 0; y < upbInt; y++) {
 				for (int z = 0; z < upbInt; z++) {
 					BlockState state = space.getBlock(x, y, z);
+					if (state == null) continue;
 					if (state.isAir()) continue;
 					if (simpleChecker.apply(new BlockPos(x, y, z))) {
 						boxFiller.accept(new BlockPos(x, y, z), state);
@@ -224,6 +231,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) chunk);
 			capability.makeUnit(pPos);
 			chunk.setUnsaved(true);
+			pLevel.scheduleTick(pPos, this, 1);
 		}
 	}
 	
@@ -242,11 +250,55 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
 			ItemStack itm = pPlayer.getItemInHand(pHand);
 			if (itm.getItem() instanceof BlockItem) {
-				space.setState(pos.relative(pHit.getDirection()), ((BlockItem) itm.getItem()).getBlock());
-				((SUCapableChunk) chnk).markDirty(pPos);
+//				space.setState(pos.relative(pHit.getDirection()), ((BlockItem) itm.getItem()).getBlock());
+				itm.useOn(
+						new UseOnContext(
+								space.myLevel, pPlayer, pHand,
+								pPlayer.getItemInHand(pHand),
+								new BlockHitResult(
+										pHit.getLocation(),
+										pHit.getDirection(),
+										space.getOffsetPos(pos), pHit.isInside()
+								)
+						)
+				);
+//				((SUCapableChunk) chnk).markDirty(pPos);
+//				chnk.setUnsaved(true);
 			}
-			return InteractionResult.CONSUME;
+			space.getBlock(pos.getX(), pos.getY(), pos.getZ()).use(
+					space.myLevel, pPlayer, pHand, new BlockHitResult(
+							pHit.getLocation(),
+							pHit.getDirection(),
+							space.getOffsetPos(pos), pHit.isInside()
+					));
+			((SUCapableChunk) chnk).markDirty(pPos);
+			chnk.setUnsaved(true);
+			return InteractionResult.SUCCESS;
 		}
 		return super.use(pState, pLevel, pPos, pPlayer, pHand, pHit);
+	}
+	
+	@Override
+	public void tick(BlockState pState, ServerLevel pLevel, BlockPos pPos, Random pRandom) {
+		pLevel.scheduleTick(pPos, this, 1);
+		LevelChunk chnk = pLevel.getChunkAt(pPos);
+		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+		((ServerLevel) space.myLevel).tick(() -> true);
+		super.tick(pState, pLevel, pPos, pRandom);
+	}
+	
+	@Override
+	public void playerDestroy(Level pLevel, Player pPlayer, BlockPos pPos, BlockState pState, @Nullable BlockEntity pBlockEntity, ItemStack pTool) {
+		HitResult result = null;
+		if (FMLEnvironment.dist.isClient())
+//			if (pLevel.isClientSide)
+			result = Minecraft.getInstance().hitResult;
+//		super.playerDestroy(pLevel, pPlayer, pPos, pState, pBlockEntity, pTool);
+		if (result instanceof UnitHitResult) {
+			LevelChunk chnk = pLevel.getChunkAt(pPos);
+			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+			BlockPos pos = ((UnitHitResult) result).geetBlockPos();
+			space.setState(pos, Blocks.AIR);
+		}
 	}
 }

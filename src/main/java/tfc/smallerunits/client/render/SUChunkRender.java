@@ -27,7 +27,15 @@ public class SUChunkRender {
 			BufferStorage strg = buffer.getSecond();
 			if (strg.hasActive(type)) {
 				VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
-				buffer1.drawChunkLayer();
+				if (type == RenderType.translucent()) {
+					type.clearRenderState();
+					RenderType.translucentNoCrumbling().setupRenderState();
+					buffer1.drawChunkLayer();
+					RenderType.translucentNoCrumbling().clearRenderState();
+					type.setupRenderState();
+				} else {
+					buffer1.drawChunkLayer();
+				}
 			}
 		}
 	}
@@ -35,7 +43,7 @@ public class SUChunkRender {
 	public void addBuffers(BlockPos pos, BufferStorage genBuffers) {
 		for (Pair<BlockPos, BufferStorage> buffer : buffers) {
 			if (buffer.getFirst().equals(pos)) {
-				buffers.remove(buffer.getFirst());
+				buffers.remove(buffer);
 				break;
 			}
 		}

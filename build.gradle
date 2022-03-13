@@ -132,9 +132,8 @@ mixin {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    maven {
-        url = "https://jitpack.io"
-    }
+    maven { url = "https://jitpack.io" }
+    maven { url "https://www.cursemaven.com" }
 }
 
 configurations {
@@ -146,6 +145,8 @@ dependencies {
 //    minecraft 'net.minecraftforge:forge:1.18.2-40.0.12'
 
     api fg.deobf("com.github.Virtuoel:Pehkui:3.1.0-1.18.1-forge")
+    api fg.deobf("curse.maven:scm-248619:3668544")
+    api fg.deobf("curse.maven:tklib-566563:3650390")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 

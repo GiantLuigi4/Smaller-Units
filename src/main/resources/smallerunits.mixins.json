@@ -6,7 +6,8 @@
   "refmap": "smallerunits.refmap.json",
   "mixins": [
     "ChunkSerializerAccessor",
-    "optimization.ShapesMixin"
+    "optimization.ShapesMixin",
+    "optimization.VoxelShapeAccessor"
   ],
   "client": [
     "LevelRendererMixin",
