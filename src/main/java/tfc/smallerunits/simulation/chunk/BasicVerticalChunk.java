@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.chunk;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -15,12 +16,16 @@ import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.utils.math.Math1D;
 
+import java.util.ArrayList;
+
 public class BasicVerticalChunk extends LevelChunk {
 	private final BlockState[] blocks = new BlockState[16 * 16 * 16];
-	private final int yPos;
+	public final int yPos;
 	// holds the functional chunk and a method which gets the corresponding BasicVerticalChunk from an integer representing which vertical chunk
 	// quite basic... weird to word however
 	private final VChunkLookup verticalLookup;
+	public final ArrayList<BlockPos> updated = new ArrayList<>();
+	private int set = 0;
 	
 	public BasicVerticalChunk(Level pLevel, ChunkPos pPos, int y, VChunkLookup verticalLookup) {
 		super(pLevel, pPos);
@@ -41,10 +46,17 @@ public class BasicVerticalChunk extends LevelChunk {
 		return x + (((y * 16) + z) * 16);
 	}
 	
+	public boolean isLoaded() {
+		for (BlockState block : blocks) if (block != null) return true;
+		return false;
+	}
+	
 	protected BlockState getBlockState$(BlockPos pos) {
 		// locals would be redundant, this is an internal method
 		// this method assumes that pos.y will always be in bounds of the specific BasicVerticalChunk
-		return blocks[getIndx(Math1D.chunkMod(pos.getX(), 16), pos.getY(), Math1D.chunkMod(pos.getZ(), 16))];
+		BlockState state = blocks[getIndx(pos.getX() & 15, pos.getY(), pos.getZ() & 15)];
+		if (state == null) state = Blocks.AIR.defaultBlockState();
+		return state;
 	}
 	
 	@Override
@@ -53,7 +65,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (yO != 0) {
 			if (yPos + yO < 0) return Blocks.VOID_AIR.defaultBlockState();
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			return chunk.getBlockState$(new BlockPos(pos.getX(), Math1D.chunkMod(pos.getY(), 16), pos.getZ()));
+			return chunk.getBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()));
 		}
 		return getBlockState$(pos);
 	}
@@ -65,7 +77,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (yO != 0) {
 			if (yPos + yO < 0) return Blocks.VOID_AIR.defaultBlockState();
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			return chunk.setBlockState$(new BlockPos(pos.getX(), Math1D.chunkMod(pos.getY(), 16), pos.getZ()), pState, pIsMoving);
+			return chunk.setBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), pState, pIsMoving);
 		}
 		return setBlockState$(pos, pState, pIsMoving);
 	}
@@ -80,6 +92,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			int j = pPos.getX() & 15;
 			int k = pPos.getY();
 			int l = pPos.getZ() & 15;
+			pPos = pPos.above(yPos * 16);
 			int indx = getIndx(j, k, l);
 //			BlockState blockstate = levelchunksection.setBlockState(j, k, l, pState);
 			BlockState blockstate = blocks[indx];
@@ -127,6 +140,7 @@ public class BasicVerticalChunk extends LevelChunk {
 					}
 					
 					this.unsaved = true;
+					updated.add(pPos.below(yPos * 16));
 					return blockstate;
 				}
 			}
@@ -137,7 +151,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0) {
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			chunk.setBlockFast(new BlockPos(pos.getX(), Math1D.chunkMod(pos.getY(), 16), pos.getZ()), state);
+			chunk.setBlockFast(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), state);
 			return;
 		}
 		int j = pos.getX() & 15;
@@ -148,17 +162,22 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 	
 	public void randomTick() {
-		for (int k = 0; k < 3; ++k) {
+		for (int k = 0; k < 1000; ++k) {
 			BlockPos blockpos1 = level.getBlockRandomPos(0, 0, 0, 15);
 			BlockState blockstate = this.getBlockState(blockpos1);
+			BlockPos wp = blockpos1.offset(chunkPos.getWorldPosition()).relative(Direction.UP, yPos * 16);
 			if (blockstate.isRandomlyTicking()) {
-				blockstate.randomTick((ServerLevel) level, blockpos1, level.random);
+				blockstate.randomTick((ServerLevel) level, wp.above(), level.random);
 			}
 			
 			FluidState fluidstate = blockstate.getFluidState();
 			if (fluidstate.isRandomlyTicking()) {
-				fluidstate.randomTick(level, blockpos1, level.random);
+				fluidstate.randomTick(level, wp, level.random);
 			}
 		}
+	}
+	
+	public BasicVerticalChunk getSubChunk(int cy) {
+		return verticalLookup.apply(cy);
 	}
 }

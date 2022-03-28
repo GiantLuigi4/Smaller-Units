@@ -1,7 +1,9 @@
 package tfc.smallerunits;
 
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -29,16 +31,16 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.EntityCollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.*;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.networking.SUNetworkRegistry;
+import tfc.smallerunits.networking.sync.RemoveUnitPacket;
 import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
@@ -95,8 +97,11 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			// if unit space is null, assume syncing is still occurring
 			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
 			
-			Vec3 startVec = entity.getEyePosition();
-			Vec3 lookVec = entity.getLookAngle();
+			Camera camera = Minecraft.getInstance().getEntityRenderDispatcher().camera;
+			// I'm stupid, why did I do it any way other than this?
+			// lol
+			Vec3 startVec = camera.getPosition();
+			Vec3 lookVec = new Vec3(camera.getLookVector());
 			double reach;
 			if (entity instanceof LivingEntity) {
 				AttributeInstance instance = ((LivingEntity) entity).getAttribute(ForgeMod.REACH_DISTANCE.get());
@@ -151,6 +156,58 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 //			else shape = Shapes.or(shape, Shapes.box(1, 0, 0, 1.0001, 1, 1));
 //			if (xLook < 90 && xLook > -90) shape = Shapes.or(shape, Shapes.box(0, 0, -0.0001, 1, 1, 0));
 //			else shape = Shapes.or(shape, Shapes.box(0, 0, 1, 1, 1, 1.0001));
+//			float yLook = entity.xRotO;
+			
+			for (Direction value : Direction.values()) {
+				BlockState offset = pLevel.getBlockState(pPos.relative(value));
+				if (!offset.isAir()) {
+					if (offset.getBlock() instanceof UnitSpaceBlock) continue;
+					VoxelShape shape1 = offset.getShape(pLevel, pPos.relative(value), pContext);
+					if (shape1.isEmpty()) continue;
+					shape1 = shape1.move(value.getStepX(), value.getStepY(), value.getStepZ());
+					for (int xo = 0; xo < space.unitsPerBlock; xo++) {
+						for (int zo = 0; zo < space.unitsPerBlock; zo++) {
+							double x;
+							double y;
+							double z;
+							if (value.equals(Direction.WEST) || value.equals(Direction.EAST)) {
+								x = value.equals(Direction.EAST) ? (space.unitsPerBlock - 0.999) : -0.001;
+								y = xo;
+								z = zo;
+							} else if (value.equals(Direction.UP) || value.equals(Direction.DOWN)) {
+								x = xo;
+								y = value.equals(Direction.UP) ? (space.unitsPerBlock - 0.999) : -0.001;
+								z = zo;
+							} else {
+								x = xo;
+								y = zo;
+								z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
+							}
+							AABB box = new AABB(
+									x / upbDouble, y / upbDouble, z / upbDouble,
+									(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
+							);
+							// less expensive than voxel shape computations
+							if (box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent()) {
+								if (value.getStepX() == 1) x += 1;
+								else if (value.getStepY() == 1) y += 1;
+								else if (value.getStepZ() == 1) z += 1;
+								BlockPos pos = new BlockPos(x, y, z);
+								VoxelShape shape2 = Shapes.joinUnoptimized(shape1, Shapes.create(box), BooleanOp.AND);
+								if (shape2.isEmpty()) continue;
+								for (AABB toAabb : shape2.toAabbs()) {
+									shape.addBox(new UnitBox(
+											toAabb.minX, toAabb.minY, toAabb.minZ,
+											toAabb.maxX, toAabb.maxY, toAabb.maxZ,
+											pos
+									));
+								}
+							}
+						}
+					}
+				}
+			}
+			
 			return shape;
 		}
 		return Shapes.empty();
@@ -170,6 +227,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			double upbDouble = space.unitsPerBlock;
 			UnitShape shape = new UnitShape();
 			collectShape((pos) -> {
+				// TODO:
 				return true;
 			}, (pos, state) -> {
 				int x = pos.getX();
@@ -271,7 +329,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 							pHit.getDirection(),
 							space.getOffsetPos(pos), pHit.isInside()
 					));
-			((SUCapableChunk) chnk).markDirty(pPos);
+			((SUCapableChunk) chnk).SU$markDirty(pPos);
 			chnk.setUnsaved(true);
 			return InteractionResult.SUCCESS;
 		}
@@ -283,7 +341,8 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		pLevel.scheduleTick(pPos, this, 1);
 		LevelChunk chnk = pLevel.getChunkAt(pPos);
 		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-		((ServerLevel) space.myLevel).tick(() -> true);
+		if (space == null) return;
+		space.tick();
 		super.tick(pState, pLevel, pPos, pRandom);
 	}
 	
@@ -300,5 +359,15 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			BlockPos pos = ((UnitHitResult) result).geetBlockPos();
 			space.setState(pos, Blocks.AIR);
 		}
+	}
+	
+	@Override
+	public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
+		LevelChunk chnk = pLevel.getChunkAt(pPos);
+		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+		space.clear();
+		RemoveUnitPacket pckt = new RemoveUnitPacket(pPos, space.unitsPerBlock);
+		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
+		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
 	}
 }

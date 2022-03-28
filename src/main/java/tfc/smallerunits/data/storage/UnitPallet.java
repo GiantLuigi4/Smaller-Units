@@ -3,7 +3,9 @@ package tfc.smallerunits.data.storage;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.JsonOps;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -127,11 +129,33 @@ public class UnitPallet {
 	}
 	
 	public void acceptStates(BlockState[] states) {
+		acceptStates(states, true);
+	}
+	
+	public void acceptStates(BlockState[] states, boolean assumeAir) {
 		for (int i = 0; i < states.length; i++) {
 			if (indexToIdMap.containsKey(i)) {
 				BlockState state = idToStateMap.get(indexToIdMap.get(i));
 				states[i] = state;
-			} else states[i] = Blocks.AIR.defaultBlockState();
+			} else if (assumeAir) states[i] = Blocks.AIR.defaultBlockState();
 		}
+	}
+	
+	public void put(Pair<BlockPos, BlockState> state) {
+		BlockPos pos = state.getFirst();
+		int indx = ((pos.getX() * 16) + pos.getY()) * 16 + pos.getZ();
+		int id = -1;
+		for (BlockState blockState : stateToIdMap.keySet()) {
+			if (blockState.equals(state.getSecond())) {
+				id = stateToIdMap.get(blockState);
+				break;
+			}
+		}
+		if (id == -1) {
+			id = stateToIdMap.size();
+			stateToIdMap.put(state.getSecond(), id);
+			idToStateMap.put(id, state.getSecond());
+		}
+		indexToIdMap.put(indx, id);
 	}
 }

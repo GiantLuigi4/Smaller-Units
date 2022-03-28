@@ -6,6 +6,9 @@
   "refmap": "smallerunits.refmap.json",
   "mixins": [
     "ChunkSerializerAccessor",
+    "data.regions.ChunkHolderAccessor",
+    "data.regions.ChunkHolderSizeTracker",
+    "data.regions.ChunkMapMixin",
     "optimization.ShapesMixin",
     "optimization.VoxelShapeAccessor"
   ],
@@ -13,7 +16,9 @@
     "LevelRendererMixin",
     "data.CompiledChunkMixin",
     "data.LevelChunkMixin",
-    "data.LevelMixin"
+    "data.LevelMixin",
+    "data.regions.ClientChunkCacheMixin",
+    "data.regions.ClientLevelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

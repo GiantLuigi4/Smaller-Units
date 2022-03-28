@@ -5,7 +5,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.common.util.INBTSerializable;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.utils.math.Math1D;
 
 public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag> {
 	final Level level;
@@ -36,25 +35,29 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	
 	@Override
 	public void setUnit(BlockPos pos, UnitSpace space) {
-		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+//		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		spaceMap[indx] = space;
 	}
 	
 	@Override
 	public void removeUnit(BlockPos pos) {
-		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+//		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		spaceMap[indx] = null;
 	}
 	
 	@Override
 	public void makeUnit(BlockPos pos) {
-		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+//		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		spaceMap[indx] = new UnitSpace(pos, level);
 	}
 	
 	@Override
 	public UnitSpace getOrMakeUnit(BlockPos pos) {
-		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+//		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace(pos, level) : spaceMap[indx];
 	}
 	
@@ -65,7 +68,8 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	
 	@Override
 	public UnitSpace getUnit(BlockPos pos) {
-		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
+//		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
+		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		return spaceMap[indx];
 	}
 }

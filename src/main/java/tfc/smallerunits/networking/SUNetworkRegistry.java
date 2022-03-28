@@ -3,7 +3,9 @@ package tfc.smallerunits.networking;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-import tfc.smallerunits.networking.sync.SyncPacket;
+import tfc.smallerunits.networking.sync.RemoveUnitPacket;
+import tfc.smallerunits.networking.sync.SyncPacketS2C;
+import tfc.smallerunits.networking.sync.UpdateStatesS2C;
 
 public class SUNetworkRegistry {
 	public static final String networkingVersion = "1.0.0";
@@ -16,13 +18,20 @@ public class SUNetworkRegistry {
 	);
 	
 	static {
-		NETWORK_INSTANCE.registerMessage(
-				0,
-				SyncPacket.class,
-				Packet::write,
-				SyncPacket::new,
-				(pkt, ctx) -> pkt.handle(ctx.get())
-		);
+		NetworkEntry<?>[] entries = new NetworkEntry[]{
+				new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new),
+				new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new),
+				new NetworkEntry<>(RemoveUnitPacket.class, RemoveUnitPacket::new),
+		};
+		for (int i = 0; i < entries.length; i++) entries[i].register(i, NETWORK_INSTANCE);
+//		NETWORK_INSTANCE.registerMessage(
+//				0,
+//				SyncPacketS2C.class,
+//				Packet::write,
+//				SyncPacketS2C::new,
+//				(pkt, ctx) -> pkt.handle(ctx.get())
+//		);
+//		NETWORK_INSTANCE.registerMessage(1, UpdateStatesS2C.class, Packet::write, UpdateStatesS2C::new, (pkt, ctx) -> pkt.handle(ctx.get()));
 	}
 	
 	public static void init() {

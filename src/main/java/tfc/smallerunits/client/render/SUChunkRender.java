@@ -13,7 +13,6 @@ import java.util.ArrayList;
 public class SUChunkRender {
 	private final LevelChunk chunk;
 	private final ArrayList<Pair<BlockPos, BufferStorage>> buffers = new ArrayList<>();
-	private boolean isDirty = false;
 	
 	public SUChunkRender(LevelChunk chunk) {
 		this.chunk = chunk;
@@ -21,21 +20,13 @@ public class SUChunkRender {
 	
 	public void draw(ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type) {
 		int yRL = renderChunk.getOrigin().getY();
-		int yRM = renderChunk.getOrigin().getY() + 16;
+		int yRM = renderChunk.getOrigin().getY() + 15;
 		for (Pair<BlockPos, BufferStorage> buffer : buffers) {
 			if (buffer.getFirst().getY() > yRM || buffer.getFirst().getY() < yRL) continue;
 			BufferStorage strg = buffer.getSecond();
 			if (strg.hasActive(type)) {
 				VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
-				if (type == RenderType.translucent()) {
-					type.clearRenderState();
-					RenderType.translucentNoCrumbling().setupRenderState();
-					buffer1.drawChunkLayer();
-					RenderType.translucentNoCrumbling().clearRenderState();
-					type.setupRenderState();
-				} else {
-					buffer1.drawChunkLayer();
-				}
+				buffer1.drawChunkLayer();
 			}
 		}
 	}
@@ -48,6 +39,15 @@ public class SUChunkRender {
 			}
 		}
 		if (genBuffers != null) buffers.add(Pair.of(pos, genBuffers));
-		isDirty = true;
+	}
+	
+	public void freeBuffers(BlockPos pos, SUVBOEmitter emitter) {
+		for (Pair<BlockPos, BufferStorage> buffer : buffers) {
+			if (buffer.getFirst().equals(pos)) {
+				buffers.remove(buffer);
+				emitter.getAndMark(pos);
+				break;
+			}
+		}
 	}
 }

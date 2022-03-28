@@ -1,39 +1,33 @@
 package tfc.smallerunits;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.progress.ChunkProgressListener;
-import net.minecraft.world.level.ChunkPos;
+import net.minecraft.server.level.ChunkMap;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.levelgen.FlatLevelSource;
-import net.minecraft.world.level.levelgen.StructureSettings;
-import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
-import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
-import net.minecraft.world.level.storage.ServerLevelData;
-import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.TickerServerWorld;
-
-import java.util.ArrayList;
-import java.util.List;
+import tfc.smallerunits.utils.math.Math1D;
 
 public class UnitSpace {
 	// TODO: migrate to chunk class
 	public final BlockPos pos;
 	public int unitsPerBlock = 16;
 	
-	public final Level myLevel;
-	public Level level;
-	BlockPos myPosInTheLevel;
+	public final Level level;
+	protected Level myLevel;
+	CompoundTag tag;
+	private BlockPos myPosInTheLevel;
 	
 	public UnitSpace(BlockPos pos, Level level) {
 		this.pos = pos;
@@ -91,60 +85,8 @@ public class UnitSpace {
 //				}
 //			}
 //		}
-		unitsPerBlock = 8;
-		try {
-			myLevel = new TickerServerWorld(
-					Minecraft.getInstance().getSingleplayerServer(),
-					(ServerLevelData) Minecraft.getInstance().getSingleplayerServer().getLevel(Level.OVERWORLD).getLevelData(),
-					Level.OVERWORLD, // TODO:
-					Minecraft.getInstance().getSingleplayerServer().getLevel(Level.OVERWORLD).dimensionType(),
-					new ChunkProgressListener() {
-						@Override
-						public void updateSpawnPos(ChunkPos pCenter) {
-							System.out.println("uh, ok?");
-						}
-						
-						@Override
-						public void onStatusChange(ChunkPos pChunkPosition, @Nullable ChunkStatus pNewStatus) {
-							System.out.println("OHNO");
-						}
-						
-						@Override
-						public void start() {
-							System.out.println("conc");
-						}
-						
-						@Override
-						public void stop() {
-							System.out.println("conc");
-						}
-					},
-					new FlatLevelSource(
-							new FlatLevelGeneratorSettings(
-									new StructureSettings(false),
-									RegistryAccess.builtin().registryOrThrow(Registry.BIOME_REGISTRY)
-							).withLayers(
-									List.of(new FlatLayerInfo(0, Blocks.AIR)),
-									new StructureSettings(false)
-							)
-					),
-					false, 0, new ArrayList<>(), false,
-					this
-			);
-		} catch (Throwable e) {
-			RuntimeException ex = new RuntimeException(e.getMessage(), e);
-			ex.setStackTrace(e.getStackTrace());
-			Loggers.UNITSPACE_LOGGER.error("", e);
-			throw ex;
-		}
-		// TODO: multiply by upb
-		myPosInTheLevel = new BlockPos(
-//				Math1D.chunkMod(pos.getX(), 512),
-//				Math1D.chunkMod(pos.getY(), 512),
-//				Math1D.chunkMod(pos.getZ(), 512)
-				32, 32, 32
-		);
-		setState(new BlockPos(0, 0, 0), Blocks.STONE);
+		unitsPerBlock = 1;
+		setUpb(16);
 	}
 	
 	public static UnitSpace fromNBT(CompoundTag tag, Level lvl) {
@@ -152,11 +94,91 @@ public class UnitSpace {
 				new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")),
 				lvl
 		);
+		space.tag = tag;
 		space.unitsPerBlock = tag.getInt("upb");
-		UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
-		space.loadPallet(pallet);
+		space.setUpb(space.unitsPerBlock);
+		space.loadWorld(tag);
 		// TODO: multiply by upb
 		return space;
+	}
+	
+	public Level getMyLevel() {
+		return myLevel;
+	}
+	
+	public void setUpb(int upb) {
+		this.unitsPerBlock = upb;
+		myPosInTheLevel = new BlockPos(
+//				Math1D.chunkMod(pos.getX(), 512),
+//				Math1D.chunkMod(pos.getY(), 512),
+//				Math1D.chunkMod(pos.getZ(), 512)
+//				Math1D.chunkMod(pos.getX(), 512) * upb,
+//				Math1D.chunkMod(pos.getY(), 512) * upb,
+//				Math1D.chunkMod(pos.getZ(), 512) * upb
+				Math1D.oldChunkMod(pos.getX(), 512) * upb,
+				Math1D.oldChunkMod(pos.getY(), 512) * upb,
+				Math1D.oldChunkMod(pos.getZ(), 512) * upb
+//				Math.abs(pos.getX() % 512) * upb,
+//				Math.abs(pos.getY() % 512) * upb,
+//				Math.abs(pos.getZ() % 512) * upb
+		);
+		myLevel = null;
+		tick();
+	}
+	
+	/* reason: race conditions */
+	public void tick() {
+		if (myLevel instanceof ServerLevel) {
+			((ServerLevel) myLevel).tick(() -> true);
+		} else if (myLevel == null) {
+			int upb = unitsPerBlock;
+			if (level instanceof ServerLevel) {
+				ChunkMap cm = ((ServerLevel) level).getChunkSource().chunkMap;
+				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
+				if (r == null) return;
+				if (myLevel != null)
+					((TickerServerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
+				setState(new BlockPos(0, 0, 0), Blocks.STONE);
+			} else if (level instanceof RegionalAttachments) {
+				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
+				if (r == null) return;
+				if (myLevel != null)
+					((TickerServerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+				myLevel = r.getClientWorld((ClientLevel) level, upb);
+			}
+			loadWorld(tag);
+		}
+	}
+	
+	private void loadWorld(CompoundTag tag) {
+		if (myLevel == null || tag == null) return;
+		UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
+		loadPallet(pallet);
+		if (tag.contains("ticks")) {
+			if (myLevel instanceof TickerServerWorld) {
+				((TickerServerWorld) myLevel).loadTicks(tag.getCompound("ticks"));
+			}
+		}
+		CompoundTag tiles = tag.getCompound("tiles");
+		for (String pos : tiles.getAllKeys()) {
+			String[] strs = pos.split(",");
+			BlockPos pos1 = new BlockPos(
+					Integer.parseInt(strs[0]),
+					Integer.parseInt(strs[1]),
+					Integer.parseInt(strs[2])
+			);
+			BlockEntity be = BlockEntity.loadStatic(
+					pos1,
+					getBlock(pos1.getX(), pos1.getY(), pos1.getZ()),
+					tiles.getCompound(pos)
+			);
+			if (be == null) continue;
+			myLevel.setBlockEntity(be);
+		}
+//		setState(new BlockPos(0, 0, 0), Blocks.STONE);
+		
+		this.tag = null;
 	}
 	
 	public CompoundTag serialize() {
@@ -167,6 +189,20 @@ public class UnitSpace {
 		tag.putInt("upb", unitsPerBlock);
 		UnitPallet pallet = new UnitPallet(this);
 		tag.put("blocks", pallet.toNBT());
+		if (myLevel instanceof TickerServerWorld)
+			tag.put("ticks", ((TickerServerWorld) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
+		CompoundTag tiles = new CompoundTag();
+		for (int x = 0; x < unitsPerBlock; x++) {
+			for (int y = 0; y < unitsPerBlock; y++) {
+				for (int z = 0; z < unitsPerBlock; z++) {
+					BlockEntity be = myLevel.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
+					if (be != null) {
+						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
+					}
+				}
+			}
+		}
+		tag.put("tiles", tiles);
 		return tag;
 	}
 	
@@ -184,31 +220,21 @@ public class UnitSpace {
 	}
 	
 	public void loadPallet(UnitPallet pallet) {
-		myPosInTheLevel = new BlockPos(
-//				Math1D.chunkMod(pos.getX(), 512),
-//				Math1D.chunkMod(pos.getY(), 512),
-//				Math1D.chunkMod(pos.getZ(), 512)
-				32, 32, 32
-		);
 		final BlockState[] states = new BlockState[unitsPerBlock * unitsPerBlock * unitsPerBlock];
-		for (int i = 0; i < states.length; i++) states[i] = Blocks.AIR.defaultBlockState();
-		pallet.acceptStates(states);
+//		for (int i = 0; i < states.length; i++) states[i] = Blocks.AIR.defaultBlockState();
+		pallet.acceptStates(states, false);
 		try {
 			for (int x = 0; x < unitsPerBlock; x++) {
 				for (int y = 0; y < unitsPerBlock; y++) {
 					for (int z = 0; z < unitsPerBlock; z++) {
 						int indx = (((x * unitsPerBlock) + y) * unitsPerBlock) + z;
+						if (states[indx] == null) continue;
 						if (states[indx] == Blocks.AIR.defaultBlockState()) continue;
 						BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 						BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-						vc.setBlockFast(new BlockPos(x, pz.getY(), z), states[indx]);
+						vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), states[indx]);
 //						((BasicCubicChunk) myLevel.getChunkAt(getOffsetPos(new BlockPos(x, y, z)))).setBlockFast(new BlockPos(x, y, z), states[indx]);
 					}
-				}
-			}
-			for (int x = 0; x < 8; x++) {
-				for (int z = 0; z < 8; z++) {
-					setState(new BlockPos(x, 0, z), Blocks.COBBLESTONE);
 				}
 			}
 		} catch (Throwable e) {
@@ -232,5 +258,23 @@ public class UnitSpace {
 	
 	public BlockPos getOffsetPos(BlockPos pos) {
 		return myPosInTheLevel.offset(pos);
+	}
+	
+	public void setFast(int x, int y, int z, BlockState state) {
+		BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
+		BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
+		vc.setBlockFast(new BlockPos(x, pz.getY(), z), state);
+	}
+	
+	public void clear() {
+		for (int x = 0; x < unitsPerBlock; x++) {
+			for (int y = 0; y < unitsPerBlock; y++) {
+				for (int z = 0; z < unitsPerBlock; z++) {
+					BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
+					BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
+					vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), Blocks.AIR.defaultBlockState());
+				}
+			}
+		}
 	}
 }

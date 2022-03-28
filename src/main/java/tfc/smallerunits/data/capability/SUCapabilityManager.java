@@ -14,7 +14,7 @@ import net.minecraftforge.event.world.ChunkWatchEvent;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.networking.SUNetworkRegistry;
-import tfc.smallerunits.networking.sync.SyncPacket;
+import tfc.smallerunits.networking.sync.SyncPacketS2C;
 
 // so I mostly just abandoned any documentation that I was given and write this
 // CCA's readme is actually extremely good
@@ -105,7 +105,7 @@ public class SUCapabilityManager {
 			if (capability == null) return;
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;
-				SyncPacket pkt = new SyncPacket(unit);
+				SyncPacketS2C pkt = new SyncPacketS2C(unit);
 				SUNetworkRegistry.NETWORK_INSTANCE.send(
 						PacketDistributor.PLAYER.with(event::getPlayer),
 						pkt

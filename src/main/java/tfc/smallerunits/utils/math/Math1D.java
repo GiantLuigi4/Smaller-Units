@@ -9,6 +9,7 @@ public class Math1D {
 	public static int chunkMod(int val, int mod) {
 //		return val > 0 ? val % mod : ((mod - val) % mod);
 		return val & (mod - 1);
+//		return val % mod;
 	}
 	
 	public static float getChunkOffset(float val, float size) {
@@ -18,5 +19,15 @@ public class Math1D {
 	public static int getChunkOffset(int val, int size) {
 //		return val >= 0 ? val / size : (val / size) - 1;
 		return val >> 4;
+	}
+	
+	public static int oldChunkMod(int val, int mod) {
+		if (val > 0)
+			return val % mod;
+		else
+			return ((mod - val) % mod);
+//		return (val > 0) ?
+//				(val % mod) :
+//				((mod - val) % mod);
 	}
 }

@@ -17,7 +17,6 @@ import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
-import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
@@ -49,7 +48,8 @@ public class SUVBOEmitter {
 		stack.translate(
 				pos.getX() - chunk.getPos().getMinBlockX(),
 //				pos.getY() < 0 ? ((16 - pos.getY() % 16) - 16) : (pos.getY() % 16),
-				Math1D.chunkMod(pos.getY(), 16),
+//				Math1D.chunkMod(pos.getY(), 16),
+				pos.getY() & 15,
 				pos.getZ() - chunk.getPos().getMinBlockZ()
 		);
 		float scl = 1f / space.unitsPerBlock;
@@ -85,7 +85,7 @@ public class SUVBOEmitter {
 							BlockPos rPos = new BlockPos(x, y, z);
 							dispatcher.renderBatched(
 									block, space.getOffsetPos(rPos),
-									space.myLevel, stack,
+									space.getMyLevel(), stack,
 									buffers.get(chunkBufferLayer),
 									true, new Random(space.getOffsetPos(rPos).asLong()),
 									EmptyModelData.INSTANCE // TODO
@@ -114,6 +114,10 @@ public class SUVBOEmitter {
 		BufferStorage strg = getBuffers(pos);
 		used.put(pos, strg);
 		return strg;
+	}
+	
+	public void markFree(BlockPos pos) {
+		vbosFree.add(getBuffers(pos));
 	}
 	
 	public void free() {

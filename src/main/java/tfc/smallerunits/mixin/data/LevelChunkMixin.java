@@ -1,6 +1,7 @@
 package tfc.smallerunits.mixin.data;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -16,41 +17,48 @@ public class LevelChunkMixin implements SUCapableChunk {
 	@Unique
 	private final ArrayList<BlockPos> forRemoval = new ArrayList<>();
 	@Unique
+	private final ArrayList<BlockEntity> renderableBlockEntities = new ArrayList<>();
+	@Unique
 	private final SUChunkRender compChunk = new SUChunkRender((LevelChunk) (Object) this);
 	
 	@Override
-	public BlockPos[] dirty() {
+	public BlockPos[] SU$dirty() {
 		return dirtyBlocks.toArray(new BlockPos[0]);
 	}
 	
 	@Override
-	public BlockPos[] toRemove() {
+	public BlockPos[] SU$toRemove() {
 		return forRemoval.toArray(new BlockPos[0]);
 	}
 	
 	@Override
-	public BlockPos[] forRemoval() {
+	public BlockPos[] SU$forRemoval() {
 		return dirtyBlocks.toArray(new BlockPos[0]);
 	}
 	
 	@Override
-	public void markDirty(BlockPos pos) {
+	public void SU$markDirty(BlockPos pos) {
 		dirtyBlocks.add(pos);
 	}
 	
 	@Override
-	public void reset() {
+	public ArrayList<BlockEntity> getTiles() {
+		return renderableBlockEntities;
+	}
+	
+	@Override
+	public void SU$reset() {
 		dirtyBlocks.clear();
 		forRemoval.clear();
 	}
 	
 	@Override
-	public void markGone(BlockPos pos) {
+	public void SU$markGone(BlockPos pos) {
 		forRemoval.add(pos);
 	}
 	
 	@Override
-	public SUChunkRender getChunkRender() {
+	public SUChunkRender SU$getChunkRender() {
 		return compChunk;
 	}
 }
