@@ -1,5 +1,6 @@
 package tfc.smallerunits.mixin.data;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -44,6 +45,20 @@ public class LevelChunkMixin implements SUCapableChunk {
 	@Override
 	public ArrayList<BlockEntity> getTiles() {
 		return renderableBlockEntities;
+	}
+	
+	@Override
+	public void addTile(BlockEntity be) {
+		for (BlockEntity renderableBlockEntity : renderableBlockEntities) {
+			if (renderableBlockEntity.getBlockPos().equals(be.getBlockPos())) {
+				renderableBlockEntities.remove(renderableBlockEntity);
+				break;
+			}
+		}
+		if (Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(be) != null) {
+			// I believe this is how this should work
+			renderableBlockEntities.add(be);
+		}
 	}
 	
 	@Override

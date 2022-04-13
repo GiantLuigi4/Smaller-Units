@@ -33,6 +33,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.client.render.SURenderManager;
+import tfc.smallerunits.client.render.TileRendererHelper;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.client.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -73,6 +74,12 @@ public abstract class LevelRendererMixin {
 	public ChunkRenderDispatcher.CompiledChunk preRenderLayer(ChunkRenderDispatcher.RenderChunk instance) {
 		return (renderChunk = instance).getCompiledChunk();
 	}
+
+//	// TODO: move off of redirect
+//	@Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;getRenderableBlockEntities()Ljava/util/List;"))
+//	public List<BlockEntity> preRenderBEs(ChunkRenderDispatcher.CompiledChunk instance) {
+//		return (renderChunk = instance).getCompiledChunk();
+//	}
 	
 	@Shadow
 	private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, double pX, double pY, double pZ, float pRed, float pGreen, float pBlue, float pAlpha) {
@@ -140,6 +147,7 @@ public abstract class LevelRendererMixin {
 	
 	@Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;getCompiledChunk()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"))
 	public ChunkRenderDispatcher.CompiledChunk preGetCompiledChunk(ChunkRenderDispatcher.RenderChunk instance) {
+		renderChunk = instance;
 		BlockPos origin = renderChunk.getOrigin();
 		ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
@@ -147,12 +155,7 @@ public abstract class LevelRendererMixin {
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
 		
 		for (BlockEntity tile : capable.getTiles()) {
-			stk.pushPose();
-			stk.translate(
-					tile.getBlockPos().getX(),
-					tile.getBlockPos().getY(),
-					tile.getBlockPos().getZ()
-			);
+			TileRendererHelper.setupStack(stk, tile, origin);
 			blockEntityRenderDispatcher.render(
 					tile, 0,
 					stk, Minecraft.getInstance().renderBuffers().bufferSource()

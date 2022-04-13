@@ -2,6 +2,7 @@ package tfc.smallerunits.data.storage;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
@@ -10,6 +11,7 @@ import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.FlatLevelSource;
 import net.minecraft.world.level.levelgen.StructureSettings;
@@ -131,6 +133,24 @@ public class Region {
 						false, 0, new ArrayList<>(), false,
 						parent, upb, this
 				);
+				levels[upb].isClientSide = true;
+				TickerServerWorld lvl = ((TickerServerWorld) levels[upb]);
+				lvl.lookup = pos -> {
+					BlockPos bp = lvl.region.pos.toBlockPos().offset(
+							// TODO: double check this
+							Math.floor(pos.getX() / (double) upb),
+							Math.floor(pos.getY() / (double) upb),
+							Math.floor(pos.getZ() / (double) upb)
+					);
+					if (lvl.cache.containsKey(bp)) return lvl.cache.get(bp);
+					BlockState state;
+//			if (!parent.isLoaded(bp)) return Blocks.VOID_AIR.defaultBlockState();
+					ChunkPos cp = new ChunkPos(bp);
+					if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+						return Blocks.VOID_AIR.defaultBlockState();
+					lvl.cache.put(bp, state = parent.getBlockState(bp));
+					return state;
+				};
 			} catch (Throwable e) {
 				RuntimeException ex = new RuntimeException(e.getMessage(), e);
 				ex.setStackTrace(e.getStackTrace());
@@ -140,5 +160,30 @@ public class Region {
 		}
 		
 		return levels[upb];
+	}
+	
+	public void updateWorlds() {
+		for (Level level : levels) {
+			if (level != null) {
+				if (level.isClientSide) {
+					if (level instanceof TickerServerWorld) {
+						((TickerServerWorld) level).invalidateCache();
+					}
+				} else {
+					((TickerServerWorld) level).invalidateCache();
+				}
+			}
+		}
+	}
+	
+	public void tickWorlds() {
+		for (Level level : levels) {
+			if (level == null) continue;
+			if (!level.isClientSide) {
+				if (level instanceof ServerLevel) {
+					((ServerLevel) level).tick(() -> true);
+				}
+			}
+		}
 	}
 }

@@ -11,10 +11,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
+import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.storage.DefaultedMap;
@@ -75,6 +77,21 @@ public class SUVBOEmitter {
 					for (int z = 0; z < upb; z++) {
 						int indx = (((x * upb) + y) * upb) + z;
 						BlockState block = states[indx];
+						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {
+							BlockPos rPos = new BlockPos(x, y, z);
+							TranslatingVertexBuilder builder = new TranslatingVertexBuilder(1f / unit.unitsPerBlock, buffers.get(chunkBufferLayer));
+							builder.offset = new Vec3(
+									space.pos.getX() * 16,
+									space.pos.getY() * 16,
+									space.pos.getZ() * 16
+							);
+							dispatcher.renderLiquid(
+									space.getOffsetPos(rPos),
+									space.getMyLevel(),
+									builder,
+									block.getFluidState()
+							);
+						}
 						if (block.getRenderShape() != RenderShape.MODEL) continue;
 						if (block.isAir()) continue;
 						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {

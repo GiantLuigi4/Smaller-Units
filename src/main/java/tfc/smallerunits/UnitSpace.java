@@ -129,7 +129,8 @@ public class UnitSpace {
 	/* reason: race conditions */
 	public void tick() {
 		if (myLevel instanceof ServerLevel) {
-			((ServerLevel) myLevel).tick(() -> true);
+			((TickerServerWorld) myLevel).setLoaded();
+//			((ServerLevel) myLevel).tick(() -> true);
 		} else if (myLevel == null) {
 			int upb = unitsPerBlock;
 			if (level instanceof ServerLevel) {
@@ -139,7 +140,7 @@ public class UnitSpace {
 				if (myLevel != null)
 					((TickerServerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
-				setState(new BlockPos(0, 0, 0), Blocks.STONE);
+//				setState(new BlockPos(0, 0, 0), Blocks.STONE);
 			} else if (level instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
 				if (r == null) return;
@@ -176,6 +177,7 @@ public class UnitSpace {
 			if (be == null) continue;
 			myLevel.setBlockEntity(be);
 		}
+		((TickerServerWorld) myLevel).setLoaded();
 //		setState(new BlockPos(0, 0, 0), Blocks.STONE);
 		
 		this.tag = null;
@@ -232,7 +234,7 @@ public class UnitSpace {
 						if (states[indx] == Blocks.AIR.defaultBlockState()) continue;
 						BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 						BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-						vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), states[indx]);
+						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx]);
 //						((BasicCubicChunk) myLevel.getChunkAt(getOffsetPos(new BlockPos(x, y, z)))).setBlockFast(new BlockPos(x, y, z), states[indx]);
 					}
 				}
@@ -273,8 +275,18 @@ public class UnitSpace {
 					BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 					BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
 					vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), Blocks.AIR.defaultBlockState());
+					vc.removeBlockEntity(new BlockPos(pz.getX(), pz.getY(), pz.getZ()));
 				}
 			}
 		}
+	}
+	
+	public BlockEntity[] getTiles() {
+		final BlockEntity[] states = new BlockEntity[unitsPerBlock * unitsPerBlock * unitsPerBlock];
+		for (int x = 0; x < unitsPerBlock; x++)
+			for (int y = 0; y < unitsPerBlock; y++)
+				for (int z = 0; z < unitsPerBlock; z++)
+					states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockEntity(myPosInTheLevel.offset(x, y, z));
+		return states;
 	}
 }

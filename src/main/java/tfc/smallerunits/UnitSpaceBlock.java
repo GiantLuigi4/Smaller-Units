@@ -98,10 +98,14 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
 			
 			Camera camera = Minecraft.getInstance().getEntityRenderDispatcher().camera;
-			// I'm stupid, why did I do it any way other than this?
-			// lol
-			Vec3 startVec = camera.getPosition();
-			Vec3 lookVec = new Vec3(camera.getLookVector());
+			
+			//// I'm stupid, why did I do it any way other than this?
+			//// lol
+			//// ah right, server side
+			// Vec3 startVec = camera.getPosition();
+			// Vec3 lookVec = new Vec3(camera.getLookVector());
+			Vec3 startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(1);
+			Vec3 lookVec = ((EntityCollisionContext) pContext).getEntity().getLookAngle();
 			double reach;
 			if (entity instanceof LivingEntity) {
 				AttributeInstance instance = ((LivingEntity) entity).getAttribute(ForgeMod.REACH_DISTANCE.get());
@@ -265,8 +269,8 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			for (int y = 0; y < upbInt; y++) {
 				for (int z = 0; z < upbInt; z++) {
 					BlockState state = space.getBlock(x, y, z);
-					if (state == null) continue;
 					if (state.isAir()) continue;
+//					if (state == null) continue;
 					if (simpleChecker.apply(new BlockPos(x, y, z))) {
 						boxFiller.accept(new BlockPos(x, y, z), state);
 					}

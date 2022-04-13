@@ -3,9 +3,7 @@ package tfc.smallerunits.networking;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
-import tfc.smallerunits.networking.sync.RemoveUnitPacket;
-import tfc.smallerunits.networking.sync.SyncPacketS2C;
-import tfc.smallerunits.networking.sync.UpdateStatesS2C;
+import tfc.smallerunits.networking.sync.*;
 
 public class SUNetworkRegistry {
 	public static final String networkingVersion = "1.0.0";
@@ -22,6 +20,8 @@ public class SUNetworkRegistry {
 				new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new),
 				new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new),
 				new NetworkEntry<>(RemoveUnitPacket.class, RemoveUnitPacket::new),
+				new NetworkEntry<>(SpawningBlockEntitiesS2C.class, SpawningBlockEntitiesS2C::new),
+				new NetworkEntry<>(DeleteBlockEntityS2C.class, DeleteBlockEntityS2C::new),
 		};
 		for (int i = 0; i < entries.length; i++) entries[i].register(i, NETWORK_INSTANCE);
 //		NETWORK_INSTANCE.registerMessage(

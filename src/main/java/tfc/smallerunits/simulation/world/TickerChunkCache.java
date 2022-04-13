@@ -1,19 +1,24 @@
 package tfc.smallerunits.simulation.world;
 
 import com.mojang.datafixers.DataFixer;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.storage.RegionPos;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 
@@ -50,18 +55,48 @@ public class TickerChunkCache extends ServerChunkCache {
 		}
 	}
 	
+	public ParentLookup getLookup() {
+		return ((TickerServerWorld) level).lookup;
+	}
+	
 	public ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
+		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY > upb) {
+			Region r = ((TickerServerWorld) level).region;
+			RegionPos pos = r.pos;
+			
+			int x = pChunkX < 0 ? -1 : ((pChunkX > upb) ? 1 : 0);
+			int y = pChunkY < 0 ? -1 : ((pChunkY > upb) ? 1 : 0);
+			int z = pChunkZ < 0 ? -1 : ((pChunkZ > upb) ? 1 : 0);
+			pos = new RegionPos(
+					pos.x + x,
+					pos.y + y,
+					pos.z + z
+			);
+			
+			pChunkX = ((pChunkX < 0) ? pChunkX + upb : ((pChunkX > upb) ? (pChunkX - (upb * 32)) : pChunkX));
+			pChunkY = ((pChunkY < 0) ? pChunkY + upb : ((pChunkY > upb) ? (pChunkX - (upb * 32)) : pChunkY));
+			pChunkZ = ((pChunkZ < 0) ? pChunkZ + upb : ((pChunkZ > upb) ? (pChunkX - (upb * 32)) : pChunkZ));
+			
+			Level parent = ((TickerServerWorld) level).parent;
+			Region otherRegion = null;
+			Level level = null;
+			if (!parent.isClientSide && parent instanceof ServerLevel) {
+				otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);
+				level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
+			} else {
+				if (parent.isClientSide) {
+					otherRegion = ((RegionalAttachments) ((TickerServerWorld) this.level).parent).SU$getRegion(pos);
+					level = otherRegion.getClientWorld((ClientLevel) parent, upb);
+				}
+			}
+			return level.getChunk(pChunkX, pChunkZ);
+//			return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
+		}
 		if (!pLoad) {
-			// TODO:
-			if (pChunkX < 0) return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
-			if (pChunkZ < 0) return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
 			BasicVerticalChunk[] chunks = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (chunks == null) return null;
 			return chunks[pChunkY];
 		} else {
-			// TODO:
-			if (pChunkX < 0) return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
-			if (pChunkZ < 0) return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
 			if (ck[pChunkY] == null) ck[pChunkY] = new BasicVerticalChunk(
@@ -69,7 +104,7 @@ public class TickerChunkCache extends ServerChunkCache {
 					new VChunkLookup(
 							this, pChunkY, ck,
 							new ChunkPos(pChunkX, pChunkZ)
-					)
+					), getLookup(), upb
 			);
 			return ck[pChunkY];
 		}
@@ -84,7 +119,7 @@ public class TickerChunkCache extends ServerChunkCache {
 				new VChunkLookup(
 						this, i, ck,
 						new ChunkPos(pChunkX, pChunkZ)
-				)
+				), getLookup(), upb
 		);
 	}
 }

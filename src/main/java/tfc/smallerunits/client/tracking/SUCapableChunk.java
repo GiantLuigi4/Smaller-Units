@@ -22,4 +22,6 @@ public interface SUCapableChunk {
 	SUChunkRender SU$getChunkRender();
 	
 	ArrayList<BlockEntity> getTiles();
+	
+	void addTile(BlockEntity be);
 }

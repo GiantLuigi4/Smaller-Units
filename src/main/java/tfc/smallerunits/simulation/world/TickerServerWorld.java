@@ -4,15 +4,18 @@ import com.mojang.datafixers.util.Pair;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -20,6 +23,8 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
@@ -34,14 +39,16 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.networking.SUNetworkRegistry;
+import tfc.smallerunits.networking.sync.DeleteBlockEntityS2C;
+import tfc.smallerunits.networking.sync.SpawningBlockEntitiesS2C;
 import tfc.smallerunits.networking.sync.UpdateStatesS2C;
+import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 public class TickerServerWorld extends ServerLevel {
 	private static final NoStorageSource src = NoStorageSource.make();
@@ -59,42 +66,12 @@ public class TickerServerWorld extends ServerLevel {
 	
 	public final Level parent;
 	//	public final UnitSpace parentU;
-	Region region;
+	public final Region region;
 	int upb;
-	
-	public TickerServerWorld(MinecraftServer p_8571_, ServerLevelData p_8574_, ResourceKey<Level> p_8575_, DimensionType p_8576_, ChunkProgressListener p_8577_, ChunkGenerator p_8578_, boolean p_8579_, long p_8580_, List<CustomSpawner> p_8581_, boolean p_8582_, Level parent, int upb, Region region) throws IOException {
-		super(
-				p_8571_,
-				Util.backgroundExecutor(),
-				noAccess,
-				p_8574_,
-				p_8575_,
-				p_8576_,
-				p_8577_,
-				p_8578_,
-				p_8579_,
-				p_8580_,
-				p_8581_,
-				p_8582_
-		);
-//		this.parentU = parentU;
-		this.parent = parent;
-		this.upb = upb;
-		this.chunkSource = new TickerChunkCache(
-				this, noAccess,
-				null, getStructureManager(),
-				Util.backgroundExecutor(),
-				p_8578_,
-				0, 0,
-				true,
-				p_8577_, (pPos, pStatus) -> {
-		}, () -> null,
-				upb
-		);
-		this.region = region;
-		this.blockTicks = new SUTickList<>(null, null);
-		this.fluidTicks = new SUTickList<>(null, null);
-	}
+	public final HashMap<BlockPos, BlockState> cache = new HashMap<>();
+	public ParentLookup lookup;
+	public ParentLookup lookupTemp;
+	ArrayList<Entity> entities = new ArrayList<>();
 	
 	@Override
 	public float getShade(Direction pDirection, boolean pShade) {
@@ -134,15 +111,6 @@ public class TickerServerWorld extends ServerLevel {
 	
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
-		BlockPos rp = region.pos.toBlockPos();
-		BlockPos pos = pBlockEntity.getBlockPos();
-		int xo = (pos.getX() / upb);
-		int yo = (pos.getY() / upb);
-		int zo = (pos.getZ() / upb);
-		BlockPos parentPos = rp.offset(xo, yo, zo);
-		ChunkAccess ac = parent.getChunkAt(parentPos);
-		ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-//		((SUCapableChunk) ac).getTiles().add(pBlockEntity);
 		super.setBlockEntity(pBlockEntity);
 	}
 	
@@ -151,43 +119,116 @@ public class TickerServerWorld extends ServerLevel {
 		super.addFreshBlockEntities(beList);
 	}
 	
+	boolean isLoaded = false;
+	
+	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) throws IOException {
+		super(
+				server,
+				Util.backgroundExecutor(),
+				noAccess,
+				data,
+				p_8575_,
+				dimType,
+				progressListener,
+				generator,
+				p_8579_,
+				p_8580_,
+				spawners,
+				p_8582_
+		);
+//		this.parentU = parentU;
+		this.parent = parent;
+		this.upb = upb;
+		this.chunkSource = new TickerChunkCache(
+				this, noAccess,
+				null, getStructureManager(),
+				Util.backgroundExecutor(),
+				generator,
+				0, 0,
+				true,
+				progressListener, (pPos, pStatus) -> {
+		}, () -> null,
+				upb
+		);
+		this.region = region;
+		this.blockTicks = new SUTickList<>(null, null);
+		this.fluidTicks = new SUTickList<>(null, null);
+		lookup = pos -> lookupTemp.getState(pos);
+		lookupTemp = pos -> Blocks.VOID_AIR.defaultBlockState();
+	}
+	
 	@Override
-	public void tick(BooleanSupplier pHasTimeLeft) {
-		super.tick(pHasTimeLeft);
-		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
-			if (column == null) continue;
-			// TODO: check only dirty chunks
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
-				if (!basicVerticalChunk.updated.isEmpty()) {
-					// TODO: mark parent dirty
-//					if (basicVerticalChunk.yPos == 2) {
-					ArrayList<Pair<BlockPos, BlockState>> updates = new ArrayList<>();
-					for (BlockPos pos : basicVerticalChunk.updated)
-						updates.add(Pair.of(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), basicVerticalChunk.getBlockState(pos)));
-					basicVerticalChunk.updated.clear();
-					basicVerticalChunk.setUnsaved(false);
-					UpdateStatesS2C packet = new UpdateStatesS2C(
-							region.pos, updates,
-							upb, basicVerticalChunk.getPos(),
-							basicVerticalChunk.yPos
-					);
-					BlockPos rp = region.pos.toBlockPos();
-					double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
-					double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
-					double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
-					ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-					LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-					chunk.setUnsaved(true);
-					SUNetworkRegistry.NETWORK_INSTANCE.send(
-//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-							PacketDistributor.ALL.noArg(),
-							packet
-					);
-//					}
+	public boolean addFreshEntity(Entity pEntity) {
+		entities.add(pEntity);
+		return super.addFreshEntity(pEntity);
+	}
+	
+	@Override
+	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
+		if (entities.contains(p_8865_)) entities.remove(p_8865_);
+		super.removeEntityComplete(p_8865_, keepData);
+	}
+	
+	@Override
+	public LevelEntityGetter<Entity> getEntities() {
+		return new LevelEntityGetter<Entity>() {
+			public Entity get(int p_156931_) {
+				for (Entity entity : entities) {
+					if (entity.getId() == p_156931_) return entity; // TODO: be not dumb
+				}
+				return null;
+			}
+			
+			@javax.annotation.Nullable
+			public Entity get(UUID pUuid) {
+				for (Entity entity : entities) {
+					if (entity.getUUID().equals(pUuid)) return entity; // TODO: be not dumb
+				}
+				return null;
+			}
+			
+			public Iterable<Entity> getAll() {
+				return entities;
+			}
+			
+			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156935_, Consumer<U> p_156936_) {
+				for (Entity entity : entities) {
+					if (p_156935_.getBaseClass().isInstance(entity)) {
+						p_156936_.accept((U) entity);
+					}
 				}
 			}
-		}
+			
+			public void get(AABB p_156937_, Consumer<Entity> p_156938_) {
+				for (Entity entity : entities) {
+					if (p_156937_.intersects(entity.getBoundingBox())) {
+						p_156938_.accept(entity); // this seems slow, but ok mojang
+					}
+				}
+			}
+			
+			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156932_, AABB p_156933_, Consumer<U> p_156934_) {
+				// ?
+				for (Entity entity : entities) {
+					if (p_156933_.intersects(p_156933_)) {
+						if (p_156932_.getBaseClass().isInstance(entity)) {
+							p_156934_.accept((U) entity);
+						}
+					}
+				}
+			}
+		};
+	}
+	
+	@Override
+	public Iterable<Entity> getAllEntities() {
+		return entities;
+	}
+	
+	@Override
+	public void removeEntity(Entity p_8868_, boolean keepData) {
+		if (entities.contains(p_8868_)) entities.remove(p_8868_);
+		super.removeEntity(p_8868_, keepData);
 	}
 	
 	private void tickSUBlock(BlockPos pos) {
@@ -312,5 +353,139 @@ public class TickerServerWorld extends ServerLevel {
 		vc.setBlockFast(new BlockPos(x, y, z), state);
 		
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
+	}
+	
+	@Override
+	public void tick(BooleanSupplier pHasTimeLeft) {
+		if (!isLoaded) return;
+		resetEmptyTime();
+		super.tick(pHasTimeLeft);
+		for (Entity entity : entities.toArray(new Entity[0])) {
+//		for (Entity entity : entities) {
+			if (entity.isRemoved()) continue;
+			entity.tick();
+		}
+		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
+			if (column == null) continue;
+			// TODO: check only dirty chunks
+			for (BasicVerticalChunk basicVerticalChunk : column) {
+				if (basicVerticalChunk == null) continue;
+				if (!basicVerticalChunk.updated.isEmpty()) {
+					// TODO: mark parent dirty
+//					if (basicVerticalChunk.yPos == 2) {
+					ArrayList<Pair<BlockPos, BlockState>> updates = new ArrayList<>();
+					for (BlockPos pos : basicVerticalChunk.updated)
+						updates.add(Pair.of(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), basicVerticalChunk.getBlockState(pos)));
+					basicVerticalChunk.updated.clear();
+					basicVerticalChunk.setUnsaved(false);
+					UpdateStatesS2C packet = new UpdateStatesS2C(
+							region.pos, updates,
+							upb, basicVerticalChunk.getPos(),
+							basicVerticalChunk.yPos
+					);
+					BlockPos rp = region.pos.toBlockPos();
+					double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+					double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+					double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+					ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+					LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+					chunk.setUnsaved(true);
+					SUNetworkRegistry.NETWORK_INSTANCE.send(
+//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+							PacketDistributor.ALL.noArg(),
+							packet
+					);
+//					}
+				} else {
+					if (!basicVerticalChunk.beChanges.isEmpty()) {
+						for (BlockEntity beChange : basicVerticalChunk.beChanges) {
+							net.minecraft.network.protocol.Packet<?> pkt = beChange.getUpdatePacket();
+							if (pkt instanceof ClientboundBlockEntityDataPacket) {
+								CompoundTag tag = ((ClientboundBlockEntityDataPacket) pkt).getTag();
+								if (tag == null) continue;
+								CompoundTag tg = new CompoundTag();
+								tg.put("data", tag);
+								tag.put("tag", beChange.serializeNBT());
+								tag.putString("id", beChange.getType().getRegistryName().toString());
+								SpawningBlockEntitiesS2C packet = new SpawningBlockEntitiesS2C(
+										region.pos, tg,
+										upb, basicVerticalChunk.getPos(),
+										basicVerticalChunk.yPos,
+										beChange.getBlockPos()
+								);
+								BlockPos rp = region.pos.toBlockPos();
+								double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+								double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+								double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+								ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+								LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+								chunk.setUnsaved(true);
+								SUNetworkRegistry.NETWORK_INSTANCE.send(
+//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+										PacketDistributor.ALL.noArg(),
+										packet
+								);
+							}
+						}
+						basicVerticalChunk.beChanges.clear();
+					}
+					if (!basicVerticalChunk.besRemoved.isEmpty()) {
+						for (BlockPos beChange : basicVerticalChunk.besRemoved) {
+							DeleteBlockEntityS2C packet = new DeleteBlockEntityS2C(
+									region.pos,
+									upb, basicVerticalChunk.getPos(),
+									basicVerticalChunk.yPos,
+									beChange
+							);
+							BlockPos rp = region.pos.toBlockPos();
+							double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+							double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+							double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+							ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+							chunk.setUnsaved(true);
+							SUNetworkRegistry.NETWORK_INSTANCE.send(
+//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+									PacketDistributor.ALL.noArg(),
+									packet
+							);
+						}
+						basicVerticalChunk.besRemoved.clear();
+					}
+				}
+			}
+		}
+	}
+	
+	public void invalidateCache() {
+		cache.clear();
+	}
+	
+	public int getUnitsPerBlock() {
+		return upb;
+	}
+	
+	public void setLoaded() {
+		isLoaded = true;
+		lookupTemp = pos -> {
+			BlockPos bp = region.pos.toBlockPos().offset(
+					// TODO: double check this
+					Math.floor(pos.getX() / (double) upb),
+					Math.floor(pos.getY() / (double) upb),
+					Math.floor(pos.getZ() / (double) upb)
+			);
+			if (cache.containsKey(bp))
+				return cache.get(bp);
+			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+				return Blocks.VOID_AIR.defaultBlockState();
+			ChunkPos cp = new ChunkPos(bp);
+			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+				return Blocks.VOID_AIR.defaultBlockState();
+			BlockState state = parent.getBlockState(bp);
+//			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
+//				return state;
+			cache.put(bp, state);
+			return state;
+		};
 	}
 }

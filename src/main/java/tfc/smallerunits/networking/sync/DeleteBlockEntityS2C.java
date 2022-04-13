@@ -1,48 +1,47 @@
 package tfc.smallerunits.networking.sync;
 
-import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraftforge.network.NetworkEvent;
+import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
-import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.simulation.world.TickerServerWorld;
 
 import java.util.ArrayList;
 
-public class UpdateStatesS2C extends Packet {
-	UnitPallet pallet;
+public class DeleteBlockEntityS2C extends Packet {
 	RegionPos realPos;
 	int upb;
 	//	BlockPos rwp;
 	ChunkPos cp;
 	int cy;
+	BlockPos up;
 	
-	public UpdateStatesS2C(/*BlockPos rwp, */RegionPos pos, ArrayList<Pair<BlockPos, BlockState>> states, int upb, ChunkPos cp, int cy) {
+	public DeleteBlockEntityS2C(/*BlockPos rwp, */RegionPos pos, int upb, ChunkPos cp, int cy, BlockPos up) {
 //		this.rwp = rwp;
-		pallet = new UnitPallet();
-		states.forEach(pallet::put);
 		realPos = pos;
 		this.upb = upb;
 		this.cp = cp;
 		this.cy = cy;
+		this.up = up;
 	}
 	
-	public UpdateStatesS2C(FriendlyByteBuf buf) {
+	public DeleteBlockEntityS2C(FriendlyByteBuf buf) {
 		super(buf);
 //		rwp = buf.readBlockPos();
 		upb = buf.readInt();
 		realPos = new RegionPos(buf.readInt(), buf.readInt(), buf.readInt());
-		pallet = UnitPallet.fromNBT(buf.readNbt());
 		cp = new ChunkPos(buf.readIntLE(), buf.readInt());
 		cy = buf.readInt();
+		up = buf.readBlockPos();
 	}
 	
 	@Override
@@ -54,10 +53,10 @@ public class UpdateStatesS2C extends Packet {
 		buf.writeInt(realPos.x);
 		buf.writeInt(realPos.y);
 		buf.writeInt(realPos.z);
-		buf.writeNbt(pallet.toNBT());
 		buf.writeIntLE(cp.x); // idk lol
 		buf.writeInt(cp.z);
 		buf.writeInt(cy);
+		buf.writeBlockPos(up);
 	}
 	
 	@Override
@@ -72,16 +71,23 @@ public class UpdateStatesS2C extends Packet {
 //			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 //			UnitSpace space = cap.getOrMakeUnit(rwp);
 			
-			BlockState[] states = new BlockState[16 * 16 * 16];
-			pallet.acceptStates(states, false);
-			for (int x = 0; x < 16; x++) {
-				for (int y = 0; y < 16; y++) {
-					for (int z = 0; z < 16; z++) {
-						int indx = ((x * 16) + y) * 16 + z;
-						if (states[indx] == null) continue;
-//						space.setFast(x, y, z, states[indx]);
-						((TickerServerWorld) lvl).setFromSync(cp, cy, x, y, z, states[indx]);
-					}
+			lvl.removeBlockEntity(up);
+
+//			BlockState[] states = new BlockState[16 * 16 * 16];
+			
+			BlockPos rp = ((TickerServerWorld) lvl).region.pos.toBlockPos();
+			BlockPos pos = up;
+			int xo = (pos.getX() / upb);
+			int yo = (pos.getY() / upb);
+			int zo = (pos.getZ() / upb);
+			BlockPos parentPos = rp.offset(xo, yo, zo);
+			ChunkAccess ac = ((TickerServerWorld) lvl).parent.getChunkAt(parentPos);
+			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+			ArrayList<BlockEntity> bes = ((SUCapableChunk) ac).getTiles();
+			for (BlockEntity blockEntity : bes) {
+				if (blockEntity.getBlockPos().equals(up)) {
+					bes.remove(blockEntity);
+					break;
 				}
 			}
 
