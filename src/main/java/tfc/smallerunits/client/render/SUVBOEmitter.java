@@ -1,12 +1,13 @@
 package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.AmbientOcclusionStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
@@ -16,10 +17,12 @@ import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
+import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.storage.DefaultedMap;
+import tfc.smallerunits.utils.threading.ReusableThread;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +37,15 @@ public class SUVBOEmitter {
 	private final HashMap<BlockPos, BufferStorage> used = new HashMap<>();
 	private final HashMap<BlockPos, BufferStorage> free = new HashMap<>();
 	
+	private static final ReusableThread[] threads = new ReusableThread[16];
+	
+	static {
+		for (int i = 0; i < threads.length; i++) {
+			threads[i] = new ReusableThread(() -> {
+			});
+		}
+	}
+	
 	public BufferStorage genBuffers(LevelChunk chunk, SUCapableChunk suCapableChunk, ISUCapability capability, BlockPos pos) {
 		UnitSpace space = capability.getUnit(pos);
 		BufferStorage storage = getAndMark(pos);
@@ -44,7 +56,9 @@ public class SUVBOEmitter {
 			free.put(pos, getBuffers(pos));
 			return null;
 		}
+		Minecraft.getInstance().getProfiler().push("get_blocks");
 		BlockState[] states = unit.getBlocks();
+		Minecraft.getInstance().getProfiler().pop();
 		BlockRenderDispatcher dispatcher = Minecraft.getInstance().getBlockRenderer();
 		PoseStack stack = new PoseStack();
 		stack.translate(
@@ -58,28 +72,62 @@ public class SUVBOEmitter {
 		stack.scale(scl, scl, scl);
 		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
 		buffers.setDefaultVal((type) -> {
+//			BufferBuilder builder = new ThreadedVertexBuilder(0, bufferBuilderPack.builder(type));
+//			BufferBuilder builder = new ThreadedVertexBuilder(0, SUVBOEmitter.buffers.get(type));
 //			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
-			BufferBuilder builder = bufferBuilderPack.builder(type);
-			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
+//			BufferBuilder builder = bufferBuilderPack.builder(type);
+			if (!builder.building()) builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 			return builder;
 		});
-		MultiBufferSource bufferSource = new MultiBufferSource() {
-			@Override
-			public VertexConsumer getBuffer(RenderType pRenderType) {
-				return buffers.get(pRenderType);
-			}
-		};
 		int upb = space.unitsPerBlock;
-		for (RenderType chunkBufferLayer : RenderType.chunkBufferLayers()) {
+		RenderWorld wld = new RenderWorld(space.getMyLevel(), states, space.getOffsetPos(new BlockPos(0, 0, 0)), upb);
+		Minecraft.getInstance().getProfiler().push("draw_loop");
+		
+		for (int i = 0; i < RenderType.chunkBufferLayers().size(); i++) {
+			RenderType chunkBufferLayer = RenderType.chunkBufferLayers().get(i);
 			ForgeHooksClient.setRenderType(chunkBufferLayer);
-			for (int x = 0; x < upb; x++) {
-				for (int y = 0; y < upb; y++) {
-					for (int z = 0; z < upb; z++) {
-						int indx = (((x * upb) + y) * upb) + z;
-						BlockState block = states[indx];
+//			ReusableThread td = threads[i % 16];
+//			while (td.isInUse()) {
+//			}
+//			td.setAction(() -> {
+			handleLayer(chunkBufferLayer, buffers, wld, stack, upb, space, dispatcher, states);
+//			});
+//			td.start();
+		}
+//		for (ReusableThread thread : threads) {
+//			while (thread.isInUse()) {
+//			}
+//		}
+		Minecraft.getInstance().getProfiler().popPush("finish");
+//		buffers.forEach((type, buf) -> {
+//			if (buf instanceof ThreadedVertexBuilder) {
+//				((ThreadedVertexBuilder) buf).finish(threads);
+//			}
+//		});
+		ForgeHooksClient.setRenderType(null);
+		Minecraft.getInstance().getProfiler().popPush("upload");
+		buffers.forEach(storage::upload);
+		Minecraft.getInstance().getProfiler().pop();
+		
+		return storage;
+	}
+	
+	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
+		VertexConsumer consumer = null;
+		for (int x = 0; x < upb; x++) {
+			PoseStack stk = new PoseStack();
+			stk.last().pose().load(stack.last().pose());
+			stk.last().normal().load(stack.last().normal());
+			for (int y = 0; y < upb; y++) {
+				for (int z = 0; z < upb; z++) {
+					int indx = (((x * upb) + y) * upb) + z;
+					BlockState block = states[indx];
+					if (!block.getFluidState().isEmpty()) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {
+							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							BlockPos rPos = new BlockPos(x, y, z);
-							TranslatingVertexBuilder builder = new TranslatingVertexBuilder(1f / unit.unitsPerBlock, buffers.get(chunkBufferLayer));
+							TranslatingVertexBuilder builder = new TranslatingVertexBuilder(1f / upb, consumer);
 							builder.offset = new Vec3(
 									space.pos.getX() * 16,
 									space.pos.getY() * 16,
@@ -87,36 +135,46 @@ public class SUVBOEmitter {
 							);
 							dispatcher.renderLiquid(
 									space.getOffsetPos(rPos),
-									space.getMyLevel(),
-									builder,
+									wld, builder,
 									block.getFluidState()
 							);
 						}
-						if (block.getRenderShape() != RenderShape.MODEL) continue;
-						if (block.isAir()) continue;
+					}
+					if (block.getRenderShape() != RenderShape.INVISIBLE) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
-							stack.pushPose();
-							stack.translate(x, y, z);
-//							IModelData data = EmptyModelData.INSTANCE;
-//							if (value.tileEntity != null) data = value.tileEntity.getModelData();
+							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
+//							if (consumer == null) consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(chunkBufferLayer);
+							stk.pushPose();
+							stk.translate(x, y, z);
+//								IModelData data = EmptyModelData.INSTANCE;
+//								if (value.tileEntity != null) data = value.tileEntity.getModelData();
 							BlockPos rPos = new BlockPos(x, y, z);
-							dispatcher.renderBatched(
-									block, space.getOffsetPos(rPos),
-									space.getMyLevel(), stack,
-									buffers.get(chunkBufferLayer),
-									true, new Random(space.getOffsetPos(rPos).asLong()),
-									EmptyModelData.INSTANCE // TODO
-							);
-							stack.popPose();
+							// TODO: WHY DOES THIS TAKE SO LONG
+							if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {
+								dispatcher.getModelRenderer().tesselateWithAO(
+										wld, dispatcher.getBlockModel(block),
+										block, space.getOffsetPos(rPos),
+										stk, consumer, true,
+										new Random(space.getOffsetPos(rPos).asLong()),
+										space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+										EmptyModelData.INSTANCE
+								);
+							} else {
+								dispatcher.getModelRenderer().tesselateWithoutAO(
+										wld, dispatcher.getBlockModel(block),
+										block, space.getOffsetPos(rPos),
+										stk, consumer, true,
+										new Random(space.getOffsetPos(rPos).asLong()),
+										space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+										EmptyModelData.INSTANCE
+								);
+							}
+							stk.popPose();
 						}
 					}
 				}
 			}
 		}
-		ForgeHooksClient.setRenderType(null);
-		buffers.forEach(storage::upload);
-		
-		return storage;
 	}
 	
 	@Deprecated(forRemoval = true)

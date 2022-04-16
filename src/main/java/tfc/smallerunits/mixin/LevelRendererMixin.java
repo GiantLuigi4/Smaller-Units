@@ -5,15 +5,16 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Matrix4f;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
+import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -37,6 +38,10 @@ import tfc.smallerunits.client.render.TileRendererHelper;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.client.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.world.TickerServerWorld;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -83,6 +88,43 @@ public abstract class LevelRendererMixin {
 	
 	@Shadow
 	private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, double pX, double pY, double pZ, float pRed, float pGreen, float pBlue, float pAlpha) {
+	}
+	
+	@Shadow
+	@Final
+	private EntityRenderDispatcher entityRenderDispatcher;
+	@Shadow
+	@Final
+	private RenderBuffers renderBuffers;
+	
+	@Shadow
+	protected abstract void renderEntity(Entity pEntity, double pCamX, double pCamY, double pCamZ, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBufferSource);
+	
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"), method = "renderLevel")
+	public void beforeRenderEntities(PoseStack stack, float i, long j, boolean k, Camera l, GameRenderer i1, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
+		for (Region value : ((RegionalAttachments) level).SU$getRegionMap().values()) {
+			if (value == null) continue;
+			value.forEachLevel((lvl) -> {
+				renderEntities(lvl, stack, l, i, this.renderBuffers.bufferSource());
+			});
+		}
+	}
+	
+	@Unique
+	public void renderEntities(Level lvl, PoseStack stk, Camera cam, float pct, MultiBufferSource buffers) {
+		Iterable<Entity> entities;
+		if (lvl instanceof ClientLevel) entities = ((ClientLevel) lvl).entitiesForRendering();
+		else entities = ((TickerServerWorld) lvl).getAllEntities();
+		stk.pushPose();
+		stk.translate(
+				-cam.getPosition().x,
+				-cam.getPosition().y,
+				-cam.getPosition().z
+		);
+		stk.scale(1f / ((ITickerWorld) lvl).getUPB(), 1f / ((ITickerWorld) lvl).getUPB(), 1f / ((ITickerWorld) lvl).getUPB());
+		for (Entity entity : entities)
+			SURenderManager.drawEntity((LevelRenderer) (Object) this, lvl, stk, cam, pct, buffers, entity);
+		stk.popPose();
 	}
 	
 	@Inject(at = @At("HEAD"), method = "renderHitOutline", cancellable = true)

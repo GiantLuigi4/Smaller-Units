@@ -56,4 +56,8 @@ public class DefaultedMap<T, V> {
 	public void remove(T type) {
 		map.remove(type);
 	}
+	
+	public boolean containsKey(T type) {
+		return map.containsKey(type);
+	}
 }

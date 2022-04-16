@@ -5,6 +5,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -35,6 +36,12 @@ public class TickerChunkCache extends ServerChunkCache {
 		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
+	}
+	
+	@Override
+	public void removeEntity(Entity pEntity) {
+		super.removeEntity(pEntity);
+		((ITickerWorld) level).SU$removeEntity(pEntity);
 	}
 	
 	@Nullable

@@ -129,7 +129,6 @@ public class UnitSpace {
 	/* reason: race conditions */
 	public void tick() {
 		if (myLevel instanceof ServerLevel) {
-			((TickerServerWorld) myLevel).setLoaded();
 //			((ServerLevel) myLevel).tick(() -> true);
 		} else if (myLevel == null) {
 			int upb = unitsPerBlock;
@@ -181,10 +180,14 @@ public class UnitSpace {
 //		setState(new BlockPos(0, 0, 0), Blocks.STONE);
 		
 		this.tag = null;
+		((TickerServerWorld) myLevel).setLoaded();
 	}
 	
 	public CompoundTag serialize() {
 		CompoundTag tag = new CompoundTag();
+		if (this.myLevel == null) {
+			return tag; // TODO: figure out why this happens
+		}
 		tag.putInt("x", pos.getX());
 		tag.putInt("y", pos.getY());
 		tag.putInt("z", pos.getZ());

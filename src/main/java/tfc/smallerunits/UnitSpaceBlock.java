@@ -1,6 +1,5 @@
 package tfc.smallerunits;
 
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,6 +24,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.AABB;
@@ -97,15 +97,15 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			// if unit space is null, assume syncing is still occurring
 			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
 			
-			Camera camera = Minecraft.getInstance().getEntityRenderDispatcher().camera;
 			
 			//// I'm stupid, why did I do it any way other than this?
 			//// lol
 			//// ah right, server side
+			// Camera camera = Minecraft.getInstance().getEntityRenderDispatcher().camera;
 			// Vec3 startVec = camera.getPosition();
 			// Vec3 lookVec = new Vec3(camera.getLookVector());
-			Vec3 startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(1);
-			Vec3 lookVec = ((EntityCollisionContext) pContext).getEntity().getLookAngle();
+			Vec3 startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(Minecraft.getInstance().getFrameTime());
+			Vec3 lookVec = ((EntityCollisionContext) pContext).getEntity().getViewVector(Minecraft.getInstance().getFrameTime());
 			double reach;
 			if (entity instanceof LivingEntity) {
 				AttributeInstance instance = ((LivingEntity) entity).getAttribute(ForgeMod.REACH_DISTANCE.get());
@@ -352,6 +352,10 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	
 	@Override
 	public void playerDestroy(Level pLevel, Player pPlayer, BlockPos pPos, BlockState pState, @Nullable BlockEntity pBlockEntity, ItemStack pTool) {
+	}
+	
+	@Override
+	public boolean onDestroyedByPlayer(BlockState state, Level pLevel, BlockPos pPos, Player player, boolean willHarvest, FluidState fluid) {
 		HitResult result = null;
 		if (FMLEnvironment.dist.isClient())
 //			if (pLevel.isClientSide)
@@ -363,6 +367,20 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			BlockPos pos = ((UnitHitResult) result).geetBlockPos();
 			space.setState(pos, Blocks.AIR);
 		}
+		// TODO: check if the unit is empty
+		return false;
+	}
+	
+	@Override
+	// relative block hardness
+	public float getDestroyProgress(BlockState pState, Player pPlayer, BlockGetter pLevel, BlockPos pPos) {
+		return super.getDestroyProgress(pState, pPlayer, pLevel, pPos);
+	}
+	
+	@Override
+	public boolean canEntityDestroy(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
+		// TODO: figure this out?
+		return false;
 	}
 	
 	@Override
@@ -372,6 +390,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		space.clear();
 		RemoveUnitPacket pckt = new RemoveUnitPacket(pPos, space.unitsPerBlock);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
-		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
+//		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
 	}
 }

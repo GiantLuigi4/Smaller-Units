@@ -22,6 +22,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.storage.EntityStorage;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
@@ -39,9 +40,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.networking.SUNetworkRegistry;
-import tfc.smallerunits.networking.sync.DeleteBlockEntityS2C;
-import tfc.smallerunits.networking.sync.SpawningBlockEntitiesS2C;
-import tfc.smallerunits.networking.sync.UpdateStatesS2C;
+import tfc.smallerunits.networking.sync.*;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 
@@ -50,7 +49,7 @@ import java.util.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-public class TickerServerWorld extends ServerLevel {
+public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	private static final NoStorageSource src = NoStorageSource.make();
 	private static final LevelStorageSource.LevelStorageAccess noAccess;
 	
@@ -64,6 +63,51 @@ public class TickerServerWorld extends ServerLevel {
 		}
 	}
 	
+	ArrayList<Entity> entitiesAdded = new ArrayList<>();
+	ArrayList<Entity> entitiesRemoved = new ArrayList<>();
+	
+	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) throws IOException {
+		super(
+				server,
+				Util.backgroundExecutor(),
+				noAccess,
+				data,
+				p_8575_,
+				dimType,
+				progressListener,
+				generator,
+				p_8579_,
+				p_8580_,
+				spawners,
+				p_8582_
+		);
+//		this.parentU = parentU;
+		this.parent = parent;
+		this.upb = upb;
+		this.chunkSource = new TickerChunkCache(
+				this, noAccess,
+				null, getStructureManager(),
+				Util.backgroundExecutor(),
+				generator,
+				0, 0,
+				true,
+				progressListener, (pPos, pStatus) -> {
+		}, () -> null,
+				upb
+		);
+		this.region = region;
+		this.blockTicks = new SUTickList<>(null, null);
+		this.fluidTicks = new SUTickList<>(null, null);
+		lookup = pos -> lookupTemp.getState(pos);
+		lookupTemp = pos -> Blocks.VOID_AIR.defaultBlockState();
+		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
+	}
+	
+	@Override
+	public void SU$removeEntity(Entity pEntity) {
+		if (!entitiesRemoved.contains(pEntity)) entitiesRemoved.add(pEntity);
+	}
+	
 	public final Level parent;
 	//	public final UnitSpace parentU;
 	public final Region region;
@@ -72,6 +116,22 @@ public class TickerServerWorld extends ServerLevel {
 	public ParentLookup lookup;
 	public ParentLookup lookupTemp;
 	ArrayList<Entity> entities = new ArrayList<>();
+	
+	@Override
+	public void SU$removeEntity(UUID uuid) {
+		SU$removeEntity(getEntity(uuid));
+	}
+	
+	@Nullable
+	@Override
+	public Entity getEntity(UUID pUniqueId) {
+		for (Entity entity : entities) {
+			if (entity.getUUID().equals(pUniqueId)) { // TODO: make this smarter
+				return entity;
+			}
+		}
+		return null;
+	}
 	
 	@Override
 	public float getShade(Direction pDirection, boolean pShade) {
@@ -121,52 +181,57 @@ public class TickerServerWorld extends ServerLevel {
 	
 	boolean isLoaded = false;
 	
-	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) throws IOException {
-		super(
-				server,
-				Util.backgroundExecutor(),
-				noAccess,
-				data,
-				p_8575_,
-				dimType,
-				progressListener,
-				generator,
-				p_8579_,
-				p_8580_,
-				spawners,
-				p_8582_
-		);
-//		this.parentU = parentU;
-		this.parent = parent;
-		this.upb = upb;
-		this.chunkSource = new TickerChunkCache(
-				this, noAccess,
-				null, getStructureManager(),
-				Util.backgroundExecutor(),
-				generator,
-				0, 0,
-				true,
-				progressListener, (pPos, pStatus) -> {
-		}, () -> null,
-				upb
-		);
-		this.region = region;
-		this.blockTicks = new SUTickList<>(null, null);
-		this.fluidTicks = new SUTickList<>(null, null);
-		lookup = pos -> lookupTemp.getState(pos);
-		lookupTemp = pos -> Blocks.VOID_AIR.defaultBlockState();
+	@Override
+	public int getUPB() {
+		return upb;
 	}
 	
 	@Override
 	public boolean addFreshEntity(Entity pEntity) {
+		if (!isClientSide) {
+			int firstOpen = -1;
+			int prev = -1;
+			for (Entity entity : entities) {
+				if (firstOpen != prev) {
+					break;
+				}
+				firstOpen++;
+				prev = entity.getId();
+			}
+			if (firstOpen != -1) pEntity.setId(firstOpen + 1);
+			else pEntity.setId(0);
+		}
 		entities.add(pEntity);
+		entitiesAdded.add(pEntity);
 		return super.addFreshEntity(pEntity);
+	}
+	
+	public boolean hasChunksAt(int pFromX, int pFromZ, int pToX, int pToZ) {
+		// TODO
+		return true;
+	}
+	
+	@Nullable
+	@Override
+	public Entity getEntity(int pId) {
+		for (Entity entity : entities) {
+			if (entity.getId() == pId) return entity;
+		}
+		return null;
 	}
 	
 	@Override
 	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
 		if (entities.contains(p_8865_)) entities.remove(p_8865_);
+		if (!entitiesRemoved.contains(p_8865_)) entitiesRemoved.add(p_8865_);
 		super.removeEntityComplete(p_8865_, keepData);
+	}
+	
+	@Override
+	public void removeEntity(Entity p_8868_, boolean keepData) {
+		if (entities.contains(p_8868_)) entities.remove(p_8868_);
+		if (!entitiesRemoved.contains(p_8868_)) entitiesRemoved.add(p_8868_);
+		super.removeEntity(p_8868_, keepData);
 	}
 	
 	@Override
@@ -225,14 +290,39 @@ public class TickerServerWorld extends ServerLevel {
 		return entities;
 	}
 	
-	@Override
-	public void removeEntity(Entity p_8868_, boolean keepData) {
-		if (entities.contains(p_8868_)) entities.remove(p_8868_);
-		super.removeEntity(p_8868_, keepData);
-	}
-	
+	// ???
 	private void tickSUBlock(BlockPos pos) {
 		getBlockState(pos).tick(this, pos, this.random);
+	}
+	
+	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> positions) {
+		BlockPos rp = region.pos.toBlockPos();
+		int xo = ((cp.x * 16) / upb) + (x / upb);
+		int yo = ((cy * 16) / upb) + (y / upb);
+		int zo = ((cp.z * 16) / upb) + (z / upb);
+		BlockPos parentPos = rp.offset(xo, yo, zo);
+		ChunkAccess ac;
+		// vertical lookups shouldn't be too expensive
+		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
+			ac = parent.getChunkAt(parentPos);
+			accessHashMap.put(new ChunkPos(parentPos), ac);
+			if (!positions.contains(parentPos)) {
+				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+				positions.add(parentPos);
+			}
+		} else ac = accessHashMap.get(new ChunkPos(parentPos));
+		
+		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+		UnitSpace space = cap.getUnit(parentPos);
+		if (space == null) {
+			space = cap.getOrMakeUnit(parentPos);
+			space.setUpb(upb);
+		}
+		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
+		vc = vc.getSubChunk(cy);
+		vc.setBlockFast(new BlockPos(x, y, z), state);
+		
+		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
 	
 	public CompoundTag getTicksIn(BlockPos myPosInTheLevel, BlockPos offset) {
@@ -333,30 +423,23 @@ public class TickerServerWorld extends ServerLevel {
 		}
 	}
 	
-	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state) {
-		BlockPos rp = region.pos.toBlockPos();
-		int xo = ((cp.x * 16) / upb) + (x / upb);
-		int yo = ((cy * 16) / upb) + (y / upb);
-		int zo = ((cp.z * 16) / upb) + (z / upb);
-		BlockPos parentPos = rp.offset(xo, yo, zo);
-		ChunkAccess ac = parent.getChunkAt(parentPos);
-		ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-		
-		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
-		UnitSpace space = cap.getUnit(parentPos);
-		if (space == null) {
-			space = cap.getOrMakeUnit(parentPos);
-			space.setUpb(upb);
+	@Override
+	public void handleRemoval() {
+		for (Entity entity : entities.toArray(new Entity[0])) {
+			if (entity.isRemoved()) {
+				entities.remove(entity);
+			}
 		}
-		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
-		vc = vc.getSubChunk(cy);
-		vc.setBlockFast(new BlockPos(x, y, z), state);
-		
-		((SUCapableChunk) ac).SU$markDirty(parentPos);
+	}
+	
+	@Override
+	public void removeEntity(Entity entity) {
+		super.removeEntity(entity);
 	}
 	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft) {
+		if (!getServer().isReady()) return;
 		if (!isLoaded) return;
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
@@ -391,7 +474,7 @@ public class TickerServerWorld extends ServerLevel {
 					LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
 					chunk.setUnsaved(true);
 					SUNetworkRegistry.NETWORK_INSTANCE.send(
-//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//							PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
 							PacketDistributor.ALL.noArg(),
 							packet
 					);
@@ -421,7 +504,7 @@ public class TickerServerWorld extends ServerLevel {
 								LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
 								chunk.setUnsaved(true);
 								SUNetworkRegistry.NETWORK_INSTANCE.send(
-//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//										PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
 										PacketDistributor.ALL.noArg(),
 										packet
 								);
@@ -445,7 +528,7 @@ public class TickerServerWorld extends ServerLevel {
 							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
 							chunk.setUnsaved(true);
 							SUNetworkRegistry.NETWORK_INSTANCE.send(
-//								PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//									PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
 									PacketDistributor.ALL.noArg(),
 									packet
 							);
@@ -455,14 +538,79 @@ public class TickerServerWorld extends ServerLevel {
 				}
 			}
 		}
-	}
-	
-	public void invalidateCache() {
-		cache.clear();
-	}
-	
-	public int getUnitsPerBlock() {
-		return upb;
+		if (!entitiesAdded.isEmpty()) {
+			for (Entity entity : entitiesAdded) {
+				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
+				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
+				CompoundTag tg = new CompoundTag();
+				tg.put("data", entity.serializeNBT());
+				tg.putInt("id", entity.getId());
+				SpawnEntityPacketS2C packet = new SpawnEntityPacketS2C(
+						region.pos, upb, cp0, cy,
+						tg // TODO: figure this out
+				);
+				BlockPos rp = region.pos.toBlockPos();
+				double x = rp.getX() + cp0.getMinBlockX() + 8;
+				double y = rp.getY() + (cy << 4) + 8;
+				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
+				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+				chunk.setUnsaved(true);
+				SUNetworkRegistry.NETWORK_INSTANCE.send(
+//						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+						PacketDistributor.ALL.noArg(),
+						packet
+				);
+			}
+			entitiesAdded.clear();
+		}
+		if (!entitiesRemoved.isEmpty()) {
+			for (Entity entity : entitiesRemoved) {
+				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
+				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
+				RemoveEntityPacketS2C packet = new RemoveEntityPacketS2C(
+						region.pos, upb, cp0, cy,
+						entity.getId()
+				);
+				BlockPos rp = region.pos.toBlockPos();
+				double x = rp.getX() + cp0.getMinBlockX() + 8;
+				double y = rp.getY() + (cy << 4) + 8;
+				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
+				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+				chunk.setUnsaved(true);
+				SUNetworkRegistry.NETWORK_INSTANCE.send(
+//						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+						PacketDistributor.ALL.noArg(),
+						packet
+				);
+			}
+			entitiesRemoved.clear();
+		}
+		if (!entities.isEmpty()) {
+			for (Entity entity : entities) {
+				if (!entity.getEntityData().isDirty())
+					continue;
+				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
+				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
+				SyncEntityPacketS2C packet = new SyncEntityPacketS2C(
+						region.pos, upb, cp0, cy,
+						entity.getId(), entity
+				);
+				BlockPos rp = region.pos.toBlockPos();
+				double x = rp.getX() + cp0.getMinBlockX() + 8;
+				double y = rp.getY() + (cy << 4) + 8;
+				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
+				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+				chunk.setUnsaved(true);
+				SUNetworkRegistry.NETWORK_INSTANCE.send(
+//						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+						PacketDistributor.ALL.noArg(),
+						packet
+				);
+			}
+		}
 	}
 	
 	public void setLoaded() {
@@ -476,10 +624,12 @@ public class TickerServerWorld extends ServerLevel {
 			);
 			if (cache.containsKey(bp))
 				return cache.get(bp);
-			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
-				return Blocks.VOID_AIR.defaultBlockState();
-			ChunkPos cp = new ChunkPos(bp);
-			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+//			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+//				return Blocks.VOID_AIR.defaultBlockState();
+//			ChunkPos cp = new ChunkPos(bp);
+//			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+//				return Blocks.VOID_AIR.defaultBlockState();
+			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
 			BlockState state = parent.getBlockState(bp);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
@@ -487,5 +637,20 @@ public class TickerServerWorld extends ServerLevel {
 			cache.put(bp, state);
 			return state;
 		};
+	}
+	
+	public void invalidateCache() {
+		cache.clear();
+	}
+	
+	public int getUnitsPerBlock() {
+		return upb;
+	}
+	
+	// yes, this is necessary
+	// no, I don't know why java is like this
+	public class EntityCallbacks extends ServerLevel.EntityCallbacks {
+		public EntityCallbacks() {
+		}
 	}
 }

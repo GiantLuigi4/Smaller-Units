@@ -12,7 +12,7 @@ public class NoPath implements Path {
 	@Override
 	public FileSystem getFileSystem() {
 		// TODO:
-		return null;
+		return NoFileSystem.INSTANCE;
 	}
 	
 	@Override

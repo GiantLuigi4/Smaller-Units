@@ -22,6 +22,9 @@ public class SUNetworkRegistry {
 				new NetworkEntry<>(RemoveUnitPacket.class, RemoveUnitPacket::new),
 				new NetworkEntry<>(SpawningBlockEntitiesS2C.class, SpawningBlockEntitiesS2C::new),
 				new NetworkEntry<>(DeleteBlockEntityS2C.class, DeleteBlockEntityS2C::new),
+				new NetworkEntry<>(SpawnEntityPacketS2C.class, SpawnEntityPacketS2C::new),
+				new NetworkEntry<>(SyncEntityPacketS2C.class, SyncEntityPacketS2C::new),
+				new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new),
 		};
 		for (int i = 0; i < entries.length; i++) entries[i].register(i, NETWORK_INSTANCE);
 //		NETWORK_INSTANCE.registerMessage(

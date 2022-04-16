@@ -11,6 +11,7 @@ import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
+import tfc.smallerunits.mojangpls.NoPath;
 
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
@@ -19,6 +20,7 @@ public class UnitChunkMap extends ChunkMap {
 	public UnitChunkMap(ServerLevel p_143040_, LevelStorageSource.LevelStorageAccess p_143041_, DataFixer p_143042_, StructureManager p_143043_, Executor p_143044_, BlockableEventLoop<Runnable> p_143045_, LightChunkGetter p_143046_, ChunkGenerator p_143047_, ChunkProgressListener p_143048_, ChunkStatusUpdateListener p_143049_, Supplier<DimensionDataStorage> p_143050_, int p_143051_, boolean p_143052_) {
 		super(p_143040_, p_143041_, p_143042_, p_143043_, p_143044_, p_143045_, p_143046_, p_143047_, p_143048_, p_143049_, p_143050_, p_143051_, p_143052_);
 		this.distanceManager = new ButcheredDistMap(p_143044_, p_143045_);
+		this.poiManager = new BlankPOIManager(new NoPath(), p_143042_, p_143052_ /* I don't know */, p_143040_);
 	}
 	
 	public class ButcheredDistMap extends ChunkMap.DistanceManager {

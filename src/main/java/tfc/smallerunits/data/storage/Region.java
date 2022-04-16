@@ -23,6 +23,7 @@ import tfc.smallerunits.simulation.world.TickerServerWorld;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class Region {
 	public final RegionPos pos;
@@ -184,6 +185,13 @@ public class Region {
 					((ServerLevel) level).tick(() -> true);
 				}
 			}
+		}
+	}
+	
+	public void forEachLevel(Consumer<Level> func) {
+		for (Level level : levels) {
+			if (level == null) continue;
+			func.accept(level);
 		}
 	}
 }

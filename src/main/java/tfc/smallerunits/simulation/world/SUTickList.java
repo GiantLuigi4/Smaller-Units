@@ -51,6 +51,7 @@ public class SUTickList<T> extends LevelTicks<T> {
 	
 	@Override
 	public void schedule(ScheduledTick<T> p_193428_) {
+		if (hasScheduledTick(p_193428_.pos(), p_193428_.type())) return;
 		ticks.add(p_193428_);
 	}
 	

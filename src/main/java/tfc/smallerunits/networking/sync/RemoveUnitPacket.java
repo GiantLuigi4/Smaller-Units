@@ -47,6 +47,7 @@ public class RemoveUnitPacket extends Packet {
 			UnitSpace space = new UnitSpace(position, chunk.getLevel());
 			space.clear();
 			((SUCapableChunk) access).SU$markGone(position);
+			ctx.setPacketHandled(true);
 		}
 	}
 }
