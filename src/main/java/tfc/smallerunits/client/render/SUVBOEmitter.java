@@ -22,7 +22,6 @@ import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.storage.DefaultedMap;
-import tfc.smallerunits.utils.threading.ReusableThread;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,13 +36,13 @@ public class SUVBOEmitter {
 	private final HashMap<BlockPos, BufferStorage> used = new HashMap<>();
 	private final HashMap<BlockPos, BufferStorage> free = new HashMap<>();
 	
-	private static final ReusableThread[] threads = new ReusableThread[16];
+//	private static final ReusableThread[] threads = new ReusableThread[16];
 	
 	static {
-		for (int i = 0; i < threads.length; i++) {
-			threads[i] = new ReusableThread(() -> {
-			});
-		}
+//		for (int i = 0; i < threads.length; i++) {
+//			threads[i] = new ReusableThread(() -> {
+//			});
+//		}
 	}
 	
 	public BufferStorage genBuffers(LevelChunk chunk, SUCapableChunk suCapableChunk, ISUCapability capability, BlockPos pos) {
