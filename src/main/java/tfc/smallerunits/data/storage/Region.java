@@ -19,10 +19,11 @@ import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
 import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
-import tfc.smallerunits.simulation.world.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class Region {
@@ -143,13 +144,14 @@ public class Region {
 							Math.floor(pos.getY() / (double) upb),
 							Math.floor(pos.getZ() / (double) upb)
 					);
-					if (lvl.cache.containsKey(bp)) return lvl.cache.get(bp);
+					Map<BlockPos, BlockState> cache = lvl.cache;
+					if (cache.containsKey(bp)) return cache.get(bp);
 					BlockState state;
-//			if (!parent.isLoaded(bp)) return Blocks.VOID_AIR.defaultBlockState();
+//					if (!parent.isLoaded(bp)) return Blocks.VOID_AIR.defaultBlockState();
 					ChunkPos cp = new ChunkPos(bp);
 					if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
 						return Blocks.VOID_AIR.defaultBlockState();
-					lvl.cache.put(bp, state = parent.getBlockState(bp));
+					cache.put(bp, state = parent.getBlockState(bp));
 					return state;
 				};
 			} catch (Throwable e) {

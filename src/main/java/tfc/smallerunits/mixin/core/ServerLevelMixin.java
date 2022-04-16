@@ -19,7 +19,7 @@ public class ServerLevelMixin {
 	
 	@Inject(at = @At("TAIL"), method = "tick")
 	public void postTick(BooleanSupplier k, CallbackInfo ci) {
-		for (Region value : ((RegionalAttachments) chunkSource.chunkMap).SU$getRegionMap().values()) {
+		for (Region value : ((RegionalAttachments) chunkSource.chunkMap).SU$getRegionMap().values().toArray(new Region[0])) {
 			if (value == null) continue;
 			value.tickWorlds();
 		}

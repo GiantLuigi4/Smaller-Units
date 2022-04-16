@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.simulation.block.ParentLookup;
-import tfc.smallerunits.simulation.world.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.ArrayList;

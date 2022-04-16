@@ -4,15 +4,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -41,6 +40,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.sync.RemoveUnitPacket;
+import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
@@ -311,28 +311,54 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			LevelChunk chnk = pLevel.getChunkAt(pPos);
 			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
 			ItemStack itm = pPlayer.getItemInHand(pHand);
-			if (itm.getItem() instanceof BlockItem) {
-//				space.setState(pos.relative(pHit.getDirection()), ((BlockItem) itm.getItem()).getBlock());
-				itm.useOn(
-						new UseOnContext(
-								space.myLevel, pPlayer, pHand,
-								pPlayer.getItemInHand(pHand),
-								new BlockHitResult(
-										pHit.getLocation(),
-										pHit.getDirection(),
-										space.getOffsetPos(pos), pHit.isInside()
-								)
+//			if (itm.getItem() instanceof BlockItem) {
+//				itm.useOn(
+//						new UseOnContext(
+//								space.myLevel, pPlayer, pHand,
+//								pPlayer.getItemInHand(pHand),
+//								new BlockHitResult(
+//										pHit.getLocation(),
+//										pHit.getDirection(),
+//										space.getOffsetPos(pos), pHit.isInside()
+//								)
+//						)
+//				);
+//			}
+
+//			space.getBlock(pos.getX(), pos.getY(), pos.getZ()).use(
+//					space.myLevel, pPlayer, pHand, new BlockHitResult(
+//							pHit.getLocation(),
+//							pHit.getDirection(),
+//							space.getOffsetPos(pos), pHit.isInside()
+//					));
+			if (pPlayer instanceof ServerPlayer) {
+				AABB srcBB = pPlayer.getBoundingBox();
+				ServerLevel trueLvl = ((ServerPlayer) pPlayer).getLevel();
+				Vec3 trueVec = new Vec3(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ());
+				double oldEyeHeight = pPlayer.getEyeHeight();
+				
+				AABB scaledBB;
+				pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(
+						srcBB, trueVec, space
+				));
+				pPlayer.eyeHeight = (float) (oldEyeHeight * space.unitsPerBlock);
+				pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
+				((ServerPlayer) pPlayer).setLevel((ServerLevel) space.getMyLevel());
+				
+				((ServerPlayer) pPlayer).gameMode.useItemOn(
+						(ServerPlayer) pPlayer, space.myLevel, itm, InteractionHand.MAIN_HAND,
+						new BlockHitResult(
+								pHit.getLocation(),
+								pHit.getDirection(),
+								space.getOffsetPos(pos), pHit.isInside()
 						)
 				);
-//				((SUCapableChunk) chnk).markDirty(pPos);
-//				chnk.setUnsaved(true);
+				
+				pPlayer.eyeHeight = (float) (oldEyeHeight);
+				((ServerPlayer) pPlayer).setLevel(trueLvl);
+				pPlayer.setPosRaw(trueVec.x, trueVec.y, trueVec.z);
+				pPlayer.setBoundingBox(srcBB);
 			}
-			space.getBlock(pos.getX(), pos.getY(), pos.getZ()).use(
-					space.myLevel, pPlayer, pHand, new BlockHitResult(
-							pHit.getLocation(),
-							pHit.getDirection(),
-							space.getOffsetPos(pos), pHit.isInside()
-					));
 			((SUCapableChunk) chnk).SU$markDirty(pPos);
 			chnk.setUnsaved(true);
 			return InteractionResult.SUCCESS;

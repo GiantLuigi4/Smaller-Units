@@ -41,7 +41,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 

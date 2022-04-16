@@ -39,7 +39,8 @@ public class LevelChunkMixin implements SUCapableChunk {
 	
 	@Override
 	public void SU$markDirty(BlockPos pos) {
-		dirtyBlocks.add(pos);
+		if (!dirtyBlocks.contains(pos))
+			dirtyBlocks.add(pos);
 	}
 	
 	@Override

@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world;
+package tfc.smallerunits.simulation.world.server;
 
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.Util;
@@ -33,6 +33,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.network.PacketDistributor;
+import org.codehaus.plexus.util.FastMap;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
@@ -43,6 +44,10 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.sync.*;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
+import tfc.smallerunits.simulation.world.EntityManager;
+import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.world.SUTickList;
+import tfc.smallerunits.simulation.world.TickerChunkCache;
 
 import java.io.IOException;
 import java.util.*;
@@ -112,7 +117,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	//	public final UnitSpace parentU;
 	public final Region region;
 	int upb;
-	public final HashMap<BlockPos, BlockState> cache = new HashMap<>();
+	public final Map<BlockPos, BlockState> cache = new FastMap<>();
 	public ParentLookup lookup;
 	public ParentLookup lookupTemp;
 	ArrayList<Entity> entities = new ArrayList<>();

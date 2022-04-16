@@ -1,6 +1,5 @@
 package tfc.smallerunits.client.render.util;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
@@ -54,11 +53,9 @@ public class RenderWorld implements BlockAndTintGetter {
 		int z = offset.getZ();
 		if (x >= 0 && y >= 0 && z >= 0 && x < upb && y < upb && z < upb) {
 			int indx = (((x * upb) + y) * upb) + z;
-			Minecraft.getInstance().getProfiler().pop();
 			return states[indx];
 		}
-		BlockState st = lvl.getBlockState(p_45571_);
-		return st;
+		return lvl.getBlockState(p_45571_);
 	}
 	
 	@Override

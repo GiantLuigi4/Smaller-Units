@@ -74,8 +74,7 @@ public class SUVBOEmitter {
 //			BufferBuilder builder = new ThreadedVertexBuilder(0, bufferBuilderPack.builder(type));
 //			BufferBuilder builder = new ThreadedVertexBuilder(0, SUVBOEmitter.buffers.get(type));
 //			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
-			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
-//			BufferBuilder builder = bufferBuilderPack.builder(type);
+			BufferBuilder builder = bufferBuilderPack.builder(type);
 			if (!builder.building()) builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 			return builder;
 		});
@@ -145,8 +144,8 @@ public class SUVBOEmitter {
 //							if (consumer == null) consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
-//								IModelData data = EmptyModelData.INSTANCE;
-//								if (value.tileEntity != null) data = value.tileEntity.getModelData();
+//							IModelData data = EmptyModelData.INSTANCE;
+//							if (value.tileEntity != null) data = value.tileEntity.getModelData();
 							BlockPos rPos = new BlockPos(x, y, z);
 							// TODO: WHY DOES THIS TAKE SO LONG
 							if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {

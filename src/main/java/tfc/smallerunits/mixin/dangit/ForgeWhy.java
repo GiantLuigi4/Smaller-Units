@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tfc.smallerunits.simulation.world.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 
 @Mixin(value = ModelDataManager.class, remap = false)
 public class ForgeWhy {

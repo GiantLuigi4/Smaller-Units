@@ -16,7 +16,7 @@ import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.world.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 import tfc.smallerunits.utils.math.Math1D;
 
 public class UnitSpace {

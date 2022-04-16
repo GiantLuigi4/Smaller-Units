@@ -14,7 +14,7 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.world.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 
 import java.util.ArrayList;
 import java.util.HashMap;

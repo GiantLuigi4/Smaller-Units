@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
@@ -22,13 +23,15 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
+import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.UnitChunkMap;
 
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public class TickerChunkCache extends ServerChunkCache {
-	final BasicVerticalChunk[][] columns;
+	public final BasicVerticalChunk[][] columns;
 	int upb;
 	
 	public TickerChunkCache(ServerLevel p_184009_, LevelStorageSource.LevelStorageAccess p_184010_, DataFixer p_184011_, StructureManager p_184012_, Executor p_184013_, ChunkGenerator p_184014_, int p_184015_, int p_184016_, boolean p_184017_, ChunkProgressListener p_184018_, ChunkStatusUpdateListener p_184019_, Supplier<DimensionDataStorage> p_184020_, int upb) {
@@ -89,11 +92,17 @@ public class TickerChunkCache extends ServerChunkCache {
 			Level level = null;
 			if (!parent.isClientSide && parent instanceof ServerLevel) {
 				otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);
-				level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
+				if (otherRegion != null)
+					level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
+				else
+					return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ));
 			} else {
 				if (parent.isClientSide) {
 					otherRegion = ((RegionalAttachments) ((TickerServerWorld) this.level).parent).SU$getRegion(pos);
-					level = otherRegion.getClientWorld((ClientLevel) parent, upb);
+					if (otherRegion != null)
+						level = otherRegion.getClientWorld((ClientLevel) parent, upb);
+					else
+						return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ));
 				}
 			}
 			return level.getChunk(pChunkX, pChunkZ);
