@@ -3,8 +3,6 @@ package tfc.smallerunits.data.storage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
@@ -13,16 +11,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.levelgen.FlatLevelSource;
-import net.minecraft.world.level.levelgen.StructureSettings;
-import net.minecraft.world.level.levelgen.flat.FlatLayerInfo;
-import net.minecraft.world.level.levelgen.flat.FlatLevelGeneratorSettings;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.server.compatilayer.LevelSourceProvider;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -73,15 +67,7 @@ public class Region {
 							public void stop() {
 							}
 						},
-						new FlatLevelSource(
-								new FlatLevelGeneratorSettings(
-										new StructureSettings(false),
-										RegistryAccess.builtin().registryOrThrow(Registry.BIOME_REGISTRY)
-								).withLayers(
-										List.of(new FlatLayerInfo(0, Blocks.AIR)),
-										new StructureSettings(false)
-								)
-						),
+						LevelSourceProvider.createGenerator(srv.getServerVersion(), parent),
 						false, 0, new ArrayList<>(), false,
 						parent, upb, this
 				);
@@ -123,15 +109,7 @@ public class Region {
 							public void stop() {
 							}
 						},
-						new FlatLevelSource(
-								new FlatLevelGeneratorSettings(
-										new StructureSettings(false),
-										RegistryAccess.builtin().registryOrThrow(Registry.BIOME_REGISTRY)
-								).withLayers(
-										List.of(new FlatLayerInfo(0, Blocks.AIR)),
-										new StructureSettings(false)
-								)
-						),
+						LevelSourceProvider.createGenerator(Minecraft.getInstance().getLaunchedVersion(), parent),
 						false, 0, new ArrayList<>(), false,
 						parent, upb, this
 				);

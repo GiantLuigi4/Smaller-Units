@@ -1,8 +1,10 @@
 package tfc.smallerunits;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.apache.logging.log4j.LogManager;
@@ -28,5 +30,12 @@ public class SmallerUnits {
 		forgeBus.addListener(SyncPacketS2C::tick);
 		forgeBus.addListener(SUCapabilityManager::onChunkWatchEvent);
 		forgeBus.addGenericListener(LevelChunk.class, SUCapabilityManager::onAttachCapabilities);
+		if (ModList.get().isLoaded("optifine")) {
+			ModLoader.get().addWarning(new ModLoadingWarning(
+					ModLoadingContext.get().getActiveContainer().getModInfo(),
+					ModLoadingStage.CONSTRUCT,
+					"Optifine is present\nSU and Optifine are " + ChatFormatting.RED + ChatFormatting.BOLD + "highly" + ChatFormatting.RESET + " incompatible with eachother"
+			));
+		}
 	}
 }

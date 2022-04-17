@@ -97,7 +97,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			// if unit space is null, assume syncing is still occurring
 			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
 			
-			
 			//// I'm stupid, why did I do it any way other than this?
 			//// lol
 			//// ah right, server side
@@ -348,7 +347,12 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				((ServerPlayer) pPlayer).gameMode.useItemOn(
 						(ServerPlayer) pPlayer, space.myLevel, itm, InteractionHand.MAIN_HAND,
 						new BlockHitResult(
-								pHit.getLocation(),
+								pHit
+										.getLocation()
+										.subtract(pPos.getX(), pPos.getY(), pPos.getZ())
+										.add(pos.getX(), pos.getY(), pos.getZ())
+										.scale(space.unitsPerBlock)
+								,
 								pHit.getDirection(),
 								space.getOffsetPos(pos), pHit.isInside()
 						)

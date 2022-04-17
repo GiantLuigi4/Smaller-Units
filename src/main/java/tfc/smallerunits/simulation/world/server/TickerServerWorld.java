@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.world.server;
 
 import com.mojang.datafixers.util.Pair;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
@@ -33,7 +34,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.network.PacketDistributor;
-import org.codehaus.plexus.util.FastMap;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
@@ -117,7 +117,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	//	public final UnitSpace parentU;
 	public final Region region;
 	int upb;
-	public final Map<BlockPos, BlockState> cache = new FastMap<>();
+	public final Map<BlockPos, BlockState> cache = new Object2ObjectLinkedOpenHashMap<>();
 	public ParentLookup lookup;
 	public ParentLookup lookupTemp;
 	ArrayList<Entity> entities = new ArrayList<>();

@@ -58,7 +58,7 @@ public class ChunkMapMixin implements RegionalAttachments {
 		return regionMap;
 	}
 	
-	@Inject(at = @At("RETURN"), method = "lambda$scheduleChunkLoad$14")
+	@Inject(at = @At("RETURN"), method = {"lambda$scheduleChunkLoad$14", "m_198890_", "m_203107_"})
 	public void preProcessLoads(ChunkPos flag, CallbackInfoReturnable<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> cir) {
 		Optional<ChunkAccess> potentialAccess = cir.getReturnValue().left();
 		if (!potentialAccess.isPresent()) return;
