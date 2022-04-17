@@ -2,6 +2,7 @@ package tfc.smallerunits.simulation.world.server;
 
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.Lifecycle;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -91,7 +92,7 @@ public class NoStorageSource extends LevelStorageSource {
 		
 		@Nullable
 		@Override
-		public WorldData getDataTag(DynamicOps<Tag> pNbt, DataPackConfig pDatapackCodec) {
+		public WorldData getDataTag(DynamicOps<Tag> p_211748_, DataPackConfig p_211749_, Lifecycle p_211750_) {
 			return null;
 		}
 		

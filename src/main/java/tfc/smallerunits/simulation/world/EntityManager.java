@@ -108,14 +108,12 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 	}
 	
 	@Override
-	public boolean isPositionTicking(BlockPos p_157547_) {
-		// TODO
+	public boolean canPositionTick(BlockPos p_202168_) {
 		return true;
 	}
 	
 	@Override
-	public boolean isPositionTicking(ChunkPos p_157523_) {
-		// TODO
+	public boolean canPositionTick(ChunkPos p_202166_) {
 		return true;
 	}
 	

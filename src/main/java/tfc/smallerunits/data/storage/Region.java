@@ -13,8 +13,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.simulation.world.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
-import tfc.smallerunits.simulation.world.server.compatilayer.LevelSourceProvider;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -67,7 +67,7 @@ public class Region {
 							public void stop() {
 							}
 						},
-						LevelSourceProvider.createGenerator(srv.getServerVersion(), parent),
+						LevelSourceProviderProvider.createGenerator(srv.getServerVersion(), parent),
 						false, 0, new ArrayList<>(), false,
 						parent, upb, this
 				);
@@ -109,7 +109,7 @@ public class Region {
 							public void stop() {
 							}
 						},
-						LevelSourceProvider.createGenerator(Minecraft.getInstance().getLaunchedVersion(), parent),
+						LevelSourceProviderProvider.createGenerator(Minecraft.getInstance().getLaunchedVersion(), parent),
 						false, 0, new ArrayList<>(), false,
 						parent, upb, this
 				);

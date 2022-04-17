@@ -78,7 +78,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 				noAccess,
 				data,
 				p_8575_,
-				dimType,
+				Holder.direct(dimType),
 				progressListener,
 				generator,
 				p_8579_,

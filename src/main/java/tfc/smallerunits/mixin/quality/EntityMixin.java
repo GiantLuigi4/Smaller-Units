@@ -1,7 +1,7 @@
 package tfc.smallerunits.mixin.quality;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.tags.Tag;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -31,7 +31,7 @@ public abstract class EntityMixin {
 	
 	// TODO
 	@Inject(at = @At("HEAD"), method = "updateFluidHeightAndDoFluidPushing", cancellable = true)
-	public void preCheckInFluid(Tag<Fluid> d1, double fluidstate, CallbackInfoReturnable<Boolean> cir) {
+	public void preCheckInFluid(TagKey<Fluid> d1, double fluidstate, CallbackInfoReturnable<Boolean> cir) {
 		if (touchingUnloadedChunk()) return;
 		AABB aabb = this.getBoundingBox().deflate(0.001D);
 		int i = Mth.floor(aabb.minX);

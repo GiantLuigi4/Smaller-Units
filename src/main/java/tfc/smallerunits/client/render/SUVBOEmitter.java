@@ -133,7 +133,7 @@ public class SUVBOEmitter {
 							);
 							dispatcher.renderLiquid(
 									space.getOffsetPos(rPos),
-									wld, builder,
+									wld, builder, block,
 									block.getFluidState()
 							);
 						}
