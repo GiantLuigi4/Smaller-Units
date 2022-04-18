@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -487,33 +486,27 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 				} else {
 					if (!basicVerticalChunk.beChanges.isEmpty()) {
 						for (BlockEntity beChange : basicVerticalChunk.beChanges) {
-							net.minecraft.network.protocol.Packet<?> pkt = beChange.getUpdatePacket();
-							if (pkt instanceof ClientboundBlockEntityDataPacket) {
-								CompoundTag tag = ((ClientboundBlockEntityDataPacket) pkt).getTag();
-								if (tag == null) continue;
-								CompoundTag tg = new CompoundTag();
-								tg.put("data", tag);
-								tag.put("tag", beChange.serializeNBT());
-								tag.putString("id", beChange.getType().getRegistryName().toString());
-								SpawningBlockEntitiesS2C packet = new SpawningBlockEntitiesS2C(
-										region.pos, tg,
-										upb, basicVerticalChunk.getPos(),
-										basicVerticalChunk.yPos,
-										beChange.getBlockPos()
-								);
-								BlockPos rp = region.pos.toBlockPos();
-								double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
-								double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
-								double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
-								ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-								LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-								chunk.setUnsaved(true);
-								SUNetworkRegistry.NETWORK_INSTANCE.send(
-//										PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-										PacketDistributor.ALL.noArg(),
-										packet
-								);
-							}
+							CompoundTag tg = new CompoundTag();
+							tg.put("data", beChange.getUpdateTag());
+							tg.putString("id", beChange.getType().getRegistryName().toString());
+							SpawningBlockEntitiesS2C packet = new SpawningBlockEntitiesS2C(
+									region.pos, tg,
+									upb, basicVerticalChunk.getPos(),
+									basicVerticalChunk.yPos,
+									beChange.getBlockPos()
+							);
+							BlockPos rp = region.pos.toBlockPos();
+							double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+							double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+							double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+							ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+							chunk.setUnsaved(true);
+							SUNetworkRegistry.NETWORK_INSTANCE.send(
+//									PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+									PacketDistributor.ALL.noArg(),
+									packet
+							);
 						}
 						basicVerticalChunk.beChanges.clear();
 					}

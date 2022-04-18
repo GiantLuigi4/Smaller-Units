@@ -15,6 +15,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.data.EmptyModelData;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
 import tfc.smallerunits.client.render.util.RenderWorld;
@@ -148,8 +149,8 @@ public class SUVBOEmitter {
 //							if (value.tileEntity != null) data = value.tileEntity.getModelData();
 							BlockPos rPos = new BlockPos(x, y, z);
 							// TODO: WHY DOES THIS TAKE SO LONG
-							if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {
-								dispatcher.getModelRenderer().tesselateWithAO(
+							if (SmallerUnits.isIsOFPresent()) {
+								dispatcher.getModelRenderer().tesselateBlock(
 										wld, dispatcher.getBlockModel(block),
 										block, space.getOffsetPos(rPos),
 										stk, consumer, true,
@@ -158,14 +159,25 @@ public class SUVBOEmitter {
 										EmptyModelData.INSTANCE
 								);
 							} else {
-								dispatcher.getModelRenderer().tesselateWithoutAO(
-										wld, dispatcher.getBlockModel(block),
-										block, space.getOffsetPos(rPos),
-										stk, consumer, true,
-										new Random(space.getOffsetPos(rPos).asLong()),
-										space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-										EmptyModelData.INSTANCE
-								);
+								if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {
+									dispatcher.getModelRenderer().tesselateWithAO(
+											wld, dispatcher.getBlockModel(block),
+											block, space.getOffsetPos(rPos),
+											stk, consumer, true,
+											new Random(space.getOffsetPos(rPos).asLong()),
+											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+											EmptyModelData.INSTANCE
+									);
+								} else {
+									dispatcher.getModelRenderer().tesselateWithoutAO(
+											wld, dispatcher.getBlockModel(block),
+											block, space.getOffsetPos(rPos),
+											stk, consumer, true,
+											new Random(space.getOffsetPos(rPos).asLong()),
+											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+											EmptyModelData.INSTANCE
+									);
+								}
 							}
 							stk.popPose();
 						}

@@ -13,7 +13,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
 
 import javax.annotation.Nullable;
@@ -186,11 +185,9 @@ public class UnitShape extends VoxelShape {
 	@Nullable
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		if (this.isEmpty()) return null;
-		Loggers.UNITSPACE_LOGGER.error("tracing1");
 		
 		Vec3 vec3 = pEndVec.subtract(pStartVec);
 		if (vec3.lengthSqr() < 1.0E-7D) return null;
-		Loggers.UNITSPACE_LOGGER.error("tracing2");
 		
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
 		

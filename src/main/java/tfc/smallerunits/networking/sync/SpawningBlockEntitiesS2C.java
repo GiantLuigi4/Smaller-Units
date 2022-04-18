@@ -76,7 +76,7 @@ public class SpawningBlockEntitiesS2C extends Packet {
 
 //			BlockState[] states = new BlockState[16 * 16 * 16];
 			String id = data.getString("id");
-			CompoundTag tag = data.getCompound("tag");
+			CompoundTag tag = data.getCompound("data");
 			if (!tag.contains("id"))
 				tag.putString("id", id);
 			BlockEntity be = BlockEntity.loadStatic(up, lvl.getBlockState(up), tag);
