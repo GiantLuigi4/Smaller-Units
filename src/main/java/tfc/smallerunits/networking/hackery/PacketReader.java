@@ -2,28 +2,27 @@ package tfc.smallerunits.networking.hackery;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.world.entity.player.Player;
 
 public class PacketReader extends SimpleChannelInboundHandler<WrapperPacket> {
-	public PacketReader() {
-	}
+	private final Player player;
+	private final Connection connection;
 	
-	public PacketReader(boolean autoRelease) {
-		super(autoRelease);
-	}
-	
-	public PacketReader(Class<? extends WrapperPacket> inboundMessageType) {
-		super(inboundMessageType);
-	}
-	
-	public PacketReader(Class<? extends WrapperPacket> inboundMessageType, boolean autoRelease) {
-		super(inboundMessageType, autoRelease);
+	public PacketReader(Player player, Connection connection) {
+		this.player = player;
+		this.connection = connection;
 	}
 	
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, WrapperPacket msg) throws Exception {
 //		if (msg instanceof WrapperPacket)
 //			msg = ((WrapperPacket) msg).wrapped;
+		NetworkContext context = new NetworkContext(connection, player, (Packet) msg.wrapped);
+		msg.preRead(context);
 		super.channelRead(ctx, msg.wrapped);
+		msg.teardown(context);
 	}
 	
 	@Override

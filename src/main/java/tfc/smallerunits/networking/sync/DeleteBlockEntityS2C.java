@@ -57,6 +57,8 @@ public class DeleteBlockEntityS2C extends Packet {
 		buf.writeInt(cp.z);
 		buf.writeInt(cy);
 		buf.writeBlockPos(up);
+		
+		System.out.println("read");
 	}
 	
 	@Override
@@ -72,6 +74,8 @@ public class DeleteBlockEntityS2C extends Packet {
 //			UnitSpace space = cap.getOrMakeUnit(rwp);
 			
 			lvl.removeBlockEntity(up);
+			
+			System.out.println("handle");
 
 //			BlockState[] states = new BlockState[16 * 16 * 16];
 			

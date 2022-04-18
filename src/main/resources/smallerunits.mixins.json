@@ -6,6 +6,7 @@
   "refmap": "smallerunits.refmap.json",
   "mixins": [
     "ChunkSerializerAccessor",
+    "core.PacketUtilsMixin",
     "core.ServerLevelMixin",
     "data.regions.ChunkHolderAccessor",
     "data.regions.ChunkHolderSizeTracker",
