@@ -1,7 +1,5 @@
 package tfc.smallerunits.data.storage;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -15,6 +13,7 @@ import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.world.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -48,8 +47,7 @@ public class Region {
 						// TODO: wrap level data
 						(ServerLevelData) parent.getLevelData(),
 						// TODO:
-						Level.OVERWORLD,
-						srv.getLevel(Level.OVERWORLD).dimensionType(),
+						parent.dimension(), parent.dimensionType(),
 						new ChunkProgressListener() {
 							@Override
 							public void updateSpawnPos(ChunkPos pCenter) {
@@ -82,16 +80,15 @@ public class Region {
 		return (TickerServerWorld) levels[upb];
 	}
 	
-	public Level getClientWorld(ClientLevel parent, int upb) {
+	public Level getClientWorld(Level parent, int upb) {
+//		if (!(parent instanceof ClientLevel)) return null;
 		if (levels[upb] == null) {
 			try {
 				levels[upb] = new TickerServerWorld(
-						Minecraft.getInstance().getSingleplayerServer(),
+						IHateTheDistCleaner.getIntegratedServer(),
 						// TODO: wrap level data
-						(ServerLevelData) Minecraft.getInstance().getSingleplayerServer().getLevel(Level.OVERWORLD).getLevelData(),
-						// TODO:
-						Level.OVERWORLD,
-						Minecraft.getInstance().getSingleplayerServer().getLevel(Level.OVERWORLD).dimensionType(),
+						(ServerLevelData) IHateTheDistCleaner.getIntegratedServer().getLevel(Level.OVERWORLD).getLevelData(),
+						parent.dimension(), parent.dimensionType(), // oh
 						new ChunkProgressListener() {
 							@Override
 							public void updateSpawnPos(ChunkPos pCenter) {
@@ -109,7 +106,7 @@ public class Region {
 							public void stop() {
 							}
 						},
-						LevelSourceProviderProvider.createGenerator(Minecraft.getInstance().getLaunchedVersion(), parent),
+						LevelSourceProviderProvider.createGenerator(IHateTheDistCleaner.getVersion(), parent),
 						false, 0, new ArrayList<>(), false,
 						parent, upb, this
 				);

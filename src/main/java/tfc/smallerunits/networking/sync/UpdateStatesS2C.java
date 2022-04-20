@@ -1,7 +1,6 @@
 package tfc.smallerunits.networking.sync;
 
 import com.mojang.datafixers.util.Pair;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.ChunkPos;
@@ -15,6 +14,7 @@ import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,9 +65,9 @@ public class UpdateStatesS2C extends Packet {
 	@Override
 	public void handle(NetworkEvent.Context ctx) {
 		if (checkClient(ctx)) {
-			Region r = ((RegionalAttachments) Minecraft.getInstance().level).SU$getRegion(realPos);
-			Level lvl = r.getClientWorld(Minecraft.getInstance().level, upb);
-			r.getClientWorld(Minecraft.getInstance().level, upb);
+			Region r = ((RegionalAttachments) IHateTheDistCleaner.getClientLevel()).SU$getRegion(realPos);
+			Level lvl = r.getClientWorld(IHateTheDistCleaner.getClientLevel(), upb);
+			r.getClientWorld(IHateTheDistCleaner.getClientLevel(), upb);
 //			ChunkAccess access = Minecraft.getInstance().level.getChunk(rwp);
 //			if (access instanceof EmptyLevelChunk) return;
 //			if (!(access instanceof LevelChunk chunk)) return;
@@ -78,7 +78,7 @@ public class UpdateStatesS2C extends Packet {
 			pallet.acceptStates(states, false);
 			HashMap<ChunkPos, ChunkAccess> accessHashMap = new HashMap<>();
 			ArrayList<BlockPos> placesBlocks = new ArrayList<>();
-			Minecraft.getInstance().getProfiler().push("sync");
+//			Minecraft.getInstance().getProfiler().push("sync");
 			for (int x = 0; x < 16; x++) {
 				for (int y = 0; y < 16; y++) {
 					for (int z = 0; z < 16; z++) {
@@ -89,7 +89,7 @@ public class UpdateStatesS2C extends Packet {
 					}
 				}
 			}
-			Minecraft.getInstance().getProfiler().pop();
+//			Minecraft.getInstance().getProfiler().pop();
 
 //			((SUCapableChunk) chunk).SU$markDirty(realPos);
 			

@@ -1,6 +1,5 @@
 package tfc.smallerunits;
 
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ChunkMap;
@@ -145,7 +144,7 @@ public class UnitSpace {
 				if (r == null) return;
 				if (myLevel != null)
 					((TickerServerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
-				myLevel = r.getClientWorld((ClientLevel) level, upb);
+				myLevel = r.getClientWorld(level, upb);
 			}
 			loadWorld(tag);
 		}

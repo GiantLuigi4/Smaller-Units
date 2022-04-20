@@ -5,6 +5,8 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import tfc.smallerunits.networking.sync.*;
 
+import java.util.ArrayList;
+
 public class SUNetworkRegistry {
 	public static final String networkingVersion = "1.0.0";
 	protected static String serverVersion = "";
@@ -16,17 +18,19 @@ public class SUNetworkRegistry {
 	);
 	
 	static {
-		NetworkEntry<?>[] entries = new NetworkEntry[]{
-				new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new),
-				new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new),
-				new NetworkEntry<>(RemoveUnitPacket.class, RemoveUnitPacket::new),
-				new NetworkEntry<>(SpawningBlockEntitiesS2C.class, SpawningBlockEntitiesS2C::new),
-				new NetworkEntry<>(DeleteBlockEntityS2C.class, DeleteBlockEntityS2C::new),
-				new NetworkEntry<>(SpawnEntityPacketS2C.class, SpawnEntityPacketS2C::new),
-				new NetworkEntry<>(SyncEntityPacketS2C.class, SyncEntityPacketS2C::new),
-				new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new),
-		};
-		for (int i = 0; i < entries.length; i++) entries[i].register(i, NETWORK_INSTANCE);
+//		NetworkEntry<?>[] entries = new NetworkEntry[]{
+//		};
+		ArrayList<NetworkEntry<?>> entries = new ArrayList<>();
+		entries.add(new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new));
+		entries.add(new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new));
+		entries.add(new NetworkEntry<>(RemoveUnitPacket.class, RemoveUnitPacket::new));
+		entries.add(new NetworkEntry<>(SpawningBlockEntitiesS2C.class, SpawningBlockEntitiesS2C::new));
+		entries.add(new NetworkEntry<>(DeleteBlockEntityS2C.class, DeleteBlockEntityS2C::new));
+		entries.add(new NetworkEntry<>(SpawnEntityPacketS2C.class, SpawnEntityPacketS2C::new));
+		entries.add(new NetworkEntry<>(SyncEntityPacketS2C.class, SyncEntityPacketS2C::new));
+		entries.add(new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new));
+		
+		for (int i = 0; i < entries.size(); i++) entries.get(i).register(i, NETWORK_INSTANCE);
 //		NETWORK_INSTANCE.registerMessage(
 //				0,
 //				SyncPacketS2C.class,

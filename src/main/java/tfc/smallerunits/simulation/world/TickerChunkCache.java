@@ -1,7 +1,6 @@
 package tfc.smallerunits.simulation.world;
 
 import com.mojang.datafixers.DataFixer;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.server.level.ServerChunkCache;
@@ -28,6 +27,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 import tfc.smallerunits.simulation.world.server.UnitChunkMap;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
@@ -98,14 +98,14 @@ public class TickerChunkCache extends ServerChunkCache {
 				if (otherRegion != null)
 					level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
 				else
-					return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+					return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 			} else {
 				if (parent.isClientSide) {
 					otherRegion = ((RegionalAttachments) ((TickerServerWorld) this.level).parent).SU$getRegion(pos);
-					if (otherRegion != null)
-						level = otherRegion.getClientWorld((ClientLevel) parent, upb);
+					if (otherRegion != null && IHateTheDistCleaner.isClientLevel(parent))
+						level = otherRegion.getClientWorld(parent, upb);
 					else
-						return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+						return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 				}
 			}
 			return level.getChunk(pChunkX, pChunkZ);

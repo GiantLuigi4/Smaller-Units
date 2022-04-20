@@ -1,6 +1,5 @@
 package tfc.smallerunits.networking.sync;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
@@ -11,6 +10,7 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 public class RemoveEntityPacketS2C extends Packet {
 	RegionPos realPos;
@@ -57,10 +57,10 @@ public class RemoveEntityPacketS2C extends Packet {
 	@Override
 	public void handle(NetworkEvent.Context ctx) {
 		if (checkClient(ctx)) {
-			Region r = ((RegionalAttachments) Minecraft.getInstance().level).SU$getRegion(realPos);
-			Level lvl = r.getClientWorld(Minecraft.getInstance().level, upb);
-			r.getClientWorld(Minecraft.getInstance().level, upb);
-//			ChunkAccess access = Minecraft.getInstance().level.getChunk(rwp);
+			Region r = ((RegionalAttachments) IHateTheDistCleaner.getClientLevel()).SU$getRegion(realPos);
+			Level lvl = r.getClientWorld(IHateTheDistCleaner.getClientLevel(), upb);
+			r.getClientWorld(IHateTheDistCleaner.getClientLevel(), upb);
+//			ChunkAccess access = IHateTheDistCleaner.getClientLevel().getChunk(rwp);
 //			if (access instanceof EmptyLevelChunk) return;
 //			if (!(access instanceof LevelChunk chunk)) return;
 //			ISUCapability cap = SUCapabilityManager.getCapability(chunk);

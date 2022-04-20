@@ -163,6 +163,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	protected int findIndex(Direction.Axis pAxis, double pPosition) {
+		// what actually is this?
 		return Mth.binarySearch(0, size(pAxis) + 1, (p_166066_) -> pPosition < this.get(pAxis, p_166066_)) - 1;
 	}
 	
@@ -185,18 +186,9 @@ public class UnitShape extends VoxelShape {
 	@Nullable
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		if (this.isEmpty()) return null;
-		
 		Vec3 vec3 = pEndVec.subtract(pStartVec);
 		if (vec3.lengthSqr() < 1.0E-7D) return null;
-		
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
-		
-		double dbest = Double.POSITIVE_INFINITY;
-		UnitHitResult h = null;
-		double[] percent = {1};
-		double d0 = pEndVec.x - pStartVec.x;
-		double d1 = pEndVec.y - pStartVec.y;
-		double d2 = pEndVec.z - pStartVec.z;
 		
 		if (this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
 			for (UnitBox box : boxes) {
@@ -213,6 +205,13 @@ public class UnitShape extends VoxelShape {
 				}
 			}
 		}
+		
+		UnitHitResult h = null;
+		double dbest = Double.POSITIVE_INFINITY;
+		double[] percent = {1};
+		double d0 = pEndVec.x - pStartVec.x;
+		double d1 = pEndVec.y - pStartVec.y;
+		double d2 = pEndVec.z - pStartVec.z;
 		
 		for (UnitBox box : boxes) {
 			box = (UnitBox) box.move(pPos);

@@ -1,11 +1,9 @@
 package tfc.smallerunits.mixin.core;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketUtils;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -20,6 +18,7 @@ import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.HashMap;
 
@@ -36,8 +35,8 @@ public class PacketUtilsMixin {
 			if (listener instanceof ServerGamePacketListenerImpl)
 				player = ((ServerGamePacketListenerImpl) listener).getPlayer();
 			else if (FMLEnvironment.dist.isClient()) {
-				if (listener instanceof ClientGamePacketListener)
-					player = Minecraft.getInstance().player;
+				if (IHateTheDistCleaner.isClientPacketListener(listener))
+					player = IHateTheDistCleaner.getPlayer();
 			}
 			Level lvl = player.level;
 			pkts.put(packet, lvl);
@@ -55,8 +54,8 @@ public class PacketUtilsMixin {
 			if (listener instanceof ServerGamePacketListenerImpl)
 				player = ((ServerGamePacketListenerImpl) listener).getPlayer();
 			else if (FMLEnvironment.dist.isClient()) {
-				if (listener instanceof ClientGamePacketListener)
-					player = Minecraft.getInstance().player;
+				if (IHateTheDistCleaner.isClientPacketListener(listener))
+					player = IHateTheDistCleaner.getPlayer();
 			}
 			player.level = lvl;
 		}
