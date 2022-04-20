@@ -8,7 +8,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
-/* this whole class should be unnecessary, however forge says that clean code is an concept dreamed of by idiots */
+/* this whole class should be unnecessary, however forge says that clean code is a concept dreamed of by idiots */
 /* really, what it is, is that forge wants to enforce that you don't reference client only code from common code */
 /* however, you can reference client code from common code and still have safe code */
 /* I make sure that my code is safe, but forge sees that I reference client code, and thus it throws an error with no obvious reason */
