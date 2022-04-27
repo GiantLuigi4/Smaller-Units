@@ -25,7 +25,8 @@ public class Math1D {
 		if (val > 0)
 			return val % mod;
 		else
-			return ((mod - val) % mod);
+//			return ((mod - val) % mod);
+			return ((val + mod) % mod);
 //		return (val > 0) ?
 //				(val % mod) :
 //				((mod - val) % mod);

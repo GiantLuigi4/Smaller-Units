@@ -146,13 +146,13 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.18.2-40.0.12'
 
     api fg.deobf("com.github.Virtuoel:Pehkui:3.2.0-1.18.2-forge")
-    api fg.deobf("curse.maven:scm-248619:3670826")
-    api fg.deobf("curse.maven:tklib-566563:3650390")
-    api fg.deobf("curse.maven:spark-361579:3670050")
-
-    if (new File("run/libs/ttc-deobf.jar").exists()) {
-        api files("run/libs/ttc-deobf.jar")
-    }
+//    api fg.deobf("curse.maven:scm-248619:3670826")
+//    api fg.deobf("curse.maven:tklib-566563:3650390")
+//    api fg.deobf("curse.maven:spark-361579:3670050")
+//
+//    if (new File("run/libs/ttc-deobf.jar").exists()) {
+//        api files("run/libs/ttc-deobf.jar")
+//    }
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
