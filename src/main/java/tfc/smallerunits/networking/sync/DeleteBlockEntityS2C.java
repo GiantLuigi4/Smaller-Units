@@ -12,7 +12,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
@@ -57,8 +57,6 @@ public class DeleteBlockEntityS2C extends Packet {
 		buf.writeInt(cp.z);
 		buf.writeInt(cy);
 		buf.writeBlockPos(up);
-		
-		System.out.println("read");
 	}
 	
 	@Override
@@ -74,18 +72,16 @@ public class DeleteBlockEntityS2C extends Packet {
 //			UnitSpace space = cap.getOrMakeUnit(rwp);
 			
 			lvl.removeBlockEntity(up);
-			
-			System.out.println("handle");
 
 //			BlockState[] states = new BlockState[16 * 16 * 16];
 			
-			BlockPos rp = ((TickerServerWorld) lvl).region.pos.toBlockPos();
+			BlockPos rp = ((ITickerWorld) lvl).getRegion().pos.toBlockPos();
 			BlockPos pos = up;
 			int xo = (pos.getX() / upb);
 			int yo = (pos.getY() / upb);
 			int zo = (pos.getZ() / upb);
 			BlockPos parentPos = rp.offset(xo, yo, zo);
-			ChunkAccess ac = ((TickerServerWorld) lvl).parent.getChunkAt(parentPos);
+			ChunkAccess ac = ((ITickerWorld) lvl).getParent().getChunkAt(parentPos);
 			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 			ArrayList<BlockEntity> bes = ((SUCapableChunk) ac).getTiles();
 			for (BlockEntity blockEntity : bes) {

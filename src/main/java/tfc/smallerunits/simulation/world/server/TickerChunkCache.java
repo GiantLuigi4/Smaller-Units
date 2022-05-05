@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world;
+package tfc.smallerunits.simulation.world.server;
 
 import com.mojang.datafixers.DataFixer;
 import net.minecraft.core.Holder;
@@ -25,15 +25,15 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
-import tfc.smallerunits.simulation.world.server.UnitChunkMap;
+import tfc.smallerunits.simulation.world.ITickerChunkCache;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-public class TickerChunkCache extends ServerChunkCache {
+public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCache {
 	public final BasicVerticalChunk[][] columns;
 	int upb;
 	
@@ -129,6 +129,7 @@ public class TickerChunkCache extends ServerChunkCache {
 		}
 	}
 	
+	@Override
 	public BasicVerticalChunk createChunk(int i, ChunkPos ckPos) {
 		int pChunkX = ckPos.x;
 		int pChunkZ = ckPos.z;

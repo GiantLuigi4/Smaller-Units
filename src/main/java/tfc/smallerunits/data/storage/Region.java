@@ -1,22 +1,20 @@
 package tfc.smallerunits.data.storage;
 
-import net.minecraft.core.BlockPos;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.Holder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.simulation.world.client.FakeClientWorld;
 import tfc.smallerunits.simulation.world.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
-import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.function.Consumer;
 
 public class Region {
@@ -84,51 +82,33 @@ public class Region {
 //		if (!(parent instanceof ClientLevel)) return null;
 		if (levels[upb] == null) {
 			try {
-				levels[upb] = new TickerServerWorld(
-						IHateTheDistCleaner.getIntegratedServer(),
-						// TODO: wrap level data
-						(ServerLevelData) IHateTheDistCleaner.getIntegratedServer().getLevel(Level.OVERWORLD).getLevelData(),
-						parent.dimension(), parent.dimensionType(), // oh
-						new ChunkProgressListener() {
-							@Override
-							public void updateSpawnPos(ChunkPos pCenter) {
-							}
-							
-							@Override
-							public void onStatusChange(ChunkPos pChunkPosition, ChunkStatus pNewStatus) {
-							}
-							
-							@Override
-							public void start() {
-							}
-							
-							@Override
-							public void stop() {
-							}
-						},
-						LevelSourceProviderProvider.createGenerator(IHateTheDistCleaner.getVersion(), parent),
-						false, 0, new ArrayList<>(), false,
-						parent, upb, this
+				levels[upb] = new FakeClientWorld(
+						(ClientLevel) parent,
+						null, ((ClientLevel) parent).getLevelData(),
+						parent.dimension(), Holder.direct(parent.dimensionType()),
+						0, 0, parent.getProfilerSupplier(),
+						null, true, 0,
+						upb, this
 				);
 				levels[upb].isClientSide = true;
-				TickerServerWorld lvl = ((TickerServerWorld) levels[upb]);
-				lvl.lookup = pos -> {
-					BlockPos bp = lvl.region.pos.toBlockPos().offset(
-							// TODO: double check this
-							Math.floor(pos.getX() / (double) upb),
-							Math.floor(pos.getY() / (double) upb),
-							Math.floor(pos.getZ() / (double) upb)
-					);
-					Map<BlockPos, BlockState> cache = lvl.cache;
-					if (cache.containsKey(bp)) return cache.get(bp);
-					BlockState state;
-//					if (!parent.isLoaded(bp)) return Blocks.VOID_AIR.defaultBlockState();
-					ChunkPos cp = new ChunkPos(bp);
-					if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
-						return Blocks.VOID_AIR.defaultBlockState();
-					cache.put(bp, state = parent.getBlockState(bp));
-					return state;
-				};
+//				TickerServerWorld lvl = ((TickerServerWorld) levels[upb]);
+//				lvl.lookup = pos -> {
+//					BlockPos bp = lvl.region.pos.toBlockPos().offset(
+//							// TODO: double check this
+//							Math.floor(pos.getX() / (double) upb),
+//							Math.floor(pos.getY() / (double) upb),
+//							Math.floor(pos.getZ() / (double) upb)
+//					);
+//					Map<BlockPos, BlockState> cache = lvl.cache;
+//					if (cache.containsKey(bp)) return cache.get(bp);
+//					BlockState state;
+////					if (!parent.isLoaded(bp)) return Blocks.VOID_AIR.defaultBlockState();
+//					ChunkPos cp = new ChunkPos(bp);
+//					if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+//						return Blocks.VOID_AIR.defaultBlockState();
+//					cache.put(bp, state = parent.getBlockState(bp));
+//					return state;
+//				};
 			} catch (Throwable e) {
 				RuntimeException ex = new RuntimeException(e.getMessage(), e);
 				ex.setStackTrace(e.getStackTrace());

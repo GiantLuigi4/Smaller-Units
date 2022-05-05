@@ -6,6 +6,7 @@
   "refmap": "smallerunits.refmap.json",
   "mixins": [
     "ChunkSerializerAccessor",
+    "core.ConnectionMixin",
     "core.PacketUtilsMixin",
     "core.ServerLevelMixin",
     "data.regions.ChunkHolderAccessor",
@@ -18,6 +19,7 @@
   "client": [
     "LevelRendererMixin",
     "core.LocalPlayerMixin",
+    "core.MultiPlayerGameModeMixin",
     "dangit.ForgeWhy",
     "data.CompiledChunkMixin",
     "data.LevelChunkMixin",

@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 
 public class TileRendererHelper {
 	
@@ -15,8 +15,8 @@ public class TileRendererHelper {
 		Level lvl = tile.getLevel();
 		Vec3 cam = Minecraft.getInstance().getEntityRenderDispatcher().camera.getPosition();
 		stk.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
-		if (lvl instanceof TickerServerWorld) {
-			int upb = ((TickerServerWorld) lvl).getUnitsPerBlock();
+		if (lvl instanceof ITickerWorld) {
+			int upb = ((ITickerWorld) lvl).getUPB();
 			float scl = 1f / upb;
 			stk.scale(scl, scl, scl);
 		}

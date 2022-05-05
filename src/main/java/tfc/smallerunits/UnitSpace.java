@@ -15,7 +15,7 @@ import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.math.Math1D;
 
 public class UnitSpace {
@@ -136,14 +136,14 @@ public class UnitSpace {
 				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
 				if (r == null) return;
 				if (myLevel != null)
-					((TickerServerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
 //				setState(new BlockPos(0, 0, 0), Blocks.STONE);
 			} else if (level instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
 				if (r == null) return;
 				if (myLevel != null)
-					((TickerServerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getClientWorld(level, upb);
 			}
 			loadWorld(tag);
@@ -155,8 +155,8 @@ public class UnitSpace {
 		UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
 		loadPallet(pallet);
 		if (tag.contains("ticks")) {
-			if (myLevel instanceof TickerServerWorld) {
-				((TickerServerWorld) myLevel).loadTicks(tag.getCompound("ticks"));
+			if (myLevel instanceof ITickerWorld) {
+				((ITickerWorld) myLevel).loadTicks(tag.getCompound("ticks"));
 			}
 		}
 		CompoundTag tiles = tag.getCompound("tiles");
@@ -175,11 +175,11 @@ public class UnitSpace {
 			if (be == null) continue;
 			myLevel.setBlockEntity(be);
 		}
-		((TickerServerWorld) myLevel).setLoaded();
+		((ITickerWorld) myLevel).setLoaded();
 //		setState(new BlockPos(0, 0, 0), Blocks.STONE);
 		
 		this.tag = null;
-		((TickerServerWorld) myLevel).setLoaded();
+		((ITickerWorld) myLevel).setLoaded();
 	}
 	
 	public CompoundTag serialize() {
@@ -193,8 +193,8 @@ public class UnitSpace {
 		tag.putInt("upb", unitsPerBlock);
 		UnitPallet pallet = new UnitPallet(this);
 		tag.put("blocks", pallet.toNBT());
-		if (myLevel instanceof TickerServerWorld)
-			tag.put("ticks", ((TickerServerWorld) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
+		if (myLevel instanceof ITickerWorld)
+			tag.put("ticks", ((ITickerWorld) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
 		CompoundTag tiles = new CompoundTag();
 		for (int x = 0; x < unitsPerBlock; x++) {
 			for (int y = 0; y < unitsPerBlock; y++) {

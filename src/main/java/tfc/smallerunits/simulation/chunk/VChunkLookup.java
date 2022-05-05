@@ -1,15 +1,15 @@
 package tfc.smallerunits.simulation.chunk;
 
 import net.minecraft.world.level.ChunkPos;
-import tfc.smallerunits.simulation.world.TickerChunkCache;
+import tfc.smallerunits.simulation.world.ITickerChunkCache;
 
 public class VChunkLookup {
 	final int myPos;
 	final BasicVerticalChunk[] chunks;
-	final TickerChunkCache tickerChunkCache;
+	final ITickerChunkCache tickerChunkCache;
 	final ChunkPos ckPos;
 	
-	public VChunkLookup(TickerChunkCache tickerChunkCache, int myPos, BasicVerticalChunk[] chunks, ChunkPos ckPos) {
+	public VChunkLookup(ITickerChunkCache tickerChunkCache, int myPos, BasicVerticalChunk[] chunks, ChunkPos ckPos) {
 		this.tickerChunkCache = tickerChunkCache;
 		this.myPos = myPos;
 		this.chunks = chunks;

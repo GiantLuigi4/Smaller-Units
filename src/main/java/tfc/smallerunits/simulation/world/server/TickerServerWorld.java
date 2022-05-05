@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -30,6 +31,9 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.network.PacketDistributor;
@@ -46,12 +50,13 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.EntityManager;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.simulation.world.SUTickList;
-import tfc.smallerunits.simulation.world.TickerChunkCache;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	private static final NoStorageSource src = NoStorageSource.make();
@@ -69,6 +74,21 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	
 	ArrayList<Entity> entitiesAdded = new ArrayList<>();
 	ArrayList<Entity> entitiesRemoved = new ArrayList<>();
+	
+	@Override
+	public Level getParent() {
+		return parent;
+	}
+	
+	@Override
+	public Region getRegion() {
+		return region;
+	}
+	
+	@Override
+	public ParentLookup getLookup() {
+		return lookup;
+	}
 	
 	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) throws IOException {
 		super(
@@ -609,6 +629,81 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 				);
 			}
 		}
+	}
+	
+	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<BlockPos, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
+		BlockHitResult closest = null;
+		double d = Double.POSITIVE_INFINITY;
+		
+		int minX = (int) Math.floor(Math.min(start.x, end.x)) - 1;
+		int minY = (int) Math.floor(Math.min(start.y, end.y)) - 1;
+		int minZ = (int) Math.floor(Math.min(start.z, end.z)) - 1;
+		int maxX = (int) Math.ceil(Math.max(start.x, end.x)) + 1;
+		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
+		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
+		for (int x = minX; x < maxX; x++) {
+			for (int y = minY; y < maxY; y++) {
+				for (int z = minZ; z < maxZ; z++) {
+					BlockState state = getBlockState(new BlockPos(x, y, z));
+					if (state.isAir()) continue;
+					if (simpleChecker.apply(new BlockPos(x, y, z))) {
+						BlockHitResult result = boxFiller.apply(new BlockPos(x, y, z), state);
+						if (result != null) {
+							double dd = result.getLocation().distanceTo(start);
+							if (dd < d) {
+								d = dd;
+								closest = result;
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		return closest;
+	}
+	
+	@Override
+	public BlockHitResult clip(ClipContext pContext) {
+		// I prefer this method over vanilla's method
+		Vec3 fStartVec = pContext.getFrom();
+		Vec3 endVec = pContext.getTo();
+		return collectShape(
+				pContext.getFrom(),
+				pContext.getTo(),
+				(pos) -> {
+					int x = pos.getX();
+					int y = pos.getY();
+					int z = pos.getZ();
+					AABB box = new AABB(
+//								x / upbDouble, y / upbDouble, z / upbDouble,
+//								(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
+							x, y, z,
+							x + 1, y + 1, z + 1
+					);
+					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
+				}, (pos, state) -> {
+					int x = pos.getX();
+					int y = pos.getY();
+					int z = pos.getZ();
+					VoxelShape sp = state.getShape(this, pos);
+					return sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+//					for (AABB toAabb : sp.toAabbs()) {
+//						toAabb = toAabb.move(x, y, z);
+//						UnitBox b = new UnitBox(
+//								toAabb.minX / upbDouble,
+//								toAabb.minY / upbDouble,
+//								toAabb.minZ / upbDouble,
+//								toAabb.maxX / upbDouble,
+//								toAabb.maxY / upbDouble,
+//								toAabb.maxZ / upbDouble,
+//								new BlockPos(x, y, z)
+//						);
+//					}
+				},
+				upb
+		);
 	}
 	
 	public void setLoaded() {

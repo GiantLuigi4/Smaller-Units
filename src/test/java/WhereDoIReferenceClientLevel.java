@@ -22,7 +22,7 @@ public class WhereDoIReferenceClientLevel {
 						outputStream.close();
 						outputStream.flush();
 						reader.close();
-						if (str.contains("ClientLevel")) System.out.println(listFile);
+						if (str.contains("TickerServerWorld")) System.out.println(listFile);
 					}
 				}
 			}

@@ -18,7 +18,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 
 import java.util.ArrayList;
 
@@ -95,13 +95,13 @@ public class SyncPacketS2C extends Packet {
 				lvl.setBlockEntity(be);
 				
 				// TODO: this is like 90% redundant
-				BlockPos rp = ((TickerServerWorld) lvl).region.pos.toBlockPos();
+				BlockPos rp = ((ITickerWorld) lvl).getRegion().pos.toBlockPos();
 				BlockPos pos = be.getBlockPos();
 				int xo = (pos.getX() / syncPacket.upb);
 				int yo = (pos.getY() / syncPacket.upb);
 				int zo = (pos.getZ() / syncPacket.upb);
 				BlockPos parentPos = rp.offset(xo, yo, zo);
-				ChunkAccess ac = ((TickerServerWorld) lvl).parent.getChunkAt(parentPos);
+				ChunkAccess ac = ((ITickerWorld) lvl).getParent().getChunkAt(parentPos);
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				((SUCapableChunk) ac).addTile(be);
 			}

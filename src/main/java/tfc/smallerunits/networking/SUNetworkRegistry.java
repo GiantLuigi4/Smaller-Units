@@ -3,6 +3,8 @@ package tfc.smallerunits.networking;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
+import tfc.smallerunits.networking.core.DestroyUnitPacket;
+import tfc.smallerunits.networking.core.UnitInteractionPacket;
 import tfc.smallerunits.networking.sync.*;
 
 import java.util.ArrayList;
@@ -29,16 +31,10 @@ public class SUNetworkRegistry {
 		entries.add(new NetworkEntry<>(SpawnEntityPacketS2C.class, SpawnEntityPacketS2C::new));
 		entries.add(new NetworkEntry<>(SyncEntityPacketS2C.class, SyncEntityPacketS2C::new));
 		entries.add(new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new));
+		entries.add(new NetworkEntry<>(UnitInteractionPacket.class, UnitInteractionPacket::new));
+		entries.add(new NetworkEntry<>(DestroyUnitPacket.class, DestroyUnitPacket::new));
 		
 		for (int i = 0; i < entries.size(); i++) entries.get(i).register(i, NETWORK_INSTANCE);
-//		NETWORK_INSTANCE.registerMessage(
-//				0,
-//				SyncPacketS2C.class,
-//				Packet::write,
-//				SyncPacketS2C::new,
-//				(pkt, ctx) -> pkt.handle(ctx.get())
-//		);
-//		NETWORK_INSTANCE.registerMessage(1, UpdateStatesS2C.class, Packet::write, UpdateStatesS2C::new, (pkt, ctx) -> pkt.handle(ctx.get()));
 	}
 	
 	public static void init() {

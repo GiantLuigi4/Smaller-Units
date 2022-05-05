@@ -41,7 +41,6 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -114,7 +113,7 @@ public abstract class LevelRendererMixin {
 	public void renderEntities(Level lvl, PoseStack stk, Camera cam, float pct, MultiBufferSource buffers) {
 		Iterable<Entity> entities;
 		if (lvl instanceof ClientLevel) entities = ((ClientLevel) lvl).entitiesForRendering();
-		else entities = ((TickerServerWorld) lvl).getAllEntities();
+		else entities = ((ITickerWorld) lvl).getAllEntities();
 		stk.pushPose();
 		stk.translate(
 				-cam.getPosition().x,

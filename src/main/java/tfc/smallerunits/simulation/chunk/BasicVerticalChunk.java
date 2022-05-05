@@ -19,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.simulation.block.ParentLookup;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.ArrayList;
@@ -189,12 +189,12 @@ public class BasicVerticalChunk extends LevelChunk {
 				if (be == null) return;
 				setBlockEntity(be);
 				
-				BlockPos rp = ((TickerServerWorld) level).region.pos.toBlockPos();
-				int xo = (pos.getX() / ((TickerServerWorld) level).getUnitsPerBlock());
-				int yo = (pos.getY() / ((TickerServerWorld) level).getUnitsPerBlock());
-				int zo = (pos.getZ() / ((TickerServerWorld) level).getUnitsPerBlock());
+				BlockPos rp = ((ITickerWorld) level).getRegion().pos.toBlockPos();
+				int xo = (pos.getX() / ((ITickerWorld) level).getUPB());
+				int yo = (pos.getY() / ((ITickerWorld) level).getUPB());
+				int zo = (pos.getZ() / ((ITickerWorld) level).getUPB());
 				BlockPos parentPos = rp.offset(xo, yo, zo);
-				ChunkAccess ac = ((TickerServerWorld) level).parent.getChunkAt(parentPos);
+				ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				((SUCapableChunk) ac).addTile(be);
 			}

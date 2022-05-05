@@ -1,6 +1,8 @@
 package tfc.smallerunits;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -32,14 +34,16 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.*;
 import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
+import tfc.smallerunits.networking.core.UnitInteractionPacket;
+import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacket;
+import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
@@ -305,6 +309,58 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	
 	@Override
 	public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
+		if (pLevel.isClientSide) {
+			if (pHit instanceof UnitHitResult) {
+				BlockPos pos = ((UnitHitResult) pHit).geetBlockPos();
+				
+				NetworkingHacks.unitPos.set(pos);
+				
+				LevelChunk chnk = pLevel.getChunkAt(pPos);
+				UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+				ItemStack itm = pPlayer.getItemInHand(pHand);
+
+//				AABB srcBB = pPlayer.getBoundingBox();
+//				ClientLevel trueLvl = (ClientLevel) pPlayer.getLevel();
+//				Vec3 trueVec = new Vec3(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ());
+//				double oldEyeHeight = pPlayer.getEyeHeight();
+				PositionalInfo info = new PositionalInfo(pPlayer);
+				
+				AABB scaledBB;
+				pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, space));
+				pPlayer.eyeHeight = (float) (info.eyeHeight * space.unitsPerBlock);
+				pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
+				pPlayer.level = ((LocalPlayer) pPlayer).clientLevel = ((ClientLevel) space.getMyLevel());
+				
+				InteractionResult result = Minecraft.getInstance().gameMode.useItemOn(
+						(LocalPlayer) pPlayer, (ClientLevel) space.myLevel, InteractionHand.MAIN_HAND,
+						new BlockHitResult(
+								pHit
+										.getLocation()
+										.subtract(pPos.getX(), pPos.getY(), pPos.getZ())
+										.add(pos.getX(), pos.getY(), pos.getZ())
+//										.scale(space.unitsPerBlock)
+								,
+								pHit.getDirection(),
+								space.getOffsetPos(pos), pHit.isInside()
+						)
+				);
+				
+				info.reset(pPlayer);
+//				pPlayer.eyeHeight = (float) (oldEyeHeight);
+//				pPlayer.level = ((LocalPlayer) pPlayer).clientLevel = (trueLvl);
+//				pPlayer.setPosRaw(trueVec.x, trueVec.y, trueVec.z);
+//				pPlayer.setBoundingBox(srcBB);
+				
+				NetworkingHacks.unitPos.remove();
+				
+				if (!result.consumesAction()) {
+					UnitInteractionPacket packet = new UnitInteractionPacket((UnitHitResult) pHit);
+					SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(packet);
+				}
+				
+				return result.consumesAction() ? InteractionResult.CONSUME : InteractionResult.SUCCESS;
+			}
+		}
 		if (pHit instanceof UnitHitResult) {
 			BlockPos pos = ((UnitHitResult) pHit).geetBlockPos();
 			LevelChunk chnk = pLevel.getChunkAt(pPos);
@@ -351,7 +407,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 										.getLocation()
 										.subtract(pPos.getX(), pPos.getY(), pPos.getZ())
 										.add(pos.getX(), pos.getY(), pos.getZ())
-										.scale(space.unitsPerBlock)
+//										.scale(space.unitsPerBlock)
 								,
 								pHit.getDirection(),
 								space.getOffsetPos(pos), pHit.isInside()
@@ -372,32 +428,28 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	
 	@Override
 	public void tick(BlockState pState, ServerLevel pLevel, BlockPos pPos, Random pRandom) {
-		pLevel.scheduleTick(pPos, this, 1);
-		LevelChunk chnk = pLevel.getChunkAt(pPos);
-		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-		if (space == null) return;
-		space.tick();
+//		pLevel.scheduleTick(pPos, this, 1);
+//		LevelChunk chnk = pLevel.getChunkAt(pPos);
+//		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+//		if (space == null) return;
+//		space.tick();
 		super.tick(pState, pLevel, pPos, pRandom);
 	}
 	
 	@Override
-	public void playerDestroy(Level pLevel, Player pPlayer, BlockPos pPos, BlockState pState, @Nullable BlockEntity pBlockEntity, ItemStack pTool) {
-	}
-	
-	@Override
 	public boolean onDestroyedByPlayer(BlockState state, Level pLevel, BlockPos pPos, Player player, boolean willHarvest, FluidState fluid) {
-		HitResult result = null;
-		if (FMLEnvironment.dist.isClient())
-//			if (pLevel.isClientSide)
-			result = Minecraft.getInstance().hitResult;
-//		super.playerDestroy(pLevel, pPlayer, pPos, pState, pBlockEntity, pTool);
-		if (result instanceof UnitHitResult) {
-			LevelChunk chnk = pLevel.getChunkAt(pPos);
-			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-			BlockPos pos = ((UnitHitResult) result).geetBlockPos();
-			space.setState(pos, Blocks.AIR);
-		}
-		// TODO: check if the unit is empty
+//		HitResult result = null;
+//		if (FMLEnvironment.dist.isClient())
+////			if (pLevel.isClientSide)
+//			result = Minecraft.getInstance().hitResult;
+////		super.playerDestroy(pLevel, pPlayer, pPos, pState, pBlockEntity, pTool);
+//		if (result instanceof UnitHitResult) {
+//			LevelChunk chnk = pLevel.getChunkAt(pPos);
+//			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+//			BlockPos pos = ((UnitHitResult) result).geetBlockPos();
+//			space.setState(pos, Blocks.AIR);
+//		}
+//		// TODO: check if the unit is empty
 		return false;
 	}
 	
@@ -407,6 +459,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		return super.getDestroyProgress(pState, pPlayer, pLevel, pPos);
 	}
 	
+	// shoot, this is forge
 	@Override
 	public boolean canEntityDestroy(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
 		// TODO: figure this out?
@@ -421,5 +474,13 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		RemoveUnitPacket pckt = new RemoveUnitPacket(pPos, space.unitsPerBlock);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
 //		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
+	}
+	
+	// the *proper* parameters
+	public void destroy(BlockState blockState, Level lvl, BlockPos blockPos, Player player, InteractionHand mainHand, UnitHitResult result) {
+		LevelChunk chnk = lvl.getChunkAt(blockPos);
+		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(blockPos);
+		BlockPos pos = result.geetBlockPos();
+		space.setState(pos, Blocks.AIR);
 	}
 }

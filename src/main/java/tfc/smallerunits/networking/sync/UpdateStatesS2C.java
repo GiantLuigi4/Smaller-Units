@@ -13,7 +13,7 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
@@ -85,7 +85,7 @@ public class UpdateStatesS2C extends Packet {
 						int indx = ((x * 16) + y) * 16 + z;
 						if (states[indx] == null) continue;
 //						space.setFast(x, y, z, states[indx]);
-						((TickerServerWorld) lvl).setFromSync(cp, cy, x, y, z, states[indx], accessHashMap, placesBlocks);
+						((ITickerWorld) lvl).setFromSync(cp, cy, x, y, z, states[indx], accessHashMap, placesBlocks);
 					}
 				}
 			}
