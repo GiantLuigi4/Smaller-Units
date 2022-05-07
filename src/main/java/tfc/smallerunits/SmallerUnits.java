@@ -2,7 +2,6 @@ package tfc.smallerunits;
 
 import io.netty.channel.ChannelPipeline;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.server.level.ServerPlayer;
@@ -52,13 +51,15 @@ public class SmallerUnits {
 		InfoRegistry.register("su:world_redir", () -> {
 			if (NetworkingHacks.unitPos.get() == null) return null;
 			CompoundTag tg = new CompoundTag();
-			tg.putInt("x", NetworkingHacks.unitPos.get().getX());
-			tg.putInt("y", NetworkingHacks.unitPos.get().getY());
-			tg.putInt("z", NetworkingHacks.unitPos.get().getZ());
+//			tg.putInt("x", NetworkingHacks.unitPos.get().getX());
+//			tg.putInt("y", NetworkingHacks.unitPos.get().getY());
+//			tg.putInt("z", NetworkingHacks.unitPos.get().getZ());
+			NetworkingHacks.unitPos.get().write(tg);
 			return tg;
 		}, (tag, ctx) -> {
 			CompoundTag tg = (CompoundTag) tag;
-			BlockPos pos = new BlockPos(tg.getInt("x"), tg.getInt("y"), tg.getInt("z"));
+//			BlockPos pos = new BlockPos(tg.getInt("x"), tg.getInt("y"), tg.getInt("z"));
+			NetworkingHacks.LevelDescriptor pos = NetworkingHacks.LevelDescriptor.read(tg);
 			NetworkingHacks.setPosFor(ctx.pkt, pos);
 			return null;
 		}, (obj, ctx) -> {

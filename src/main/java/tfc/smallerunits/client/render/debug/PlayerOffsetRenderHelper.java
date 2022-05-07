@@ -45,7 +45,7 @@ public class PlayerOffsetRenderHelper {
 //					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getZ()
 //			);
 //			pos = pos.scale(space.unitsPerBlock);
-			AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().cameraEntity.getBoundingBox(), Minecraft.getInstance().cameraEntity.getPosition(1), space);
+			AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().cameraEntity.getBoundingBox(), Minecraft.getInstance().cameraEntity.getPosition(1), space.unitsPerBlock);
 //			AABB box = Minecraft.getInstance().cameraEntity.getBoundingBox();
 //			box = box.move(
 //					-Minecraft.getInstance().cameraEntity.getPosition(1).x,

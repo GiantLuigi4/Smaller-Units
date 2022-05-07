@@ -76,7 +76,7 @@ public class UnitInteractionPacket extends Packet {
 					InteractionHand.MAIN_HAND, result1
 			);
 			InteractionHand hand = InteractionHand.MAIN_HAND;
-			if (!res.consumesAction()) {
+			if (!res.consumesAction() && res != InteractionResult.SUCCESS) {
 				hand = InteractionHand.OFF_HAND;
 				res = Registry.UNIT_SPACE.get().use(
 						lvl.getBlockState(result1.getBlockPos()),

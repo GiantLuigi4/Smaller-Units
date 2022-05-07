@@ -184,6 +184,7 @@ public class UnitSpace {
 	
 	public CompoundTag serialize() {
 		CompoundTag tag = new CompoundTag();
+		if (unitsPerBlock == 0) return null;
 		if (this.myLevel == null) {
 			return tag; // TODO: figure out why this happens
 		}

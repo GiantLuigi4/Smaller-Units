@@ -6,6 +6,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.event.world.ChunkEvent;
+import tfc.smallerunits.client.compat.ChiselAndBitsWhy;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -15,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /* I should not need this */
 public class SUModelDataManager {
-	private static final Map<ChunkPos, Set<BlockPos>> needModelDataRefresh = new ConcurrentHashMap<>();
-	private static final Map<ChunkPos, Map<BlockPos, IModelData>> modelDataCache = new ConcurrentHashMap<>();
+	private final Map<ChunkPos, Set<BlockPos>> needModelDataRefresh = new ConcurrentHashMap<>();
+	private final Map<ChunkPos, Map<BlockPos, IModelData>> modelDataCache = new ConcurrentHashMap<>();
 	
 	public SUModelDataManager() {
 	}
@@ -37,7 +38,10 @@ public class SUModelDataManager {
 				BlockEntity toUpdate = level.getBlockEntity(pos);
 				
 				if (toUpdate != null && !toUpdate.isRemoved()) {
-					data.put(pos, toUpdate.getModelData());
+					// this is part of why I hate architectury
+					IModelData dat = ChiselAndBitsWhy.maybeGetModelData(toUpdate);
+					if (dat == null) dat = toUpdate.getModelData();
+					data.put(pos, dat);
 				} else {
 					data.remove(pos);
 				}
@@ -46,7 +50,8 @@ public class SUModelDataManager {
 	}
 	
 	public void onChunkUnload(ChunkEvent.Unload event) {
-		if (!event.getChunk().getWorldForge().isClientSide()) return;
+//		if (!event.getChunk().getWorldForge().isClientSide()) return;
+		if (!event.getWorld().isClientSide()) return;
 		ChunkPos chunk = event.getChunk().getPos();
 		needModelDataRefresh.remove(chunk);
 		modelDataCache.remove(chunk);
@@ -59,5 +64,14 @@ public class SUModelDataManager {
 	public Map<BlockPos, IModelData> getModelData(Level level, ChunkPos pos) {
 		refreshModelData(level, pos);
 		return modelDataCache.getOrDefault(pos, Collections.emptyMap());
+	}
+	
+	public void cleanCaches(Level toUpdate) {
+		// idk if this is needed, I'mma leave it be for now
+//		if (level != currentLevel.get()) {
+//			currentLevel = new WeakReference<>(level);
+//			needModelDataRefresh.clear();
+//			modelDataCache.clear();
+//		}
 	}
 }

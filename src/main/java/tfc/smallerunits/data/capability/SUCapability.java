@@ -18,7 +18,11 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 		CompoundTag tag = new CompoundTag();
 		for (int i = 0; i < spaceMap.length; i++) {
 			UnitSpace unitSpace = spaceMap[i];
-			if (unitSpace != null) tag.put(String.valueOf(i), unitSpace.serialize());
+			if (unitSpace != null) {
+				CompoundTag tg = unitSpace.serialize();
+				if (tg != null)
+					tag.put(String.valueOf(i), tg);
+			}
 		}
 		return tag;
 	}

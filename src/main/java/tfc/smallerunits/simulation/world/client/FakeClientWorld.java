@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
@@ -27,6 +28,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -50,6 +52,9 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	public ParentLookup lookup;
 	public ParentLookup lookupTemp;
 	ClientLevel parent;
+	
+	// forge is stupid and does not account for there being more than 1 world at once
+	public final SUModelDataManager modelDataManager = new SUModelDataManager();
 	
 	public FakeClientWorld(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
@@ -83,6 +88,24 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 			cache.put(bp, state);
 			return state;
 		};
+	}
+	
+	// TODO: stuff that requires a level renderer
+	// I'll need a custom level renderer for this, I guess
+	@Override
+	public void addParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+	}
+	
+	@Override
+	public void addParticle(ParticleOptions pParticleData, boolean pForceAlwaysRender, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+	}
+	
+	@Override
+	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+	}
+	
+	@Override
+	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, boolean pIgnoreRange, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
 	}
 	
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<BlockPos, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {

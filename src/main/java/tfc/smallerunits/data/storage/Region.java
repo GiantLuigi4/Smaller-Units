@@ -2,9 +2,11 @@ package tfc.smallerunits.data.storage;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Holder;
+import net.minecraft.network.PacketListener;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -149,6 +151,14 @@ public class Region {
 		for (Level level : levels) {
 			if (level == null) continue;
 			func.accept(level);
+		}
+	}
+	
+	public Level getLevel(PacketListener listener, Player player, int upb) {
+		if (listener instanceof ServerLevel) {
+			return getServerWorld(player.level.getServer(), (ServerLevel) player.level, upb);
+		} else {
+			return getClientWorld(player.level, upb);
 		}
 	}
 }

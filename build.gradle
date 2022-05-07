@@ -143,9 +143,10 @@ configurations {
 
 dependencies {
 //    minecraft 'net.minecraftforge:forge:1.18.1-39.1.2'
-    minecraft 'net.minecraftforge:forge:1.18.2-40.0.12'
+    minecraft 'net.minecraftforge:forge:1.18.2-40.1.0'
 
 //    api fg.deobf("com.github.Virtuoel:Pehkui:3.2.0-1.18.2-forge")
+    api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
     api fg.deobf("curse.maven:pehkui-319596:3708694")
     api fg.deobf("curse.maven:scm-248619:3670826")
     api fg.deobf("curse.maven:tklib-566563:3650390")

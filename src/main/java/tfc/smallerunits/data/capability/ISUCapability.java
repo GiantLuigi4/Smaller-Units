@@ -6,18 +6,11 @@ import tfc.smallerunits.UnitSpace;
 
 public interface ISUCapability {
 	void removeUnit(BlockPos pos);
-	
 	void makeUnit(BlockPos pos);
-	
 	UnitSpace getOrMakeUnit(BlockPos pos);
-	
 	CompoundTag serializeNBT();
-	
 	void deserializeNBT(CompoundTag nbt);
-	
 	UnitSpace[] getUnits();
-	
 	void setUnit(BlockPos realPos, UnitSpace space);
-	
 	UnitSpace getUnit(BlockPos pos);
 }

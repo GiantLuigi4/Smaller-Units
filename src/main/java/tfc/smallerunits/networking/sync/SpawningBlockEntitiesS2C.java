@@ -1,5 +1,7 @@
 package tfc.smallerunits.networking.sync;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -75,6 +77,11 @@ public class SpawningBlockEntitiesS2C extends Packet {
 //			UnitSpace space = cap.getOrMakeUnit(rwp);
 
 //			BlockState[] states = new BlockState[16 * 16 * 16];
+			
+			// TODO: adjust player position and whatnot
+			ClientLevel clvl = Minecraft.getInstance().level;
+			Minecraft.getInstance().level = (ClientLevel) lvl;
+			
 			String id = data.getString("id");
 			CompoundTag tag = data.getCompound("data");
 			if (!tag.contains("id"))
@@ -82,6 +89,9 @@ public class SpawningBlockEntitiesS2C extends Packet {
 			BlockEntity be = BlockEntity.loadStatic(up, lvl.getBlockState(up), tag);
 			if (be == null) return;
 			lvl.setBlockEntity(be);
+			be.load(tag); // yes
+			
+			Minecraft.getInstance().level = clvl;
 			
 			BlockPos rp = ((ITickerWorld) lvl).getRegion().pos.toBlockPos();
 			BlockPos pos = be.getBlockPos();

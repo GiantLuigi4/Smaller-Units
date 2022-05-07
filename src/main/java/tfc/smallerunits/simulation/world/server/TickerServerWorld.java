@@ -44,6 +44,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.networking.SUNetworkRegistry;
+import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.*;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -462,9 +463,18 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	}
 	
 	@Override
+	public void blockEntityChanged(BlockPos pPos) {
+		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
+		vc.beChanges.add(vc.getBlockEntity(pPos));
+	}
+	
+	@Override
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (!getServer().isReady()) return;
 		if (!isLoaded) return;
+		
+		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
 		for (Entity entity : entities.toArray(new Entity[0])) {
@@ -472,6 +482,9 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 			if (entity.isRemoved()) continue;
 			entity.tick();
 		}
+		
+		NetworkingHacks.unitPos.remove();
+		
 		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
 			if (column == null) continue;
 			// TODO: check only dirty chunks
@@ -505,7 +518,8 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 //					}
 				} else {
 					if (!basicVerticalChunk.beChanges.isEmpty()) {
-						for (BlockEntity beChange : basicVerticalChunk.beChanges) {
+						/* toArray helps to prevent CMEs */
+						for (BlockEntity beChange : basicVerticalChunk.beChanges.toArray(new BlockEntity[0])) {
 							CompoundTag tg = new CompoundTag();
 							tg.put("data", beChange.getUpdateTag());
 							tg.putString("id", beChange.getType().getRegistryName().toString());

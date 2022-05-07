@@ -1,6 +1,7 @@
 package tfc.smallerunits.networking.sync;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -76,6 +77,9 @@ public class SyncPacketS2C extends Packet {
 			if (!(access instanceof LevelChunk chunk)) continue;
 			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 			UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
+			
+			// TODO: adjust player position and whatnot
+			
 			space.unitsPerBlock = syncPacket.upb;
 			space.setUpb(space.unitsPerBlock);
 			space.loadPallet(syncPacket.pallet);
@@ -84,15 +88,19 @@ public class SyncPacketS2C extends Packet {
 			toRemove.add(syncPacket);
 			
 			Level lvl = space.getMyLevel();
+			
+			ClientLevel clvl = Minecraft.getInstance().level;
+			Minecraft.getInstance().level = (ClientLevel) lvl;
 			for (CompoundTag data : syncPacket.beData) {
 				String id = data.getString("id");
-				CompoundTag tag = data.getCompound("tag");
+				CompoundTag tag = data.getCompound("data");
 				if (!tag.contains("id"))
 					tag.putString("id", id);
 				BlockPos up = new BlockPos(data.getInt("x"), data.getInt("y"), data.getInt("z"));
 				BlockEntity be = BlockEntity.loadStatic(up, lvl.getBlockState(up), tag);
 				if (be == null) return;
 				lvl.setBlockEntity(be);
+				be.load(tag); // yes
 				
 				// TODO: this is like 90% redundant
 				BlockPos rp = ((ITickerWorld) lvl).getRegion().pos.toBlockPos();
@@ -105,6 +113,7 @@ public class SyncPacketS2C extends Packet {
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				((SUCapableChunk) ac).addTile(be);
 			}
+			Minecraft.getInstance().level = clvl;
 		}
 		deferred.removeAll(toRemove);
 //		toRemove.forEach(deferred::remove);
