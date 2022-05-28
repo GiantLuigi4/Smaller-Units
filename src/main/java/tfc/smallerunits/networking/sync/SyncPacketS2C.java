@@ -68,9 +68,10 @@ public class SyncPacketS2C extends Packet {
 	
 	public static void tick(TickEvent.ClientTickEvent event) {
 		ArrayList<SyncPacketS2C> toRemove = new ArrayList<>();
-		if (Minecraft.getInstance().screen != null) {
-			return;
-		}
+		if (Minecraft.getInstance().screen != null) return;
+		if (Minecraft.getInstance().player == null) return;
+//		if (Minecraft.getInstance().levelRenderer == null) return;
+		if (Minecraft.getInstance().levelRenderer.level == null) return;
 		for (SyncPacketS2C syncPacket : deferred) {
 			ChunkAccess access = Minecraft.getInstance().level.getChunk(syncPacket.realPos);
 			if (access instanceof EmptyLevelChunk) continue;

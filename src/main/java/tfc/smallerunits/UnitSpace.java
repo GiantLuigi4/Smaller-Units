@@ -31,6 +31,7 @@ public class UnitSpace {
 	public UnitSpace(BlockPos pos, Level level) {
 		this.pos = pos;
 		this.level = level;
+
 //		for (int x = 0; x < 8; x++) {
 //			for (int z = 0; z < 8; z++) {
 //				int y = 0;

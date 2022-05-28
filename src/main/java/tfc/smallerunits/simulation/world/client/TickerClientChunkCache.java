@@ -4,8 +4,6 @@ import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
-import net.minecraft.server.level.ServerChunkCache;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
@@ -29,12 +27,15 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 	int upb;
 	Level level;
 	
+	EmptyLevelChunk empty;
+	
 	public TickerClientChunkCache(ClientLevel pLevel, int pViewDistance, int upb) {
 		super(pLevel, pViewDistance);
 		level = pLevel;
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
 //		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
+		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 	}
 
 //	@Override
@@ -85,21 +86,16 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 			Level parent = ((ITickerWorld) level).getParent();
 			Region otherRegion = null;
 			Level level = null;
-			if (!parent.isClientSide && parent instanceof ServerLevel) {
-				otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);
-				if (otherRegion != null)
-					level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
-				else
-					return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+			
+			otherRegion = ((RegionalAttachments) ((ITickerWorld) this.level).getParent()).SU$getRegion(pos);
+			if (otherRegion != null && IHateTheDistCleaner.isClientLevel(parent)) {
+				level = otherRegion.getClientWorld(parent, upb);
 			} else {
-				if (parent.isClientSide) {
-					otherRegion = ((RegionalAttachments) ((ITickerWorld) this.level).getParent()).SU$getRegion(pos);
-					if (otherRegion != null && IHateTheDistCleaner.isClientLevel(parent))
-						level = otherRegion.getClientWorld(parent, upb);
-					else
-						return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
-				}
+//				EmptyLevelChunk chunk = new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+				EmptyLevelChunk chunk = empty;
+				return chunk;
 			}
+			
 			return level.getChunk(pChunkX, pChunkZ);
 //			return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
 		}

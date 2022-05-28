@@ -19,6 +19,8 @@ public class SUModelDataManager {
 	private final Map<ChunkPos, Set<BlockPos>> needModelDataRefresh = new ConcurrentHashMap<>();
 	private final Map<ChunkPos, Map<BlockPos, IModelData>> modelDataCache = new ConcurrentHashMap<>();
 	
+	private int delay = 0;
+	
 	public SUModelDataManager() {
 	}
 	
@@ -29,6 +31,10 @@ public class SUModelDataManager {
 	}
 	
 	public void refreshModelData(Level level, ChunkPos chunk) {
+		if (delay < 300) {
+			delay++;
+			return;
+		}
 		Set<BlockPos> needUpdate = needModelDataRefresh.remove(chunk);
 		
 		if (needUpdate != null) {
@@ -42,6 +48,7 @@ public class SUModelDataManager {
 					IModelData dat = ChiselAndBitsWhy.maybeGetModelData(toUpdate);
 					if (dat == null) dat = toUpdate.getModelData();
 					data.put(pos, dat);
+					level.setBlocksDirty(pos, toUpdate.getBlockState(), toUpdate.getBlockState());
 				} else {
 					data.remove(pos);
 				}

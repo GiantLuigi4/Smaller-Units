@@ -27,7 +27,6 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.world.ITickerChunkCache;
 import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
@@ -35,6 +34,8 @@ import java.util.function.Supplier;
 
 public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCache {
 	public final BasicVerticalChunk[][] columns;
+	private final EmptyLevelChunk empty;
+	// TODO: make this not needed
 	int upb;
 	
 	public TickerChunkCache(ServerLevel p_184009_, LevelStorageSource.LevelStorageAccess p_184010_, DataFixer p_184011_, StructureManager p_184012_, Executor p_184013_, ChunkGenerator p_184014_, int p_184015_, int p_184016_, boolean p_184017_, ChunkProgressListener p_184018_, ChunkStatusUpdateListener p_184019_, Supplier<DimensionDataStorage> p_184020_, int upb) {
@@ -42,12 +43,19 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
+		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 	}
 	
 	@Override
 	public void removeEntity(Entity pEntity) {
 		super.removeEntity(pEntity);
 		((ITickerWorld) level).SU$removeEntity(pEntity);
+	}
+	
+	@Override
+	public boolean hasChunk(int pX, int pZ) {
+		// TODO:
+		return (!(getChunk(pX, pZ, ChunkStatus.FULL, false) instanceof EmptyLevelChunk));
 	}
 	
 	@Nullable
@@ -93,20 +101,13 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			Level parent = ((TickerServerWorld) level).parent;
 			Region otherRegion = null;
 			Level level = null;
-			if (!parent.isClientSide && parent instanceof ServerLevel) {
-				otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);
-				if (otherRegion != null)
-					level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
-				else
-					return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
-			} else {
-				if (parent.isClientSide) {
-					otherRegion = ((RegionalAttachments) ((TickerServerWorld) this.level).parent).SU$getRegion(pos);
-					if (otherRegion != null && IHateTheDistCleaner.isClientLevel(parent))
-						level = otherRegion.getClientWorld(parent, upb);
-					else
-						return new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
-				}
+			// TODO: I should be able to remove this server level check
+			otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);
+			if (otherRegion != null)
+				level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
+			else {
+				EmptyLevelChunk chunk = empty;
+				return chunk;
 			}
 			return level.getChunk(pChunkX, pChunkZ);
 //			return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));

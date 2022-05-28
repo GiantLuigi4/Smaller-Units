@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -18,7 +19,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 
 public class SURenderManager {
-	public static void drawChunk(LevelChunk chunk, Level world, ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type) {
+	public static void drawChunk(LevelChunk chunk, Level world, ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type, Frustum frustum) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		Minecraft.getInstance().getProfiler().push("SU");
 		Minecraft.getInstance().getProfiler().push("setup");
@@ -29,16 +30,18 @@ public class SURenderManager {
 		if (type.equals(RenderType.solid())) {
 			SUVBOEmitter vboEmitter = ((SUCapableWorld) world).getVBOEmitter();
 			Minecraft.getInstance().getProfiler().popPush("regen_dirty");
+			// TODO: frustrum check
 			for (BlockPos pos : suCapable.SU$dirty())
 				render.addBuffers(pos, vboEmitter.genBuffers(chunk, suCapable, capability, pos));
 			Minecraft.getInstance().getProfiler().popPush("remove_old");
 			for (BlockPos pos : suCapable.SU$toRemove())
 				render.freeBuffers(pos, vboEmitter);
+			// TODO: remove only unit positions that are in the frustrum
 			suCapable.SU$reset();
 		}
 		
 		Minecraft.getInstance().getProfiler().popPush("draw");
-		render.draw(renderChunk, type);
+		render.draw(renderChunk, type, frustum);
 		Minecraft.getInstance().getProfiler().pop();
 		Minecraft.getInstance().getProfiler().pop();
 	}

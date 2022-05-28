@@ -36,6 +36,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
@@ -126,6 +128,13 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		lookup = pos -> lookupTemp.getState(pos);
 		lookupTemp = pos -> Blocks.VOID_AIR.defaultBlockState();
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
+		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
+		super.finalize();
 	}
 	
 	@Override
@@ -520,6 +529,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 					if (!basicVerticalChunk.beChanges.isEmpty()) {
 						/* toArray helps to prevent CMEs */
 						for (BlockEntity beChange : basicVerticalChunk.beChanges.toArray(new BlockEntity[0])) {
+							if (beChange == null) continue;
 							CompoundTag tg = new CompoundTag();
 							tg.put("data", beChange.getUpdateTag());
 							tg.putString("id", beChange.getType().getRegistryName().toString());

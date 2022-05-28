@@ -11,15 +11,18 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -37,10 +40,13 @@ import tfc.smallerunits.client.render.SURenderManager;
 import tfc.smallerunits.client.render.TileRendererHelper;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.client.tracking.SUCompiledChunkAttachments;
+import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.world.client.FakeClientWorld;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -98,6 +104,20 @@ public abstract class LevelRendererMixin {
 	
 	@Shadow
 	protected abstract void renderEntity(Entity pEntity, double pCamX, double pCamY, double pCamZ, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBufferSource);
+	
+	@Shadow
+	@Nullable
+	private Frustum capturedFrustum;
+	
+	@Shadow
+	private Frustum cullingFrustum;
+	
+	@Shadow
+	public static void renderLineBox(PoseStack pPoseStack, VertexConsumer pConsumer, AABB pBox, float pRed, float pGreen, float pBlue, float pAlpha) {
+	}
+	
+	@Shadow
+	public abstract void tick();
 	
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"), method = "renderLevel")
 	public void beforeRenderEntities(PoseStack stack, float i, long j, boolean k, Camera l, GameRenderer i1, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
@@ -195,14 +215,64 @@ public abstract class LevelRendererMixin {
 		if (capable == null)
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
 		
-		for (BlockEntity tile : capable.getTiles()) {
-			TileRendererHelper.setupStack(stk, tile, origin);
-			blockEntityRenderDispatcher.render(
-					tile, 0,
-					stk, Minecraft.getInstance().renderBuffers().bufferSource()
-			);
-			stk.popPose();
+		Frustum frustum = capturedFrustum != null ? capturedFrustum : cullingFrustum;
+		
+		stk.pushPose();
+		Vec3 cam = Minecraft.getInstance().getEntityRenderDispatcher().camera.getPosition();
+		stk.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
+		
+		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
+		VertexConsumer consumer = source.getBuffer(RenderType.leash());
+		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
+		for (UnitSpace unit : capability.getUnits()) {
+			if (unit != null) {
+				TileRendererHelper.drawUnit(
+						unit, consumer, stk,
+						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
+						origin.getX(), origin.getY(), origin.getZ()
+				);
+			}
 		}
+		
+		for (BlockEntity tile : capable.getTiles()) {
+			if (tile.getLevel() == null) continue; // idk how this happens, but ok?
+			if (new RegionPos(origin).equals(((FakeClientWorld) tile.getLevel()).region.pos)) {
+				int y = tile.getBlockPos().getY() / ((FakeClientWorld) tile.getLevel()).upb;
+				if (y < origin.getY() + 16 &&
+						y >= origin.getY()) {
+					AABB renderBox = tile.getRenderBoundingBox();
+					if (tile.getLevel() instanceof ITickerWorld) {
+						int upb = ((ITickerWorld) tile.getLevel()).getUPB();
+						float scl = 1f / upb;
+						renderBox = new AABB(
+								renderBox.minX * scl,
+								renderBox.minY * scl,
+								renderBox.minZ * scl,
+								renderBox.maxX * scl,
+								renderBox.maxY * scl,
+								renderBox.maxZ * scl
+						);
+					}
+					if (frustum.isVisible(renderBox)) {
+//						{
+//							stk.pushPose();
+//							renderLineBox(
+//									stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+//								renderBox, 1, 1, 1, 1
+//							);
+//							stk.popPose();
+//						}
+						TileRendererHelper.setupStack(stk, tile, origin);
+						blockEntityRenderDispatcher.render(
+								tile, 0,
+								stk, Minecraft.getInstance().renderBuffers().bufferSource()
+						);
+						stk.popPose();
+					}
+				}
+			}
+		}
+		stk.popPose();
 		
 		return instance.getCompiledChunk();
 	}
@@ -223,7 +293,12 @@ public abstract class LevelRendererMixin {
 			uniform.upload();
 		}
 		
-		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType);
+		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum);
 		return instance.isEmpty(pRenderType);
 	}
+
+//	@Inject(at = @At("HEAD"), method = "applyFrustum")
+//	public void postApplyFrustrum(Frustum pFrustrum, CallbackInfo ci) {
+//		// TODO: use this to optimize stuff if need be
+//	}
 }

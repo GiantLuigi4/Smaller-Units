@@ -81,8 +81,10 @@ public class SmallerUnits {
 	}
 	
 	public static void setupConnectionButchery(Player player, Connection connection, ChannelPipeline pipeline) {
-		pipeline.addFirst(SmallerUnits.class.getName() + ":writer", new PacketWriter(player, connection));
-		pipeline.addFirst(SmallerUnits.class.getName() + ":reader", new PacketReader(player, connection));
+		if (!pipeline.toMap().containsKey(SmallerUnits.class.getName() + ":writer")) {
+			pipeline.addFirst(SmallerUnits.class.getName() + ":writer", new PacketWriter(player, connection));
+			pipeline.addFirst(SmallerUnits.class.getName() + ":reader", new PacketReader(player, connection));
+		}
 	}
 
 //	public void connect0(NetworkEvent.ServerCustomPayloadLoginEvent event) {
