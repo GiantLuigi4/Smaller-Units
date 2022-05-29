@@ -3,6 +3,7 @@ package tfc.smallerunits.simulation.world.server;
 import com.mojang.datafixers.DataFixer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
@@ -27,7 +28,9 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.world.ITickerChunkCache;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.world.UnitChunkHolder;
 
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -64,16 +67,23 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		return getChunk(pChunkX, 0, pChunkZ, pRequiredStatus, pLoad);
 	}
 	
+	ArrayList<ChunkHolder> holders = new ArrayList<>();
+	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
-		for (BasicVerticalChunk[] column : columns) {
-			if (column == null) continue;
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
-//				level.tickChunk(basicVerticalChunk, 100);
-				basicVerticalChunk.randomTick();
-			}
-		}
+		super.tick(pHasTimeLeft, p_201914_);
+//		for (BasicVerticalChunk[] column : columns) {
+//			if (column == null) continue;
+//			for (BasicVerticalChunk basicVerticalChunk : column) {
+//				if (basicVerticalChunk == null) continue;
+////				level.tickChunk(basicVerticalChunk, 100);
+//				basicVerticalChunk.randomTick();
+//			}
+//		}
+	}
+	
+	public Iterable<ChunkHolder> getChunks() {
+		return holders;
 	}
 	
 	public ParentLookup getLookup() {
@@ -101,7 +111,6 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			Level parent = ((TickerServerWorld) level).parent;
 			Region otherRegion = null;
 			Level level = null;
-			// TODO: I should be able to remove this server level check
 			otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);
 			if (otherRegion != null)
 				level = otherRegion.getServerWorld(this.level.getServer(), (ServerLevel) parent, upb);
@@ -119,13 +128,19 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		} else {
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
-			if (ck[pChunkY] == null) ck[pChunkY] = new BasicVerticalChunk(
-					level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
-					new VChunkLookup(
-							this, pChunkY, ck,
-							new ChunkPos(pChunkX, pChunkZ)
-					), getLookup(), upb
-			);
+			if (ck[pChunkY] == null) {
+				ck[pChunkY] = new BasicVerticalChunk(
+						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
+						new VChunkLookup(
+								this, pChunkY, ck,
+								new ChunkPos(pChunkX, pChunkZ)
+						), getLookup(), upb
+				);
+				UnitChunkHolder holder = new UnitChunkHolder(ck[pChunkY].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
+				}, chunkMap, ck[pChunkY]);
+				holders.add(holder);
+				ck[pChunkY].holder = holder;
+			}
 			return ck[pChunkY];
 		}
 	}
@@ -135,12 +150,17 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		int pChunkX = ckPos.x;
 		int pChunkZ = ckPos.z;
 		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
-		return ck[i] = new BasicVerticalChunk(
+		ck[i] = new BasicVerticalChunk(
 				level, new ChunkPos(pChunkX, pChunkZ), i,
 				new VChunkLookup(
 						this, i, ck,
 						new ChunkPos(pChunkX, pChunkZ)
 				), getLookup(), upb
 		);
+		UnitChunkHolder holder = new UnitChunkHolder(ck[i].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
+		}, chunkMap, ck[i]);
+		holders.add(holder);
+		ck[i].holder = holder;
+		return ck[i];
 	}
 }

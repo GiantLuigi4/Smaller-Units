@@ -195,6 +195,8 @@ public class ThreadedVertexBuilder extends BufferBuilder {
 				}
 			});
 			thread.start();
+			while (thread.isInUse()) {
+			}
 		}
 	}
 	

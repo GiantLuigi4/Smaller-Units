@@ -1,6 +1,5 @@
 package tfc.smallerunits.simulation.world.server;
 
-import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.core.*;
@@ -38,16 +37,13 @@ import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
-import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
-import tfc.smallerunits.networking.sync.*;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.EntityManager;
@@ -493,166 +489,166 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		}
 		
 		NetworkingHacks.unitPos.remove();
-		
-		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
-			if (column == null) continue;
-			// TODO: check only dirty chunks
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
-				if (!basicVerticalChunk.updated.isEmpty()) {
-					// TODO: mark parent dirty
-//					if (basicVerticalChunk.yPos == 2) {
-					ArrayList<Pair<BlockPos, BlockState>> updates = new ArrayList<>();
-					for (BlockPos pos : basicVerticalChunk.updated)
-						updates.add(Pair.of(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), basicVerticalChunk.getBlockState(pos)));
-					basicVerticalChunk.updated.clear();
-					basicVerticalChunk.setUnsaved(false);
-					UpdateStatesS2C packet = new UpdateStatesS2C(
-							region.pos, updates,
-							upb, basicVerticalChunk.getPos(),
-							basicVerticalChunk.yPos
-					);
-					BlockPos rp = region.pos.toBlockPos();
-					double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
-					double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
-					double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
-					ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-					LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-					chunk.setUnsaved(true);
-					SUNetworkRegistry.NETWORK_INSTANCE.send(
-//							PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-							PacketDistributor.ALL.noArg(),
-							packet
-					);
+
+//		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
+//			if (column == null) continue;
+//			// TODO: check only dirty chunks
+//			for (BasicVerticalChunk basicVerticalChunk : column) {
+//				if (basicVerticalChunk == null) continue;
+//				if (!basicVerticalChunk.updated.isEmpty()) {
+//					// TODO: mark parent dirty
+////					if (basicVerticalChunk.yPos == 2) {
+//					ArrayList<Pair<BlockPos, BlockState>> updates = new ArrayList<>();
+//					for (BlockPos pos : basicVerticalChunk.updated)
+//						updates.add(Pair.of(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), basicVerticalChunk.getBlockState(pos)));
+//					basicVerticalChunk.updated.clear();
+//					basicVerticalChunk.setUnsaved(false);
+//					UpdateStatesS2C packet = new UpdateStatesS2C(
+//							region.pos, updates,
+//							upb, basicVerticalChunk.getPos(),
+//							basicVerticalChunk.yPos
+//					);
+//					BlockPos rp = region.pos.toBlockPos();
+//					double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+//					double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+//					double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+//					ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+//					LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+//					chunk.setUnsaved(true);
+//					SUNetworkRegistry.NETWORK_INSTANCE.send(
+////							PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//							PacketDistributor.ALL.noArg(),
+//							packet
+//					);
+////					}
+//				} else {
+//					if (!basicVerticalChunk.beChanges.isEmpty()) {
+//						/* toArray helps to prevent CMEs */
+//						for (BlockEntity beChange : basicVerticalChunk.beChanges.toArray(new BlockEntity[0])) {
+//							if (beChange == null) continue;
+//							CompoundTag tg = new CompoundTag();
+//							tg.put("data", beChange.getUpdateTag());
+//							tg.putString("id", beChange.getType().getRegistryName().toString());
+//							SpawningBlockEntitiesS2C packet = new SpawningBlockEntitiesS2C(
+//									region.pos, tg,
+//									upb, basicVerticalChunk.getPos(),
+//									basicVerticalChunk.yPos,
+//									beChange.getBlockPos()
+//							);
+//							BlockPos rp = region.pos.toBlockPos();
+//							double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+//							double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+//							double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+//							ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+//							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+//							chunk.setUnsaved(true);
+//							SUNetworkRegistry.NETWORK_INSTANCE.send(
+////									PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//									PacketDistributor.ALL.noArg(),
+//									packet
+//							);
+//						}
+//						basicVerticalChunk.beChanges.clear();
 //					}
-				} else {
-					if (!basicVerticalChunk.beChanges.isEmpty()) {
-						/* toArray helps to prevent CMEs */
-						for (BlockEntity beChange : basicVerticalChunk.beChanges.toArray(new BlockEntity[0])) {
-							if (beChange == null) continue;
-							CompoundTag tg = new CompoundTag();
-							tg.put("data", beChange.getUpdateTag());
-							tg.putString("id", beChange.getType().getRegistryName().toString());
-							SpawningBlockEntitiesS2C packet = new SpawningBlockEntitiesS2C(
-									region.pos, tg,
-									upb, basicVerticalChunk.getPos(),
-									basicVerticalChunk.yPos,
-									beChange.getBlockPos()
-							);
-							BlockPos rp = region.pos.toBlockPos();
-							double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
-							double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
-							double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
-							ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-							chunk.setUnsaved(true);
-							SUNetworkRegistry.NETWORK_INSTANCE.send(
-//									PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-									PacketDistributor.ALL.noArg(),
-									packet
-							);
-						}
-						basicVerticalChunk.beChanges.clear();
-					}
-					if (!basicVerticalChunk.besRemoved.isEmpty()) {
-						for (BlockPos beChange : basicVerticalChunk.besRemoved) {
-							DeleteBlockEntityS2C packet = new DeleteBlockEntityS2C(
-									region.pos,
-									upb, basicVerticalChunk.getPos(),
-									basicVerticalChunk.yPos,
-									beChange
-							);
-							BlockPos rp = region.pos.toBlockPos();
-							double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
-							double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
-							double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
-							ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-							chunk.setUnsaved(true);
-							SUNetworkRegistry.NETWORK_INSTANCE.send(
-//									PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-									PacketDistributor.ALL.noArg(),
-									packet
-							);
-						}
-						basicVerticalChunk.besRemoved.clear();
-					}
-				}
-			}
-		}
-		if (!entitiesAdded.isEmpty()) {
-			for (Entity entity : entitiesAdded) {
-				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
-				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
-				CompoundTag tg = new CompoundTag();
-				tg.put("data", entity.serializeNBT());
-				tg.putInt("id", entity.getId());
-				SpawnEntityPacketS2C packet = new SpawnEntityPacketS2C(
-						region.pos, upb, cp0, cy,
-						tg // TODO: figure this out
-				);
-				BlockPos rp = region.pos.toBlockPos();
-				double x = rp.getX() + cp0.getMinBlockX() + 8;
-				double y = rp.getY() + (cy << 4) + 8;
-				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
-				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-				chunk.setUnsaved(true);
-				SUNetworkRegistry.NETWORK_INSTANCE.send(
-//						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-						PacketDistributor.ALL.noArg(),
-						packet
-				);
-			}
-			entitiesAdded.clear();
-		}
-		if (!entitiesRemoved.isEmpty()) {
-			for (Entity entity : entitiesRemoved) {
-				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
-				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
-				RemoveEntityPacketS2C packet = new RemoveEntityPacketS2C(
-						region.pos, upb, cp0, cy,
-						entity.getId()
-				);
-				BlockPos rp = region.pos.toBlockPos();
-				double x = rp.getX() + cp0.getMinBlockX() + 8;
-				double y = rp.getY() + (cy << 4) + 8;
-				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
-				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-				chunk.setUnsaved(true);
-				SUNetworkRegistry.NETWORK_INSTANCE.send(
-//						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-						PacketDistributor.ALL.noArg(),
-						packet
-				);
-			}
-			entitiesRemoved.clear();
-		}
-		if (!entities.isEmpty()) {
-			for (Entity entity : entities) {
-				if (!entity.getEntityData().isDirty())
-					continue;
-				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
-				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
-				SyncEntityPacketS2C packet = new SyncEntityPacketS2C(
-						region.pos, upb, cp0, cy,
-						entity.getId(), entity
-				);
-				BlockPos rp = region.pos.toBlockPos();
-				double x = rp.getX() + cp0.getMinBlockX() + 8;
-				double y = rp.getY() + (cy << 4) + 8;
-				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
-				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
-				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
-				chunk.setUnsaved(true);
-				SUNetworkRegistry.NETWORK_INSTANCE.send(
-//						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
-						PacketDistributor.ALL.noArg(),
-						packet
-				);
-			}
-		}
+//					if (!basicVerticalChunk.besRemoved.isEmpty()) {
+//						for (BlockPos beChange : basicVerticalChunk.besRemoved) {
+//							DeleteBlockEntityS2C packet = new DeleteBlockEntityS2C(
+//									region.pos,
+//									upb, basicVerticalChunk.getPos(),
+//									basicVerticalChunk.yPos,
+//									beChange
+//							);
+//							BlockPos rp = region.pos.toBlockPos();
+//							double x = rp.getX() + basicVerticalChunk.getPos().getMinBlockX() + 8;
+//							double y = rp.getY() + (basicVerticalChunk.yPos << 4) + 8;
+//							double z = rp.getZ() + basicVerticalChunk.getPos().getMinBlockZ() + 8;
+//							ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+//							LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+//							chunk.setUnsaved(true);
+//							SUNetworkRegistry.NETWORK_INSTANCE.send(
+////									PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//									PacketDistributor.ALL.noArg(),
+//									packet
+//							);
+//						}
+//						basicVerticalChunk.besRemoved.clear();
+//					}
+//				}
+//			}
+//		}
+//		if (!entitiesAdded.isEmpty()) {
+//			for (Entity entity : entitiesAdded) {
+//				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
+//				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
+//				CompoundTag tg = new CompoundTag();
+//				tg.put("data", entity.serializeNBT());
+//				tg.putInt("id", entity.getId());
+//				SpawnEntityPacketS2C packet = new SpawnEntityPacketS2C(
+//						region.pos, upb, cp0, cy,
+//						tg // TODO: figure this out
+//				);
+//				BlockPos rp = region.pos.toBlockPos();
+//				double x = rp.getX() + cp0.getMinBlockX() + 8;
+//				double y = rp.getY() + (cy << 4) + 8;
+//				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
+//				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+//				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+//				chunk.setUnsaved(true);
+//				SUNetworkRegistry.NETWORK_INSTANCE.send(
+////						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//						PacketDistributor.ALL.noArg(),
+//						packet
+//				);
+//			}
+//			entitiesAdded.clear();
+//		}
+//		if (!entitiesRemoved.isEmpty()) {
+//			for (Entity entity : entitiesRemoved) {
+//				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
+//				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
+//				RemoveEntityPacketS2C packet = new RemoveEntityPacketS2C(
+//						region.pos, upb, cp0, cy,
+//						entity.getId()
+//				);
+//				BlockPos rp = region.pos.toBlockPos();
+//				double x = rp.getX() + cp0.getMinBlockX() + 8;
+//				double y = rp.getY() + (cy << 4) + 8;
+//				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
+//				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+//				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+//				chunk.setUnsaved(true);
+//				SUNetworkRegistry.NETWORK_INSTANCE.send(
+////						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//						PacketDistributor.ALL.noArg(),
+//						packet
+//				);
+//			}
+//			entitiesRemoved.clear();
+//		}
+//		if (!entities.isEmpty()) {
+//			for (Entity entity : entities) {
+//				if (!entity.getEntityData().isDirty())
+//					continue;
+//				ChunkPos cp0 = new ChunkPos(new BlockPos(entity.getBlockX(), 0, entity.getBlockZ()));
+//				int cy = SectionPos.blockToSectionCoord(entity.getBlockY());
+//				SyncEntityPacketS2C packet = new SyncEntityPacketS2C(
+//						region.pos, upb, cp0, cy,
+//						entity.getId(), entity
+//				);
+//				BlockPos rp = region.pos.toBlockPos();
+//				double x = rp.getX() + cp0.getMinBlockX() + 8;
+//				double y = rp.getY() + (cy << 4) + 8;
+//				double z = rp.getZ() + cp0.getMinBlockZ() + 8;
+//				ChunkPos cp = new ChunkPos(new BlockPos(x, y, z));
+//				LevelChunk chunk = parent.getChunkAt(cp.getWorldPosition());
+//				chunk.setUnsaved(true);
+//				SUNetworkRegistry.NETWORK_INSTANCE.send(
+////						PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(x, y, z, 2560, parent.dimension())),
+//						PacketDistributor.ALL.noArg(),
+//						packet
+//				);
+//			}
+//		}
 	}
 	
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<BlockPos, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {

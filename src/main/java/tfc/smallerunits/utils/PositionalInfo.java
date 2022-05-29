@@ -10,6 +10,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
+import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.utils.math.HitboxScaling;
 
 import java.util.Random;
 import java.util.UUID;
@@ -32,10 +34,19 @@ public class PositionalInfo {
 	
 	public void scalePlayerReach(Player pPlayer, int upb) {
 		AttributeInstance instance = pPlayer.getAttribute(ForgeMod.REACH_DISTANCE.get());
+		instance.removeModifier(SU_REACH_UUID);
 		instance.addPermanentModifier(
 				new AttributeModifier(SU_REACH_UUID, "su:reach", upb, AttributeModifier.Operation.MULTIPLY_TOTAL)
 		);
 		isReachSet = true;
+	}
+	
+	public void adjust(Player pPlayer, UnitSpace space) {
+		AABB scaledBB;
+		pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, space.unitsPerBlock));
+		pPlayer.eyeHeight = (float) (this.eyeHeight * space.unitsPerBlock);
+		pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
+		pPlayer.level = ((LocalPlayer) pPlayer).clientLevel = ((ClientLevel) space.getMyLevel());
 	}
 	
 	public void reset(Player pPlayer) {

@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -146,6 +147,7 @@ public class SUVBOEmitter {
 				for (int z = 0; z < upb; z++) {
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
+					if (block.equals(Blocks.AIR.defaultBlockState())) continue;
 					if (!block.getFluidState().isEmpty()) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);

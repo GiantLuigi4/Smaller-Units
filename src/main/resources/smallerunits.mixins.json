@@ -10,6 +10,7 @@
     "core.PacketUtilsMixin",
     "core.ServerLevelMixin",
     "core.access.ServerPacketListenerMixin",
+    "dangit.MojangWhy",
     "data.regions.ChunkHolderAccessor",
     "data.regions.ChunkHolderSizeTracker",
     "data.regions.ChunkMapMixin",
@@ -21,6 +22,7 @@
   "client": [
     "LevelRendererMixin",
     "core.LocalPlayerMixin",
+    "core.MinecraftMixin",
     "core.MultiPlayerGameModeMixin",
     "core.access.ClientPacketListenerMixin",
     "dangit.ForgeWhy",

@@ -43,7 +43,6 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacket;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.PositionalInfo;
-import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
@@ -325,12 +324,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 //				double oldEyeHeight = pPlayer.getEyeHeight();
 				PositionalInfo info = new PositionalInfo(pPlayer);
 				info.scalePlayerReach(pPlayer, space.unitsPerBlock);
-				
-				AABB scaledBB;
-				pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, space.unitsPerBlock));
-				pPlayer.eyeHeight = (float) (info.eyeHeight * space.unitsPerBlock);
-				pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-				pPlayer.level = ((LocalPlayer) pPlayer).clientLevel = ((ClientLevel) space.getMyLevel());
+				info.adjust(pPlayer, space);
 				
 				HitResult mcHitResult = Minecraft.getInstance().hitResult;
 				double reach = pPlayer.getAttribute((Attribute) ForgeMod.REACH_DISTANCE.get()).getValue();// 154

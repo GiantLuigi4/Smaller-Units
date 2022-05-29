@@ -5,4 +5,5 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 
 public interface ITickerChunkCache {
 	BasicVerticalChunk createChunk(int i, ChunkPos ckPos);
+//	Iterable<ChunkHolder> getChunks();
 }

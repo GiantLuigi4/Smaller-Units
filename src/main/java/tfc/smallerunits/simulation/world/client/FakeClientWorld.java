@@ -15,6 +15,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -29,6 +30,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
+import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
@@ -104,18 +106,32 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	// I'll need a custom level renderer for this, I guess
 	@Override
 	public void addParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+		// TODO
 	}
 	
 	@Override
 	public void addParticle(ParticleOptions pParticleData, boolean pForceAlwaysRender, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+		// TODO
 	}
 	
 	@Override
 	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+		// TODO
 	}
 	
 	@Override
 	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, boolean pIgnoreRange, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
+		// TODO
+	}
+	
+	@Override
+	public void globalLevelEvent(int pId, BlockPos pPos, int pData) {
+		// TODO
+	}
+	
+	@Override
+	public void levelEvent(@Nullable Player pPlayer, int pType, BlockPos pPos, int pData) {
+		// TODO
 	}
 	
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
@@ -209,11 +225,45 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	@Override
 	public void setBlocksDirty(BlockPos pBlockPos, BlockState pOldState, BlockState pNewState) {
 		// TODO
+		BlockPos rp = region.pos.toBlockPos();
+		int xo = ((pBlockPos.getX()) / upb);
+		int yo = ((pBlockPos.getY()) / upb);
+		int zo = ((pBlockPos.getZ()) / upb);
+		BlockPos parentPos = rp.offset(xo, yo, zo);
+		ChunkAccess ac;
+		ac = parent.getChunkAt(parentPos);
+		
+		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+		UnitSpace space = cap.getUnit(parentPos);
+		if (space == null) {
+			space = cap.getOrMakeUnit(parentPos);
+			space.setUpb(upb);
+		}
 	}
 	
 	@Override
 	public void sendBlockUpdated(BlockPos pPos, BlockState pOldState, BlockState pNewState, int pFlags) {
 		// TODO
+		BlockPos rp = region.pos.toBlockPos();
+		int xo = ((pPos.getX()) / upb);
+		int yo = ((pPos.getY()) / upb);
+		int zo = ((pPos.getZ()) / upb);
+		BlockPos parentPos = rp.offset(xo, yo, zo);
+		ChunkAccess ac;
+		ac = parent.getChunkAt(parentPos);
+		
+		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+		UnitSpace space = cap.getUnit(parentPos);
+		if (space == null) {
+			space = cap.getOrMakeUnit(parentPos);
+			space.setUpb(upb);
+		}
+//		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
+//		vc = vc.getSubChunk(cy);
+//		vc.setBlockFast(new BlockPos(x, y, z), state);
+		
+		((SUCapableChunk) ac).SU$markDirty(parentPos);
+//		super.sendBlockUpdated(pPos, pOldState, pNewState, pFlags);
 	}
 	
 	@Override

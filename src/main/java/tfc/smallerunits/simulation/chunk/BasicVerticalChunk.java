@@ -16,10 +16,14 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
+import tfc.smallerunits.data.capability.ISUCapability;
+import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.world.UnitChunkHolder;
 import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.ArrayList;
@@ -35,6 +39,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	public ArrayList<BlockEntity> beChanges = new ArrayList<>();
 	ParentLookup lookup;
 	private int upb;
+	public UnitChunkHolder holder = null;
 	
 	public final int getIndx(int x, int y, int z) {
 		// truthfully, this is x, z, y order, but it really does not matter at all
@@ -80,6 +85,8 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
+		if (holder != null)
+			holder.setBlockDirty(pos);
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0) {
 			if (yPos + yO < 0) return Blocks.VOID_AIR.defaultBlockState();
@@ -87,6 +94,36 @@ public class BasicVerticalChunk extends LevelChunk {
 			return chunk.setBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), pState, pIsMoving);
 		}
 		return setBlockState$(pos, pState, pIsMoving);
+	}
+	
+	@Override
+	public BlockEntity getBlockEntity(BlockPos pPos, LevelChunk.EntityCreationType pCreationType) {
+		return super.getBlockEntity(pPos, pCreationType);
+	}
+	
+	@Override
+	public void addAndRegisterBlockEntity(BlockEntity pBlockEntity) {
+		super.addAndRegisterBlockEntity(pBlockEntity);
+		if (!level.isClientSide) return;
+		
+		ITickerWorld tickerWorld = ((ITickerWorld) level);
+		
+		BlockPos rp = tickerWorld.getRegion().pos.toBlockPos();
+		int xo = ((pBlockEntity.getBlockPos().getX()) / upb);
+		int yo = ((pBlockEntity.getBlockPos().getY()) / upb);
+		int zo = ((pBlockEntity.getBlockPos().getZ()) / upb);
+		BlockPos parentPos = rp.offset(xo, yo, zo);
+		ChunkAccess ac;
+		ac = tickerWorld.getParent().getChunkAt(parentPos);
+		
+		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+		UnitSpace space = cap.getUnit(parentPos);
+		if (space == null) {
+			space = cap.getOrMakeUnit(parentPos);
+			space.setUpb(upb);
+		}
+		// TODO: check if a renderer exists, or smth?
+		((SUCapableChunk) ac).addTile(pBlockEntity);
 	}
 	
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
@@ -264,6 +301,31 @@ public class BasicVerticalChunk extends LevelChunk {
 					break;
 				}
 			}
+		} else {
+			ITickerWorld tickerWorld = ((ITickerWorld) level);
+			
+			BlockPos rp = tickerWorld.getRegion().pos.toBlockPos();
+			int xo = ((pPos.getX()) / upb);
+			int yo = ((pPos.getY()) / upb);
+			int zo = ((pPos.getZ()) / upb);
+			BlockPos parentPos = rp.offset(xo, yo, zo);
+			ChunkAccess ac;
+			ac = tickerWorld.getParent().getChunkAt(parentPos);
+			
+			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+			UnitSpace space = cap.getUnit(parentPos);
+			if (space == null) {
+				space = cap.getOrMakeUnit(parentPos);
+				space.setUpb(upb);
+			}
+			// TODO: check if a renderer exists, or smth?
+			ArrayList<BlockEntity> toRemove = new ArrayList<>();
+			for (BlockEntity tile : ((SUCapableChunk) ac).getTiles()) {
+				if (tile.getBlockPos().equals(pPos)) {
+					toRemove.add(tile);
+				}
+			}
+			((SUCapableChunk) ac).getTiles().removeAll(toRemove);
 		}
 		super.removeBlockEntity(pPos);
 	}
