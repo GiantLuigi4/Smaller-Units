@@ -23,7 +23,6 @@ import java.util.Map;
 public class ForgeWhy {
 	@Inject(at = @At("HEAD"), method = "requestModelDataRefresh", cancellable = true)
 	private static void stopForgeFromCrashingTheGame(BlockEntity te, CallbackInfo ci) {
-		// TODO: make a better model data manager
 		if (!(te.getLevel() instanceof ITickerWorld)) return;
 		ci.cancel();
 		SUModelDataManager manager = ((FakeClientWorld) te.getLevel()).modelDataManager;
@@ -67,6 +66,14 @@ public class ForgeWhy {
 	private static void preGetData(Level level, ChunkPos pos, CallbackInfoReturnable<Map<BlockPos, IModelData>> cir) {
 		if (level instanceof FakeClientWorld) {
 			cir.setReturnValue(((FakeClientWorld) level).modelDataManager.getModelData(level, pos));
+		}
+	}
+	
+	@Inject(at = @At("HEAD"), method = "cleanCaches", cancellable = true)
+	private static void preCleanCaches(Level level, CallbackInfo ci) {
+		if (level instanceof FakeClientWorld) {
+			((FakeClientWorld) level).modelDataManager.cleanCaches(level);
+			ci.cancel();
 		}
 	}
 }

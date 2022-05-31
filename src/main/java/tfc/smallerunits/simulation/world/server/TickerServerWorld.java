@@ -482,6 +482,13 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
+		getChunkSource().pollTask();
+//		if (getLightEngine() instanceof ThreadedLevelLightEngine) {
+//			((ThreadedLevelLightEngine) getLightEngine()).tryScheduleUpdate();
+//		} else {
+//			// TODO: ?
+//			getLightEngine().runUpdates(2, true, true);
+//		}
 		for (Entity entity : entities.toArray(new Entity[0])) {
 //		for (Entity entity : entities) {
 			if (entity.isRemoved()) continue;

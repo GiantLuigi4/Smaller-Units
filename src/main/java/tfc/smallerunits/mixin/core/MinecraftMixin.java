@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -40,12 +41,23 @@ public class MinecraftMixin {
 	
 	@Inject(at = @At("HEAD"), method = "startAttack")
 	public void preAttack(CallbackInfoReturnable<Boolean> cir) {
+		movePlayerTo();
+	}
+	
+	@Inject(at = @At("HEAD"), method = "continueAttack")
+	public void preContinueAttack(boolean direction, CallbackInfo ci) {
+		movePlayerTo();
+	}
+	
+	@Unique
+	private void movePlayerTo() {
 		while (hitResult instanceof UnitHitResult) {
 			ISUCapability capability = SUCapabilityManager.getCapability(
-					level, level.getChunk(((UnitHitResult) hitResult).geetBlockPos())
+					level, level.getChunk(((UnitHitResult) hitResult).getBlockPos())
 			);
 			PositionalInfo info = new PositionalInfo(player);
 			UnitSpace space = capability.getUnit(((UnitHitResult) hitResult).getBlockPos());
+			if (space == null) return;
 			info.scalePlayerReach(player, space.unitsPerBlock);
 			info.adjust(player, space);
 			level = (ClientLevel) player.level;
@@ -60,8 +72,18 @@ public class MinecraftMixin {
 		}
 	}
 	
-	@Inject(at = @At("TAIL"), method = "startAttack")
+	@Inject(at = @At("RETURN"), method = "startAttack")
 	public void postAttack(CallbackInfoReturnable<Boolean> cir) {
+		movePlayerBack();
+	}
+	
+	@Inject(at = @At("RETURN"), method = "continueAttack")
+	public void postContinueAttack(boolean direction, CallbackInfo ci) {
+		movePlayerBack();
+	}
+	
+	@Unique
+	private void movePlayerBack() {
 		while (!datas.isEmpty()) {
 			NetworkingHacks.unitPos.remove();
 			RaytraceData data = datas.remove(datas.size() - 1);

@@ -3,6 +3,7 @@ package tfc.smallerunits.data.storage;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Holder;
 import net.minecraft.network.PacketListener;
+import net.minecraft.network.protocol.game.ServerPacketListener;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
@@ -15,6 +16,7 @@ import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.world.client.FakeClientWorld;
 import tfc.smallerunits.simulation.world.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -143,6 +145,10 @@ public class Region {
 				if (level instanceof ServerLevel) {
 					((ServerLevel) level).tick(() -> true);
 				}
+			} else {
+				if (IHateTheDistCleaner.isClientLevel(level)) {
+					IHateTheDistCleaner.tickLevel(level);
+				}
 			}
 		}
 	}
@@ -155,10 +161,14 @@ public class Region {
 	}
 	
 	public Level getLevel(PacketListener listener, Player player, int upb) {
-		if (listener instanceof ServerLevel) {
+		if (listener instanceof ServerPacketListener) {
 			return getServerWorld(player.level.getServer(), (ServerLevel) player.level, upb);
 		} else {
 			return getClientWorld(player.level, upb);
 		}
+	}
+	
+	public Level[] getLevels() {
+		return levels;
 	}
 }

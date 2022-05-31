@@ -21,6 +21,8 @@ import tfc.smallerunits.utils.selection.UnitHitResult;
 
 public class PlayerOffsetRenderHelper {
 	public static void render(PoseStack stack, float pct, long tick, boolean idk, Camera camera, GameRenderer renderer, LightTexture lightTexture, Matrix4f matrix, CallbackInfo ci) {
+		if (true) return;
+		
 		if (Minecraft.getInstance().hitResult instanceof UnitHitResult) {
 			if (!Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes())
 				return;

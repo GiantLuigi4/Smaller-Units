@@ -18,7 +18,6 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -345,10 +344,12 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				net.minecraftforge.client.event.InputEvent.ClickInputEvent inputEvent = net.minecraftforge.client.ForgeHooksClient.onClickInput(0, Minecraft.getInstance().options.keyUse, InteractionHand.MAIN_HAND);
 				InteractionResult result = InteractionResult.FAIL;
 				if (!inputEvent.isCanceled()) {
-					result = Minecraft.getInstance().gameMode.useItemOn(
-							(LocalPlayer) pPlayer, (ClientLevel) space.myLevel, InteractionHand.MAIN_HAND,
-							(BlockHitResult) Minecraft.getInstance().hitResult
-					);
+					if (Minecraft.getInstance().player.connection != null) {
+						result = Minecraft.getInstance().gameMode.useItemOn(
+								(LocalPlayer) pPlayer, (ClientLevel) space.myLevel, InteractionHand.MAIN_HAND,
+								(BlockHitResult) Minecraft.getInstance().hitResult
+						);
+					}
 				}
 				Minecraft.getInstance().hitResult = mcHitResult;
 				Minecraft.getInstance().level = lvl;
@@ -497,9 +498,9 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	
 	// the *proper* parameters
 	public void destroy(BlockState blockState, Level lvl, BlockPos blockPos, Player player, InteractionHand mainHand, UnitHitResult result) {
-		LevelChunk chnk = lvl.getChunkAt(blockPos);
-		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(blockPos);
-		BlockPos pos = result.geetBlockPos();
-		space.setState(pos, Blocks.AIR);
+//		LevelChunk chnk = lvl.getChunkAt(blockPos);
+//		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(blockPos);
+//		BlockPos pos = result.geetBlockPos();
+//		space.setState(pos, Blocks.AIR);
 	}
 }

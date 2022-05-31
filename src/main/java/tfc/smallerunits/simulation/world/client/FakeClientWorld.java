@@ -4,21 +4,24 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.particle.Particle;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.RegistryAccess;
+import net.minecraft.client.renderer.texture.TextureManager;
+import net.minecraft.core.*;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -33,13 +36,16 @@ import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.forge.SUModelDataManager;
+import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.utils.math.HitboxScaling;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,8 +63,7 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	public ParentLookup lookupTemp;
 	ClientLevel parent;
 	
-	// forge is stupid and does not account for there being more than 1 world at once
-	public final SUModelDataManager modelDataManager = new SUModelDataManager();
+	UnitParticleEngine particleEngine = new UnitParticleEngine(this, new TextureManager(Minecraft.getInstance().getResourceManager()));
 	
 	public FakeClientWorld(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
@@ -67,6 +72,8 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		this.chunkSource = new TickerClientChunkCache(this, 0, upb);
 		this.upb = upb;
 		this.isClientSide = true;
+		
+		particleEngine.setLevel(this);
 		
 		lookup = (pos) -> lookupTemp.getState(pos);
 		lookupTemp = pos -> {
@@ -96,32 +103,59 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 	}
 	
+	// forge is stupid and does not account for there being more than 1 world at once
+	public final SUModelDataManager modelDataManager = new SUModelDataManager();
+	
+	public UnitParticleEngine getParticleEngine() {
+		return particleEngine;
+	}
+	
+	@Override
+	public void destroyBlockProgress(int pBreakerId, BlockPos pPos, int pProgress) {
+	}
+	
 	@Override
 	protected void finalize() throws Throwable {
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
 		super.finalize();
 	}
 	
+	@Override
+	public void sendPacketToServer(Packet<?> pPacket) {
+		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		parent.sendPacketToServer(pPacket);
+		NetworkingHacks.unitPos.remove();
+	}
+	
+	@Override
+	public void disconnect() {
+		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		parent.disconnect();
+		NetworkingHacks.unitPos.remove();
+	}
+	
 	// TODO: stuff that requires a level renderer
 	// I'll need a custom level renderer for this, I guess
 	@Override
 	public void addParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
-		// TODO
+		addAlwaysVisibleParticle(pParticleData, false, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 	}
 	
 	@Override
 	public void addParticle(ParticleOptions pParticleData, boolean pForceAlwaysRender, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
-		// TODO
+		addAlwaysVisibleParticle(pParticleData, pForceAlwaysRender, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 	}
 	
 	@Override
 	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
-		// TODO
+		addAlwaysVisibleParticle(pParticleData, false, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 	}
 	
 	@Override
 	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, boolean pIgnoreRange, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
-		// TODO
+		Particle particle = particleEngine.createParticle(pParticleData, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
+		if (particle != null)
+			particleEngine.add(particle);
 	}
 	
 	@Override
@@ -267,6 +301,11 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	}
 	
 	@Override
+	public RecipeManager getRecipeManager() {
+		return parent.getRecipeManager();
+	}
+	
+	@Override
 	public int getUPB() {
 		return upb;
 	}
@@ -326,6 +365,23 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	@Override
 	public void loadTicks(CompoundTag ticks) {
 		// nah, this don't exist client side
+	}
+	
+	@Override
+	public void tickTime() {
+		// TODO: does this need the player position and whatnot to be setup?
+		particleEngine.tick();
+		
+		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb);
+		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
+		BlockPos pos = new BlockPos(vec);
+		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
+	}
+	
+	@Override
+	public Holder<Biome> getBiome(BlockPos p_204167_) {
+		Registry<Biome> reg = registryAccess().registry(Registry.BIOME_REGISTRY).get();
+		return reg.getOrCreateHolder(Biomes.THE_VOID);
 	}
 	
 	@Override

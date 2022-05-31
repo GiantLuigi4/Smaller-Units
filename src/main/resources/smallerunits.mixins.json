@@ -21,6 +21,7 @@
   ],
   "client": [
     "LevelRendererMixin",
+    "core.ClientLevelMixin",
     "core.LocalPlayerMixin",
     "core.MinecraftMixin",
     "core.MultiPlayerGameModeMixin",
@@ -31,7 +32,8 @@
     "data.LevelMixin",
     "data.regions.ClientChunkCacheMixin",
     "data.regions.ClientLevelMixin",
-    "debug.RenderWorldLast"
+    "debug.RenderWorldLast",
+    "quality.ParticleEngineAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -91,9 +91,8 @@ public abstract class LevelRendererMixin {
 //		return (renderChunk = instance).getCompiledChunk();
 //	}
 	
-	@Shadow
-	private static void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, double pX, double pY, double pZ, float pRed, float pGreen, float pBlue, float pAlpha) {
-	}
+	@Unique
+	float pct;
 	
 	@Shadow
 	@Final
@@ -113,8 +112,7 @@ public abstract class LevelRendererMixin {
 	private Frustum cullingFrustum;
 	
 	@Shadow
-	public static void renderLineBox(PoseStack pPoseStack, VertexConsumer pConsumer, AABB pBox, float pRed, float pGreen, float pBlue, float pAlpha) {
-	}
+	private static native void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, double pX, double pY, double pZ, float pRed, float pGreen, float pBlue, float pAlpha);
 	
 	@Shadow
 	public abstract void tick();
@@ -127,6 +125,14 @@ public abstract class LevelRendererMixin {
 				renderEntities(lvl, stack, l, i, this.renderBuffers.bufferSource());
 			});
 		}
+	}
+	
+	@Shadow
+	public static native void renderLineBox(PoseStack pPoseStack, VertexConsumer pConsumer, AABB pBox, float pRed, float pGreen, float pBlue, float pAlpha);
+	
+	@Inject(at = @At("HEAD"), method = "renderLevel")
+	public void preDrawLevel(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
+		pct = pPartialTick;
 	}
 	
 	@Unique
@@ -201,6 +207,23 @@ public abstract class LevelRendererMixin {
 		}
 	}
 	
+	// ok that's a long injection target
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;)V"), method = "renderLevel")
+	public void preRenderParticles(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
+		for (Region value : ((RegionalAttachments) level).SU$getRegionMap().values()) {
+			// TODO: frustum checks
+			for (Level valueLevel : value.getLevels()) {
+				if (valueLevel != null) {
+					if (valueLevel instanceof FakeClientWorld) {
+						pPoseStack.pushPose();
+						TileRendererHelper.drawParticles(pPoseStack, pPartialTick, pFinishNanoTime, pRenderBlockOutline, pCamera, pGameRenderer, pLightTexture, pProjectionMatrix, value, valueLevel, renderBuffers, ci);
+						pPoseStack.popPose();
+					}
+				}
+			}
+		}
+	}
+	
 	@Inject(at = @At("HEAD"), method = "checkPoseStack")
 	public void preCheckMatrices(PoseStack pPoseStack, CallbackInfo ci) {
 		stk = pPoseStack;
@@ -264,7 +287,7 @@ public abstract class LevelRendererMixin {
 //						}
 						TileRendererHelper.setupStack(stk, tile, origin);
 						blockEntityRenderDispatcher.render(
-								tile, 0,
+								tile, pct,
 								stk, Minecraft.getInstance().renderBuffers().bufferSource()
 						);
 						stk.popPose();
@@ -296,9 +319,4 @@ public abstract class LevelRendererMixin {
 		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum);
 		return instance.isEmpty(pRenderType);
 	}
-
-//	@Inject(at = @At("HEAD"), method = "applyFrustum")
-//	public void postApplyFrustrum(Frustum pFrustrum, CallbackInfo ci) {
-//		// TODO: use this to optimize stuff if need be
-//	}
 }

@@ -13,9 +13,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
@@ -127,15 +129,16 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 	
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
-//		boolean flag = levelchunksection.hasOnlyAir();
+		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
+		boolean flag = levelchunksection.hasOnlyAir();
 		// TODO
-		boolean flag = false;
 		if (flag && pState.isAir()) {
 			return null;
 		} else {
 			int j = pPos.getX() & 15;
 			int k = pPos.getY();
 			int l = pPos.getZ() & 15;
+			getSection(getSectionIndex(0)).setBlockState(j, k, l, pState);
 			pPos = pPos.above(yPos * 16);
 			int indx = getIndx(j, k, l);
 //			BlockState blockstate = levelchunksection.setBlockState(j, k, l, pState);
@@ -149,11 +152,10 @@ public class BasicVerticalChunk extends LevelChunk {
 				this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.WORLD_SURFACE).update(j, k, l, pState);
-//				boolean flag1 = levelchunksection.hasOnlyAir();
+				boolean flag1 = levelchunksection.hasOnlyAir();
 				// TODO
-				boolean flag1 = false;
 				if (flag != flag1) {
-					this.level.getChunkSource().getLightEngine().updateSectionStatus(pPos, flag1);
+					this.level.getChunkSource().getLightEngine().updateSectionStatus(pPos, !flag1);
 				}
 				
 				boolean flag2 = blockstate.hasBlockEntity();
@@ -205,7 +207,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			}
 			return getBlockState$(pos);
 		} else {
-			return Blocks.BEDROCK.defaultBlockState();
+			return Registry.UNIT_EDGE.get().defaultBlockState();
 		}
 	}
 	
@@ -220,6 +222,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		int l = pos.getZ() & 15;
 		int indx = getIndx(j, k, l);
 		blocks[indx] = state;
+		getSection(getSectionIndex(0)).setBlockState(j, k, l, state);
 		if (level.isClientSide) {
 			if (state.hasBlockEntity()) {
 				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(new BlockPos(j, k, l).offset(this.chunkPos.getWorldPosition().getX(), this.yPos * 16, this.chunkPos.getWorldPosition().getZ()), state);
@@ -272,6 +275,7 @@ public class BasicVerticalChunk extends LevelChunk {
 				besRemoved.remove(pBlockEntity.getBlockPos());
 			}
 			for (BlockEntity beChange : beChanges) {
+				if (beChange == null) continue;
 				if (beChange.getBlockPos().equals(pBlockEntity.getBlockPos())) {
 					beChanges.remove(beChange);
 					break;
@@ -296,6 +300,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (!level.isClientSide) {
 			besRemoved.add(pPos);
 			for (BlockEntity beChange : beChanges) {
+				if (beChange == null) continue;
 				if (beChange.getBlockPos().equals(pPos)) {
 					beChanges.remove(beChange);
 					break;

@@ -31,10 +31,10 @@ public class SUModelDataManager {
 	}
 	
 	public void refreshModelData(Level level, ChunkPos chunk) {
-		if (delay < 300) {
-			delay++;
-			return;
-		}
+//		if (delay < 300) {
+//			delay++;
+//			return;
+//		}
 		Set<BlockPos> needUpdate = needModelDataRefresh.remove(chunk);
 		
 		if (needUpdate != null) {
@@ -76,9 +76,8 @@ public class SUModelDataManager {
 	public void cleanCaches(Level toUpdate) {
 		// idk if this is needed, I'mma leave it be for now
 //		if (level != currentLevel.get()) {
-//			currentLevel = new WeakReference<>(level);
-//			needModelDataRefresh.clear();
-//			modelDataCache.clear();
+		needModelDataRefresh.clear();
+		modelDataCache.clear();
 //		}
 	}
 }

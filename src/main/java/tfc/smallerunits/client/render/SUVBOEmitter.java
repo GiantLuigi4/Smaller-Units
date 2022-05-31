@@ -1,28 +1,22 @@
 package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
-import net.minecraft.client.AmbientOcclusionStatus;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.ModelDataManager;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import net.minecraftforge.client.model.data.IModelData;
-import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.storage.BufferStorage;
 import tfc.smallerunits.client.render.util.RenderWorld;
@@ -30,7 +24,6 @@ import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.PositionalInfo;
-import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
@@ -69,15 +62,16 @@ public class SUVBOEmitter {
 		Player player = Minecraft.getInstance().player;
 		PositionalInfo info = new PositionalInfo(player);
 		info.scalePlayerReach(player, space.unitsPerBlock);
-		
-		AABB scaledBB;
-		player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, space.unitsPerBlock));
-		player.eyeHeight = (float) (info.eyeHeight * (1d / space.unitsPerBlock));
-		player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-		if (player.level instanceof ClientLevel) {
-			((LocalPlayer) player).clientLevel = (ClientLevel) space.getMyLevel();
-			Minecraft.getInstance().level = ((LocalPlayer) player).clientLevel;
-		}
+		info.adjust(player, space);
+
+//		AABB scaledBB;
+//		player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, space.unitsPerBlock));
+//		player.eyeHeight = (float) (info.eyeHeight * (1d / space.unitsPerBlock));
+//		player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
+//		if (player.level instanceof ClientLevel) {
+//			((LocalPlayer) player).clientLevel = (ClientLevel) space.getMyLevel();
+//			Minecraft.getInstance().level = ((LocalPlayer) player).clientLevel;
+//		}
 		
 		Minecraft.getInstance().getProfiler().push("get_blocks");
 		BlockState[] states = unit.getBlocks();
@@ -103,7 +97,6 @@ public class SUVBOEmitter {
 			return builder;
 		});
 		int upb = space.unitsPerBlock;
-		RenderWorld wld = new RenderWorld(space.getMyLevel(), states, space.getOffsetPos(new BlockPos(0, 0, 0)), upb);
 		Minecraft.getInstance().getProfiler().push("draw_loop");
 		
 		for (int i = 0; i < RenderType.chunkBufferLayers().size(); i++) {
@@ -113,7 +106,7 @@ public class SUVBOEmitter {
 //			while (td.isInUse()) {
 //			}
 //			td.setAction(() -> {
-			handleLayer(chunkBufferLayer, buffers, wld, stack, upb, space, dispatcher, states);
+			handleLayer(chunkBufferLayer, buffers, space.getRenderWorld(), stack, upb, space, dispatcher, states);
 //			});
 //			td.start();
 		}
@@ -174,39 +167,44 @@ public class SUVBOEmitter {
 //							IModelData data = EmptyModelData.INSTANCE;
 //							if (value.tileEntity != null) data = value.tileEntity.getModelData();
 							BlockPos rPos = new BlockPos(x, y, z);
-							// TODO: WHY DOES THIS TAKE SO LONG
-							IModelData data = ModelDataManager.getModelData(Minecraft.getInstance().level, space.getOffsetPos(rPos));
+							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), space.getOffsetPos(rPos));
 							if (data == null) data = EmptyModelData.INSTANCE;
-							if (SmallerUnits.isIsOFPresent()) {
-								dispatcher.getModelRenderer().tesselateBlock(
-										wld, dispatcher.getBlockModel(block),
-										block, space.getOffsetPos(rPos),
-										stk, consumer, true,
-										new Random(space.getOffsetPos(rPos).asLong()),
-										space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-										data
-								);
-							} else {
-								if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {
-									dispatcher.getModelRenderer().tesselateWithAO(
-											wld, dispatcher.getBlockModel(block),
-											block, space.getOffsetPos(rPos),
-											stk, consumer, true,
-											new Random(space.getOffsetPos(rPos).asLong()),
-											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-											data
-									);
-								} else {
-									dispatcher.getModelRenderer().tesselateWithoutAO(
-											wld, dispatcher.getBlockModel(block),
-											block, space.getOffsetPos(rPos),
-											stk, consumer, true,
-											new Random(space.getOffsetPos(rPos).asLong()),
-											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-											data
-									);
-								}
-							}
+							dispatcher.renderBatched(
+									block, rPos,
+									wld, stk, consumer,
+									true, new Random(space.getOffsetPos(rPos).asLong()),
+									data
+							);
+//							if (SmallerUnits.isIsOFPresent()) {
+//								dispatcher.getModelRenderer().tesselateBlock(
+//										wld, dispatcher.getBlockModel(block),
+//										block, space.getOffsetPos(rPos),
+//										stk, consumer, true,
+//										new Random(space.getOffsetPos(rPos).asLong()),
+//										space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+//										data
+//								);
+//							} else {
+//								if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {
+//									dispatcher.getModelRenderer().tesselateWithAO(
+//											wld, dispatcher.getBlockModel(block),
+//											block, space.getOffsetPos(rPos),
+//											stk, consumer, true,
+//											new Random(space.getOffsetPos(rPos).asLong()),
+//											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+//											data
+//									);
+//								} else {
+//									dispatcher.getModelRenderer().tesselateWithoutAO(
+//											wld, dispatcher.getBlockModel(block),
+//											block, space.getOffsetPos(rPos),
+//											stk, consumer, true,
+//											new Random(space.getOffsetPos(rPos).asLong()),
+//											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
+//											data
+//									);
+//								}
+//							}
 							stk.popPose();
 						}
 					}

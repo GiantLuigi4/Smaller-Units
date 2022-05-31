@@ -51,14 +51,15 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
-		for (BasicVerticalChunk[] column : columns) {
-			if (column == null) continue;
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
-//				level.tickChunk(basicVerticalChunk, 100);
-				basicVerticalChunk.randomTick();
-			}
-		}
+		super.tick(pHasTimeLeft, p_201914_);
+//		for (BasicVerticalChunk[] column : columns) {
+//			if (column == null) continue;
+//			for (BasicVerticalChunk basicVerticalChunk : column) {
+//				if (basicVerticalChunk == null) continue;
+////				level.tickChunk(basicVerticalChunk, 100);
+//				basicVerticalChunk.randomTick();
+//			}
+//		}
 	}
 	
 	public ParentLookup getLookup() {
@@ -106,13 +107,16 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 		} else {
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
-			if (ck[pChunkY] == null) ck[pChunkY] = new BasicVerticalChunk(
-					level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
-					new VChunkLookup(
-							this, pChunkY, ck,
-							new ChunkPos(pChunkX, pChunkZ)
-					), getLookup(), upb
-			);
+			if (ck[pChunkY] == null) {
+				ck[pChunkY] = new BasicVerticalChunk(
+						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
+						new VChunkLookup(
+								this, pChunkY, ck,
+								new ChunkPos(pChunkX, pChunkZ)
+						), getLookup(), upb
+				);
+				ck[pChunkY].setClientLightReady(true);
+			}
 			return ck[pChunkY];
 		}
 	}
@@ -122,12 +126,15 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 		int pChunkX = ckPos.x;
 		int pChunkZ = ckPos.z;
 		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
-		return ck[i] = new BasicVerticalChunk(
+		ck[i] = new BasicVerticalChunk(
 				level, new ChunkPos(pChunkX, pChunkZ), i,
 				new VChunkLookup(
 						this, i, ck,
 						new ChunkPos(pChunkX, pChunkZ)
 				), getLookup(), upb
 		);
+		ck[i].setClientLightReady(true);
+		
+		return ck[i];
 	}
 }

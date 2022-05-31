@@ -143,7 +143,11 @@ configurations {
 
 dependencies {
 //    minecraft 'net.minecraftforge:forge:1.18.1-39.1.2'
-    minecraft 'net.minecraftforge:forge:1.18.2-40.1.0'
+    minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
+
+    api fg.deobf("curse.maven:ttc-467136:3794345")
+
+    api fg.deobf("curse.maven:framedblocks-441647:3805861")
 
     api fg.deobf("curse.maven:create-328085:3737418")
 
@@ -151,8 +155,7 @@ dependencies {
 
     api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
 
-//    api fg.deobf("com.github.Virtuoel:Pehkui:3.2.0-1.18.2-forge")
-    api fg.deobf("curse.maven:pehkui-319596:3708694")
+    api fg.deobf("curse.maven:pehkui-319596:3808012")
 
     api fg.deobf("curse.maven:scm-248619:3670826")
     api fg.deobf("curse.maven:tklib-566563:3650390")
@@ -163,9 +166,20 @@ dependencies {
     api fg.deobf("curse.maven:selene-499980:3802427")
     api fg.deobf("curse.maven:immweather-592449:3800547")
 
-    if (new File("run/libs/ttc-deobf.jar").exists()) {
-        api files("run/libs/ttc-deobf.jar")
-    }
+    api fg.deobf("curse.maven:betterlilies-626812:3808620")
+
+    api fg.deobf("curse.maven:curios-309927:3748873")
+    api fg.deobf("curse.maven:malum-484064:3788643")
+    api fg.deobf("curse.maven:ortuslib-616457:3768197")
+
+    api fg.deobf("curse.maven:botania-225643:3789677")
+    api fg.deobf("curse.maven:patchouli-306770:3809545")
+
+//    api fg.deobf("curse.maven:shimmer-627824:3806634")
+
+//    if (new File("run/libs/ttc-deobf.jar").exists()) {
+//        api files("run/libs/ttc-deobf.jar")
+//    }
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 

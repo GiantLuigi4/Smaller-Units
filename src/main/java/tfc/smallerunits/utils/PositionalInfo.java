@@ -2,6 +2,7 @@ package tfc.smallerunits.utils;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -10,7 +11,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.render.compat.UnitParticleEngine;
+import tfc.smallerunits.simulation.world.client.FakeClientWorld;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
 import java.util.Random;
@@ -23,6 +27,7 @@ public class PositionalInfo {
 	public final float eyeHeight;
 	private static final UUID SU_REACH_UUID = new UUID(new Random(847329).nextLong(), new Random(426324).nextLong());
 	private boolean isReachSet = false;
+	private Object particleEngine = null;
 	
 	public PositionalInfo(Player pPlayer) {
 		pos = new Vec3(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ());
@@ -46,7 +51,17 @@ public class PositionalInfo {
 		pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, space.unitsPerBlock));
 		pPlayer.eyeHeight = (float) (this.eyeHeight * space.unitsPerBlock);
 		pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-		pPlayer.level = ((LocalPlayer) pPlayer).clientLevel = ((ClientLevel) space.getMyLevel());
+		if (FMLEnvironment.dist.isClient()) {
+			if (pPlayer.level.isClientSide) {
+				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = ((ClientLevel) space.getMyLevel());
+				
+				particleEngine = Minecraft.getInstance().particleEngine;
+				UnitParticleEngine upe = ((FakeClientWorld) space.getMyLevel()).getParticleEngine();
+				if (upe != null)
+					Minecraft.getInstance().particleEngine = upe;
+			}
+		}
+		pPlayer.level = space.getMyLevel();
 	}
 	
 	public void reset(Player pPlayer) {
@@ -60,6 +75,8 @@ public class PositionalInfo {
 			if (pPlayer instanceof LocalPlayer) {
 				((LocalPlayer) pPlayer).clientLevel = (ClientLevel) lvl;
 				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel;
+				
+				if (particleEngine != null) Minecraft.getInstance().particleEngine = (ParticleEngine) particleEngine;
 			}
 		}
 		pPlayer.setBoundingBox(box);

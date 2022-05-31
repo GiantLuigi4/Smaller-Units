@@ -6,7 +6,9 @@ import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import tfc.smallerunits.TileResizingItem;
 
 /* this whole class should be unnecessary, however forge says that clean code is a concept dreamed of by idiots */
 /* really, what it is, is that forge wants to enforce that you don't reference client only code from common code */
@@ -36,5 +38,18 @@ public class IHateTheDistCleaner {
 	
 	public static Player getPlayer() {
 		return Minecraft.getInstance().player;
+	}
+	
+	public static void tickLevel(Level level) {
+		((ClientLevel) level).tick(() -> true);
+		((ClientLevel) level).tickEntities();
+	}
+	
+	public static boolean isHammerHeld() {
+		Player player = Minecraft.getInstance().player;
+		for (ItemStack handSlot : player.getHandSlots())
+			if (handSlot.getItem() instanceof TileResizingItem)
+				return true;
+		return false;
 	}
 }

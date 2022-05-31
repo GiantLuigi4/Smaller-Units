@@ -13,13 +13,14 @@ import org.jetbrains.annotations.Nullable;
 
 public class RenderWorld implements BlockAndTintGetter {
 	Level lvl;
-	BlockState[] states;
+//	BlockState[] states;
 	BlockPos minPos;
 	int upb;
 	
-	public RenderWorld(Level lvl, BlockState[] states, BlockPos minPos, int upb) {
+	//	public RenderWorld(Level lvl, BlockState[] states, BlockPos minPos, int upb) {
+	public RenderWorld(Level lvl, BlockPos minPos, int upb) {
 		this.lvl = lvl;
-		this.states = states;
+//		this.states = states;
 		this.minPos = minPos;
 		this.upb = upb;
 	}
@@ -47,14 +48,14 @@ public class RenderWorld implements BlockAndTintGetter {
 	
 	@Override
 	public BlockState getBlockState(BlockPos p_45571_) {
-		BlockPos offset = p_45571_.offset(-minPos.getX(), -minPos.getY(), -minPos.getZ());
-		int x = offset.getX();
-		int y = offset.getY();
-		int z = offset.getZ();
-		if (x >= 0 && y >= 0 && z >= 0 && x < upb && y < upb && z < upb) {
-			int indx = (((x * upb) + y) * upb) + z;
-			return states[indx];
-		}
+//		BlockPos offset = p_45571_.offset(-minPos.getX(), -minPos.getY(), -minPos.getZ());
+//		int x = offset.getX();
+//		int y = offset.getY();
+//		int z = offset.getZ();
+//		if (x >= 0 && y >= 0 && z >= 0 && x < upb && y < upb && z < upb) {
+//			int indx = (((x * upb) + y) * upb) + z;
+//			return states[indx];
+//		}
 		return lvl.getBlockState(p_45571_);
 	}
 	

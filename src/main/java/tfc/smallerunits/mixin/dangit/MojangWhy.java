@@ -13,6 +13,6 @@ public class MojangWhy {
 	private static void preGetThreads(CallbackInfoReturnable<Integer> cir) {
 		// 255 is too much as a default
 		if (!FMLEnvironment.production)
-			cir.setReturnValue(16);
+			cir.setReturnValue(3);
 	}
 }

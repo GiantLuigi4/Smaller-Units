@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
@@ -27,6 +28,8 @@ public class UnitSpace {
 	protected Level myLevel;
 	CompoundTag tag;
 	private BlockPos myPosInTheLevel;
+	public boolean isNatural;
+	RenderWorld wld;
 	
 	public UnitSpace(BlockPos pos, Level level) {
 		this.pos = pos;
@@ -87,19 +90,7 @@ public class UnitSpace {
 //		}
 		unitsPerBlock = 1;
 		setUpb(16);
-	}
-	
-	public static UnitSpace fromNBT(CompoundTag tag, Level lvl) {
-		UnitSpace space = new UnitSpace(
-				new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")),
-				lvl
-		);
-		space.tag = tag;
-		space.unitsPerBlock = tag.getInt("upb");
-		space.setUpb(space.unitsPerBlock);
-		space.loadWorld(tag);
-		// TODO: multiply by upb
-		return space;
+		isNatural = true;
 	}
 	
 	public Level getMyLevel() {
@@ -126,29 +117,18 @@ public class UnitSpace {
 		tick();
 	}
 	
-	/* reason: race conditions */
-	public void tick() {
-		if (myLevel instanceof ServerLevel) {
-//			((ServerLevel) myLevel).tick(() -> true);
-		} else if (myLevel == null) {
-			int upb = unitsPerBlock;
-			if (level instanceof ServerLevel) {
-				ChunkMap cm = ((ServerLevel) level).getChunkSource().chunkMap;
-				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
-				if (r == null) return;
-				if (myLevel != null)
-					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
-				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
-//				setState(new BlockPos(0, 0, 0), Blocks.STONE);
-			} else if (level instanceof RegionalAttachments) {
-				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
-				if (r == null) return;
-				if (myLevel != null)
-					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
-				myLevel = r.getClientWorld(level, upb);
-			}
-			loadWorld(tag);
-		}
+	public static UnitSpace fromNBT(CompoundTag tag, Level lvl) {
+		UnitSpace space = new UnitSpace(
+				new BlockPos(tag.getInt("x"), tag.getInt("y"), tag.getInt("z")),
+				lvl
+		);
+		space.tag = tag;
+		space.unitsPerBlock = tag.getInt("upb");
+		space.setUpb(space.unitsPerBlock);
+		space.loadWorld(tag);
+		if (tag.contains("natural")) space.isNatural = tag.getBoolean("natural");
+		// TODO: multiply by upb
+		return space;
 	}
 	
 	private void loadWorld(CompoundTag tag) {
@@ -183,33 +163,32 @@ public class UnitSpace {
 		((ITickerWorld) myLevel).setLoaded();
 	}
 	
-	public CompoundTag serialize() {
-		CompoundTag tag = new CompoundTag();
-		if (unitsPerBlock == 0) return null;
-		if (this.myLevel == null) {
-			return tag; // TODO: figure out why this happens
-		}
-		tag.putInt("x", pos.getX());
-		tag.putInt("y", pos.getY());
-		tag.putInt("z", pos.getZ());
-		tag.putInt("upb", unitsPerBlock);
-		UnitPallet pallet = new UnitPallet(this);
-		tag.put("blocks", pallet.toNBT());
-		if (myLevel instanceof ITickerWorld)
-			tag.put("ticks", ((ITickerWorld) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
-		CompoundTag tiles = new CompoundTag();
-		for (int x = 0; x < unitsPerBlock; x++) {
-			for (int y = 0; y < unitsPerBlock; y++) {
-				for (int z = 0; z < unitsPerBlock; z++) {
-					BlockEntity be = myLevel.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
-					if (be != null) {
-						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
-					}
-				}
+	/* reason: race conditions */
+	public void tick() {
+		if (myLevel instanceof ServerLevel) {
+//			((ServerLevel) myLevel).tick(() -> true);
+		} else if (myLevel == null) {
+			int upb = unitsPerBlock;
+			if (level instanceof ServerLevel) {
+				ChunkMap cm = ((ServerLevel) level).getChunkSource().chunkMap;
+				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
+				if (r == null) return;
+				if (myLevel != null)
+					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
+//				setState(new BlockPos(0, 0, 0), Blocks.STONE);
+			} else if (level instanceof RegionalAttachments) {
+				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
+				if (r == null) return;
+				if (myLevel != null)
+					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+				myLevel = r.getClientWorld(level, upb);
+				
+				// TODO: allow for optimization?
+				wld = new RenderWorld(getMyLevel(), getOffsetPos(new BlockPos(0, 0, 0)), upb);
 			}
+			loadWorld(tag);
 		}
-		tag.put("tiles", tiles);
-		return tag;
 	}
 	
 	public BlockState[] getBlocks() {
@@ -292,5 +271,39 @@ public class UnitSpace {
 				for (int z = 0; z < unitsPerBlock; z++)
 					states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockEntity(myPosInTheLevel.offset(x, y, z));
 		return states;
+	}
+	
+	public CompoundTag serialize() {
+		CompoundTag tag = new CompoundTag();
+		if (unitsPerBlock == 0) return null;
+		if (this.myLevel == null) {
+			return tag; // TODO: figure out why this happens
+		}
+		tag.putInt("x", pos.getX());
+		tag.putInt("y", pos.getY());
+		tag.putInt("z", pos.getZ());
+		tag.putInt("upb", unitsPerBlock);
+		UnitPallet pallet = new UnitPallet(this);
+		tag.put("blocks", pallet.toNBT());
+		if (myLevel instanceof ITickerWorld)
+			tag.put("ticks", ((ITickerWorld) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
+		CompoundTag tiles = new CompoundTag();
+		for (int x = 0; x < unitsPerBlock; x++) {
+			for (int y = 0; y < unitsPerBlock; y++) {
+				for (int z = 0; z < unitsPerBlock; z++) {
+					BlockEntity be = myLevel.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
+					if (be != null) {
+						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
+					}
+				}
+			}
+		}
+		tag.put("tiles", tiles);
+		tag.putBoolean("natural", isNatural);
+		return tag;
+	}
+	
+	public RenderWorld getRenderWorld() {
+		return wld;
 	}
 }
