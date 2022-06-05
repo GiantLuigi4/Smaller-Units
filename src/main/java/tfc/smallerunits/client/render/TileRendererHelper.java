@@ -2,16 +2,20 @@ package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.world.ITickerWorld;
@@ -132,5 +136,21 @@ public class TileRendererHelper {
 				pLightTexture, pCamera, pPartialTick
 		);
 		mdlViewStk.popPose();
+	}
+	
+	public static void drawBreakingOutline(RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {
+		if (level instanceof ITickerWorld) {
+			PoseStack.Pose posestack$pose = pPoseStack.last();
+			VertexConsumer consumer = renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(3));
+			int upb = ((ITickerWorld) level).getUPB();
+			consumer = new TextureScalingVertexBuilder(consumer, upb);
+			VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(consumer, posestack$pose.pose(), posestack$pose.normal());
+			pPoseStack.pushPose();
+			float scl = 1f / upb;
+			pPoseStack.scale(scl, scl, scl);
+			pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
+			minecraft.getBlockRenderer().renderBreakingTexture(state, pos, level, pPoseStack, vertexconsumer1);
+			pPoseStack.popPose();
+		}
 	}
 }

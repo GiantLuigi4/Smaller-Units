@@ -315,6 +315,17 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		// I don't remember what this is
 	}
 	
+	@Nullable
+	@Override
+	public Entity getEntity(int pId) {
+		return super.getEntity(pId);
+	}
+	
+	@Override
+	public Iterable<Entity> entitiesForRendering() {
+		return getEntities().getAll();
+	}
+	
 	@Override
 	public void SU$removeEntity(Entity pEntity) {
 	
@@ -376,6 +387,17 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
 		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
+
+//		this.tickEntities();
+		for (Entity entity : entitiesForRendering()) {
+			// TODO: remove null entities..?
+			if (entity != null) {
+				entity.xOld = entity.position().x;
+				entity.yOld = entity.position().y;
+				entity.zOld = entity.position().z;
+				entity.tick();
+			}
+		}
 	}
 	
 	@Override

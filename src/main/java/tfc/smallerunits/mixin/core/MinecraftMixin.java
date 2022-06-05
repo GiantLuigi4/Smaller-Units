@@ -44,6 +44,12 @@ public class MinecraftMixin {
 		movePlayerTo();
 	}
 	
+	@Inject(at = @At("HEAD"), method = "startUseItem")
+	public void preUseItem(CallbackInfo cir) {
+		// TODO
+//		movePlayerTo();
+	}
+	
 	@Inject(at = @At("HEAD"), method = "continueAttack")
 	public void preContinueAttack(boolean direction, CallbackInfo ci) {
 		movePlayerTo();
@@ -67,14 +73,20 @@ public class MinecraftMixin {
 			
 			double reach = player.getAttribute((Attribute) ForgeMod.REACH_DISTANCE.get()).getValue();// 154
 			hitResult = player.pick(reach, 1, true);
-			if (hitResult.getType() == HitResult.Type.MISS)
-				hitResult = player.pick(reach, 1, false);
+//			if (hitResult.getType() == HitResult.Type.MISS)
+//				hitResult = player.pick(reach, 1, false);
 		}
 	}
 	
 	@Inject(at = @At("RETURN"), method = "startAttack")
 	public void postAttack(CallbackInfoReturnable<Boolean> cir) {
 		movePlayerBack();
+	}
+	
+	@Inject(at = @At("RETURN"), method = "startUseItem")
+	public void postUseItem(CallbackInfo ci) {
+		//  TODO
+//		movePlayerBack();
 	}
 	
 	@Inject(at = @At("RETURN"), method = "continueAttack")

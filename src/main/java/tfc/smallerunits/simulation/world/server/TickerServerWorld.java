@@ -7,7 +7,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
@@ -216,23 +218,27 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		return upb;
 	}
 	
+	HashMap<Entity, ServerEntity> serverEntityHashMap = new HashMap<>();
+	
+	int nextId = 0;
+	
 	@Override
 	public boolean addFreshEntity(Entity pEntity) {
-		if (!isClientSide) {
-			int firstOpen = -1;
-			int prev = -1;
-			for (Entity entity : entities) {
-				if (firstOpen != prev) {
-					break;
-				}
-				firstOpen++;
-				prev = entity.getId();
-			}
-			if (firstOpen != -1) pEntity.setId(firstOpen + 1);
-			else pEntity.setId(0);
-		}
+//		int firstOpen = -1;
+//		int prev = -1;
+//		for (Entity entity : entities) {
+//			if (firstOpen != prev) {
+//				break;
+//			}
+//			firstOpen++;
+//			prev = entity.getId();
+//		}
+//		if (firstOpen != -1) pEntity.setId(firstOpen + 1);
+//		else pEntity.setId(0);
+		pEntity.setId(nextId++);
+		
 		entities.add(pEntity);
-		entitiesAdded.add(pEntity);
+		
 		return super.addFreshEntity(pEntity);
 	}
 	
@@ -464,6 +470,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	
 	@Override
 	public void removeEntity(Entity entity) {
+		entities.remove(entity);
 		super.removeEntity(entity);
 	}
 	
@@ -475,6 +482,8 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft) {
+		if (upb == 0) return;
+		
 		if (!getServer().isReady()) return;
 		if (!isLoaded) return;
 		
@@ -489,13 +498,70 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 //			// TODO: ?
 //			getLightEngine().runUpdates(2, true, true);
 //		}
-		for (Entity entity : entities.toArray(new Entity[0])) {
-//		for (Entity entity : entities) {
-			if (entity.isRemoved()) continue;
-			entity.tick();
-		}
 		
-		NetworkingHacks.unitPos.remove();
+		for (Entity entity : entitiesRemoved) {
+			removeEntity(entity);
+		}
+		entitiesRemoved.clear();
+		
+		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
+			List<ServerPlayer> players = null;
+			if (column == null) continue;
+			for (BasicVerticalChunk basicVerticalChunk : column) {
+				if (basicVerticalChunk == null) continue;
+				if (players == null) {
+					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
+					for (ServerPlayer player : players) {
+						// TODO: do this properly
+						try {
+							getChunkSource().chunkMap.move(player);
+						} catch (Throwable ignored) {
+						}
+//						if (!basicVerticalChunk.isTrackedBy(player)) {
+////							basicVerticalChunk.setTracked(player);
+////							((UnitChunkMap) getChunkSource().chunkMap).updateChunkTracking(
+////									player,
+////									basicVerticalChunk.getPos(),
+////									new MutableObject<>(),
+////									false, true
+////							);
+//							getChunkSource().chunkMap.move(player);
+//						} else {
+////							basicVerticalChunk.setTracked(player);
+////							((UnitChunkMap) getChunkSource().chunkMap).updateChunkTracking(
+////									player,
+////									basicVerticalChunk.getPos(),
+////									new MutableObject<>(),
+////									true, true
+////							);
+//							getChunkSource().chunkMap.move(player);
+//						}
+					}
+//					for (ServerPlayer player : basicVerticalChunk.getPlayersTracking()) {
+////						((UnitChunkMap) getChunkSource().chunkMap).updateChunkTracking(
+////								player,
+////								basicVerticalChunk.getPos(),
+////								new MutableObject<>(),
+////								true, false
+////						);
+//					}
+//					basicVerticalChunk.swapTracks();
+				}
+				
+				NetworkingHacks.unitPos.remove();
+
+//				for (BlockEntity beChange : basicVerticalChunk.beChanges) {
+//					beChange.setRemoved();
+//				}
+				for (BlockPos pos : basicVerticalChunk.besRemoved) {
+					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
+					if (be != null && !be.isRemoved())
+						be.setRemoved();
+				}
+				basicVerticalChunk.beChanges.clear();
+			}
+		}
+
 
 //		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
 //			if (column == null) continue;
@@ -658,7 +724,9 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 //		}
 	}
 	
-	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<BlockPos, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
+	public BlockHitResult collectShape(Vec3 start, Vec3
+			end, Function<BlockPos, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller,
+									   int upbInt) {
 		BlockHitResult closest = null;
 		double d = Double.POSITIVE_INFINITY;
 		

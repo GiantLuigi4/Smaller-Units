@@ -10,7 +10,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -33,6 +32,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.*;
 import net.minecraftforge.common.ForgeMod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -41,6 +41,7 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacket;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
@@ -101,11 +102,22 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			//// I'm stupid, why did I do it any way other than this?
 			//// lol
 			//// ah right, server side
-			// Camera camera = Minecraft.getInstance().getEntityRenderDispatcher().camera;
-			// Vec3 startVec = camera.getPosition();
-			// Vec3 lookVec = new Vec3(camera.getLookVector());
-			Vec3 startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(Minecraft.getInstance().getFrameTime());
-			Vec3 lookVec = ((EntityCollisionContext) pContext).getEntity().getViewVector(Minecraft.getInstance().getFrameTime());
+			Vec3 startVec;
+			Vec3 lookVec;
+			// this should work
+			if (FMLEnvironment.dist.isClient() && IHateTheDistCleaner.isClientLevel((Level) pLevel)) {
+				IHateTheDistCleaner.updateCamera();
+				if (IHateTheDistCleaner.isCameraPresent()) {
+					startVec = IHateTheDistCleaner.getCameraPos();
+					lookVec = new Vec3(IHateTheDistCleaner.getCameraLook());
+				} else {
+					startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(Minecraft.getInstance().getFrameTime());
+					lookVec = ((EntityCollisionContext) pContext).getEntity().getViewVector(Minecraft.getInstance().getFrameTime());
+				}
+			} else {
+				startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(Minecraft.getInstance().getFrameTime());
+				lookVec = ((EntityCollisionContext) pContext).getEntity().getViewVector(Minecraft.getInstance().getFrameTime());
+			}
 			double reach;
 			if (entity instanceof LivingEntity) {
 				AttributeInstance instance = ((LivingEntity) entity).getAttribute(ForgeMod.REACH_DISTANCE.get());
@@ -326,8 +338,11 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				info.adjust(pPlayer, space);
 				
 				HitResult mcHitResult = Minecraft.getInstance().hitResult;
-				double reach = pPlayer.getAttribute((Attribute) ForgeMod.REACH_DISTANCE.get()).getValue();// 154
-				Minecraft.getInstance().hitResult = pPlayer.pick(reach * space.unitsPerBlock, 1, false);
+				double reach = pPlayer.getAttribute(ForgeMod.REACH_DISTANCE.get()).getValue();// 154
+				Minecraft.getInstance().hitResult = pPlayer.pick(reach * space.unitsPerBlock, 1, true);
+//				if (Minecraft.getInstance().hitResult.getType() == HitResult.Type.MISS)
+//					Minecraft.getInstance().hitResult = pPlayer.pick(reach * space.unitsPerBlock, 1, false);
+
 //				Minecraft.getInstance().hitResult = new BlockHitResult(
 //						pHit
 //								.getLocation()
@@ -346,7 +361,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				if (!inputEvent.isCanceled()) {
 					if (Minecraft.getInstance().player.connection != null) {
 						result = Minecraft.getInstance().gameMode.useItemOn(
-								(LocalPlayer) pPlayer, (ClientLevel) space.myLevel, InteractionHand.MAIN_HAND,
+								(LocalPlayer) pPlayer, (ClientLevel) space.myLevel, pHand,
 								(BlockHitResult) Minecraft.getInstance().hitResult
 						);
 					}
@@ -367,6 +382,10 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 //					SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(packet);
 //				}
 				
+				if (result.shouldSwing()) return result;
+				
+				if (pHand == InteractionHand.MAIN_HAND && result == InteractionResult.PASS)
+					return InteractionResult.PASS;
 				if (result == InteractionResult.PASS) return InteractionResult.CONSUME;
 //				return result.consumesAction() ? InteractionResult.CONSUME : InteractionResult.CONSUME_PARTIAL;
 				return result;

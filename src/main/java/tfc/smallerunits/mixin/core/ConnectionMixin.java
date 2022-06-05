@@ -15,13 +15,7 @@ public class ConnectionMixin {
 			at = @At(value = "INVOKE", target = "Ljava/util/Queue;add(Ljava/lang/Object;)Z")
 	)
 	public <E> E modifyPacket0(E e) {
-		WrapperPacket pkt = new WrapperPacket(e);
-		if (pkt.additionalInfo != null) {
-//			super.write(ctx, pkt, promise);
-//			return;
-			return (E) pkt;
-		}
-		return e;
+		return maybeWrap(e);
 	}
 	
 	@ModifyArg(
@@ -30,12 +24,13 @@ public class ConnectionMixin {
 			at = @At(value = "INVOKE", target = "Lnet/minecraft/network/Connection;sendPacket(Lnet/minecraft/network/protocol/Packet;Lio/netty/util/concurrent/GenericFutureListener;)V")
 	)
 	public Packet<?> modifyPacket1(Packet<?> pInPacket) {
-		WrapperPacket pkt = new WrapperPacket(pInPacket);
-		if (pkt.additionalInfo != null) {
-//			super.write(ctx, pkt, promise);
-//			return;
-			return pkt;
-		}
-		return pInPacket;
+		return maybeWrap(pInPacket);
+	}
+	
+	public <E> E maybeWrap(E e) {
+		WrapperPacket pkt = new WrapperPacket(e);
+		if (pkt.additionalInfo != null)
+			return (E) pkt;
+		return e;
 	}
 }

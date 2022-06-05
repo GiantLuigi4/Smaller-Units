@@ -130,6 +130,10 @@ public abstract class LevelRendererMixin {
 	@Shadow
 	public static native void renderLineBox(PoseStack pPoseStack, VertexConsumer pConsumer, AABB pBox, float pRed, float pGreen, float pBlue, float pAlpha);
 	
+	@Shadow
+	@Final
+	private Minecraft minecraft;
+	
 	@Inject(at = @At("HEAD"), method = "renderLevel")
 	public void preDrawLevel(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
 		pct = pPartialTick;
@@ -191,6 +195,8 @@ public abstract class LevelRendererMixin {
 								0.0F, 0.0F, 0.0F, 0.4F
 						);
 					} else {
+						TileRendererHelper.drawBreakingOutline(renderBuffers, pPoseStack, space.getMyLevel(), pos, state, minecraft);
+						
 						pPoseStack.scale(1f / space.unitsPerBlock, 1f / space.unitsPerBlock, 1f / space.unitsPerBlock);
 						pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
 						renderShape(

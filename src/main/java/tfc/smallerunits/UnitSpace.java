@@ -128,6 +128,10 @@ public class UnitSpace {
 		space.loadWorld(tag);
 		if (tag.contains("natural")) space.isNatural = tag.getBoolean("natural");
 		// TODO: multiply by upb
+		
+		if (space.unitsPerBlock == 0)
+			Loggers.UNITSPACE_LOGGER.error("A unit space had a UPB of " + space.unitsPerBlock + "; this is not a good thing! Coords: " + space.pos.getX() + ", " + space.pos.getY() + ", " + space.pos.getZ());
+		
 		return space;
 	}
 	
@@ -277,7 +281,7 @@ public class UnitSpace {
 		CompoundTag tag = new CompoundTag();
 		if (unitsPerBlock == 0) return null;
 		if (this.myLevel == null) {
-			return tag; // TODO: figure out why this happens
+			return this.tag; // TODO: figure out why this happens
 		}
 		tag.putInt("x", pos.getX());
 		tag.putInt("y", pos.getY());

@@ -66,7 +66,10 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 		return ((ITickerWorld) level).getLookup();
 	}
 	
+	int isRecurring = 0;
+	
 	public LevelChunk getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
+		if (upb == 0) return empty;
 		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY > upb) {
 			Region r = ((ITickerWorld) level).getRegion();
 			RegionPos pos = r.pos;
@@ -79,6 +82,19 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 					pos.y + y,
 					pos.z + z
 			);
+			
+			if (isRecurring > 5) {
+				System.out.println("-- INFO --");
+				System.out.println(" cyxz: " + pChunkX + ", " + pChunkY + ", " + pChunkZ);
+				System.out.println("  xyz: " + x + ", " + y + ", " + z);
+				pChunkX = ((pChunkX < 0) ? pChunkX + upb : ((pChunkX > upb) ? (pChunkX - (upb * 32)) : pChunkX));
+				pChunkY = ((pChunkY < 0) ? pChunkY + upb : ((pChunkY > upb) ? (pChunkX - (upb * 32)) : pChunkY));
+				pChunkZ = ((pChunkZ < 0) ? pChunkZ + upb : ((pChunkZ > upb) ? (pChunkX - (upb * 32)) : pChunkZ));
+				System.out.println("acyxz: " + pChunkX + ", " + pChunkY + ", " + pChunkZ);
+				System.out.println("upb: " + upb);
+				System.out.println(pos);
+				throw new RuntimeException();
+			}
 			
 			pChunkX = ((pChunkX < 0) ? pChunkX + upb : ((pChunkX > upb) ? (pChunkX - (upb * 32)) : pChunkX));
 			pChunkY = ((pChunkY < 0) ? pChunkY + upb : ((pChunkY > upb) ? (pChunkX - (upb * 32)) : pChunkY));
@@ -97,7 +113,10 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 				return chunk;
 			}
 			
-			return level.getChunk(pChunkX, pChunkZ);
+			isRecurring++;
+			LevelChunk chunk = level.getChunk(pChunkX, pChunkZ);
+			isRecurring--;
+			return chunk;
 //			return new EmptyLevelChunk(level, new ChunkPos(pChunkX, pChunkZ));
 		}
 		if (!pLoad) {

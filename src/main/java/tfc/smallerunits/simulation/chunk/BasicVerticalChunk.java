@@ -3,6 +3,7 @@ package tfc.smallerunits.simulation.chunk;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -29,6 +30,7 @@ import tfc.smallerunits.simulation.world.UnitChunkHolder;
 import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class BasicVerticalChunk extends LevelChunk {
 	private final BlockState[] blocks = new BlockState[16 * 16 * 16];
@@ -267,45 +269,72 @@ public class BasicVerticalChunk extends LevelChunk {
 		setBlockFast$(new BlockPos(pos), state);
 	}
 	
-	@Override
-	public void setBlockEntity(BlockEntity pBlockEntity) {
-		if (pBlockEntity == null) return;
-		if (!level.isClientSide) {
-			if (besRemoved.contains(pBlockEntity.getBlockPos())) {
-				besRemoved.remove(pBlockEntity.getBlockPos());
-			}
-			for (BlockEntity beChange : beChanges) {
-				if (beChange == null) continue;
-				if (beChange.getBlockPos().equals(pBlockEntity.getBlockPos())) {
-					beChanges.remove(beChange);
-					break;
+	ArrayList<ServerPlayer> oldPlayersTracking = new ArrayList<>();
+	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
+	
+	public void randomTick() {
+		for (int k = 0; k < level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING); ++k) {
+			BlockPos blockpos1 = level.getBlockRandomPos(0, 0, 0, 15);
+			BlockState blockstate = this.getBlockState(blockpos1);
+			BlockPos wp = blockpos1.offset(chunkPos.getWorldPosition()).relative(Direction.UP, yPos * 16 - 1);
+			if (blockstate.isRandomlyTicking()) {
+				if (!level.isClientSide() && level instanceof ServerLevel) {
+					blockstate.randomTick((ServerLevel) level, wp.above(), level.random);
 				}
 			}
-			beChanges.add(pBlockEntity);
-//			BlockPos rp = ((TickerServerWorld) level).region.pos.toBlockPos();
-//			BlockPos pos = pBlockEntity.getBlockPos();
-//			int xo = (pos.getX() / upb);
-//			int yo = (pos.getY() / upb);
-//			int zo = (pos.getZ() / upb);
-//			BlockPos parentPos = rp.offset(xo, yo, zo);
-//			ChunkAccess ac = ((TickerServerWorld) level).parent.getChunkAt(parentPos);
-//			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-//			((SUCapableChunk) ac).getTiles().add(pBlockEntity);
+			
+			FluidState fluidstate = blockstate.getFluidState();
+			if (fluidstate.isRandomlyTicking()) {
+				fluidstate.randomTick(level, wp, level.random);
+			}
 		}
-		super.setBlockEntity(pBlockEntity);
+	}
+	
+	public BasicVerticalChunk getSubChunk(int cy) {
+		return verticalLookup.apply(cy);
 	}
 	
 	@Override
+	public void setBlockEntity(BlockEntity pBlockEntity) {
+//		if (pBlockEntity == null) return;
+//		if (!level.isClientSide) {
+//			if (besRemoved.contains(pBlockEntity.getBlockPos())) {
+//				besRemoved.remove(pBlockEntity.getBlockPos());
+//			}
+//			for (BlockEntity beChange : beChanges) {
+//				if (beChange == null) continue;
+//				if (beChange.getBlockPos().equals(pBlockEntity.getBlockPos())) {
+//					beChange.setRemoved();
+//					beChanges.remove(beChange);
+//					break;
+//				}
+//			}
+//			beChanges.add(pBlockEntity);
+////			BlockPos rp = ((TickerServerWorld) level).region.pos.toBlockPos();
+////			BlockPos pos = pBlockEntity.getBlockPos();
+////			int xo = (pos.getX() / upb);
+////			int yo = (pos.getY() / upb);
+////			int zo = (pos.getZ() / upb);
+////			BlockPos parentPos = rp.offset(xo, yo, zo);
+////			ChunkAccess ac = ((TickerServerWorld) level).parent.getChunkAt(parentPos);
+////			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+////			((SUCapableChunk) ac).getTiles().add(pBlockEntity);
+//		}
+		super.setBlockEntity(pBlockEntity);
+	}
+
+	@Override
 	public void removeBlockEntity(BlockPos pPos) {
 		if (!level.isClientSide) {
-			besRemoved.add(pPos);
-			for (BlockEntity beChange : beChanges) {
-				if (beChange == null) continue;
-				if (beChange.getBlockPos().equals(pPos)) {
-					beChanges.remove(beChange);
-					break;
-				}
-			}
+//			besRemoved.add(pPos);
+//			for (BlockEntity beChange : beChanges) {
+//				if (beChange == null) continue;
+//				if (beChange.getBlockPos().equals(pPos)) {
+//					beChange.setRemoved();
+//					beChanges.remove(beChange);
+//					break;
+//				}
+//			}
 		} else {
 			ITickerWorld tickerWorld = ((ITickerWorld) level);
 			
@@ -335,25 +364,21 @@ public class BasicVerticalChunk extends LevelChunk {
 		super.removeBlockEntity(pPos);
 	}
 	
-	public void randomTick() {
-		for (int k = 0; k < level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING); ++k) {
-			BlockPos blockpos1 = level.getBlockRandomPos(0, 0, 0, 15);
-			BlockState blockstate = this.getBlockState(blockpos1);
-			BlockPos wp = blockpos1.offset(chunkPos.getWorldPosition()).relative(Direction.UP, yPos * 16 - 1);
-			if (blockstate.isRandomlyTicking()) {
-				if (!level.isClientSide() && level instanceof ServerLevel) {
-					blockstate.randomTick((ServerLevel) level, wp.above(), level.random);
-				}
-			}
-			
-			FluidState fluidstate = blockstate.getFluidState();
-			if (fluidstate.isRandomlyTicking()) {
-				fluidstate.randomTick(level, wp, level.random);
-			}
-		}
+	public boolean isTrackedBy(ServerPlayer player) {
+		return oldPlayersTracking.contains(player);
 	}
 	
-	public BasicVerticalChunk getSubChunk(int cy) {
-		return verticalLookup.apply(cy);
+	public void setTracked(ServerPlayer player) {
+		playersTracking.add(player);
+		if (oldPlayersTracking.contains(player)) oldPlayersTracking.remove(player);
+	}
+	
+	public void swapTracks() {
+		oldPlayersTracking = playersTracking;
+		playersTracking = new ArrayList<>();
+	}
+	
+	public List<ServerPlayer> getPlayersTracking() {
+		return oldPlayersTracking;
 	}
 }

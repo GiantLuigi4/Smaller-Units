@@ -25,6 +25,7 @@
     "core.LocalPlayerMixin",
     "core.MinecraftMixin",
     "core.MultiPlayerGameModeMixin",
+    "core.PersistentEntitySectionManagerMixin",
     "core.access.ClientPacketListenerMixin",
     "dangit.ForgeWhy",
     "data.CompiledChunkMixin",

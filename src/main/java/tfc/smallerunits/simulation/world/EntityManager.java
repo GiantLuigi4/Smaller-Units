@@ -36,7 +36,10 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 			
 			@Override
 			public void onTrackingStart(T pEntity) {
-				p_157504_.onTrackingStart(pEntity);
+				try {
+					p_157504_.onTrackingStart(pEntity);
+				} catch (Throwable ignored) {
+				}
 			}
 			
 			@Override

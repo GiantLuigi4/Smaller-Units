@@ -1,5 +1,7 @@
 package tfc.smallerunits.utils;
 
+import com.mojang.math.Vector3f;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.PacketListener;
@@ -8,6 +10,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import tfc.smallerunits.TileResizingItem;
 
 /* this whole class should be unnecessary, however forge says that clean code is a concept dreamed of by idiots */
@@ -51,5 +54,24 @@ public class IHateTheDistCleaner {
 			if (handSlot.getItem() instanceof TileResizingItem)
 				return true;
 		return false;
+	}
+	
+	private static Camera camera;
+	
+	public static void updateCamera() {
+		camera = Minecraft.getInstance().getEntityRenderDispatcher().camera;
+	}
+	
+	public static Vec3 getCameraPos() {
+		return camera.getPosition();
+	}
+	
+	
+	public static Vector3f getCameraLook() {
+		return camera.getLookVector();
+	}
+	
+	public static boolean isCameraPresent() {
+		return camera != null;
 	}
 }

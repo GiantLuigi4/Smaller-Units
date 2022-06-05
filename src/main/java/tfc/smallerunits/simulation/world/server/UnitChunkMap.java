@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.world.server;
 
 import com.mojang.datafixers.DataFixer;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -39,26 +41,10 @@ public class UnitChunkMap extends ChunkMap {
 		lvl = p_143040_;
 	}
 	
-	public class ButcheredDistMap extends ChunkMap.DistanceManager {
-		public ButcheredDistMap(Executor p_140459_, Executor p_140460_) {
-			super(p_140459_, p_140460_);
-		}
-		
-		@Override
-		public boolean inBlockTickingRange(long p_183917_) {
-			// TODO: check if it's in the parent's ticking range
-			return true;
-		}
-	}
-	
-	@Override
-	protected Iterable<ChunkHolder> getChunks() {
-		return ((TickerChunkCache) lvl.getChunkSource()).getChunks();
-	}
-	
 	@Override
 	public List<ServerPlayer> getPlayers(ChunkPos pPos, boolean pBoundaryOnly) {
 		// TODO: filter for chunk
+		// TODO: figure out what "filter for chunk" means
 		ITickerWorld tickerWorld = (ITickerWorld) lvl;
 		Level parent = tickerWorld.getParent();
 		Region region = tickerWorld.getRegion();
@@ -90,6 +76,38 @@ public class UnitChunkMap extends ChunkMap {
 		return out;
 //		return (List<ServerPlayer>) ((ITickerWorld)lvl).getParent().players();
 //		return super.getPlayers(pPos, pBoundaryOnly);
+	}
+	
+	@Override
+	protected Iterable<ChunkHolder> getChunks() {
+		return ((TickerChunkCache) lvl.getChunkSource()).getChunks();
+	}
+	
+	@Override
+	protected void updateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
+		super.updateChunkTracking(pPlayer, pChunkPos, pPacketCache, pWasLoaded, pLoad);
+	}
+
+//	public void onUpdateChunkTracking(ServerPlayer pPlayer, ChunkPos pChunkPos, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, boolean pWasLoaded, boolean pLoad) {
+//		updateChunkTracking(pPlayer, pChunkPos, pPacketCache, pWasLoaded, pLoad);
+//	}
+	
+	public class ButcheredDistMap extends ChunkMap.DistanceManager {
+		public ButcheredDistMap(Executor p_140459_, Executor p_140460_) {
+			super(p_140459_, p_140460_);
+		}
+		
+		@Override
+		public boolean inBlockTickingRange(long p_183917_) {
+			// TODO: check if it's in the parent's ticking range
+			return true;
+		}
+		
+		@Override
+		public boolean inEntityTickingRange(long p_183914_) {
+			// TODO: check if it's in the parent's ticking range
+			return true;
+		}
 	}
 	
 	@Nullable

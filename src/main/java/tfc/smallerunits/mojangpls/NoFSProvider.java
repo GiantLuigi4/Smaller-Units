@@ -1,5 +1,6 @@
 package tfc.smallerunits.mojangpls;
 
+import net.minecraftforge.fml.CrashReportCallables;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -7,10 +8,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
+import java.nio.file.attribute.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
 
@@ -198,16 +196,72 @@ public class NoFSProvider extends FileSystemProvider {
 		try {
 			return type.newInstance();
 		} catch (Throwable ignored) {
-			return null;
+			StringBuilder builder = new StringBuilder();
+			builder.append("-- INFO --\n");
+			builder.append(type.getName());
+			CrashReportCallables.registerCrashCallable("Smaller Units", builder::toString);
+			throw new RuntimeException("Attribute could not be created, game will most likely crash regardless");
 		}
 	}
 	
 	@Override
 	public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
 		try {
+			if (type.equals(BasicFileAttributes.class)) {
+				return (A) new BasicFileAttributes() {
+					@Override
+					public FileTime lastModifiedTime() {
+						return FileTime.fromMillis(0);
+					}
+					
+					@Override
+					public FileTime lastAccessTime() {
+						return lastModifiedTime();
+					}
+					
+					@Override
+					public FileTime creationTime() {
+						return lastModifiedTime();
+					}
+					
+					@Override
+					public boolean isRegularFile() {
+						return false;
+					}
+					
+					@Override
+					public boolean isDirectory() {
+						return false;
+					}
+					
+					@Override
+					public boolean isSymbolicLink() {
+						return false;
+					}
+					
+					@Override
+					public boolean isOther() {
+						return false;
+					}
+					
+					@Override
+					public long size() {
+						return 0;
+					}
+					
+					@Override
+					public Object fileKey() {
+						return this;
+					}
+				};
+			}
 			return type.newInstance();
 		} catch (Throwable ignored) {
-			return null;
+			StringBuilder builder = new StringBuilder();
+			builder.append("-- INFO --\n");
+			builder.append(type.getName());
+			CrashReportCallables.registerCrashCallable("Smaller Units", builder::toString);
+			throw new RuntimeException("Attribute could not be created, game will most likely crash regardless");
 		}
 	}
 	
