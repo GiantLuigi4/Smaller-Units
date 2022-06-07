@@ -24,10 +24,14 @@ import java.util.Optional;
 public class UnitShape extends VoxelShape {
 	private final ArrayList<UnitBox> boxes = new ArrayList<>();
 	private AABB totalBB = null;
+
+//	public final UnitSpace space;
 	
+	//	public UnitShape(UnitSpace space) {
 	public UnitShape() {
 		super(new UnitDiscreteShape(0, 0, 0));
 		((UnitDiscreteShape) ((VoxelShapeAccessor) this).getShape()).sp = this;
+		this.space = space;
 	}
 	
 	private static double swivelOffset(AxisCycle axiscycle, AABB pCollisionBox, AABB box, double offsetX) {

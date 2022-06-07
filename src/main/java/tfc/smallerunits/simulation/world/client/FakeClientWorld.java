@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.*;
@@ -13,6 +14,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -46,6 +49,7 @@ import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.math.HitboxScaling;
+import tfc.smallerunits.utils.scale.ResizingUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,7 +67,55 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	public ParentLookup lookupTemp;
 	ClientLevel parent;
 	
+	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
+	// if I do Minecraft.getInstance().getTextureManager(), it messes up particle textures
 	UnitParticleEngine particleEngine = new UnitParticleEngine(this, new TextureManager(Minecraft.getInstance().getResourceManager()));
+	
+	@Override
+	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
+		super.playSound(pPlayer, pX, pY, pZ, pSound, pCategory, pVolume, pPitch);
+	}
+	
+	@Override
+	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
+//		super.playSound(pPlayer, pEntity, pEvent, pCategory, pVolume, pPitch);
+		double scl = 1f / upb;
+		if (ResizingUtils.isResizingModPresent())
+			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (scl > 1) scl = 1 / scl;
+		double finalScl = scl;
+		completeOnTick.add(() -> {
+			parent.playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
+		});
+	}
+	
+	@Override
+	public void playLocalSound(BlockPos pPos, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+		super.playLocalSound(pPos, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+	}
+	
+	@Override
+	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+		double scl = 1f / upb;
+		BlockPos pos = getRegion().pos.toBlockPos();
+		pX *= scl;
+		pY *= scl;
+		pZ *= scl;
+		pX += pos.getX();
+		pY += pos.getX();
+		pZ += pos.getX();
+		double finalPX = pX;
+		double finalPY = pY;
+		double finalPZ = pZ;
+		if (ResizingUtils.isResizingModPresent())
+			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (scl > 1) scl = 1 / scl;
+		double finalScl = scl;
+		completeOnTick.add(() -> {
+			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+		});
+	}
 	
 	public FakeClientWorld(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
@@ -134,8 +186,7 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		NetworkingHacks.unitPos.remove();
 	}
 	
-	// TODO: stuff that requires a level renderer
-	// I'll need a custom level renderer for this, I guess
+	// TODO: do this a bit more properly
 	@Override
 	public void addParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
 		addAlwaysVisibleParticle(pParticleData, false, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
@@ -158,6 +209,7 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 			particleEngine.add(particle);
 	}
 	
+	// TODO: stuff that requires a level renderer
 	@Override
 	public void globalLevelEvent(int pId, BlockPos pPos, int pData) {
 		// TODO
@@ -165,7 +217,16 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	
 	@Override
 	public void levelEvent(@Nullable Player pPlayer, int pType, BlockPos pPos, int pData) {
+		System.out.println(pType);
 		// TODO
+	}
+	
+	@Override
+	public void createFireworks(double pX, double pY, double pZ, double pMotionX, double pMotionY, double pMotionZ, @Nullable CompoundTag pCompound) {
+		ParticleEngine engine = Minecraft.getInstance().particleEngine;
+		Minecraft.getInstance().particleEngine = particleEngine;
+		super.createFireworks(pX, pY, pZ, pMotionX, pMotionY, pMotionZ, pCompound);
+		Minecraft.getInstance().particleEngine = engine;
 	}
 	
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
@@ -380,6 +441,9 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	
 	@Override
 	public void tickTime() {
+		for (Runnable runnable : completeOnTick) runnable.run();
+		completeOnTick.clear();
+		
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
@@ -395,6 +459,8 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 				entity.xOld = entity.position().x;
 				entity.yOld = entity.position().y;
 				entity.zOld = entity.position().z;
+				entity.yRotO = entity.getViewYRot(1);
+				entity.xRotO = entity.getViewXRot(1);
 				entity.tick();
 			}
 		}

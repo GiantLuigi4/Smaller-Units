@@ -124,6 +124,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		UnitSpace space = cap.getUnit(parentPos);
 		if (space == null) {
 			space = cap.getOrMakeUnit(parentPos);
+			space.isNatural = true;
 			space.setUpb(upb);
 		}
 		// TODO: check if a renderer exists, or smth?
@@ -350,6 +351,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			UnitSpace space = cap.getUnit(parentPos);
 			if (space == null) {
 				space = cap.getOrMakeUnit(parentPos);
+				space.isNatural = true;
 				space.setUpb(upb);
 			}
 			// TODO: check if a renderer exists, or smth?

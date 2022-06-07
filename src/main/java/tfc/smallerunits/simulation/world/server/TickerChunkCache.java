@@ -3,9 +3,12 @@ package tfc.smallerunits.simulation.world.server;
 import com.mojang.datafixers.DataFixer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
@@ -23,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
@@ -59,6 +63,31 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	public boolean hasChunk(int pX, int pZ) {
 		// TODO:
 		return (!(getChunk(pX, pZ, ChunkStatus.FULL, false) instanceof EmptyLevelChunk));
+	}
+	
+	@Override
+	public void broadcastAndSend(Entity pEntity, Packet<?> pPacket) {
+		NetworkingHacks.LevelDescriptor descriptor = maybeRemoveUnitPos(pEntity, pPacket);
+		super.broadcastAndSend(pEntity, pPacket);
+		NetworkingHacks.unitPos.set(descriptor);
+	}
+	
+	public NetworkingHacks.LevelDescriptor maybeRemoveUnitPos(Entity pEntity, Packet<?> pPacket) {
+		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+		if (pPacket instanceof ClientboundAnimatePacket) {
+			// TODO: check if the player should actually be in the unit space or not
+			if (pEntity instanceof ServerPlayer) {
+				NetworkingHacks.unitPos.remove();
+			}
+		}
+		return descriptor;
+	}
+	
+	@Override
+	public void broadcast(Entity pEntity, Packet<?> pPacket) {
+		NetworkingHacks.LevelDescriptor descriptor = maybeRemoveUnitPos(pEntity, pPacket);
+		super.broadcast(pEntity, pPacket);
+		NetworkingHacks.unitPos.set(descriptor);
 	}
 	
 	@Nullable
