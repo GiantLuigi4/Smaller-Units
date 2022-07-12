@@ -8,27 +8,31 @@ import net.minecraft.core.AxisCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 // best of 1.18 and 1.12, neat
 public class UnitShape extends VoxelShape {
 	private final ArrayList<UnitBox> boxes = new ArrayList<>();
 	private AABB totalBB = null;
-
-//	public final UnitSpace space;
 	
-	//	public UnitShape(UnitSpace space) {
-	public UnitShape() {
+	public final UnitSpace space;
+	Vec3 offset = new Vec3(0, 0, 0);
+	
+	public UnitShape(UnitSpace space) {
 		super(new UnitDiscreteShape(0, 0, 0));
 		((UnitDiscreteShape) ((VoxelShapeAccessor) this).getShape()).sp = this;
 		this.space = space;
@@ -122,6 +126,7 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	public void addBox(UnitBox box) {
+//		if (boxes.contains(box)) return;
 		boxes.add(box);
 		if (totalBB == null) {
 			totalBB = box;
@@ -189,10 +194,41 @@ public class UnitShape extends VoxelShape {
 	
 	@Nullable
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
-		if (this.isEmpty()) return null;
 		Vec3 vec3 = pEndVec.subtract(pStartVec);
 		if (vec3.lengthSqr() < 1.0E-7D) return null;
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
+		
+		double upbDouble = space.unitsPerBlock;
+		collectShape((pos) -> {
+			int x = pos.getX();
+			int y = pos.getY();
+			int z = pos.getZ();
+			AABB box = new AABB(
+					x / upbDouble, y / upbDouble, z / upbDouble,
+					(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
+			);
+			return box.contains(pStartVec) || box.clip(vec31, pEndVec).isPresent();
+		}, (pos, state) -> {
+			int x = pos.getX();
+			int y = pos.getY();
+			int z = pos.getZ();
+			VoxelShape sp = state.getShape(space.getMyLevel(), space.getOffsetPos(pos));
+			for (AABB toAabb : sp.toAabbs()) {
+				toAabb = toAabb.move(x, y, z).move(offset);
+				UnitBox b = new UnitBox(
+						toAabb.minX / upbDouble,
+						toAabb.minY / upbDouble,
+						toAabb.minZ / upbDouble,
+						toAabb.maxX / upbDouble,
+						toAabb.maxY / upbDouble,
+						toAabb.maxZ / upbDouble,
+						new BlockPos(x, y, z)
+				);
+				addBox(b);
+			}
+		}, space);
+		
+		if (this.isEmpty()) return null;
 		
 		if (this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
 			for (UnitBox box : boxes) {
@@ -235,9 +271,27 @@ public class UnitShape extends VoxelShape {
 		return null;
 	}
 	
+	public void collectShape(Function<BlockPos, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space) {
+		int upbInt = space.unitsPerBlock;
+		
+		for (int x = 0; x < upbInt; x++) {
+			for (int y = 0; y < upbInt; y++) {
+				for (int z = 0; z < upbInt; z++) {
+					BlockState state = space.getBlock(x, y, z);
+					if (state.isAir()) continue;
+//					if (state == null) continue;
+					if (simpleChecker.apply(new BlockPos(x, y, z))) {
+						boxFiller.accept(new BlockPos(x, y, z), state);
+					}
+					// TODO: raytrace simple box
+				}
+			}
+		}
+	}
+	
 	@Override
 	public VoxelShape optimize() {
-		UnitShape copy = new UnitShape();
+		UnitShape copy = new UnitShape(space);
 		for (AABB box : boxes) copy.addBox((UnitBox) box);
 		return this;
 	}
@@ -260,7 +314,8 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape move(double pXOffset, double pYOffset, double pZOffset) {
-		UnitShape copy = new UnitShape();
+		UnitShape copy = new UnitShape(space);
+		copy.offset = offset.add(pXOffset, pYOffset, pZOffset);
 		for (AABB box : boxes) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
 		return copy;
 	}

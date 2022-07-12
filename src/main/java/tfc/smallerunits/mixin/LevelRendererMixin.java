@@ -314,6 +314,7 @@ public abstract class LevelRendererMixin {
 		BlockPos origin = renderChunk.getOrigin();
 		ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
+		
 		if (capable == null)
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
 		
@@ -322,7 +323,8 @@ public abstract class LevelRendererMixin {
 			uniform.upload();
 		}
 		
-		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum);
+		PoseStack matrixStack = RenderSystem.getModelViewStack();
+		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum, matrixStack, shaderinstance, pCamX, pCamY, pCamZ);
 		return instance.isEmpty(pRenderType);
 	}
 }

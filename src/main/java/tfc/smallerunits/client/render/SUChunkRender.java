@@ -1,8 +1,10 @@
 package tfc.smallerunits.client.render;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
@@ -20,7 +22,7 @@ public class SUChunkRender {
 		this.chunk = chunk;
 	}
 	
-	public void draw(ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type, Frustum frustum) {
+	public void draw(ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type, Frustum frustum, PoseStack matrixStack, ShaderInstance shaderinstance) {
 		int yRL = renderChunk.getOrigin().getY();
 		int yRM = renderChunk.getOrigin().getY() + 15;
 		for (Pair<BlockPos, BufferStorage> buffer : buffers) {

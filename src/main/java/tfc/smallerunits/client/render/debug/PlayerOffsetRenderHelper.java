@@ -9,14 +9,11 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.data.capability.SUCapabilityManager;
-import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 public class PlayerOffsetRenderHelper {
@@ -27,11 +24,6 @@ public class PlayerOffsetRenderHelper {
 			if (!Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes())
 				return;
 			
-			UnitHitResult result = (UnitHitResult) Minecraft.getInstance().hitResult;
-			LevelChunk chnk = Minecraft.getInstance().level.getChunkAt(result.getBlockPos());
-			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(result.getBlockPos());
-			if (space == null) return;
-			
 			stack.pushPose();
 			stack.last().pose().setIdentity();
 			stack.translate(
@@ -39,41 +31,19 @@ public class PlayerOffsetRenderHelper {
 					-camera.getPosition().y,
 					-camera.getPosition().z
 			);
-			stack.scale(1f / space.unitsPerBlock, 1f / space.unitsPerBlock, 1f / space.unitsPerBlock);
-//			Vec3 pos = Minecraft.getInstance().cameraEntity.getPosition(pct);
-//			pos = pos.subtract(
-//					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getX(),
-//					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getY(),
-//					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getZ()
-//			);
-//			pos = pos.scale(space.unitsPerBlock);
-			AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().cameraEntity.getBoundingBox(), Minecraft.getInstance().cameraEntity.getPosition(1), space.unitsPerBlock);
-//			AABB box = Minecraft.getInstance().cameraEntity.getBoundingBox();
-//			box = box.move(
-//					-Minecraft.getInstance().cameraEntity.getPosition(1).x,
-//					-Minecraft.getInstance().cameraEntity.getPosition(1).y,
-//					-Minecraft.getInstance().cameraEntity.getPosition(1).z
-//			);
-//			box = new AABB(
-//					box.minX * space.unitsPerBlock,
-//					box.minY * space.unitsPerBlock,
-//					box.minZ * space.unitsPerBlock,
-//					box.maxX * space.unitsPerBlock,
-//					box.maxY * space.unitsPerBlock,
-//					box.maxZ * space.unitsPerBlock
-//			);
-//			box = box.move(pos.x, pos.y, pos.z);
+			AABB box = Minecraft.getInstance().player.getBoundingBox();
 			VertexConsumer consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
 			renderShape(
 					stack, consumer,
 					Shapes.create(box),
 					0, 0, 0, 1, 1, 1, 1
 			);
-			box = box.move(0, Minecraft.getInstance().cameraEntity.getEyeHeight() * space.unitsPerBlock, 0);
-			box = new AABB(
-					box.minX, box.minY - (0.01 * space.unitsPerBlock), box.minZ,
-					box.maxX, box.minY + (0.01 * space.unitsPerBlock), box.maxZ
-			);
+			Vec3 delta = Minecraft.getInstance().player.getDeltaMovement();
+//			delta = delta.normalize();
+			double dx = delta.x;
+			double dy = -Minecraft.getInstance().player.getStepHeight();
+			double dz = delta.z;
+			box = box.move(dx, dy, dz);
 			renderShape(
 					stack, consumer,
 					Shapes.create(box),
@@ -81,6 +51,61 @@ public class PlayerOffsetRenderHelper {
 			);
 			Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.solid());
 			stack.popPose();
+
+//			UnitHitResult result = (UnitHitResult) Minecraft.getInstance().hitResult;
+//			LevelChunk chnk = Minecraft.getInstance().level.getChunkAt(result.getBlockPos());
+//			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(result.getBlockPos());
+//			if (space == null) return;
+//
+//			stack.pushPose();
+//			stack.last().pose().setIdentity();
+//			stack.translate(
+//					-camera.getPosition().x,
+//					-camera.getPosition().y,
+//					-camera.getPosition().z
+//			);
+//			stack.scale(1f / space.unitsPerBlock, 1f / space.unitsPerBlock, 1f / space.unitsPerBlock);
+////			Vec3 pos = Minecraft.getInstance().cameraEntity.getPosition(pct);
+////			pos = pos.subtract(
+////					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getX(),
+////					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getY(),
+////					((TickerServerWorld) space.getMyLevel()).region.pos.toBlockPos().getZ()
+////			);
+////			pos = pos.scale(space.unitsPerBlock);
+//			AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().cameraEntity.getBoundingBox(), Minecraft.getInstance().cameraEntity.getPosition(1), space.unitsPerBlock);
+////			AABB box = Minecraft.getInstance().cameraEntity.getBoundingBox();
+////			box = box.move(
+////					-Minecraft.getInstance().cameraEntity.getPosition(1).x,
+////					-Minecraft.getInstance().cameraEntity.getPosition(1).y,
+////					-Minecraft.getInstance().cameraEntity.getPosition(1).z
+////			);
+////			box = new AABB(
+////					box.minX * space.unitsPerBlock,
+////					box.minY * space.unitsPerBlock,
+////					box.minZ * space.unitsPerBlock,
+////					box.maxX * space.unitsPerBlock,
+////					box.maxY * space.unitsPerBlock,
+////					box.maxZ * space.unitsPerBlock
+////			);
+////			box = box.move(pos.x, pos.y, pos.z);
+//			VertexConsumer consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
+//			renderShape(
+//					stack, consumer,
+//					Shapes.create(box),
+//					0, 0, 0, 1, 1, 1, 1
+//			);
+//			box = box.move(0, Minecraft.getInstance().cameraEntity.getEyeHeight() * space.unitsPerBlock, 0);
+//			box = new AABB(
+//					box.minX, box.minY - (0.01 * space.unitsPerBlock), box.minZ,
+//					box.maxX, box.minY + (0.01 * space.unitsPerBlock), box.maxZ
+//			);
+//			renderShape(
+//					stack, consumer,
+//					Shapes.create(box),
+//					0, 0, 0, 1, 0, 0, 1
+//			);
+//			Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.solid());
+//			stack.popPose();
 		}
 	}
 	

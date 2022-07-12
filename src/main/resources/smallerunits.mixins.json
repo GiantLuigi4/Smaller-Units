@@ -4,6 +4,7 @@
   "package": "tfc.smallerunits.mixin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "smallerunits.refmap.json",
+  "plugin": "tfc.smallerunits.utils.asm.MixinConnector",
   "mixins": [
     "ChunkSerializerAccessor",
     "core.ConnectionMixin",
@@ -21,6 +22,7 @@
   ],
   "client": [
     "LevelRendererMixin",
+    "compat.ChiselAndBitMeshMixin",
     "core.ClientLevelMixin",
     "core.LocalPlayerMixin",
     "core.MinecraftMixin",

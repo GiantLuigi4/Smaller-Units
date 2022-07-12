@@ -127,53 +127,12 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			lookVec = lookVec.scale(reach);
 			startVec = startVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ());
 			Vec3 endVec = startVec.add(lookVec);
-			UnitShape shape = new UnitShape();
-			
-			final Vec3 fStartVec = startVec;
+			UnitShape shape = new UnitShape(space);
 			
 			double upbDouble = space.unitsPerBlock;
-			collectShape((pos) -> {
-				int x = pos.getX();
-				int y = pos.getY();
-				int z = pos.getZ();
-				AABB box = new AABB(
-						x / upbDouble, y / upbDouble, z / upbDouble,
-						(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-				);
-				return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
-			}, (pos, state) -> {
-				int x = pos.getX();
-				int y = pos.getY();
-				int z = pos.getZ();
-				VoxelShape sp = state.getShape(space.myLevel, space.getOffsetPos(pos));
-				for (AABB toAabb : sp.toAabbs()) {
-					toAabb = toAabb.move(x, y, z);
-					UnitBox b = new UnitBox(
-							toAabb.minX / upbDouble,
-							toAabb.minY / upbDouble,
-							toAabb.minZ / upbDouble,
-							toAabb.maxX / upbDouble,
-							toAabb.maxY / upbDouble,
-							toAabb.maxZ / upbDouble,
-							new BlockPos(x, y, z)
-					);
-					shape.addBox(b);
-				}
-			}, space);
-
-//			float yLook = entity.xRotO;
-//			VoxelShape shape = Shapes.empty();
-//			if (yLook > 0) shape = Shapes.or(shape, Shapes.box(0, -0.0001, 0, 1, 0, 1));
-//			else shape = Shapes.or(shape, Shapes.box(0, 1, 0, 1, 1.0001, 1));
-//			float xLook = entity.yRotO;
-//			xLook %= 360;
-//			xLook -= 180;
-//			if (xLook < 0 && xLook > -180) shape = Shapes.or(shape, Shapes.box(-0.0001, 0, 0, 0, 1, 1));
-//			else shape = Shapes.or(shape, Shapes.box(1, 0, 0, 1.0001, 1, 1));
-//			if (xLook < 90 && xLook > -90) shape = Shapes.or(shape, Shapes.box(0, 0, -0.0001, 1, 1, 0));
-//			else shape = Shapes.or(shape, Shapes.box(0, 0, 1, 1, 1, 1.0001));
-//			float yLook = entity.xRotO;
+			final Vec3 fStartVec = startVec;
 			
+			// neighbor blocks
 			for (Direction value : Direction.values()) {
 				BlockState offset = pLevel.getBlockState(pPos.relative(value));
 				if (!offset.isAir()) {
@@ -241,7 +200,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			UnitSpace space = capability.getUnit(pPos);
 			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
 			double upbDouble = space.unitsPerBlock;
-			UnitShape shape = new UnitShape();
+			UnitShape shape = new UnitShape(space);
 			collectShape((pos) -> {
 				// TODO:
 				return true;
