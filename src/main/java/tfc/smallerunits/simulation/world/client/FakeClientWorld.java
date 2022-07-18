@@ -48,6 +48,7 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
@@ -162,8 +163,29 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		return particleEngine;
 	}
 	
+	public HashMap<Integer, BreakData> breakStatus = new HashMap<>();
+	
 	@Override
 	public void destroyBlockProgress(int pBreakerId, BlockPos pPos, int pProgress) {
+//		Entity ent = getEntity(pBreakerId);
+//		if (!(ent instanceof Player)) {
+//			ent = parent.getEntity(pBreakerId);
+//			if (!(ent instanceof Player)) {
+//				return;
+//			}
+//		}
+		if (pProgress < 0) breakStatus.remove(pBreakerId);
+		else {
+			if (breakStatus.containsKey(pBreakerId))
+				breakStatus.replace(pBreakerId, new BreakData(pPos, pProgress));
+			else
+				breakStatus.put(pBreakerId, new BreakData(pPos, pProgress));
+		}
+	}
+	
+	@Override
+	public HashMap<Integer, BreakData> getBreakData() {
+		return breakStatus;
 	}
 	
 	@Override

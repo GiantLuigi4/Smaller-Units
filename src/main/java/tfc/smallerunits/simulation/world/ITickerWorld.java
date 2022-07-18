@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.simulation.block.ParentLookup;
+import tfc.smallerunits.utils.BreakData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,4 +42,8 @@ public interface ITickerWorld {
 	void clear(BlockPos myPosInTheLevel, BlockPos offset);
 	
 	void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> placesBlocks);
+	
+	default HashMap<Integer, BreakData> getBreakData() {
+		return null;
+	}
 }

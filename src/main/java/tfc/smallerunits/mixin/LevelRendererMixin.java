@@ -47,6 +47,7 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.simulation.world.client.FakeClientWorld;
+import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -195,8 +196,6 @@ public abstract class LevelRendererMixin {
 								0.0F, 0.0F, 0.0F, 0.4F
 						);
 					} else {
-						TileRendererHelper.drawBreakingOutline(renderBuffers, pPoseStack, space.getMyLevel(), pos, state, minecraft);
-						
 						pPoseStack.scale(1f / space.unitsPerBlock, 1f / space.unitsPerBlock, 1f / space.unitsPerBlock);
 						pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
 						renderShape(
@@ -260,6 +259,19 @@ public abstract class LevelRendererMixin {
 						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
 						origin.getX(), origin.getY(), origin.getZ()
 				);
+				
+				ITickerWorld world = (ITickerWorld) unit.getMyLevel();
+				for (BreakData integer : world.getBreakData().values()) {
+					BlockPos minPos = unit.getOffsetPos(new BlockPos(0, 0, 0));
+					BlockPos maxPos = unit.getOffsetPos(new BlockPos(unit.unitsPerBlock, unit.unitsPerBlock, unit.unitsPerBlock));
+					BlockPos posInQuestion = integer.pos;
+					if (
+							maxPos.getX() >= posInQuestion.getX() && posInQuestion.getX() >= minPos.getX() &&
+									maxPos.getY() >= posInQuestion.getY() && posInQuestion.getY() >= minPos.getY() &&
+									maxPos.getZ() >= posInQuestion.getZ() && posInQuestion.getZ() >= minPos.getZ()
+					)
+						TileRendererHelper.drawBreakingOutline(integer.prog, renderBuffers, stk, unit.getMyLevel(), integer.pos, ((Level) world).getBlockState(integer.pos), minecraft);
+				}
 			}
 		}
 		

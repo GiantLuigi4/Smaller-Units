@@ -138,10 +138,10 @@ public class TileRendererHelper {
 		mdlViewStk.popPose();
 	}
 	
-	public static void drawBreakingOutline(RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {
+	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {
 		if (level instanceof ITickerWorld) {
 			PoseStack.Pose posestack$pose = pPoseStack.last();
-			VertexConsumer consumer = renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(3));
+			VertexConsumer consumer = renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(progr));
 			int upb = ((ITickerWorld) level).getUPB();
 			consumer = new TextureScalingVertexBuilder(consumer, upb);
 			VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(consumer, posestack$pose.pose(), posestack$pose.normal());
