@@ -145,7 +145,7 @@ dependencies {
 //    minecraft 'net.minecraftforge:forge:1.18.1-39.1.2'
     minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
 
-    api fg.deobf("curse.maven:ttc-467136:3882273")
+    api fg.deobf("curse.maven:ttc-467136:3879824")
 
     api fg.deobf("curse.maven:framedblocks-441647:3805861")
 
