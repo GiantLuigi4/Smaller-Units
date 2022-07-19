@@ -3,9 +3,10 @@ package tfc.smallerunits.networking.hackery;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
+import net.minecraftforge.network.NetworkEvent;
 import sun.misc.Unsafe;
+import tfc.smallerunits.data.access.PacketListenerAccessor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -13,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.function.BiFunction;
 
-public class WrapperPacket implements Packet {
+public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 	private static final Unsafe theUnsafe;
 	public CompoundTag additionalInfo = null;
 	
@@ -52,7 +53,7 @@ public class WrapperPacket implements Packet {
 		if (wrapped instanceof Packet) {
 			pBuffer.writeBoolean(additionalInfo != null);
 			if (additionalInfo != null) pBuffer.writeNbt(additionalInfo);
-			pBuffer.writeByteArray(wrapped.getClass().toString().getBytes(StandardCharsets.UTF_8));
+			pBuffer.writeByteArray(wrapped.getClass().getName().getBytes(StandardCharsets.UTF_8));
 			((Packet<?>) wrapped).write(pBuffer);
 		}
 	}
@@ -60,7 +61,9 @@ public class WrapperPacket implements Packet {
 	public Object read(FriendlyByteBuf obj) {
 		try {
 			preRead(obj);
-			Class<?> clazz = Class.forName(new String(obj.readByteArray()));
+			String name = new String(obj.readByteArray());
+			System.out.println(name);
+			Class<?> clazz = Class.forName(name);
 			Object obj1 = theUnsafe.allocateInstance(clazz);
 			if (obj1 instanceof Packet) {
 				for (Constructor<?> constructor : obj1.getClass().getConstructors()) {
@@ -95,12 +98,22 @@ public class WrapperPacket implements Packet {
 	private void preRead(FriendlyByteBuf obj) {
 		if (obj.readBoolean()) {
 			additionalInfo = obj.readNbt();
-//			preRead();
 		}
 	}
 	
 	@Override
-	public void handle(PacketListener pHandler) {
+	public void handle(NetworkEvent.Context ctx) {
+		if (hasRead) return;
+		if (wrapped == null) return;
+		
+		NetworkContext context = new NetworkContext(ctx.getNetworkManager(), ((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).getPlayer(), ((Packet) this.wrapped));
+		preRead(context);
+		PacketUtilMess.preHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
+		context.pkt.handle(ctx.getNetworkManager().getPacketListener());
+		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
+		teardown(context);
+		
+		super.handle(ctx);
 	}
 	
 	@Override

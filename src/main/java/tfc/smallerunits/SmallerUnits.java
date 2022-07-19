@@ -20,8 +20,6 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
-import tfc.smallerunits.networking.hackery.PacketReader;
-import tfc.smallerunits.networking.hackery.PacketWriter;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
 
@@ -86,10 +84,10 @@ public class SmallerUnits {
 	}
 	
 	public static void setupConnectionButchery(Player player, Connection connection, ChannelPipeline pipeline) {
-		if (!pipeline.toMap().containsKey(SmallerUnits.class.getName() + ":writer")) {
-			pipeline.addFirst(SmallerUnits.class.getName() + ":writer", new PacketWriter(player, connection));
-			pipeline.addFirst(SmallerUnits.class.getName() + ":reader", new PacketReader(player, connection));
-		}
+//		if (!pipeline.toMap().containsKey(SmallerUnits.class.getName() + ":writer")) {
+//			pipeline.addFirst(SmallerUnits.class.getName() + ":writer", new PacketWriter(player, connection));
+//			pipeline.addFirst(SmallerUnits.class.getName() + ":reader", new PacketReader(player, connection));
+//		}
 	}
 
 //	public void connect0(NetworkEvent.ServerCustomPayloadLoginEvent event) {

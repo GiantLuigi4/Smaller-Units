@@ -5,6 +5,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
 import tfc.smallerunits.networking.core.UnitInteractionPacket;
+import tfc.smallerunits.networking.hackery.WrapperPacket;
 import tfc.smallerunits.networking.sync.*;
 
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ public class SUNetworkRegistry {
 		entries.add(new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new));
 		entries.add(new NetworkEntry<>(UnitInteractionPacket.class, UnitInteractionPacket::new));
 		entries.add(new NetworkEntry<>(DestroyUnitPacket.class, DestroyUnitPacket::new));
+		
+		entries.add(new NetworkEntry<>(WrapperPacket.class, WrapperPacket::new));
 		
 		for (int i = 0; i < entries.size(); i++) entries.get(i).register(i, NETWORK_INSTANCE);
 	}
