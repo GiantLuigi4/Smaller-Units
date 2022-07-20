@@ -54,7 +54,7 @@ public class PacketUtilMess {
 				
 				AABB scaledBB;
 				player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, pos.upb()));
-				player.eyeHeight = (float) (info.eyeHeight * (1d / pos.upb()));
+				player.eyeHeight = (float) (info.eyeHeight * (pos.upb()));
 				player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 				if (player.level.isClientSide) {
 					if (player.level instanceof ClientLevel) {
@@ -63,6 +63,10 @@ public class PacketUtilMess {
 						// TODO: set particle engine
 					}
 				}
+				// TODO: do this more properly
+				player.xOld = player.xo = player.position().x;
+				player.yOld = player.yo = player.position().y;
+				player.zOld = player.zo = player.position().z;
 				((PacketListenerAccessor) listener).setWorld(player.level = spaceLevel);
 				pkts.put(packet, info);
 			}

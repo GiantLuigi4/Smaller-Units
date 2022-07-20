@@ -62,7 +62,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		try {
 			preRead(obj);
 			String name = new String(obj.readByteArray());
-			System.out.println(name);
+//			System.out.println(name);
 			Class<?> clazz = Class.forName(name);
 			Object obj1 = theUnsafe.allocateInstance(clazz);
 			if (obj1 instanceof Packet) {
@@ -103,7 +103,8 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 	
 	@Override
 	public void handle(NetworkEvent.Context ctx) {
-		if (hasRead) return;
+		ctx.setPacketHandled(true);
+		// TODO: I don't know why this happens
 		if (wrapped == null) return;
 		
 		NetworkContext context = new NetworkContext(ctx.getNetworkManager(), ((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).getPlayer(), ((Packet) this.wrapped));
@@ -112,8 +113,6 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		context.pkt.handle(ctx.getNetworkManager().getPacketListener());
 		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
 		teardown(context);
-		
-		super.handle(ctx);
 	}
 	
 	@Override

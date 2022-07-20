@@ -20,6 +20,37 @@ public class PlayerOffsetRenderHelper {
 	public static void render(PoseStack stack, float pct, long tick, boolean idk, Camera camera, GameRenderer renderer, LightTexture lightTexture, Matrix4f matrix, CallbackInfo ci) {
 		if (true) return;
 		
+		{
+			stack.pushPose();
+			stack.last().pose().setIdentity();
+			stack.translate(
+					-camera.getPosition().x,
+					-camera.getPosition().y,
+					-camera.getPosition().z
+			);
+			
+			Vec3 start = new Vec3(0.18879149401715703, 1.6200000047683716, 0.034704949144785405);
+			Vec3 end = new Vec3(-7.40342285191485, -3.532535433769226, 4.010112728361552);
+			
+			start = start.scale(1 / 16d);
+			end = end.scale(1 / 16d);
+			
+			VertexConsumer consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.lines());
+			consumer.vertex(stack.last().pose(), (float) start.x, (float) start.y, (float) start.z).color(0, 0, 0, 1f).normal(0, 0, 0).endVertex();
+			consumer.vertex(stack.last().pose(), (float) end.x, (float) end.y, (float) end.z).color(0, 0, 0, 1f).normal(0, 0, 0).endVertex();
+			
+			AABB box = new AABB(start, end);
+			renderShape(
+					stack, consumer,
+					Shapes.create(box),
+					0, 0, 0, 1, 1, 1, 1
+			);
+			
+			consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.leash());
+			
+			stack.popPose();
+		}
+		
 		if (Minecraft.getInstance().hitResult instanceof UnitHitResult) {
 			if (!Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes())
 				return;

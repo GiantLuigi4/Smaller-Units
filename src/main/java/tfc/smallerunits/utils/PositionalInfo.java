@@ -28,13 +28,16 @@ public class PositionalInfo {
 	private static final UUID SU_REACH_UUID = new UUID(new Random(847329).nextLong(), new Random(426324).nextLong());
 	private boolean isReachSet = false;
 	private Object particleEngine = null;
+	public final Vec3 oPos;
+	public final Vec3 oldPos;
 	
 	public PositionalInfo(Player pPlayer) {
 		pos = new Vec3(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ());
 		lvl = pPlayer.level;
 		box = pPlayer.getBoundingBox();
 		eyeHeight = pPlayer.eyeHeight;
-		
+		oPos = new Vec3(pPlayer.xo, pPlayer.yo, pPlayer.zo);
+		oldPos = new Vec3(pPlayer.xOld, pPlayer.yOld, pPlayer.zOld);
 	}
 	
 	public void scalePlayerReach(Player pPlayer, int upb) {
@@ -61,6 +64,13 @@ public class PositionalInfo {
 					Minecraft.getInstance().particleEngine = upe;
 			}
 		}
+		pPlayer.xo = HitboxScaling.scaleX(space, pPlayer.xo);
+		pPlayer.yo = HitboxScaling.scaleY(space, pPlayer.yo);
+		pPlayer.zo = HitboxScaling.scaleZ(space, pPlayer.zo);
+		pPlayer.xOld = HitboxScaling.scaleX(space, pPlayer.xOld);
+		pPlayer.yOld = HitboxScaling.scaleY(space, pPlayer.yOld);
+		pPlayer.zOld = HitboxScaling.scaleZ(space, pPlayer.zOld);
+		
 		pPlayer.level = space.getMyLevel();
 	}
 	
@@ -81,6 +91,12 @@ public class PositionalInfo {
 		}
 		pPlayer.setBoundingBox(box);
 		pPlayer.setPosRaw(pos.x, pos.y, pos.z);
+		pPlayer.xOld = oldPos.x;
+		pPlayer.yOld = oldPos.y;
+		pPlayer.zOld = oldPos.z;
+		pPlayer.xo = oPos.x;
+		pPlayer.yo = oPos.y;
+		pPlayer.zo = oPos.z;
 		pPlayer.eyeHeight = eyeHeight;
 	}
 }
