@@ -199,6 +199,7 @@ public class UnitShape extends VoxelShape {
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
 		
 		double upbDouble = space.unitsPerBlock;
+		// TODO: make this not rely on block pos
 		collectShape((pos) -> {
 			int x = pos.getX();
 			int y = pos.getY();
@@ -206,7 +207,7 @@ public class UnitShape extends VoxelShape {
 			AABB box = new AABB(
 					x / upbDouble, y / upbDouble, z / upbDouble,
 					(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-			);
+			).move(offset).move(pPos);
 			return box.contains(pStartVec) || box.clip(vec31, pEndVec).isPresent();
 		}, (pos, state) -> {
 			int x = pos.getX();
@@ -215,7 +216,7 @@ public class UnitShape extends VoxelShape {
 			VoxelShape sp = state.getShape(space.getMyLevel(), space.getOffsetPos(pos));
 			for (AABB toAabb : sp.toAabbs()) {
 				toAabb = toAabb.move(x, y, z).move(offset);
-				UnitBox b = new UnitBox(
+				UnitBox b = (UnitBox) new UnitBox(
 						toAabb.minX / upbDouble,
 						toAabb.minY / upbDouble,
 						toAabb.minZ / upbDouble,
@@ -230,7 +231,7 @@ public class UnitShape extends VoxelShape {
 		
 		if (this.isEmpty()) return null;
 		
-		if (this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
+		if (this.totalBB.move(pPos).contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
 			for (UnitBox box : boxes) {
 				box = (UnitBox) box.move(pPos);
 				if (box.contains(pStartVec)) {

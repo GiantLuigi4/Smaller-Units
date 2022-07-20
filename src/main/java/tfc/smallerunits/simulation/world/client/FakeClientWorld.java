@@ -25,7 +25,9 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -239,8 +241,27 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	
 	@Override
 	public void levelEvent(@Nullable Player pPlayer, int pType, BlockPos pPos, int pData) {
-		System.out.println(pType);
-		// TODO
+//		System.out.println(pType);
+		ClientLevel level = Minecraft.getInstance().level;
+		ParticleEngine engine = Minecraft.getInstance().particleEngine;
+		Minecraft.getInstance().level = this;
+		Minecraft.getInstance().particleEngine = particleEngine;
+		switch (pType) {
+			case 2001:
+				BlockState blockstate = Block.stateById(pData);
+				if (!blockstate.isAir()) {
+					SoundType soundtype = blockstate.getSoundType(this, pPos, null);
+					this.playLocalSound(pPos, soundtype.getBreakSound(), SoundSource.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
+				}
+				
+				this.addDestroyBlockEffect(pPos, blockstate);
+				break;
+			default:
+				System.out.println(pType);
+		}
+		Minecraft.getInstance().level = level;
+		Minecraft.getInstance().particleEngine = engine;
+		// TODO level renderer so I don't need this switch
 	}
 	
 	@Override
