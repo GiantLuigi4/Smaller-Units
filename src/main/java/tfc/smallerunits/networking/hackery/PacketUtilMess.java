@@ -1,8 +1,5 @@
 package tfc.smallerunits.networking.hackery;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.world.entity.player.Player;
@@ -56,13 +53,7 @@ public class PacketUtilMess {
 				player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, pos.upb()));
 				player.eyeHeight = (float) (info.eyeHeight * (pos.upb()));
 				player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-				if (player.level.isClientSide) {
-					if (player.level instanceof ClientLevel) {
-						((LocalPlayer) player).clientLevel = (ClientLevel) spaceLevel;
-						Minecraft.getInstance().level = ((LocalPlayer) player).clientLevel;
-						// TODO: set particle engine
-					}
-				}
+				info.setupClient(player, spaceLevel);
 				// TODO: do this more properly
 				player.xOld = player.xo = player.position().x;
 				player.yOld = player.yo = player.position().y;

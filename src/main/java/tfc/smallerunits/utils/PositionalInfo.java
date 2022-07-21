@@ -99,4 +99,16 @@ public class PositionalInfo {
 		pPlayer.zo = oPos.z;
 		pPlayer.eyeHeight = eyeHeight;
 	}
+	
+	public void setupClient(Player player, Level spaceLevel) {
+		if (player.level.isClientSide) {
+			if (player.level instanceof ClientLevel) {
+				((LocalPlayer) player).clientLevel = (ClientLevel) spaceLevel;
+				Minecraft.getInstance().level = ((LocalPlayer) player).clientLevel;
+				
+				particleEngine = Minecraft.getInstance().particleEngine;
+				Minecraft.getInstance().particleEngine = ((FakeClientWorld) spaceLevel).getParticleEngine();
+			}
+		}
+	}
 }

@@ -113,6 +113,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		context.pkt.handle(ctx.getNetworkManager().getPacketListener());
 		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
 		teardown(context);
+		System.out.println();
 	}
 	
 	@Override
