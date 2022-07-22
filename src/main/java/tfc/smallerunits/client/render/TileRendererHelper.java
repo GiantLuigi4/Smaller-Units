@@ -4,12 +4,19 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Matrix3f;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,9 +47,12 @@ public class TileRendererHelper {
 	}
 	
 	// TODO: this should only happen on empty units or when the hammer is out
-	// TODO: natural units and non-natural units should have different colors when the hammer is held
 	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-		// Minecraft.getInstance().renderBuffers().bufferSource()
+		// TODO: this needs optimization and checking
+		// could probably convert this to VBOs
+		
+		if (true) return;
+		
 		float r = 1;
 		float g = 1;
 		float b = 0;
@@ -60,60 +70,149 @@ public class TileRendererHelper {
 		
 		// half
 		// bottom
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		Direction[] directions = new Direction[]{
+				Direction.DOWN,
+				Direction.UP,
+				Direction.SOUTH,
+				Direction.NORTH,
+				Direction.EAST,
+				Direction.WEST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
 		stk.translate(-unit.unitsPerBlock, 0, 0);
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		// bottom
+		directions = new Direction[]{
+				Direction.UP,
+				Direction.DOWN,
+				Direction.SOUTH,
+				Direction.NORTH,
+				Direction.WEST,
+				Direction.EAST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.scale(1, -1, 1);
 		stk.translate(0, -unit.unitsPerBlock, 0);
 		// top
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		directions = new Direction[]{
+				Direction.UP,
+				Direction.DOWN,
+				Direction.NORTH,
+				Direction.SOUTH,
+				Direction.WEST,
+				Direction.EAST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
 		stk.translate(-unit.unitsPerBlock, 0, 0);
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		directions = new Direction[]{
+				Direction.DOWN,
+				Direction.UP,
+				Direction.SOUTH,
+				Direction.NORTH,
+				Direction.WEST,
+				Direction.EAST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		
 		stk.scale(1, 1, -1);
 		stk.translate(0, 0, -unit.unitsPerBlock);
 		
 		// half
 		// bottom
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		directions = new Direction[]{
+				Direction.UP,
+				Direction.DOWN,
+				Direction.SOUTH,
+				Direction.NORTH,
+				Direction.EAST,
+				Direction.WEST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
 		stk.translate(-unit.unitsPerBlock, 0, 0);
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		directions = new Direction[]{
+				Direction.DOWN,
+				Direction.UP,
+				Direction.NORTH,
+				Direction.SOUTH,
+				Direction.EAST,
+				Direction.WEST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.scale(1, -1, 1);
 		stk.translate(0, -unit.unitsPerBlock, 0);
 		// top
-		drawCorner(stk.last().pose(), source, light, r, g, b);
+		directions = new Direction[]{
+				Direction.DOWN,
+				Direction.UP,
+				Direction.NORTH,
+				Direction.SOUTH,
+				Direction.WEST,
+				Direction.EAST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
 		stk.translate(-unit.unitsPerBlock, 0, 0);
-		drawCorner(stk.last().pose(), source, light, r, g, b);
-		
+		directions = new Direction[]{
+				Direction.UP,
+				Direction.DOWN,
+				Direction.SOUTH,
+				Direction.NORTH,
+				Direction.WEST,
+				Direction.EAST,
+		};
+		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
 		stk.popPose();
 	}
 	
-	protected static void drawCorner(Matrix4f mat, MultiBufferSource source, int light, float r, float g, float b) {
-		VertexConsumer consumer = source.getBuffer(RenderType.leash());
+	protected static void drawCorner(Matrix4f mat, MultiBufferSource source, int light, float r, float g, float b, Direction[] directions) {
+//		VertexConsumer consumer = source.getBuffer(RenderType.entityCutoutNoCull(new ResourceLocation("smallerunits:textures/block/white_pixel.png")));
+		VertexConsumer consumer = source.getBuffer(RenderType.solid());
 		
-		float lscl = 0.9f;
+		TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(new ResourceLocation("smallerunits:block/white_pixel"));
+		// TODO: I want this done with a block render type
+		float lscl = 1;
 		
-		consumer.vertex(mat, 0, 0.00128624283327f, 0).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 1, 0.00128624283327f, 0).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 1, 0.00128624283327f, 1).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 0, 0.00128624283327f, 1).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 0, 0.00128624283327f, 0).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
+		Matrix3f normal = RenderSystem.getModelViewStack().last().normal();
 		
-		lscl = 0.7f;
-		consumer.vertex(mat, 0.00128624283327f, 1, 1).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 0.00128624283327f, 0, 0).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 0.00128624283327f, 1, 0).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
+		ClientLevel level = Minecraft.getInstance().level;
+		float offset = 0.00128624283327f;
+		lscl = level.getShade(directions[0], true);
+		consumer.vertex(mat, 0, offset, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, offset, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, offset, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 0, offset, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
 		
-		lscl = 0.75f;
-		consumer.vertex(mat, 1, 1, 0.00128624283327f).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 1, 0, 0.00128624283327f).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
-		consumer.vertex(mat, 0, 0, 0.00128624283327f).color(r * lscl, g * lscl, b * lscl, 1).uv2(light).endVertex();
+		lscl = level.getShade(directions[1], true);
+		consumer.vertex(mat, 0, offset, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, offset, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, offset, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 0, offset, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
 		
-		consumer = source.getBuffer(RenderType.cutout());
+		lscl = level.getShade(directions[2], true);
+		consumer.vertex(mat, 0, 0, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, 0, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, 1, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 0, 1, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		
+		lscl = level.getShade(directions[3], true);
+		consumer.vertex(mat, 0, 1, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, 1, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 1, 0, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, 0, 0, offset).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		
+		lscl = level.getShade(directions[4], true);
+		consumer.vertex(mat, offset, 0, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, offset, 1, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, offset, 1, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, offset, 0, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		
+		lscl = level.getShade(directions[5], true);
+		consumer.vertex(mat, offset, 0, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, offset, 1, 1).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV1()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, offset, 1, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU1(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
+		consumer.vertex(mat, offset, 0, 0).color(r * lscl, g * lscl, b * lscl, 1).uv(sprite.getU0(), sprite.getV0()).overlayCoords(OverlayTexture.NO_OVERLAY).uv2(light).normal(0, 0, 0).endVertex();
 	}
 	
 	public static void drawParticles(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, Region value, Level valueLevel, RenderBuffers renderBuffers, CallbackInfo ci) {
@@ -139,18 +238,20 @@ public class TileRendererHelper {
 	}
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {
-		if (level instanceof ITickerWorld) {
-			PoseStack.Pose posestack$pose = pPoseStack.last();
-			VertexConsumer consumer = renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(progr));
-			int upb = ((ITickerWorld) level).getUPB();
-			consumer = new TextureScalingVertexBuilder(consumer, upb);
-			VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(consumer, posestack$pose.pose(), posestack$pose.normal());
-			pPoseStack.pushPose();
-			float scl = 1f / upb;
-			pPoseStack.scale(scl, scl, scl);
-			pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
-			minecraft.getBlockRenderer().renderBreakingTexture(state, pos, level, pPoseStack, vertexconsumer1);
-			pPoseStack.popPose();
+		if (progr < 10) {
+			if (level instanceof ITickerWorld) {
+				PoseStack.Pose posestack$pose = pPoseStack.last();
+				VertexConsumer consumer = renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(progr));
+				int upb = ((ITickerWorld) level).getUPB();
+				consumer = new TextureScalingVertexBuilder(consumer, upb);
+				VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(consumer, posestack$pose.pose(), posestack$pose.normal());
+				pPoseStack.pushPose();
+				float scl = 1f / upb;
+				pPoseStack.scale(scl, scl, scl);
+				pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
+				minecraft.getBlockRenderer().renderBreakingTexture(state, pos, level, pPoseStack, vertexconsumer1);
+				pPoseStack.popPose();
+			}
 		}
 	}
 }

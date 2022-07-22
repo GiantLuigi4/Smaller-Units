@@ -13,6 +13,7 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.world.ChunkWatchEvent;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 
@@ -63,7 +64,8 @@ public class SUCapabilityManager {
 	 * @return the corresponding ISUCapability
 	 */
 	public static ISUCapability getCapability(LevelChunk chunk) {
-		return chunk.getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
+//		return chunk.getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
+		return ((SUCapableChunk) chunk).getSUCapability();
 	}
 	
 	public static ISUCapability getCapability(Level lvl, ChunkAccess chunk) {
@@ -80,6 +82,7 @@ public class SUCapabilityManager {
 	public static ISUCapability getCapability(Level world, ChunkPos pos) {
 		ChunkAccess access = world.getChunk(/* CC safety */ pos.getWorldPosition());
 		if (!(access instanceof LevelChunk)) return getCapability(world.getChunkAt(pos.getWorldPosition()));
+		if (access instanceof SUCapableChunk chunk) return chunk.getSUCapability();
 		return ((LevelChunk) access).getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
 	}
 	

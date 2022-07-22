@@ -2,17 +2,28 @@ package tfc.smallerunits.mixin.data;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.util.LazyOptional;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.render.SUChunkRender;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
+import tfc.smallerunits.data.capability.ISUCapability;
+import tfc.smallerunits.data.capability.SUCapabilityManager;
 
 import java.util.ArrayList;
 
 @Mixin(LevelChunk.class)
-public class LevelChunkMixin implements SUCapableChunk {
+public abstract class LevelChunkMixin implements SUCapableChunk {
+	@Unique
+	ISUCapability capability = null;
+	
 	@Unique
 	private final ArrayList<BlockPos> dirtyBlocks = new ArrayList<>();
 	@Unique
@@ -76,5 +87,16 @@ public class LevelChunkMixin implements SUCapableChunk {
 	@Override
 	public SUChunkRender SU$getChunkRender() {
 		return compChunk;
+	}
+	
+	@Shadow
+	@NotNull
+	public abstract <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side);
+	
+	@Override
+	public ISUCapability getSUCapability() {
+		if (capability == null)
+			capability = this.getCapability(SUCapabilityManager.SU_CAPABILITY_TOKEN, null).orElse(null);
+		return capability;
 	}
 }

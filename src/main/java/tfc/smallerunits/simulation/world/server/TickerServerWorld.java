@@ -1,6 +1,6 @@
 package tfc.smallerunits.simulation.world.server;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
@@ -51,6 +51,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.world.EntityManager;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.simulation.world.SUTickList;
+import tfc.smallerunits.utils.storage.VecMap;
 
 import java.io.IOException;
 import java.util.*;
@@ -59,6 +60,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+@SuppressWarnings("removal")
 public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	private static final NoStorageSource src = NoStorageSource.make();
 	private static final LevelStorageSource.LevelStorageAccess noAccess;
@@ -73,8 +75,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		}
 	}
 	
-	ArrayList<Entity> entitiesAdded = new ArrayList<>();
-	ArrayList<Entity> entitiesRemoved = new ArrayList<>();
+	public final VecMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new VecMap<>(2);
 	
 	@Override
 	public Level getParent() {
@@ -91,7 +92,26 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		return lookup;
 	}
 	
-	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) throws IOException {
+	//	ArrayList<Entity> entitiesAdded = new ArrayList<>();
+	ArrayList<Entity> entitiesRemoved = new ArrayList<>();
+	
+	@Override
+	protected void finalize() throws Throwable {
+		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
+		super.finalize();
+	}
+	
+	@Override
+	public void SU$removeEntity(Entity pEntity) {
+		if (!entitiesRemoved.contains(pEntity)) entitiesRemoved.add(pEntity);
+	}
+	
+	public final Level parent;
+	//	public final UnitSpace parentU;
+	public final Region region;
+	int upb;
+	
+	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) {
 		super(
 				server,
 				Util.backgroundExecutor(),
@@ -129,22 +149,6 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 	}
 	
-	@Override
-	protected void finalize() throws Throwable {
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
-		super.finalize();
-	}
-	
-	@Override
-	public void SU$removeEntity(Entity pEntity) {
-		if (!entitiesRemoved.contains(pEntity)) entitiesRemoved.add(pEntity);
-	}
-	
-	public final Level parent;
-	//	public final UnitSpace parentU;
-	public final Region region;
-	int upb;
-	public final Map<BlockPos, BlockState> cache = new Object2ObjectLinkedOpenHashMap<>();
 	public ParentLookup lookup;
 	public ParentLookup lookupTemp;
 	ArrayList<Entity> entities = new ArrayList<>();
@@ -810,8 +814,12 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 					Math.floor(pos.getY() / (double) upb),
 					Math.floor(pos.getZ() / (double) upb)
 			);
-			if (cache.containsKey(bp))
-				return cache.get(bp);
+			if (cache.containsKey(bp)) {
+//				BlockState state = cache.get(bp).getFirst();
+//				VoxelShape shape = state.getCollisionShape(parent, bp);
+				// TODO: empty shape check
+				return cache.get(bp).getFirst();
+			}
 //			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
 //				return Blocks.VOID_AIR.defaultBlockState();
 //			ChunkPos cp = new ChunkPos(bp);
@@ -822,13 +830,14 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 			BlockState state = parent.getBlockState(bp);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
-			cache.put(bp, state);
+			cache.put(bp, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
 	}
 	
-	public void invalidateCache() {
-		cache.clear();
+	@Override
+	public void invalidateCache(BlockPos pos) {
+		cache.remove(pos);
 	}
 	
 	public int getUnitsPerBlock() {

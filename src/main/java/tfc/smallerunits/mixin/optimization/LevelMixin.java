@@ -24,13 +24,13 @@ public abstract class LevelMixin {
 			if (this instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) this).SU$getRegion(new RegionPos(levelchunk));
 				if (r == null) return;
-				r.updateWorlds();
+				r.updateWorlds(levelchunk);
 			}
 		} else {
 			if (((Object) this) instanceof ServerLevel) {
 				Region r = ((RegionalAttachments) (((ServerLevel) (Object) this).chunkSource.chunkMap)).SU$getRegion(new RegionPos(levelchunk));
 				if (r == null) return;
-				r.updateWorlds();
+				r.updateWorlds(levelchunk);
 			}
 		}
 	}

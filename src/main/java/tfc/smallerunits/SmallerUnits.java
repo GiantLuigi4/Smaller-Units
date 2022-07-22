@@ -2,11 +2,14 @@ package tfc.smallerunits;
 
 import io.netty.channel.ChannelPipeline;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -14,6 +17,7 @@ import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -63,6 +67,10 @@ public class SmallerUnits {
 			return null;
 		}, (obj, ctx) -> {
 		});
+		
+		if (FMLEnvironment.dist.isClient()) {
+			FMLJavaModLoadingContext.get().getModEventBus().addListener(SmallerUnits::onTextureStitch);
+		}
 		
 		try {
 			Class<?> clazz = Class.forName("net.optifine.Config");
@@ -114,5 +122,11 @@ public class SmallerUnits {
 //			}
 		}
 		setupConnectionButchery(player, connection, connection.channel().pipeline());
+	}
+	
+	private static void onTextureStitch(TextureStitchEvent.Pre event) {
+		if (event.getAtlas().location().equals(TextureAtlas.LOCATION_BLOCKS)) {
+			event.addSprite(new ResourceLocation("smallerunits:block/white_pixel"));
+		}
 	}
 }

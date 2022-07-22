@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -30,7 +29,10 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.*;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.EntityCollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.PacketDistributor;
@@ -132,56 +134,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			double upbDouble = space.unitsPerBlock;
 			final Vec3 fStartVec = startVec;
 			
-			// neighbor blocks
-			for (Direction value : Direction.values()) {
-				BlockState offset = pLevel.getBlockState(pPos.relative(value));
-				if (!offset.isAir()) {
-					if (offset.getBlock() instanceof UnitSpaceBlock) continue;
-					VoxelShape shape1 = offset.getShape(pLevel, pPos.relative(value), pContext);
-					if (shape1.isEmpty()) continue;
-					shape1 = shape1.move(value.getStepX(), value.getStepY(), value.getStepZ());
-					for (int xo = 0; xo < space.unitsPerBlock; xo++) {
-						for (int zo = 0; zo < space.unitsPerBlock; zo++) {
-							double x;
-							double y;
-							double z;
-							if (value.equals(Direction.WEST) || value.equals(Direction.EAST)) {
-								x = value.equals(Direction.EAST) ? (space.unitsPerBlock - 0.999) : -0.001;
-								y = xo;
-								z = zo;
-							} else if (value.equals(Direction.UP) || value.equals(Direction.DOWN)) {
-								x = xo;
-								y = value.equals(Direction.UP) ? (space.unitsPerBlock - 0.999) : -0.001;
-								z = zo;
-							} else {
-								x = xo;
-								y = zo;
-								z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
-							}
-							AABB box = new AABB(
-									x / upbDouble, y / upbDouble, z / upbDouble,
-									(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-							);
-							// less expensive than voxel shape computations
-							if (box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent()) {
-								if (value.getStepX() == 1) x += 1;
-								else if (value.getStepY() == 1) y += 1;
-								else if (value.getStepZ() == 1) z += 1;
-								BlockPos pos = new BlockPos(x, y, z);
-								VoxelShape shape2 = Shapes.joinUnoptimized(shape1, Shapes.create(box), BooleanOp.AND);
-								if (shape2.isEmpty()) continue;
-								for (AABB toAabb : shape2.toAabbs()) {
-									shape.addBox(new UnitBox(
-											toAabb.minX, toAabb.minY, toAabb.minZ,
-											toAabb.maxX, toAabb.maxY, toAabb.maxZ,
-											pos
-									));
-								}
-							}
-						}
-					}
-				}
-			}
+			shape.setupNeigbors(pLevel, pPos);
 			
 			return shape;
 		}

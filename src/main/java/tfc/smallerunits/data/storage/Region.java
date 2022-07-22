@@ -1,6 +1,7 @@
 package tfc.smallerunits.data.storage;
 
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.game.ServerPacketListener;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.simulation.world.client.FakeClientWorld;
 import tfc.smallerunits.simulation.world.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.world.server.TickerServerWorld;
@@ -124,16 +126,10 @@ public class Region {
 		return levels[upb];
 	}
 	
-	public void updateWorlds() {
+	public void updateWorlds(BlockPos pos) {
 		for (Level level : levels) {
 			if (level != null) {
-				if (level.isClientSide) {
-					if (level instanceof TickerServerWorld) {
-						((TickerServerWorld) level).invalidateCache();
-					}
-				} else {
-					((TickerServerWorld) level).invalidateCache();
-				}
+				((ITickerWorld) level).invalidateCache(pos);
 			}
 		}
 	}

@@ -18,15 +18,10 @@ import java.util.UUID;
 
 public interface ITickerWorld {
 	int getUPB();
-	
 	void handleRemoval();
-	
 	void SU$removeEntity(Entity pEntity);
-	
 	void SU$removeEntity(UUID uuid);
-	
 	Level getParent();
-	
 	Region getRegion();
 	
 	ParentLookup getLookup();
@@ -46,4 +41,6 @@ public interface ITickerWorld {
 	default HashMap<Integer, BreakData> getBreakData() {
 		return null;
 	}
+	
+	void invalidateCache(BlockPos pos);
 }

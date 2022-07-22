@@ -1,6 +1,6 @@
 package tfc.smallerunits.simulation.world.client;
 
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -53,10 +53,10 @@ import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.storage.VecMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -65,7 +65,7 @@ import java.util.function.Supplier;
 public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	public final Region region;
 	public final int upb;
-	public final Map<BlockPos, BlockState> cache = new Object2ObjectLinkedOpenHashMap<>();
+	public final VecMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new VecMap<>(2);
 	public ParentLookup lookup;
 	public ParentLookup lookupTemp;
 	ClientLevel parent;
@@ -138,20 +138,22 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 					Math.floor(pos.getY() / (double) upb),
 					Math.floor(pos.getZ() / (double) upb)
 			);
-			if (cache.containsKey(bp))
-				return cache.get(bp);
+			if (cache.containsKey(bp)) {
+//				BlockState state = cache.get(bp).getFirst();
+//				VoxelShape shape = state.getCollisionShape(parent, bp);
+				// TODO: empty shape check
+				return cache.get(bp).getFirst();
+			}
 //			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
 //				return Blocks.VOID_AIR.defaultBlockState();
 //			ChunkPos cp = new ChunkPos(bp);
 //			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
 //				return Blocks.VOID_AIR.defaultBlockState();
-//			if (!getServer().isReady())
-//				return Blocks.VOID_AIR.defaultBlockState();
 			if (Minecraft.getInstance().level == null) return Blocks.VOID_AIR.defaultBlockState();
 			BlockState state = parent.getBlockState(bp);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
-			cache.put(bp, state);
+			cache.put(bp, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
 		
@@ -493,7 +495,7 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
-		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
+//		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
 
 //		this.tickEntities();
 		for (Entity entity : entitiesForRendering()) {
@@ -557,5 +559,10 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		vc.setBlockFast(new BlockPos(x, y, z), state);
 		
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
+	}
+	
+	@Override
+	public void invalidateCache(BlockPos pos) {
+		cache.remove(pos);
 	}
 }

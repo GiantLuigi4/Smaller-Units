@@ -164,13 +164,11 @@ public class SUVBOEmitter {
 //							if (consumer == null) consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
-//							IModelData data = EmptyModelData.INSTANCE;
-//							if (value.tileEntity != null) data = value.tileEntity.getModelData();
 							BlockPos rPos = new BlockPos(x, y, z);
 							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), space.getOffsetPos(rPos));
 							if (data == null) data = EmptyModelData.INSTANCE;
 							dispatcher.renderBatched(
-									block, rPos,
+									block, space.getOffsetPos(rPos),
 									wld, stk, consumer,
 									true, new Random(space.getOffsetPos(rPos).asLong()),
 									data

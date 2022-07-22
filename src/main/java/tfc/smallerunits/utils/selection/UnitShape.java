@@ -8,13 +8,16 @@ import net.minecraft.core.AxisCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
 
 import javax.annotation.Nullable;
@@ -192,6 +195,8 @@ public class UnitShape extends VoxelShape {
 		return ImmutableList.copyOf(boxes);
 	}
 	
+	VoxelShape[] neighbors = new VoxelShape[Direction.values().length];
+	
 	@Nullable
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		Vec3 vec3 = pEndVec.subtract(pStartVec);
@@ -229,9 +234,11 @@ public class UnitShape extends VoxelShape {
 			}
 		}, space);
 		
-		if (this.isEmpty()) return null;
+		if (this.isEmpty()) {
+			return computeEdgeResult(pStartVec, pEndVec, pPos);
+		}
 		
-		if (this.totalBB.move(pPos).contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
+		if (totalBB != null && this.totalBB.move(pPos).contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
 			for (UnitBox box : boxes) {
 				box = (UnitBox) box.move(pPos);
 				if (box.contains(pStartVec)) {
@@ -269,7 +276,7 @@ public class UnitShape extends VoxelShape {
 		}
 		if (h != null) return h;
 		
-		return null;
+		return computeEdgeResult(pStartVec, pEndVec, pPos);
 	}
 	
 	public void collectShape(Function<BlockPos, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space) {
@@ -336,5 +343,88 @@ public class UnitShape extends VoxelShape {
 			}
 		}
 		return false;
+	}
+	
+	protected BlockHitResult computeEdgeResult(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
+		double upbDouble = space.unitsPerBlock;
+		
+		double dbest = Double.POSITIVE_INFINITY;
+		UnitHitResult h = null;
+		double[] percent = new double[]{1};
+		double d0 = pEndVec.x - pStartVec.x;
+		double d1 = pEndVec.y - pStartVec.y;
+		double d2 = pEndVec.z - pStartVec.z;
+		// neighbor blocks
+		for (Direction value : Direction.values()) {
+			VoxelShape shape1 = neighbors[value.ordinal()];
+			if (shape1 == null || shape1.isEmpty()) continue;
+			shape1 = shape1.move(value.getStepX(), value.getStepY(), value.getStepZ());
+			for (int xo = 0; xo < space.unitsPerBlock; xo++) {
+				for (int zo = 0; zo < space.unitsPerBlock; zo++) {
+					double x;
+					double y;
+					double z;
+					if (value.equals(Direction.WEST) || value.equals(Direction.EAST)) {
+						x = value.equals(Direction.EAST) ? (space.unitsPerBlock - 0.999) : -0.001;
+						y = xo;
+						z = zo;
+					} else if (value.equals(Direction.UP) || value.equals(Direction.DOWN)) {
+						x = xo;
+						y = value.equals(Direction.UP) ? (space.unitsPerBlock - 0.999) : -0.001;
+						z = zo;
+					} else {
+						x = xo;
+						y = zo;
+						z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
+					}
+					AABB box = new AABB(
+							x / upbDouble, y / upbDouble, z / upbDouble,
+							(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
+					);
+					// less expensive than voxel shape computations
+					if (box.move(pPos).move(offset).contains(pStartVec) || box.move(pPos).move(offset).clip(pStartVec, pEndVec).isPresent()) {
+						if (value.getStepX() == 1) x += 1;
+						else if (value.getStepY() == 1) y += 1;
+						else if (value.getStepZ() == 1) z += 1;
+						BlockPos pos = new BlockPos(x, y, z);
+						VoxelShape shape2 = Shapes.joinUnoptimized(shape1, Shapes.create(box), BooleanOp.AND);
+						if (shape2.isEmpty()) continue;
+						for (AABB toAabb : shape2.toAabbs()) {
+							UnitBox box1 = new UnitBox(
+									toAabb.minX, toAabb.minY, toAabb.minZ,
+									toAabb.maxX, toAabb.maxY, toAabb.maxZ,
+									pos
+							);
+							Direction direction = AABB.getDirection(box1.move(pPos).move(offset), pStartVec, percent, (Direction) null, d0, d1, d2);
+							double percentile = percent[0];
+							percent[0] = 1;
+							if (direction == null) continue;
+							Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
+							double d = vec.distanceTo(pStartVec);
+							if (d < dbest) {
+								h = new UnitHitResult(vec, direction, pPos, true, box1.pos);
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		if (h != null) return h;
+		return null;
+	}
+	
+	public void setupNeigbors(BlockGetter pLevel, BlockPos pPos) {
+		for (Direction value : Direction.values()) {
+			BlockState state = pLevel.getBlockState(pPos.relative(value));
+			if (!state.isAir()) {
+				if (!(state.getBlock() instanceof UnitSpaceBlock)) {
+					VoxelShape shape = state.getShape(pLevel, pPos); // TODO: entity context
+					neighbors[value.ordinal()] = shape;
+				}
+			} else {
+				neighbors[value.ordinal()] = Shapes.empty();
+			}
+		}
 	}
 }
