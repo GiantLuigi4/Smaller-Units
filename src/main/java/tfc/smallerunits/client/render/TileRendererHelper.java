@@ -51,7 +51,7 @@ public class TileRendererHelper {
 		// TODO: this needs optimization and checking
 		// could probably convert this to VBOs
 		
-		if (true) return;
+//		if (true) return;
 		
 		float r = 1;
 		float g = 1;

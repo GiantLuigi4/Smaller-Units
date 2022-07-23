@@ -323,7 +323,7 @@ public class BasicVerticalChunk extends LevelChunk {
 //		}
 		super.setBlockEntity(pBlockEntity);
 	}
-
+	
 	@Override
 	public void removeBlockEntity(BlockPos pPos) {
 		if (!level.isClientSide) {
@@ -356,12 +356,14 @@ public class BasicVerticalChunk extends LevelChunk {
 			}
 			// TODO: check if a renderer exists, or smth?
 			ArrayList<BlockEntity> toRemove = new ArrayList<>();
-			for (BlockEntity tile : ((SUCapableChunk) ac).getTiles()) {
-				if (tile.getBlockPos().equals(pPos)) {
-					toRemove.add(tile);
+			synchronized (((SUCapableChunk) ac).getTiles()) {
+				for (BlockEntity tile : ((SUCapableChunk) ac).getTiles()) {
+					if (tile.getBlockPos().equals(pPos)) {
+						toRemove.add(tile);
+					}
 				}
+				((SUCapableChunk) ac).getTiles().removeAll(toRemove);
 			}
-			((SUCapableChunk) ac).getTiles().removeAll(toRemove);
 		}
 		super.removeBlockEntity(pPos);
 	}

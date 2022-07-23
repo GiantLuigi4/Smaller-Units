@@ -33,6 +33,7 @@ import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
@@ -144,7 +145,34 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		this.blockTicks = new SUTickList<>(null, null);
 		this.fluidTicks = new SUTickList<>(null, null);
 		lookup = pos -> lookupTemp.getState(pos);
-		lookupTemp = pos -> Blocks.VOID_AIR.defaultBlockState();
+//		lookupTemp = pos -> Blocks.VOID_AIR.defaultBlockState();
+		lookupTemp = pos -> {
+			BlockPos bp = region.pos.toBlockPos().offset(
+					// TODO: double check this
+					Math.floor(pos.getX() / (double) upb),
+					Math.floor(pos.getY() / (double) upb),
+					Math.floor(pos.getZ() / (double) upb)
+			);
+			if (cache.containsKey(bp)) {
+//				BlockState state = cache.get(bp).getFirst();
+//				VoxelShape shape = state.getCollisionShape(parent, bp);
+				// TODO: empty shape check
+				return cache.get(bp).getFirst();
+			}
+//			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+//				return Blocks.VOID_AIR.defaultBlockState();
+//			ChunkPos cp = new ChunkPos(bp);
+//			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+//				return Blocks.VOID_AIR.defaultBlockState();
+			if (!getServer().isReady())
+				return Blocks.VOID_AIR.defaultBlockState();
+			BlockState state = parent.getBlockState(bp);
+//			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
+//				return state;
+			cache.put(bp, Pair.of(state, new VecMap<>(2)));
+			return state;
+		};
+		isLoaded = true;
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 	}
@@ -783,11 +811,25 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 					);
 					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
 				}, (pos, state) -> {
-					int x = pos.getX();
-					int y = pos.getY();
-					int z = pos.getZ();
+//					int x = pos.getX();
+//					int y = pos.getY();
+//					int z = pos.getZ();
+//					VoxelShape sp = state.getShape(this, pos);
+//					return sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+					
 					VoxelShape sp = state.getShape(this, pos);
-					return sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+					BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+					if (result == null) return result;
+					if (!result.getType().equals(HitResult.Type.MISS)) {
+						Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+						off = off.normalize().scale(0.1);
+						Vec3 st = result.getLocation().add(off);
+						Vec3 ed = result.getLocation().subtract(off);
+//						return sp.clip(st, pContext.getTo(), pos);
+						return sp.clip(st, ed, pos);
+					}
+					return result;
+
 //					for (AABB toAabb : sp.toAabbs()) {
 //						toAabb = toAabb.move(x, y, z);
 //						UnitBox b = new UnitBox(
@@ -806,33 +848,33 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	}
 	
 	public void setLoaded() {
-		isLoaded = true;
-		lookupTemp = pos -> {
-			BlockPos bp = region.pos.toBlockPos().offset(
-					// TODO: double check this
-					Math.floor(pos.getX() / (double) upb),
-					Math.floor(pos.getY() / (double) upb),
-					Math.floor(pos.getZ() / (double) upb)
-			);
-			if (cache.containsKey(bp)) {
-//				BlockState state = cache.get(bp).getFirst();
-//				VoxelShape shape = state.getCollisionShape(parent, bp);
-				// TODO: empty shape check
-				return cache.get(bp).getFirst();
-			}
-//			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+//		isLoaded = true;
+//		lookupTemp = pos -> {
+//			BlockPos bp = region.pos.toBlockPos().offset(
+//					// TODO: double check this
+//					Math.floor(pos.getX() / (double) upb),
+//					Math.floor(pos.getY() / (double) upb),
+//					Math.floor(pos.getZ() / (double) upb)
+//			);
+//			if (cache.containsKey(bp)) {
+////				BlockState state = cache.get(bp).getFirst();
+////				VoxelShape shape = state.getCollisionShape(parent, bp);
+//				// TODO: empty shape check
+//				return cache.get(bp).getFirst();
+//			}
+////			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+////				return Blocks.VOID_AIR.defaultBlockState();
+////			ChunkPos cp = new ChunkPos(bp);
+////			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+////				return Blocks.VOID_AIR.defaultBlockState();
+//			if (!getServer().isReady())
 //				return Blocks.VOID_AIR.defaultBlockState();
-//			ChunkPos cp = new ChunkPos(bp);
-//			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
-//				return Blocks.VOID_AIR.defaultBlockState();
-			if (!getServer().isReady())
-				return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = parent.getBlockState(bp);
-//			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
-//				return state;
-			cache.put(bp, Pair.of(state, new VecMap<>(2)));
-			return state;
-		};
+//			BlockState state = parent.getBlockState(bp);
+////			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
+////				return state;
+//			cache.put(bp, Pair.of(state, new VecMap<>(2)));
+//			return state;
+//		};
 	}
 	
 	@Override

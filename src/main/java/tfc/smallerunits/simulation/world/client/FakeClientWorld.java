@@ -34,6 +34,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.MinecraftForge;
@@ -344,7 +345,17 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 //					int y = pos.getY();
 //					int z = pos.getZ();
 					VoxelShape sp = state.getShape(this, pos);
-					return sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+					BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+					if (result == null) return result;
+					if (!result.getType().equals(HitResult.Type.MISS)) {
+						Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+						off = off.normalize().scale(0.1);
+						Vec3 st = result.getLocation().add(off);
+						Vec3 ed = result.getLocation().subtract(off);
+//						return sp.clip(st, pContext.getTo(), pos);
+						return sp.clip(st, ed, pos);
+					}
+					return result;
 //					for (AABB toAabb : sp.toAabbs()) {
 //						toAabb = toAabb.move(x, y, z);
 //						UnitBox b = new UnitBox(

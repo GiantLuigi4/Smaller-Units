@@ -27,11 +27,16 @@ public class UnitSpaceItem extends Item {
 		ISUCapability capability = SUCapabilityManager.getCapability(pContext.getLevel().getChunkAt(pos));
 		if (capability.getUnit(pos) == null) {
 			UnitSpace space = capability.getOrMakeUnit(pos);
-			if (pContext.getItemInHand().hasTag()) {
-				CompoundTag tag = pContext.getItemInHand().getTag();
-				assert tag != null;
-				if (tag.contains("upb", Tag.TAG_INT))
-					space.setUpb(tag.getInt("upb"));
+			if (ctx.replacingClickedOnBlock() || pContext.getLevel().getBlockState(pos).isAir()) {
+				if (pContext.getItemInHand().hasTag()) {
+					CompoundTag tag = pContext.getItemInHand().getTag();
+					assert tag != null;
+					if (tag.contains("upb", Tag.TAG_INT))
+						space.setUpb(tag.getInt("upb"));
+//					else space.setUpb(4);
+				}
+				pContext.getLevel().setBlockAndUpdate(pos, Registry.UNIT_SPACE.get().defaultBlockState());
+				return InteractionResult.SUCCESS;
 			}
 		}
 		return super.useOn(pContext);

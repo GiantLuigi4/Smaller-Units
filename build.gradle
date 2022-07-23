@@ -151,17 +151,17 @@ dependencies {
     api fg.deobf("curse.maven:pehkui-319596:3808012")
 
     System.out.println("- Testing with")
-    if (true) { //
+    if (true) {
         System.out.println("| Debug")
         api fg.deobf("curse.maven:spark-361579:3670050")
     }
 
-    if (true) { //
+    if (true) {
         System.out.println("| Tweaks")
         api fg.deobf("curse.maven:betterlilies-626812:3808620")
     }
 
-    if (true) { //
+    if (true) {
         System.out.println("| Magic")
         api fg.deobf("curse.maven:curios-309927:3748873")
         api fg.deobf("curse.maven:malum-484064:3788643")
@@ -212,7 +212,7 @@ dependencies {
         api fg.deobf("curse.maven:tklib-566563:3650390")
     }
 
-    if (true) { //
+    if (true) {
         System.out.println("| Storage")
         api fg.deobf("curse.maven:storage_drawers-223852:3807626")
 
@@ -226,9 +226,9 @@ dependencies {
         api fg.deobf("curse.maven:refined_storage-243076:3712882")
     }
 
-    if (true) { //
+    if (true) {
         System.out.println("| Optimization")
-        api fg.deobf("curse.maven:krypton-549394:3819215")
+//        api fg.deobf("curse.maven:krypton-549394:3819215")
     }
 
     /* Invasive */

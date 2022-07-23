@@ -83,11 +83,13 @@ public class DeleteBlockEntityS2C extends Packet {
 			BlockPos parentPos = rp.offset(xo, yo, zo);
 			ChunkAccess ac = ((ITickerWorld) lvl).getParent().getChunkAt(parentPos);
 			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-			ArrayList<BlockEntity> bes = ((SUCapableChunk) ac).getTiles();
-			for (BlockEntity blockEntity : bes) {
-				if (blockEntity.getBlockPos().equals(up)) {
-					bes.remove(blockEntity);
-					break;
+			synchronized (((SUCapableChunk) ac).getTiles()) {
+				ArrayList<BlockEntity> bes = ((SUCapableChunk) ac).getTiles();
+				for (BlockEntity blockEntity : bes) {
+					if (blockEntity.getBlockPos().equals(up)) {
+						bes.remove(blockEntity);
+						break;
+					}
 				}
 			}
 

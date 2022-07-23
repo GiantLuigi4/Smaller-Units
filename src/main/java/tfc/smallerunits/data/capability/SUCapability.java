@@ -6,12 +6,17 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.common.util.INBTSerializable;
 import tfc.smallerunits.UnitSpace;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag> {
 	final Level level;
 	
 	public SUCapability(Level level) {
 		this.level = level;
 	}
+	
+	private final List<UnitSpace> spaces = new ArrayList<>();
 	
 	@Override
 	public CompoundTag serializeNBT() {
@@ -30,7 +35,7 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	@Override
 	public void deserializeNBT(CompoundTag tag) {
 		for (String allKey : tag.getAllKeys()) {
-			spaceMap[Integer.parseInt(allKey)] = UnitSpace.fromNBT(tag.getCompound(allKey), level);
+			spaces.add(spaceMap[Integer.parseInt(allKey)] = UnitSpace.fromNBT(tag.getCompound(allKey), level));
 		}
 	}
 	
@@ -41,13 +46,15 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	public void setUnit(BlockPos pos, UnitSpace space) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		spaceMap[indx] = space;
+		spaces.remove(spaceMap[indx]);
+		spaces.add(spaceMap[indx] = space);
 	}
 	
 	@Override
 	public void removeUnit(BlockPos pos) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
+		spaces.remove(spaceMap[indx]);
 		spaceMap[indx] = null;
 	}
 	
@@ -62,12 +69,22 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	public UnitSpace getOrMakeUnit(BlockPos pos) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		return (spaceMap[indx] == null) ? spaceMap[indx] = new UnitSpace(pos, level) : spaceMap[indx];
+		if (spaceMap[indx] == null)
+			spaces.add(spaceMap[indx] = new UnitSpace(pos, level));
+		return spaceMap[indx];
 	}
 	
 	@Override
 	public UnitSpace[] getUnits() {
-		return spaceMap;
+		try {
+			// to avoid spamming synchronization, I'm using a try-catch
+			// this forces some more null checking, and occasionally causes extended loops
+			// but I believe this should be better for performance
+			return spaces.toArray(new UnitSpace[0]);
+		} catch (Throwable ignored) {
+			return spaceMap;
+		}
+//		return spaceMap;
 	}
 	
 	@Override

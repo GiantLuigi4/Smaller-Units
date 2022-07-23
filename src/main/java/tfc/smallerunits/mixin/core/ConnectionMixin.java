@@ -30,6 +30,11 @@ public abstract class ConnectionMixin {
 	
 	@Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/util/concurrent/GenericFutureListener;)V", cancellable = true)
 	public void preSend(Packet<?> p_129515_, GenericFutureListener<? extends Future<? super Void>> p_129516_, CallbackInfo ci) {
+		try {
+			if (((PacketListenerAccessor) this.packetListener).getPlayer() == null) return;
+		} catch (Throwable ignored) {
+			return;
+		}
 		if (!isSending.get()) {
 			isSending.set(true);
 			p_129515_ = maybeWrap(p_129515_);

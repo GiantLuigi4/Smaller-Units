@@ -275,26 +275,27 @@ public abstract class LevelRendererMixin {
 			}
 		}
 		
-		for (BlockEntity tile : capable.getTiles()) {
-			if (tile.getLevel() == null) continue; // idk how this happens, but ok?
-			if (new RegionPos(origin).equals(((FakeClientWorld) tile.getLevel()).region.pos)) {
-				int y = tile.getBlockPos().getY() / ((FakeClientWorld) tile.getLevel()).upb;
-				if (y < origin.getY() + 16 &&
-						y >= origin.getY()) {
-					AABB renderBox = tile.getRenderBoundingBox();
-					if (tile.getLevel() instanceof ITickerWorld) {
-						int upb = ((ITickerWorld) tile.getLevel()).getUPB();
-						float scl = 1f / upb;
-						renderBox = new AABB(
-								renderBox.minX * scl,
-								renderBox.minY * scl,
-								renderBox.minZ * scl,
-								renderBox.maxX * scl,
-								renderBox.maxY * scl,
-								renderBox.maxZ * scl
-						);
-					}
-					if (frustum.isVisible(renderBox)) {
+		synchronized (capable.getTiles()) {
+			for (BlockEntity tile : capable.getTiles()) {
+				if (tile.getLevel() == null) continue; // idk how this happens, but ok?
+				if (new RegionPos(origin).equals(((FakeClientWorld) tile.getLevel()).region.pos)) {
+					int y = tile.getBlockPos().getY() / ((FakeClientWorld) tile.getLevel()).upb;
+					if (y < origin.getY() + 16 &&
+							y >= origin.getY()) {
+						AABB renderBox = tile.getRenderBoundingBox();
+						if (tile.getLevel() instanceof ITickerWorld) {
+							int upb = ((ITickerWorld) tile.getLevel()).getUPB();
+							float scl = 1f / upb;
+							renderBox = new AABB(
+									renderBox.minX * scl,
+									renderBox.minY * scl,
+									renderBox.minZ * scl,
+									renderBox.maxX * scl,
+									renderBox.maxY * scl,
+									renderBox.maxZ * scl
+							);
+						}
+						if (frustum.isVisible(renderBox)) {
 //						{
 //							stk.pushPose();
 //							renderLineBox(
@@ -303,12 +304,13 @@ public abstract class LevelRendererMixin {
 //							);
 //							stk.popPose();
 //						}
-						TileRendererHelper.setupStack(stk, tile, origin);
-						blockEntityRenderDispatcher.render(
-								tile, pct,
-								stk, Minecraft.getInstance().renderBuffers().bufferSource()
-						);
-						stk.popPose();
+							TileRendererHelper.setupStack(stk, tile, origin);
+							blockEntityRenderDispatcher.render(
+									tile, pct,
+									stk, Minecraft.getInstance().renderBuffers().bufferSource()
+							);
+							stk.popPose();
+						}
 					}
 				}
 			}
