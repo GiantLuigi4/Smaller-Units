@@ -1,7 +1,6 @@
 package tfc.smallerunits.mixin.optimization;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,17 +19,22 @@ public abstract class LevelMixin {
 	
 	@Inject(at = @At("HEAD"), method = "setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;II)Z")
 	public void preSetBlockState(BlockPos levelchunk, BlockState block, int blockSnapshot, int old, CallbackInfoReturnable<Boolean> cir) {
-		if (this.isClientSide()) {
-			if (this instanceof RegionalAttachments) {
-				Region r = ((RegionalAttachments) this).SU$getRegion(new RegionPos(levelchunk));
-				if (r == null) return;
-				r.updateWorlds(levelchunk);
-			}
-		} else {
-			if (((Object) this) instanceof ServerLevel) {
-				Region r = ((RegionalAttachments) (((ServerLevel) (Object) this).chunkSource.chunkMap)).SU$getRegion(new RegionPos(levelchunk));
-				if (r == null) return;
-				r.updateWorlds(levelchunk);
+		// TODO: test this, lol
+		if (this instanceof RegionalAttachments) {
+			for (int x = -1; x <= 1; x++) {
+				for (int y = -1; y <= 1; y++) {
+					for (int z = -1; z <= 1; z++) {
+						RegionPos pos = new RegionPos(new BlockPos(
+								levelchunk.getX() - x * 15,
+								levelchunk.getY() - y * 15,
+								levelchunk.getZ() - z * 15
+						));
+//						Region r = ((RegionalAttachments) this).SU$getRegion(new RegionPos(levelchunk));
+						Region r = ((RegionalAttachments) this).SU$getRegion(pos);
+						if (r == null) return;
+						r.updateWorlds(levelchunk);
+					}
+				}
 			}
 		}
 	}

@@ -13,9 +13,7 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.world.ChunkWatchEvent;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
-import tfc.smallerunits.networking.SUNetworkRegistry;
-import tfc.smallerunits.networking.sync.SyncPacketS2C;
+import tfc.smallerunits.client.tracking.FastCapabilityHandler;
 
 // so I mostly just abandoned any documentation that I was given and write this
 // CCA's readme is actually extremely good
@@ -64,8 +62,9 @@ public class SUCapabilityManager {
 	 * @return the corresponding ISUCapability
 	 */
 	public static ISUCapability getCapability(LevelChunk chunk) {
-//		return chunk.getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
-		return ((SUCapableChunk) chunk).getSUCapability();
+		if (chunk instanceof FastCapabilityHandler)
+			return ((FastCapabilityHandler) chunk).getSUCapability();
+		return chunk.getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
 	}
 	
 	public static ISUCapability getCapability(Level lvl, ChunkAccess chunk) {
@@ -82,7 +81,7 @@ public class SUCapabilityManager {
 	public static ISUCapability getCapability(Level world, ChunkPos pos) {
 		ChunkAccess access = world.getChunk(/* CC safety */ pos.getWorldPosition());
 		if (!(access instanceof LevelChunk)) return getCapability(world.getChunkAt(pos.getWorldPosition()));
-		if (access instanceof SUCapableChunk chunk) return chunk.getSUCapability();
+		if (access instanceof FastCapabilityHandler chunk) return chunk.getSUCapability();
 		return ((LevelChunk) access).getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
 	}
 	
@@ -108,11 +107,7 @@ public class SUCapabilityManager {
 			if (capability == null) return;
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;
-				SyncPacketS2C pkt = new SyncPacketS2C(unit);
-				SUNetworkRegistry.NETWORK_INSTANCE.send(
-						PacketDistributor.PLAYER.with(event::getPlayer),
-						pkt
-				);
+				unit.sendSync(PacketDistributor.PLAYER.with(event::getPlayer));
 			}
 			// TODO: create packet
 		}

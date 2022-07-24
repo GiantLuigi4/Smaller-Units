@@ -58,7 +58,7 @@ public class TileRendererHelper {
 		float b = 0;
 		// this can be optimized for sure
 		if (IHateTheDistCleaner.isHammerHeld()) {
-			if (unit.isNatural) r = 0;
+			if (!unit.isNatural) r = 0;
 			else g = 0;
 		}
 		

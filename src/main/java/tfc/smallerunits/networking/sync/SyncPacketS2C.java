@@ -29,6 +29,7 @@ public class SyncPacketS2C extends Packet {
 	BlockPos realPos;
 	int upb;
 	CompoundTag[] beData;
+	boolean natural;
 	
 	public SyncPacketS2C(UnitSpace space) {
 		if (space.getMyLevel() == null) space.tick();
@@ -53,6 +54,7 @@ public class SyncPacketS2C extends Packet {
 				}
 			}
 		}
+		natural = space.isNatural;
 		this.beData = beData.toArray(new CompoundTag[0]);
 	}
 	
@@ -61,6 +63,7 @@ public class SyncPacketS2C extends Packet {
 		pallet = UnitPallet.fromNBT(buf.readNbt());
 		realPos = buf.readBlockPos();
 		upb = buf.readInt();
+		natural = buf.readBoolean();
 		int count;
 		beData = new CompoundTag[count = buf.readInt()];
 		for (int i = 0; i < count; i++) beData[i] = buf.readNbt();
@@ -83,6 +86,7 @@ public class SyncPacketS2C extends Packet {
 			
 			space.unitsPerBlock = syncPacket.upb;
 			space.setUpb(space.unitsPerBlock);
+			space.isNatural = syncPacket.natural;
 			space.loadPallet(syncPacket.pallet);
 			cap.setUnit(syncPacket.realPos, space);
 			((SUCapableChunk) chunk).SU$markDirty(syncPacket.realPos);
@@ -126,6 +130,7 @@ public class SyncPacketS2C extends Packet {
 		buf.writeNbt(pallet.toNBT());
 		buf.writeBlockPos(realPos);
 		buf.writeInt(upb);
+		buf.writeBoolean(natural);
 		buf.writeInt(beData.length);
 		for (CompoundTag beDatum : beData) buf.writeNbt(beDatum);
 	}

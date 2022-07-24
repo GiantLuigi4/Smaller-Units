@@ -17,10 +17,12 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
+import tfc.smallerunits.client.tracking.FastCapabilityHandler;
 import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -114,7 +116,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		
 		BlockPos rp = tickerWorld.getRegion().pos.toBlockPos();
 		int xo = ((pBlockEntity.getBlockPos().getX()) / upb);
-		int yo = ((pBlockEntity.getBlockPos().getY()) / upb);
+		int yo = ((pBlockEntity.getBlockPos().getY() + yPos * 16) / upb);
 		int zo = ((pBlockEntity.getBlockPos().getZ()) / upb);
 		BlockPos parentPos = rp.offset(xo, yo, zo);
 		ChunkAccess ac;
@@ -122,11 +124,12 @@ public class BasicVerticalChunk extends LevelChunk {
 		
 		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 		UnitSpace space = cap.getUnit(parentPos);
-		if (space == null) {
-			space = cap.getOrMakeUnit(parentPos);
-			space.isNatural = true;
-			space.setUpb(upb);
-		}
+//		if (space == null) {
+//			space = cap.getOrMakeUnit(parentPos);
+//			space.isNatural = true;
+//			space.setUpb(upb);
+//			space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
+//		}
 		// TODO: check if a renderer exists, or smth?
 		((SUCapableChunk) ac).addTile(pBlockEntity);
 	}
@@ -134,6 +137,24 @@ public class BasicVerticalChunk extends LevelChunk {
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
 		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
 		boolean flag = levelchunksection.hasOnlyAir();
+		if (!level.isClientSide) {
+			BlockPos rp = ((ITickerWorld) level).getRegion().pos.toBlockPos();
+			int xo = (pPos.getX() / ((ITickerWorld) level).getUPB());
+			int yo = ((pPos.getY() + yPos * 16) / ((ITickerWorld) level).getUPB());
+			int zo = (pPos.getZ() / ((ITickerWorld) level).getUPB());
+			BlockPos parentPos = rp.offset(xo, yo, zo);
+			ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
+			if (ac instanceof FastCapabilityHandler capabilityHandler) {
+				if (capabilityHandler.getSUCapability().getUnit(parentPos) == null) {
+					ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+					UnitSpace space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
+					space.isNatural = true;
+					space.unitsPerBlock = ((ITickerWorld) level).getUPB();
+					space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
+				}
+				ac.setUnsaved(true);
+			}
+		}
 		// TODO
 		if (flag && pState.isAir()) {
 			return null;
@@ -238,7 +259,7 @@ public class BasicVerticalChunk extends LevelChunk {
 				int zo = (pos.getZ() / ((ITickerWorld) level).getUPB());
 				BlockPos parentPos = rp.offset(xo, yo, zo);
 				ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
-				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+//				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				((SUCapableChunk) ac).addTile(be);
 			}
 		}
@@ -341,7 +362,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			
 			BlockPos rp = tickerWorld.getRegion().pos.toBlockPos();
 			int xo = ((pPos.getX()) / upb);
-			int yo = ((pPos.getY()) / upb);
+			int yo = ((pPos.getY() + yPos * 16) / upb);
 			int zo = ((pPos.getZ()) / upb);
 			BlockPos parentPos = rp.offset(xo, yo, zo);
 			ChunkAccess ac;
@@ -349,11 +370,12 @@ public class BasicVerticalChunk extends LevelChunk {
 			
 			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 			UnitSpace space = cap.getUnit(parentPos);
-			if (space == null) {
-				space = cap.getOrMakeUnit(parentPos);
-				space.isNatural = true;
-				space.setUpb(upb);
-			}
+//			if (space == null) {
+//				space = cap.getOrMakeUnit(parentPos);
+//				space.isNatural = true;
+//				space.setUpb(upb);
+//				space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
+//			}
 			// TODO: check if a renderer exists, or smth?
 			ArrayList<BlockEntity> toRemove = new ArrayList<>();
 			synchronized (((SUCapableChunk) ac).getTiles()) {

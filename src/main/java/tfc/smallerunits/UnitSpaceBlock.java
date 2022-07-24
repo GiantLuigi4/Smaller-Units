@@ -213,11 +213,12 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	public void onPlace(BlockState pState, Level pLevel, BlockPos pPos, BlockState pOldState, boolean pIsMoving) {
 //		super.onPlace(pState, pLevel, pPos, pOldState, pIsMoving);
 		ChunkAccess chunk = pLevel.getChunk(pPos);
-		if (chunk instanceof LevelChunk) {
-			ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) chunk);
-			capability.makeUnit(pPos);
+		if (chunk instanceof LevelChunk asLevelChunk) {
+			ISUCapability capability = SUCapabilityManager.getCapability(asLevelChunk);
+			UnitSpace unit = capability.getOrMakeUnit(pPos);
 			chunk.setUnsaved(true);
 			pLevel.scheduleTick(pPos, this, 1);
+			unit.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> asLevelChunk));
 		}
 	}
 	

@@ -12,6 +12,7 @@
     "core.ServerLevelMixin",
     "core.access.ServerPacketListenerMixin",
     "dangit.MojangWhy",
+    "data.FastCapabilityChunkMixin",
     "data.regions.ChunkHolderAccessor",
     "data.regions.ChunkHolderSizeTracker",
     "data.regions.ChunkMapMixin",

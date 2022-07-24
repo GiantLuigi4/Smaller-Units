@@ -3,7 +3,6 @@ package tfc.smallerunits.client.tracking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import tfc.smallerunits.client.render.SUChunkRender;
-import tfc.smallerunits.data.capability.ISUCapability;
 
 import java.util.ArrayList;
 
@@ -25,6 +24,4 @@ public interface SUCapableChunk {
 	ArrayList<BlockEntity> getTiles();
 	
 	void addTile(BlockEntity be);
-	
-	ISUCapability getSUCapability();
 }
