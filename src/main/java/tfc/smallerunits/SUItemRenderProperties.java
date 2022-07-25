@@ -4,7 +4,7 @@ import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraftforge.client.IItemRenderProperties;
 
 public class SUItemRenderProperties implements IItemRenderProperties {
-	SUItemRenderer renderer = new SUItemRenderer();
+	private static final SUItemRenderer renderer = new SUItemRenderer();
 	
 	@Override
 	public BlockEntityWithoutLevelRenderer getItemStackRenderer() {

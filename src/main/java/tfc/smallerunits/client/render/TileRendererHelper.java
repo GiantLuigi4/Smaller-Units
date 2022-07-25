@@ -9,7 +9,9 @@ import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -21,7 +23,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -47,26 +48,27 @@ public class TileRendererHelper {
 	}
 	
 	// TODO: this should only happen on empty units or when the hammer is out
-	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
+//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
+	public static void drawUnit(BlockPos pos, int upb, boolean natural, boolean hammerOverride, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 		// TODO: this needs optimization and checking
 		// could probably convert this to VBOs
-		
+
 //		if (true) return;
 		
 		float r = 1;
 		float g = 1;
 		float b = 0;
 		// this can be optimized for sure
-		if (IHateTheDistCleaner.isHammerHeld()) {
-			if (!unit.isNatural) r = 0;
+		if (IHateTheDistCleaner.isHammerHeld() && hammerOverride) {
+			if (!natural) r = 0;
 			else g = 0;
 		}
 		
-		float scl = 1f / unit.unitsPerBlock;
+		float scl = 1f / upb;
 		stk.pushPose();
-		stk.translate(unit.pos.getX() - ox, unit.pos.getY() - oy, unit.pos.getZ() - oz);
+		stk.translate(pos.getX() - ox, pos.getY() - oy, pos.getZ() - oz);
 		stk.scale(scl, scl, scl);
-		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
+//		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
 		
 		// half
 		// bottom
@@ -78,9 +80,9 @@ public class TileRendererHelper {
 				Direction.EAST,
 				Direction.WEST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
-		stk.translate(-unit.unitsPerBlock, 0, 0);
+		stk.translate(-upb, 0, 0);
 		// bottom
 		directions = new Direction[]{
 				Direction.UP,
@@ -90,9 +92,9 @@ public class TileRendererHelper {
 				Direction.WEST,
 				Direction.EAST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.scale(1, -1, 1);
-		stk.translate(0, -unit.unitsPerBlock, 0);
+		stk.translate(0, -upb, 0);
 		// top
 		directions = new Direction[]{
 				Direction.UP,
@@ -102,9 +104,9 @@ public class TileRendererHelper {
 				Direction.WEST,
 				Direction.EAST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
-		stk.translate(-unit.unitsPerBlock, 0, 0);
+		stk.translate(-upb, 0, 0);
 		directions = new Direction[]{
 				Direction.DOWN,
 				Direction.UP,
@@ -113,10 +115,10 @@ public class TileRendererHelper {
 				Direction.WEST,
 				Direction.EAST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		
 		stk.scale(1, 1, -1);
-		stk.translate(0, 0, -unit.unitsPerBlock);
+		stk.translate(0, 0, -upb);
 		
 		// half
 		// bottom
@@ -128,9 +130,9 @@ public class TileRendererHelper {
 				Direction.EAST,
 				Direction.WEST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
-		stk.translate(-unit.unitsPerBlock, 0, 0);
+		stk.translate(-upb, 0, 0);
 		directions = new Direction[]{
 				Direction.DOWN,
 				Direction.UP,
@@ -139,9 +141,9 @@ public class TileRendererHelper {
 				Direction.EAST,
 				Direction.WEST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.scale(1, -1, 1);
-		stk.translate(0, -unit.unitsPerBlock, 0);
+		stk.translate(0, -upb, 0);
 		// top
 		directions = new Direction[]{
 				Direction.DOWN,
@@ -151,9 +153,9 @@ public class TileRendererHelper {
 				Direction.WEST,
 				Direction.EAST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.scale(-1, 1, 1);
-		stk.translate(-unit.unitsPerBlock, 0, 0);
+		stk.translate(-upb, 0, 0);
 		directions = new Direction[]{
 				Direction.UP,
 				Direction.DOWN,
@@ -162,13 +164,12 @@ public class TileRendererHelper {
 				Direction.WEST,
 				Direction.EAST,
 		};
-		drawCorner(stk.last().pose(), source, light, r, g, b, directions);
+		drawCorner(stk.last().pose(), consumer, light, r, g, b, directions);
 		stk.popPose();
 	}
 	
-	protected static void drawCorner(Matrix4f mat, MultiBufferSource source, int light, float r, float g, float b, Direction[] directions) {
+	protected static void drawCorner(Matrix4f mat, VertexConsumer consumer, int light, float r, float g, float b, Direction[] directions) {
 //		VertexConsumer consumer = source.getBuffer(RenderType.entityCutoutNoCull(new ResourceLocation("smallerunits:textures/block/white_pixel.png")));
-		VertexConsumer consumer = source.getBuffer(RenderType.solid());
 		
 		TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(new ResourceLocation("smallerunits:block/white_pixel"));
 		// TODO: I want this done with a block render type

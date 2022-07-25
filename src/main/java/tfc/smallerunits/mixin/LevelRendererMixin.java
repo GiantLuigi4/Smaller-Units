@@ -254,12 +254,13 @@ public abstract class LevelRendererMixin {
 		stk.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
 		
 		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
-		VertexConsumer consumer = source.getBuffer(RenderType.leash());
+		VertexConsumer consumer = source.getBuffer(RenderType.solid());
 		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
 		for (UnitSpace unit : capability.getUnits()) {
 			if (unit != null) {
 				TileRendererHelper.drawUnit(
-						unit, consumer, stk,
+						unit.pos, unit.unitsPerBlock, unit.isNatural,
+						true, consumer, stk,
 						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
 						origin.getX(), origin.getY(), origin.getZ()
 				);
