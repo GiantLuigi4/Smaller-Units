@@ -20,6 +20,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
@@ -41,6 +42,7 @@ public class SmallerUnits {
 		/* registries */
 		Registry.BLOCK_REGISTER.register(modBus);
 		Registry.ITEM_REGISTER.register(modBus);
+		CraftingRegistry.RECIPES.register(modBus);
 		/* mod loading events */
 		modBus.addListener(SUCapabilityManager::onRegisterCapabilities);
 		modBus.addListener(this::setup);

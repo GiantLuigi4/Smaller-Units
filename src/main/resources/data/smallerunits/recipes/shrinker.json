@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " *#",
+    " /*",
+    "/  "
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:lapis_lazuli"
+    },
+    "/": {
+      "item": "minecraft:stick"
+    },
+    "*": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "result": {
+    "item": "smallerunits:su_shrinker",
+    "count": 1
+  }
+}

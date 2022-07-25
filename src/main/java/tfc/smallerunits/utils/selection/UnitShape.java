@@ -238,7 +238,7 @@ public class UnitShape extends VoxelShape {
 			return computeEdgeResult(pStartVec, pEndVec, pPos);
 		}
 		
-		if (totalBB != null && this.totalBB.move(pPos).contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
+		if (totalBB != null && this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
 			for (UnitBox box : boxes) {
 				box = (UnitBox) box.move(pPos);
 				if (box.contains(pStartVec)) {
