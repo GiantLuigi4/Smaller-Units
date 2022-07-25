@@ -10,15 +10,18 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.core.*;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BoneMealItem;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
@@ -27,6 +30,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -249,22 +253,109 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		ParticleEngine engine = Minecraft.getInstance().particleEngine;
 		Minecraft.getInstance().level = this;
 		Minecraft.getInstance().particleEngine = particleEngine;
+		// TODO level renderer so I don't need this switch
 		switch (pType) {
-			case 2001:
-				BlockState blockstate = Block.stateById(pData);
-				if (!blockstate.isAir()) {
-					SoundType soundtype = blockstate.getSoundType(this, pPos, null);
-					this.playLocalSound(pPos, soundtype.getBreakSound(), SoundSource.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
+			case 1000 -> playLocalSound(pPos, SoundEvents.DISPENSER_DISPENSE, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+			case 1001 -> playLocalSound(pPos, SoundEvents.DISPENSER_FAIL, SoundSource.BLOCKS, 1.0F, 1.2F, false);
+			case 1002 -> playLocalSound(pPos, SoundEvents.DISPENSER_LAUNCH, SoundSource.BLOCKS, 1.0F, 1.2F, false);
+			case 1003 -> playLocalSound(pPos, SoundEvents.ENDER_EYE_LAUNCH, SoundSource.NEUTRAL, 1.0F, 1.2F, false);
+			case 1004 -> playLocalSound(pPos, SoundEvents.FIREWORK_ROCKET_SHOOT, SoundSource.NEUTRAL, 1.0F, 1.2F, false);
+			case 1005 -> playLocalSound(pPos, SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1006 -> playLocalSound(pPos, SoundEvents.WOODEN_DOOR_OPEN, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1007 -> playLocalSound(pPos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1008 -> playLocalSound(pPos, SoundEvents.FENCE_GATE_OPEN, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1029 -> playLocalSound(pPos, SoundEvents.ANVIL_DESTROY, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1030 -> playLocalSound(pPos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1031 -> playLocalSound(pPos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.3F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1011 -> playLocalSound(pPos, SoundEvents.IRON_DOOR_CLOSE, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1012 -> playLocalSound(pPos, SoundEvents.WOODEN_DOOR_CLOSE, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1013 -> playLocalSound(pPos, SoundEvents.WOODEN_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1014 -> playLocalSound(pPos, SoundEvents.FENCE_GATE_CLOSE, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1033 -> playLocalSound(pPos, SoundEvents.CHORUS_FLOWER_GROW, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+			case 1046 -> playLocalSound(pPos, SoundEvents.POINTED_DRIPSTONE_DRIP_LAVA_INTO_CAULDRON, SoundSource.BLOCKS, 2.0F, this.random.nextFloat() * 0.1F + 0.9F, false);
+			case 1034 -> playLocalSound(pPos, SoundEvents.CHORUS_FLOWER_DEATH, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+			case 1035 -> playLocalSound(pPos, SoundEvents.BREWING_STAND_BREW, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+			case 1036 -> playLocalSound(pPos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1037 -> playLocalSound(pPos, SoundEvents.IRON_TRAPDOOR_OPEN, SoundSource.BLOCKS, 1.0F, random.nextFloat() * 0.1F + 0.9F, false);
+			case 1039 -> playLocalSound(pPos, SoundEvents.PHANTOM_BITE, SoundSource.HOSTILE, 0.3F, random.nextFloat() * 0.1F + 0.9F, false);
+			default -> {
+				switch (pType) {
+					case 1505:
+						BoneMealItem.addGrowthParticles(this, pPos, pData);
+						playLocalSound(pPos, SoundEvents.BONE_MEAL_USE, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+						break;
+					case 1009:
+						if (pData == 0)
+							playLocalSound(pPos, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
+						else if (pData == 1)
+							playLocalSound(pPos, SoundEvents.GENERIC_EXTINGUISH_FIRE, SoundSource.BLOCKS, 0.7F, 1.6F + (random.nextFloat() - random.nextFloat()) * 0.4F, false);
+						break;
+					case 1504:
+						PointedDripstoneBlock.spawnDripParticle(this, pPos, getBlockState(pPos));
+						break;
+					case 1501:
+						playLocalSound(pPos, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
+						
+						for (int i2 = 0; i2 < 8; ++i2) {
+							addParticle(ParticleTypes.LARGE_SMOKE, (double) pPos.getX() + random.nextDouble(), (double) pPos.getY() + 1.2D, (double) pPos.getZ() + random.nextDouble(), 0.0D, 0.0D, 0.0D);
+						}
+						break;
+					case 1502:
+						playLocalSound(pPos, SoundEvents.REDSTONE_TORCH_BURNOUT, SoundSource.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
+						
+						for (int l1 = 0; l1 < 5; ++l1) {
+							double d15 = (double) pPos.getX() + random.nextDouble() * 0.6D + 0.2D;
+							double d20 = (double) pPos.getY() + random.nextDouble() * 0.6D + 0.2D;
+							double d26 = (double) pPos.getZ() + random.nextDouble() * 0.6D + 0.2D;
+							addParticle(ParticleTypes.SMOKE, d15, d20, d26, 0.0D, 0.0D, 0.0D);
+						}
+						break;
+					case 1503:
+						playLocalSound(pPos, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+						
+						for (int k1 = 0; k1 < 16; ++k1) {
+							double d14 = (double) pPos.getX() + (5.0D + random.nextDouble() * 6.0D) / 16.0D;
+							double d19 = (double) pPos.getY() + 0.8125D;
+							double d25 = (double) pPos.getZ() + (5.0D + random.nextDouble() * 6.0D) / 16.0D;
+							addParticle(ParticleTypes.SMOKE, d14, d19, d25, 0.0D, 0.0D, 0.0D);
+						}
+						break;
+					case 2000:
+						Direction direction = Direction.from3DDataValue(pData);
+						int j1 = direction.getStepX();
+						int j2 = direction.getStepY();
+						int k2 = direction.getStepZ();
+						double d18 = (double) pPos.getX() + (double) j1 * 0.6D + 0.5D;
+						double d24 = (double) pPos.getY() + (double) j2 * 0.6D + 0.5D;
+						double d28 = (double) pPos.getZ() + (double) k2 * 0.6D + 0.5D;
+						
+						for (int i3 = 0; i3 < 10; ++i3) {
+							double d4 = random.nextDouble() * 0.2D + 0.01D;
+							double d6 = d18 + (double) j1 * 0.01D + (random.nextDouble() - 0.5D) * (double) k2 * 0.5D;
+							double d8 = d24 + (double) j2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j2 * 0.5D;
+							double d30 = d28 + (double) k2 * 0.01D + (random.nextDouble() - 0.5D) * (double) j1 * 0.5D;
+							double d9 = (double) j1 * d4 + random.nextGaussian() * 0.01D;
+							double d10 = (double) j2 * d4 + random.nextGaussian() * 0.01D;
+							double d11 = (double) k2 * d4 + random.nextGaussian() * 0.01D;
+							this.addParticle(ParticleTypes.SMOKE, d6, d8, d30, d9, d10, d11);
+						}
+						break;
+					case 2001:
+						BlockState blockstate = Block.stateById(pData);
+						if (!blockstate.isAir()) {
+							SoundType soundtype = blockstate.getSoundType(this, pPos, null);
+							this.playLocalSound(pPos, soundtype.getBreakSound(), SoundSource.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
+						}
+						
+						this.addDestroyBlockEffect(pPos, blockstate);
+						break;
+					default:
+						System.out.println("Unkown Level Event: " + pType);
 				}
-				
-				this.addDestroyBlockEffect(pPos, blockstate);
-				break;
-			default:
-				System.out.println(pType);
+			}
 		}
 		Minecraft.getInstance().level = level;
 		Minecraft.getInstance().particleEngine = engine;
-		// TODO level renderer so I don't need this switch
 	}
 	
 	@Override

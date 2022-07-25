@@ -15,7 +15,7 @@ import tfc.smallerunits.simulation.world.ITickerWorld;
 
 public class UnitEdge extends Block {
 	public UnitEdge() {
-		super(Properties.copy(Blocks.BARRIER));
+		super(Properties.copy(Blocks.BARRIER).destroyTime(0.1f));
 	}
 	
 	@Override
@@ -48,10 +48,5 @@ public class UnitEdge extends Block {
 			BlockState state = tickerLevel.getParent().getBlockState(bp);
 			pLevel.levelEvent(pPlayer, 2001, pPos, getId(state));
 		}
-	}
-	
-	@Override
-	public float getDestroyProgress(BlockState pState, Player pPlayer, BlockGetter pLevel, BlockPos pPos) {
-		return 0.1f;
 	}
 }

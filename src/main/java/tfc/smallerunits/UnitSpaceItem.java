@@ -9,8 +9,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraftforge.client.IItemRenderProperties;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+
+import java.util.function.Consumer;
 
 public class UnitSpaceItem extends Item {
 	public UnitSpaceItem() {
@@ -18,6 +21,12 @@ public class UnitSpaceItem extends Item {
 				new Properties().tab(Registry.tab)
 						.rarity(Rarity.create("su", ChatFormatting.GREEN))
 		);
+	}
+	
+	@Override
+	public void initializeClient(Consumer<IItemRenderProperties> consumer) {
+		consumer.accept(new SUItemRenderProperties());
+		super.initializeClient(consumer);
 	}
 	
 	@Override
@@ -33,7 +42,7 @@ public class UnitSpaceItem extends Item {
 					assert tag != null;
 					if (tag.contains("upb", Tag.TAG_INT))
 						space.setUpb(tag.getInt("upb"));
-//					else space.setUpb(4);
+					else space.setUpb(4);
 				}
 				pContext.getLevel().setBlockAndUpdate(pos, Registry.UNIT_SPACE.get().defaultBlockState());
 				return InteractionResult.SUCCESS;

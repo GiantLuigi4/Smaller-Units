@@ -164,7 +164,7 @@ dependencies {
     if (true) {
         System.out.println("| Magic")
         api fg.deobf("curse.maven:curios-309927:3748873")
-        api fg.deobf("curse.maven:malum-484064:3788643")
+        api fg.deobf("curse.maven:malum-484064:3838894")
         api fg.deobf("curse.maven:ortuslib-616457:3768197")
     }
 

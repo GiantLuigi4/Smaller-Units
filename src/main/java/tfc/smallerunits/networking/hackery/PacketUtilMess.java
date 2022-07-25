@@ -6,6 +6,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
+import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.HitboxScaling;
@@ -41,7 +42,9 @@ public class PacketUtilMess {
 //				}
 				Level lvl = player.level;
 				RegionalAttachments attachments = (RegionalAttachments) lvl;
-				Level spaceLevel = attachments.SU$getRegion(pos.pos()).getLevel(listener, player, pos.upb());
+				Region region = attachments.SU$getRegion(pos.pos());
+				if (region == null) return;
+				Level spaceLevel = region.getLevel(listener, player, pos.upb());
 //				ISUCapability capability = SUCapabilityManager.getCapability(lvl, new ChunkPos(pos));
 				
 				NetworkingHacks.unitPos.set(pos);

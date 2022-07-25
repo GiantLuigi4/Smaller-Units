@@ -101,14 +101,14 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
 		super.tick(pHasTimeLeft, p_201914_);
-//		for (BasicVerticalChunk[] column : columns) {
-//			if (column == null) continue;
-//			for (BasicVerticalChunk basicVerticalChunk : column) {
-//				if (basicVerticalChunk == null) continue;
-////				level.tickChunk(basicVerticalChunk, 100);
-//				basicVerticalChunk.randomTick();
-//			}
-//		}
+		for (BasicVerticalChunk[] column : columns) {
+			if (column == null) continue;
+			for (BasicVerticalChunk basicVerticalChunk : column) {
+				if (basicVerticalChunk == null) continue;
+//				level.tickChunk(basicVerticalChunk, 100);
+				basicVerticalChunk.randomTick();
+			}
+		}
 	}
 	
 	public Iterable<ChunkHolder> getChunks() {
