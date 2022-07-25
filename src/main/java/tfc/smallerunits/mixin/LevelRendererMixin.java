@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.client.render.SURenderManager;
@@ -178,15 +179,18 @@ public abstract class LevelRendererMixin {
 					);
 					// TODO: better handling
 					VoxelShape shape1 = state.getShape(space.getMyLevel(), pos, CollisionContext.of(pEntity));
-					if (shape1.isEmpty()) {
+					if (shape1.isEmpty() || state.getBlock() instanceof UnitEdge) {
 						int x = pos.getX();
 						int y = pos.getY();
 						int z = pos.getZ();
 						double upbDouble = space.unitsPerBlock;
-						AABB box = new AABB(
-								x / upbDouble, y / upbDouble, z / upbDouble,
-								(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-						);
+						AABB box = ((UnitHitResult) result).getSpecificBox();
+						if (box == null) {
+							box = new AABB(
+									x / upbDouble, y / upbDouble, z / upbDouble,
+									(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
+							);
+						}
 						shape1 = Shapes.create(box);
 						renderShape(
 								pPoseStack,
@@ -266,9 +270,9 @@ public abstract class LevelRendererMixin {
 					BlockPos maxPos = unit.getOffsetPos(new BlockPos(unit.unitsPerBlock, unit.unitsPerBlock, unit.unitsPerBlock));
 					BlockPos posInQuestion = integer.pos;
 					if (
-							maxPos.getX() >= posInQuestion.getX() && posInQuestion.getX() >= minPos.getX() &&
-									maxPos.getY() >= posInQuestion.getY() && posInQuestion.getY() >= minPos.getY() &&
-									maxPos.getZ() >= posInQuestion.getZ() && posInQuestion.getZ() >= minPos.getZ()
+							maxPos.getX() > posInQuestion.getX() && posInQuestion.getX() >= minPos.getX() &&
+									maxPos.getY() > posInQuestion.getY() && posInQuestion.getY() >= minPos.getY() &&
+									maxPos.getZ() > posInQuestion.getZ() && posInQuestion.getZ() >= minPos.getZ()
 					)
 						TileRendererHelper.drawBreakingOutline(integer.prog, renderBuffers, stk, unit.getMyLevel(), integer.pos, ((Level) world).getBlockState(integer.pos), minecraft);
 				}

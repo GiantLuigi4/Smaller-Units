@@ -151,7 +151,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
 			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
 			UnitSpace space = capability.getUnit(pPos);
-			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
+			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
 			double upbDouble = space.unitsPerBlock;
 			UnitShape shape = new UnitShape(space);
 			collectShape((pos) -> {

@@ -146,11 +146,16 @@ public class BasicVerticalChunk extends LevelChunk {
 			ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
 			if (ac instanceof FastCapabilityHandler capabilityHandler) {
 				if (capabilityHandler.getSUCapability().getUnit(parentPos) == null) {
-					ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-					UnitSpace space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
-					space.isNatural = true;
-					space.unitsPerBlock = ((ITickerWorld) level).getUPB();
-					space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
+					BlockState state = ac.getBlockState(parentPos);
+					if (state.isAir()) { // TODO: do this better
+						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), true);
+						if (ac instanceof LevelChunk asLvlChunk)
+							asLvlChunk.getLevel().sendBlockUpdated(parentPos, state, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+						UnitSpace space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
+						space.isNatural = true;
+						space.unitsPerBlock = ((ITickerWorld) level).getUPB();
+						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
+					}
 				}
 				ac.setUnsaved(true);
 			}

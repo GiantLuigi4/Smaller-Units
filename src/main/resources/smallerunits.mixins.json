@@ -19,7 +19,8 @@
     "data.regions.ServerLevelMixin",
     "optimization.LevelMixin",
     "optimization.ShapesMixin",
-    "optimization.VoxelShapeAccessor"
+    "optimization.VoxelShapeAccessor",
+    "quality.PlayerMixin"
   ],
   "client": [
     "LevelRendererMixin",

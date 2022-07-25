@@ -32,7 +32,7 @@ public class UnitInteractionPacket extends Packet {
 				new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()),
 				buf.readEnum(Direction.class),
 				buf.readBlockPos(), buf.readBoolean(),
-				buf.readBlockPos()
+				buf.readBlockPos(), null
 		);
 	}
 	

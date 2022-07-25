@@ -506,7 +506,7 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
-//		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
+		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
 
 //		this.tickEntities();
 		for (Entity entity : entitiesForRendering()) {
@@ -520,6 +520,11 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 				entity.tick();
 			}
 		}
+	}
+	
+	@Override
+	public boolean isOutsideBuildHeight(int pY) {
+		return false;
 	}
 	
 	@Override

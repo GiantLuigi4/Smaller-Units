@@ -248,7 +248,7 @@ public class UnitShape extends VoxelShape {
 							Direction.getNearest(vec3.x, vec3.y, vec3.z).getOpposite(),
 							pPos,
 							true,
-							box.pos
+							box.pos, box
 					);
 				}
 			}
@@ -270,7 +270,7 @@ public class UnitShape extends VoxelShape {
 			Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
 			double d = vec.distanceTo(pStartVec);
 			if (d < dbest) {
-				h = new UnitHitResult(vec, direction, pPos, true, box.pos);
+				h = new UnitHitResult(vec, direction, pPos, true, box.pos, box);
 				dbest = d;
 			}
 		}
@@ -362,20 +362,26 @@ public class UnitShape extends VoxelShape {
 			for (int xo = 0; xo < space.unitsPerBlock; xo++) {
 				for (int zo = 0; zo < space.unitsPerBlock; zo++) {
 					double x;
+					double xSize = 1;
 					double y;
+					double ySize = 1;
 					double z;
+					double zSize = 1;
 					if (value.equals(Direction.WEST) || value.equals(Direction.EAST)) {
 						x = value.equals(Direction.EAST) ? (space.unitsPerBlock - 0.999) : -0.001;
+						xSize = 0.001;
 						y = xo;
 						z = zo;
 					} else if (value.equals(Direction.UP) || value.equals(Direction.DOWN)) {
 						x = xo;
 						y = value.equals(Direction.UP) ? (space.unitsPerBlock - 0.999) : -0.001;
+						ySize = 0.001;
 						z = zo;
 					} else {
 						x = xo;
 						y = zo;
 						z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
+						zSize = 0.001;
 					}
 					AABB box = new AABB(
 							x / upbDouble, y / upbDouble, z / upbDouble,
@@ -402,7 +408,15 @@ public class UnitShape extends VoxelShape {
 							Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
 							double d = vec.distanceTo(pStartVec);
 							if (d < dbest) {
-								h = new UnitHitResult(vec, direction, pPos, true, box1.pos);
+								h = new UnitHitResult(
+										vec, direction, pPos, true, box1.pos,
+//										new AABB(
+//												x / upbDouble, y / upbDouble, z / upbDouble,
+//												(x + xSize) / upbDouble, (y + ySize) / upbDouble, (z + zSize) / upbDouble
+//										)
+										null
+//										box
+								);
 							}
 						}
 					}
