@@ -49,7 +49,7 @@ public class TileRendererHelper {
 	
 	// TODO: this should only happen on empty units or when the hammer is out
 //	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-	public static void drawUnit(BlockPos pos, int upb, boolean natural, boolean hammerOverride, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
+	public static void drawUnit(BlockPos pos, int upb, boolean natural, boolean hammerOverride, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 		// TODO: this needs optimization and checking
 		// could probably convert this to VBOs
 
@@ -62,6 +62,8 @@ public class TileRendererHelper {
 		if (IHateTheDistCleaner.isHammerHeld() && hammerOverride) {
 			if (!natural) r = 0;
 			else g = 0;
+		} else if (!isEmpty) {
+			return;
 		}
 		
 		float scl = 1f / upb;

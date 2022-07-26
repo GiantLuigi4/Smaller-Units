@@ -46,9 +46,11 @@ public class RemoveUnitPacket extends Packet {
 			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 //			UnitSpace space = new UnitSpace(position, chunk.getLevel());
 			UnitSpace space = cap.getUnit(position);
-			space.clear();
-			((SUCapableChunk) access).SU$markGone(position);
-			ctx.setPacketHandled(true);
+			if (space != null) {
+				space.clear();
+				((SUCapableChunk) access).SU$markGone(position);
+				ctx.setPacketHandled(true);
+			}
 			cap.removeUnit(position);
 		}
 	}

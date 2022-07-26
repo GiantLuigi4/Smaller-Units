@@ -291,7 +291,6 @@ public class UnitShape extends VoxelShape {
 					if (simpleChecker.apply(new BlockPos(x, y, z))) {
 						boxFiller.accept(new BlockPos(x, y, z), state);
 					}
-					// TODO: raytrace simple box
 				}
 			}
 		}

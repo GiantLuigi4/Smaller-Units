@@ -35,6 +35,8 @@ public class UnitSpace {
 	public boolean isNatural;
 	RenderWorld wld;
 	
+	int numBlocks = 0;
+	
 	public UnitSpace(BlockPos pos, Level level) {
 		this.pos = pos;
 		this.level = level;
@@ -322,5 +324,25 @@ public class UnitSpace {
 		SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
 		if (descriptor != null)
 			NetworkingHacks.unitPos.set(descriptor);
+	}
+	
+	public void removeState(BlockState block) {
+		if (!block.isAir()) {
+			numBlocks -= 1;
+			if (numBlocks < 0) {
+				numBlocks = 0; // idk how this would happen
+			}
+		}
+	}
+	
+	public void addState(BlockState block) {
+		if (!block.isAir()) {
+			numBlocks += 1;
+		}
+	}
+	
+	public boolean isEmpty() {
+		// TODO: this doesn't work on client
+		return numBlocks <= 0;
 	}
 }
