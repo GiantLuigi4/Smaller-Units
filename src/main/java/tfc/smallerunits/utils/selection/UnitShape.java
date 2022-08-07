@@ -16,12 +16,15 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
+import tfc.smallerunits.utils.math.HitboxScaling;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -147,7 +150,8 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public boolean isEmpty() {
-		return boxes.isEmpty();
+//		return boxes.isEmpty();
+		return false;
 	}
 	
 	@Override
@@ -204,7 +208,7 @@ public class UnitShape extends VoxelShape {
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
 		
 		double upbDouble = space.unitsPerBlock;
-		// TODO: make this not rely on block pos
+		// TODO: make this not rely on block pos, maybe?
 		collectShape((pos) -> {
 			int x = pos.getX();
 			int y = pos.getY();
@@ -305,17 +309,72 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	protected double collideX(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
-		if (this.isEmpty()) return pDesiredOffset;
-		else if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
+		// TODO: somehow this collides with selection shapes on server?
+//		if (this.isEmpty()) return pDesiredOffset;
+//		else if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
+		if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
 		
 		AxisCycle axiscycle = pMovementAxis.inverse();
+
+//		if (swivelCheck(axiscycle, pCollisionBox, this.totalBB)) {
+//			for (AABB box : boxes) {
+//				pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, box, pDesiredOffset);
+//				if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
+//			}
+//		}
 		
-		if (swivelCheck(axiscycle, pCollisionBox, this.totalBB)) {
-			for (AABB box : boxes) {
-				pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, box, pDesiredOffset);
-				if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
+		BlockPos pos = space.pos;
+		if (swivelCheck(axiscycle, pCollisionBox, new AABB(pos))) {
+			Direction.Axis ySwivel = axiscycle.cycle(Direction.Axis.X);
+			ySwivel.choose(0, 1, 2);
+			// x->z
+			// y->x
+			// z->y
+			pCollisionBox = HitboxScaling.getOffsetAndScaledBox(
+					pCollisionBox,
+					pCollisionBox.getCenter().multiply(1, 0, 1).add(0, pCollisionBox.minY, 0),
+					space.unitsPerBlock
+			);
+			pDesiredOffset *= space.unitsPerBlock;
+			AABB motionBox = pCollisionBox;
+			switch (ySwivel) {
+				case X -> motionBox = motionBox.expandTowards(pDesiredOffset, 0, 0);
+				case Y -> motionBox = motionBox.expandTowards(0, pDesiredOffset, 0);
+				case Z -> motionBox = motionBox.expandTowards(0, 0, pDesiredOffset);
 			}
+//			motionBox = HitboxScaling.getOffsetAndScaledBox(
+//					motionBox,
+//					pCollisionBox.getCenter().multiply(1, 0, 1).add(0, pCollisionBox.minY, 0),
+//					space.unitsPerBlock
+//			);
+			int minX = (int) (motionBox.minX - 1);
+			int minY = (int) (motionBox.minY - 1);
+			int minZ = (int) (motionBox.minZ - 1);
+			int maxX = (int) Math.ceil(motionBox.maxX + 1);
+			int maxY = (int) Math.ceil(motionBox.maxY + 1);
+			int maxZ = (int) Math.ceil(motionBox.maxZ + 1);
+			for (int x = minX; x <= maxX; x++) {
+				for (int y = minY; y <= maxY; y++) {
+					for (int z = minZ; z <= maxZ; z++) {
+						BlockState state = space.getMyLevel().getBlockState(new BlockPos(x, y, z));
+//						state.getShape(space.getMyLevel(), new BlockPos(x, y, z));
+						if (!state.isAir() && !(state.getBlock() instanceof UnitEdge)) {
+							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z));
+							for (AABB toAabb : shape.toAabbs()) {
+								toAabb = toAabb
+										.move(x, y, z);
+								if (swivelCheck(axiscycle, pCollisionBox, toAabb)) {
+									pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, toAabb, pDesiredOffset);
+									if (Math.abs(pDesiredOffset / space.unitsPerBlock) < 1.0E-7D) return 0.0D;
+								}
+							}
+						}
+					}
+				}
+			}
+			pDesiredOffset /= space.unitsPerBlock;
 		}
+		
 		return pDesiredOffset;
 	}
 	
@@ -334,10 +393,69 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	public Boolean intersects(VoxelShape pShape2) {
+		HashMap<BlockPos, VoxelShape> positionsChecked = new HashMap<>();
 		for (AABB toAabb : pShape2.toAabbs()) {
 			for (AABB box : boxes) {
 				if (box.intersects(toAabb)) {
 					return true;
+				}
+			}
+			AABB scaledBox = HitboxScaling.getOffsetAndScaledBox(toAabb, toAabb.getCenter().multiply(1, 0, 1).add(0, toAabb.minY, 0), space.unitsPerBlock);
+			
+			int minX = (int) (scaledBox.minX - 1);
+			int minY = (int) (scaledBox.minY - 1);
+			int minZ = (int) (scaledBox.minZ - 1);
+			int maxX = (int) Math.ceil(scaledBox.maxX + 1);
+			int maxY = (int) Math.ceil(scaledBox.maxY + 1);
+			int maxZ = (int) Math.ceil(scaledBox.maxZ + 1);
+//			toAabb = toAabb.move(
+//					-offset.x / (double) space.unitsPerBlock,
+//					-offset.y / (double) space.unitsPerBlock,
+//					-offset.z / (double) space.unitsPerBlock
+//			);
+			
+			for (int x = minX; x <= maxX; x++) {
+				for (int y = minY; y <= maxY; y++) {
+					for (int z = minZ; z <= maxZ; z++) {
+						AABB box = new AABB(
+								new BlockPos(x, y, z)
+						);
+						box = new AABB(
+								box.minX / (double) space.unitsPerBlock,
+								box.minY / (double) space.unitsPerBlock,
+								box.minZ / (double) space.unitsPerBlock,
+								box.maxX / (double) space.unitsPerBlock,
+								box.maxY / (double) space.unitsPerBlock,
+								box.maxZ / (double) space.unitsPerBlock
+						);
+						if (!toAabb.intersects(box)) continue;
+						
+						VoxelShape shape;
+						if (!positionsChecked.containsKey(new BlockPos(x, y, z))) {
+							BlockState state = space.getMyLevel().getBlockState(new BlockPos(x, y, z));
+							if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
+								shape = state.getShape(space.getMyLevel(), new BlockPos(x, y, z));
+							else
+								shape = Shapes.empty();
+						} else
+							shape = positionsChecked.get(new BlockPos(x, y, z));
+						positionsChecked.put(new BlockPos(x, y, z), shape);
+						
+						for (AABB toAabb1 : shape.toAabbs()) {
+							toAabb1 = toAabb1.move(x, y, z);
+							toAabb1 = new AABB(
+									toAabb1.minX / (double) space.unitsPerBlock,
+									toAabb1.minY / (double) space.unitsPerBlock,
+									toAabb1.minZ / (double) space.unitsPerBlock,
+									toAabb1.maxX / (double) space.unitsPerBlock,
+									toAabb1.maxY / (double) space.unitsPerBlock,
+									toAabb1.maxZ / (double) space.unitsPerBlock
+							);
+							if (toAabb.intersects(toAabb1)) {
+								return true;
+							}
+						}
+					}
 				}
 			}
 		}

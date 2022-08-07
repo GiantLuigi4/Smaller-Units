@@ -201,15 +201,24 @@ public class UnitSpace {
 		}
 	}
 	
+	// gets every block within the unit space
 	public BlockState[] getBlocks() {
+		numBlocks = 0;
 		final BlockState[] states = new BlockState[unitsPerBlock * unitsPerBlock * unitsPerBlock];
-		for (int x = 0; x < unitsPerBlock; x++)
-			for (int y = 0; y < unitsPerBlock; y++)
-				for (int z = 0; z < unitsPerBlock; z++)
-					states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockState(myPosInTheLevel.offset(x, y, z));
+		for (int x = 0; x < unitsPerBlock; x++) {
+			for (int y = 0; y < unitsPerBlock; y++) {
+				for (int z = 0; z < unitsPerBlock; z++) {
+					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockState(myPosInTheLevel.offset(x, y, z));
+					if (!state.isAir()) {
+						numBlocks++;
+					}
+				}
+			}
+		}
 		return states;
 	}
 	
+	// used for saving
 	public UnitPallet getPallet() {
 		return new UnitPallet(this);
 	}

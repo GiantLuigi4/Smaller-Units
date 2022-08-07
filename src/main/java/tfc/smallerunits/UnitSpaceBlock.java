@@ -25,7 +25,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -45,7 +44,6 @@ import tfc.smallerunits.networking.sync.RemoveUnitPacket;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
-import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -154,28 +152,28 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
 			double upbDouble = space.unitsPerBlock;
 			UnitShape shape = new UnitShape(space);
-			collectShape((pos) -> {
-				// TODO:
-				return true;
-			}, (pos, state) -> {
-				int x = pos.getX();
-				int y = pos.getY();
-				int z = pos.getZ();
-				VoxelShape sp = state.getCollisionShape(space.myLevel, space.getOffsetPos(pos));
-				for (AABB toAabb : sp.toAabbs()) {
-					toAabb = toAabb.move(x, y, z);
-					UnitBox b = new UnitBox(
-							toAabb.minX / upbDouble,
-							toAabb.minY / upbDouble,
-							toAabb.minZ / upbDouble,
-							toAabb.maxX / upbDouble,
-							toAabb.maxY / upbDouble,
-							toAabb.maxZ / upbDouble,
-							new BlockPos(x, y, z)
-					);
-					shape.addBox(b);
-				}
-			}, space);
+//			collectShape((pos) -> {
+//				// TODO:
+//				return true;
+//			}, (pos, state) -> {
+//				int x = pos.getX();
+//				int y = pos.getY();
+//				int z = pos.getZ();
+//				VoxelShape sp = state.getCollisionShape(space.myLevel, space.getOffsetPos(pos));
+//				for (AABB toAabb : sp.toAabbs()) {
+//					toAabb = toAabb.move(x, y, z);
+//					UnitBox b = new UnitBox(
+//							toAabb.minX / upbDouble,
+//							toAabb.minY / upbDouble,
+//							toAabb.minZ / upbDouble,
+//							toAabb.maxX / upbDouble,
+//							toAabb.maxY / upbDouble,
+//							toAabb.maxZ / upbDouble,
+//							new BlockPos(x, y, z)
+//					);
+//					shape.addBox(b);
+//				}
+//			}, space);
 			return shape;
 		}
 		return Shapes.empty();

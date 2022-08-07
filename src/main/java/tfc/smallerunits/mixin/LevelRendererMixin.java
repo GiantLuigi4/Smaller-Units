@@ -339,11 +339,10 @@ public abstract class LevelRendererMixin {
 		
 		if (uniform != null) {
 			uniform.set((float) ((double) origin.getX() - pCamX), (float) ((double) origin.getY() - pCamY), (float) ((double) origin.getZ() - pCamZ));
-			uniform.upload();
 		}
 		
 		PoseStack matrixStack = RenderSystem.getModelViewStack();
-		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum, matrixStack, shaderinstance, pCamX, pCamY, pCamZ);
+		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk, pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum, matrixStack, shaderinstance, pCamX, pCamY, pCamZ, uniform);
 		return instance.isEmpty(pRenderType);
 	}
 }

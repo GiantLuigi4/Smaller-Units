@@ -1,5 +1,6 @@
 package tfc.smallerunits.client.render;
 
+import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -20,7 +21,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 
 public class SURenderManager {
-	public static void drawChunk(LevelChunk chunk, Level world, ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type, Frustum frustum, PoseStack matrixStack, ShaderInstance shaderinstance, double pCamX, double pCamY, double pCamZ) {
+	public static void drawChunk(LevelChunk chunk, Level world, ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type, Frustum frustum, PoseStack matrixStack, ShaderInstance shaderinstance, double pCamX, double pCamY, double pCamZ, AbstractUniform uniform) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		Minecraft.getInstance().getProfiler().push("SU");
 		Minecraft.getInstance().getProfiler().push("setup");
@@ -55,7 +56,7 @@ public class SURenderManager {
 		}
 		
 		Minecraft.getInstance().getProfiler().popPush("draw");
-		render.draw(renderChunk, type, frustum, matrixStack, shaderinstance);
+		render.draw(renderChunk, type, frustum, matrixStack, shaderinstance, uniform);
 		Minecraft.getInstance().getProfiler().pop();
 		Minecraft.getInstance().getProfiler().pop();
 	}
