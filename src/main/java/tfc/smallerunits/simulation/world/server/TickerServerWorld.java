@@ -208,6 +208,36 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	}
 	
 	@Override
+	public int getMinBuildHeight() {
+		return -32;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+		return upb * 512 + 32;
+	}
+	
+	@Override
+	public int getSectionsCount() {
+		return getMaxSection() - getMinSection();
+	}
+	
+	@Override
+	public int getMinSection() {
+		return 0;
+	}
+	
+	@Override
+	public int getSectionIndexFromSectionY(int pSectionIndex) {
+		return pSectionIndex;
+	}
+	
+	@Override
+	public int getMaxSection() {
+		return upb * 512;
+	}
+	
+	@Override
 	public LevelChunk getChunkAt(BlockPos pPos) {
 		int pX = SectionPos.blockToSectionCoord(pPos.getX());
 //		int pY = SectionPos.blockToSectionCoord(pPos.getY());
@@ -756,9 +786,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 //		}
 	}
 	
-	public BlockHitResult collectShape(Vec3 start, Vec3
-			end, Function<BlockPos, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller,
-									   int upbInt) {
+	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
 		BlockHitResult closest = null;
 		double d = Double.POSITIVE_INFINITY;
 		
@@ -768,18 +796,40 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		int maxX = (int) Math.ceil(Math.max(start.x, end.x)) + 1;
 		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
 		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
-		for (int x = minX; x < maxX; x++) {
-			for (int y = minY; y < maxY; y++) {
-				for (int z = minZ; z < maxZ; z++) {
-					BlockState state = getBlockState(new BlockPos(x, y, z));
-					if (state.isAir()) continue;
-					if (simpleChecker.apply(new BlockPos(x, y, z))) {
-						BlockHitResult result = boxFiller.apply(new BlockPos(x, y, z), state);
-						if (result != null) {
-							double dd = result.getLocation().distanceTo(start);
-							if (dd < d) {
-								d = dd;
-								closest = result;
+		
+		// TODO: there are better ways to do this
+		for (int x = minX; x < maxX; x += 16) {
+			for (int y = minY; y < maxY; y += 16) {
+				for (int z = minZ; z < maxZ; z += 16) {
+					AABB box = new AABB(
+							x, y, z,
+							x + 16, y + 16, z + 16
+					);
+					if (simpleChecker.apply(box)) {
+						for (int x0 = 0; x0 < 16; x0++) {
+							for (int y0 = 0; y0 < 16; y0++) {
+								for (int z0 = 0; z0 < 16; z0++) {
+									int x1 = x + x0;
+									int y1 = y + y0;
+									int z1 = z + z0;
+									box = new AABB(
+											x1, y1, z1,
+											x1 + 1, y1 + 1, z1 + 1
+									);
+									if (simpleChecker.apply(box)) {
+										BlockPos pos = new BlockPos(x1, y1, z1);
+										BlockState state = getBlockState(pos);
+										if (state.isAir()) continue;
+										BlockHitResult result = boxFiller.apply(pos, state);
+										if (result != null) {
+											double dd = result.getLocation().distanceTo(start);
+											if (dd < d) {
+												d = dd;
+												closest = result;
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -799,24 +849,12 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		return collectShape(
 				pContext.getFrom(),
 				pContext.getTo(),
-				(pos) -> {
-					int x = pos.getX();
-					int y = pos.getY();
-					int z = pos.getZ();
-					AABB box = new AABB(
-//								x / upbDouble, y / upbDouble, z / upbDouble,
-//								(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-							x, y, z,
-							x + 1, y + 1, z + 1
-					);
+				(box) -> {
 					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
 				}, (pos, state) -> {
 //					int x = pos.getX();
 //					int y = pos.getY();
 //					int z = pos.getZ();
-//					VoxelShape sp = state.getShape(this, pos);
-//					return sp.clip(pContext.getFrom(), pContext.getTo(), pos);
-					
 					VoxelShape sp = state.getShape(this, pos);
 					BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
 					if (result == null) return result;
@@ -829,7 +867,6 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 						return sp.clip(st, ed, pos);
 					}
 					return result;
-
 //					for (AABB toAabb : sp.toAabbs()) {
 //						toAabb = toAabb.move(x, y, z);
 //						UnitBox b = new UnitBox(

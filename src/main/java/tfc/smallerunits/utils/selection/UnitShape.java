@@ -32,16 +32,19 @@ import java.util.function.Function;
 
 // best of 1.18 and 1.12, neat
 public class UnitShape extends VoxelShape {
-	private final ArrayList<UnitBox> boxes = new ArrayList<>();
-	private AABB totalBB = null;
+	public final boolean collision;
+	protected final ArrayList<UnitBox> boxesTrace = new ArrayList<>();
+	protected final ArrayList<UnitBox> boxesCollide = new ArrayList<>();
 	
 	public final UnitSpace space;
-	Vec3 offset = new Vec3(0, 0, 0);
+	protected AABB totalBB = null;
+	protected Vec3 offset = new Vec3(0, 0, 0);
 	
-	public UnitShape(UnitSpace space) {
+	public UnitShape(UnitSpace space, boolean collision) {
 		super(new UnitDiscreteShape(0, 0, 0));
 		((UnitDiscreteShape) ((VoxelShapeAccessor) this).getShape()).sp = this;
 		this.space = space;
+		this.collision = true;
 	}
 	
 	private static double swivelOffset(AxisCycle axiscycle, AABB pCollisionBox, AABB box, double offsetX) {
@@ -78,7 +81,7 @@ public class UnitShape extends VoxelShape {
 	@Override
 	public void forAllEdges(Shapes.DoubleLineConsumer pAction) {
 		// oh, well that wasn't that bad
-		for (AABB box : boxes) {
+		for (AABB box : boxesTrace) {
 			pAction.consume(box.minX, box.minY, box.minZ, box.maxX, box.minY, box.minZ);
 			pAction.consume(box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ);
 			pAction.consume(box.minX, box.minY, box.minZ, box.minX, box.minY, box.maxZ);
@@ -100,7 +103,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public void forAllBoxes(Shapes.DoubleLineConsumer pAction) {
-		for (AABB box : boxes) {
+		for (AABB box : boxesTrace) {
 			pAction.consume(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
 		}
 	}
@@ -109,7 +112,7 @@ public class UnitShape extends VoxelShape {
 	protected DoubleList getCoords(Direction.Axis pAxis) {
 		// TODO: cache
 		DoubleArrayList arrayList = new DoubleArrayList();
-		for (AABB box : boxes) {
+		for (AABB box : boxesTrace) {
 			arrayList.add(box.min(pAxis));
 			arrayList.add(box.max(pAxis));
 		}
@@ -133,7 +136,7 @@ public class UnitShape extends VoxelShape {
 	
 	public void addBox(UnitBox box) {
 //		if (boxes.contains(box)) return;
-		boxes.add(box);
+		boxesTrace.add(box);
 		if (totalBB == null) {
 			totalBB = box;
 		} else {
@@ -196,7 +199,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public List<AABB> toAabbs() {
-		return ImmutableList.copyOf(boxes);
+		return ImmutableList.copyOf(boxesTrace);
 	}
 	
 	VoxelShape[] neighbors = new VoxelShape[Direction.values().length];
@@ -243,7 +246,7 @@ public class UnitShape extends VoxelShape {
 		}
 		
 		if (totalBB != null && this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
-			for (UnitBox box : boxes) {
+			for (UnitBox box : boxesTrace) {
 				box = (UnitBox) box.move(pPos);
 				if (box.contains(pStartVec)) {
 					Optional<Vec3> vec = box.clip(vec31, pEndVec);
@@ -265,7 +268,7 @@ public class UnitShape extends VoxelShape {
 		double d1 = pEndVec.y - pStartVec.y;
 		double d2 = pEndVec.z - pStartVec.z;
 		
-		for (UnitBox box : boxes) {
+		for (UnitBox box : boxesTrace) {
 			box = (UnitBox) box.move(pPos);
 			Direction direction = AABB.getDirection(box, pStartVec, percent, (Direction) null, d0, d1, d2);
 			double percentile = percent[0];
@@ -302,13 +305,16 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape optimize() {
-		UnitShape copy = new UnitShape(space);
-		for (AABB box : boxes) copy.addBox((UnitBox) box);
+		UnitShape copy = new UnitShape(space, collision);
+		for (AABB box : boxesTrace) copy.addBox((UnitBox) box);
 		return this;
 	}
 	
 	@Override
 	protected double collideX(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
+		if (!collision)
+			return pDesiredOffset;
+		
 		// TODO: somehow this collides with selection shapes on server?
 //		if (this.isEmpty()) return pDesiredOffset;
 //		else if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
@@ -347,12 +353,19 @@ public class UnitShape extends VoxelShape {
 //					pCollisionBox.getCenter().multiply(1, 0, 1).add(0, pCollisionBox.minY, 0),
 //					space.unitsPerBlock
 //			);
+			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
 			int minX = (int) (motionBox.minX - 1);
+			minX = Math.max(bp.getX(), minX);
 			int minY = (int) (motionBox.minY - 1);
+			minY = Math.max(bp.getY(), minY);
 			int minZ = (int) (motionBox.minZ - 1);
+			minZ = Math.max(bp.getZ(), minZ);
 			int maxX = (int) Math.ceil(motionBox.maxX + 1);
+			maxX = Math.min(bp.getX() + space.unitsPerBlock, maxX);
 			int maxY = (int) Math.ceil(motionBox.maxY + 1);
+			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
 			int maxZ = (int) Math.ceil(motionBox.maxZ + 1);
+			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
 			for (int x = minX; x <= maxX; x++) {
 				for (int y = minY; y <= maxY; y++) {
 					for (int z = minZ; z <= maxZ; z++) {
@@ -360,9 +373,11 @@ public class UnitShape extends VoxelShape {
 //						state.getShape(space.getMyLevel(), new BlockPos(x, y, z));
 						if (!state.isAir() && !(state.getBlock() instanceof UnitEdge)) {
 							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z));
+							if (shape.isEmpty())
+								continue;
+							
 							for (AABB toAabb : shape.toAabbs()) {
-								toAabb = toAabb
-										.move(x, y, z);
+								toAabb = toAabb.move(x, y, z);
 								if (swivelCheck(axiscycle, pCollisionBox, toAabb)) {
 									pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, toAabb, pDesiredOffset);
 									if (Math.abs(pDesiredOffset / space.unitsPerBlock) < 1.0E-7D) return 0.0D;
@@ -380,9 +395,9 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape move(double pXOffset, double pYOffset, double pZOffset) {
-		UnitShape copy = new UnitShape(space);
+		UnitShape copy = new UnitShape(space, collision);
 		copy.offset = offset.add(pXOffset, pYOffset, pZOffset);
-		for (AABB box : boxes) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
+		for (AABB box : boxesTrace) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
 		return copy;
 	}
 	
@@ -395,19 +410,27 @@ public class UnitShape extends VoxelShape {
 	public Boolean intersects(VoxelShape pShape2) {
 		HashMap<BlockPos, VoxelShape> positionsChecked = new HashMap<>();
 		for (AABB toAabb : pShape2.toAabbs()) {
-			for (AABB box : boxes) {
+			for (AABB box : boxesTrace) {
 				if (box.intersects(toAabb)) {
 					return true;
 				}
 			}
 			AABB scaledBox = HitboxScaling.getOffsetAndScaledBox(toAabb, toAabb.getCenter().multiply(1, 0, 1).add(0, toAabb.minY, 0), space.unitsPerBlock);
 			
+			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
 			int minX = (int) (scaledBox.minX - 1);
+			minX = Math.max(bp.getX(), minX);
 			int minY = (int) (scaledBox.minY - 1);
+			minY = Math.max(bp.getY(), minY);
 			int minZ = (int) (scaledBox.minZ - 1);
+			minZ = Math.max(bp.getZ(), minZ);
 			int maxX = (int) Math.ceil(scaledBox.maxX + 1);
+			maxX = Math.min(bp.getX() + space.unitsPerBlock, maxX);
 			int maxY = (int) Math.ceil(scaledBox.maxY + 1);
+			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
 			int maxZ = (int) Math.ceil(scaledBox.maxZ + 1);
+			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
+
 //			toAabb = toAabb.move(
 //					-offset.x / (double) space.unitsPerBlock,
 //					-offset.y / (double) space.unitsPerBlock,
@@ -434,7 +457,7 @@ public class UnitShape extends VoxelShape {
 						if (!positionsChecked.containsKey(new BlockPos(x, y, z))) {
 							BlockState state = space.getMyLevel().getBlockState(new BlockPos(x, y, z));
 							if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
-								shape = state.getShape(space.getMyLevel(), new BlockPos(x, y, z));
+								shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z));
 							else
 								shape = Shapes.empty();
 						} else

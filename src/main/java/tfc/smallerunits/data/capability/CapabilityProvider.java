@@ -30,6 +30,6 @@ public class CapabilityProvider implements ICapabilityProvider, INBTSerializable
 	
 	@Override
 	public void deserializeNBT(CompoundTag nbt) {
-		capability.deserializeNBT(nbt);
+		capability.deserializeNBT(0, nbt);
 	}
 }

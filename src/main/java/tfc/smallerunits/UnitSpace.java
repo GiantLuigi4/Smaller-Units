@@ -112,9 +112,9 @@ public class UnitSpace {
 //				Math1D.chunkMod(pos.getX(), 512) * upb,
 //				Math1D.chunkMod(pos.getY(), 512) * upb,
 //				Math1D.chunkMod(pos.getZ(), 512) * upb
-				Math1D.oldChunkMod(pos.getX(), 512) * upb,
-				Math1D.oldChunkMod(pos.getY(), 512) * upb,
-				Math1D.oldChunkMod(pos.getZ(), 512) * upb
+				Math1D.regionMod(pos.getX()) * upb,
+				Math1D.regionMod(pos.getY()) * upb,
+				Math1D.regionMod(pos.getZ()) * upb
 //				Math.abs(pos.getX() % 512) * upb,
 //				Math.abs(pos.getY() % 512) * upb,
 //				Math.abs(pos.getZ() % 512) * upb

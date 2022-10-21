@@ -46,8 +46,15 @@ public class MinecraftMixin {
 	
 	@Inject(at = @At("HEAD"), method = "startUseItem")
 	public void preUseItem(CallbackInfo cir) {
-		// TODO
-//		movePlayerTo();
+		// TODO figure out why the server freaks out on edges with this
+		if (player.isShiftKeyDown())
+			movePlayerTo();
+	}
+	
+	@Inject(at = @At("RETURN"), method = "startUseItem")
+	public void postUseItem(CallbackInfo ci) {
+		if (player.isShiftKeyDown())
+			movePlayerBack();
 	}
 	
 	@Inject(at = @At("HEAD"), method = "continueAttack")
@@ -81,12 +88,6 @@ public class MinecraftMixin {
 	@Inject(at = @At("RETURN"), method = "startAttack")
 	public void postAttack(CallbackInfoReturnable<Boolean> cir) {
 		movePlayerBack();
-	}
-	
-	@Inject(at = @At("RETURN"), method = "startUseItem")
-	public void postUseItem(CallbackInfo ci) {
-		//  TODO
-//		movePlayerBack();
 	}
 	
 	@Inject(at = @At("RETURN"), method = "continueAttack")

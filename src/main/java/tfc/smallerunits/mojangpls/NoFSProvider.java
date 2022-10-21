@@ -231,7 +231,7 @@ public class NoFSProvider extends FileSystemProvider {
 					
 					@Override
 					public boolean isDirectory() {
-						return false;
+						return true;
 					}
 					
 					@Override

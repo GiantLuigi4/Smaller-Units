@@ -146,11 +146,11 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
 
     System.out.println("CF mods")
-    System.out.println("- Compilied against")
+    System.out.println(": Compilied against")
     api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
     api fg.deobf("curse.maven:pehkui-319596:3808012")
 
-    System.out.println("- Testing with")
+    System.out.println(": Testing with")
     if (true) {
         System.out.println("| Debug")
         api fg.deobf("curse.maven:spark-361579:3670050")
@@ -170,7 +170,7 @@ dependencies {
 
     if (true) {
         System.out.println("| QoL")
-        api fg.deobf("curse.maven:carry_on-274259:3674344")
+//        api fg.deobf("curse.maven:carry_on-274259:3674344")
         api fg.deobf("curse.maven:klee_slabs-241895:3830926")
         api fg.deobf("curse.maven:balm-531761:3830790")
 
@@ -228,6 +228,8 @@ dependencies {
 
     if (true) {
         System.out.println("| Optimization")
+
+//        api fg.deobf("curse.maven:rubidium-574856:4024781")
 //        api fg.deobf("curse.maven:krypton-549394:3819215")
     }
 

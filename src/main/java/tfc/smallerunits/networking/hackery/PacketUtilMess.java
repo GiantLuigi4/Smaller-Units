@@ -40,6 +40,7 @@ public class PacketUtilMess {
 //					if (IHateTheDistCleaner.isClientPacketListener(listener))
 //						player = IHateTheDistCleaner.getPlayer();
 //				}
+				if (player == null) return;
 				Level lvl = player.level;
 				RegionalAttachments attachments = (RegionalAttachments) lvl;
 				Region region = attachments.SU$getRegion(pos.pos());

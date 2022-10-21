@@ -21,4 +21,10 @@ public class VChunkLookup {
 		if (vc == null) vc = tickerChunkCache.createChunk(i + myPos, ckPos);
 		return vc;
 	}
+	
+	public BasicVerticalChunk applyAbs(int i) {
+		BasicVerticalChunk vc = chunks[i];
+		if (vc == null) vc = tickerChunkCache.createChunk(i, ckPos);
+		return vc;
+	}
 }

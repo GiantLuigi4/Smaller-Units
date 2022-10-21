@@ -2,12 +2,9 @@ package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.shaders.Uniform;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -24,9 +21,9 @@ public class SUChunkRender {
 		this.chunk = chunk;
 	}
 	
-	public void draw(ChunkRenderDispatcher.RenderChunk renderChunk, RenderType type, Frustum frustum, PoseStack matrixStack, ShaderInstance shaderinstance, AbstractUniform uniform) {
-		int yRL = renderChunk.getOrigin().getY();
-		int yRM = renderChunk.getOrigin().getY() + 15;
+	public void draw(BlockPos positionRendering, RenderType type, Frustum frustum, AbstractUniform uniform) {
+		int yRL = positionRendering.getY();
+		int yRM = positionRendering.getY() + 15;
 		if (!buffers.isEmpty()) {
 			((Uniform) uniform).upload();
 		}

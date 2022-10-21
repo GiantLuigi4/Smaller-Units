@@ -619,6 +619,36 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	}
 	
 	@Override
+	public int getMinBuildHeight() {
+		return -32;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+		return upb * 512 + 32;
+	}
+	
+	@Override
+	public int getSectionsCount() {
+		return getMaxSection() - getMinSection();
+	}
+	
+	@Override
+	public int getMinSection() {
+		return 0;
+	}
+	
+	@Override
+	public int getSectionIndexFromSectionY(int pSectionIndex) {
+		return pSectionIndex;
+	}
+	
+	@Override
+	public int getMaxSection() {
+		return upb + 4;
+	}
+	
+	@Override
 	public Holder<Biome> getBiome(BlockPos p_204167_) {
 		Registry<Biome> reg = registryAccess().registry(Registry.BIOME_REGISTRY).get();
 		return reg.getOrCreateHolder(Biomes.THE_VOID);

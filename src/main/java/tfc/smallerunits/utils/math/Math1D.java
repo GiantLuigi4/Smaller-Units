@@ -12,6 +12,12 @@ public class Math1D {
 //		return val % mod;
 	}
 	
+	public static int regionMod(int val) {
+//		return val > 0 ? val % mod : ((mod - val) % mod);
+		return val - ((val >> 9) << 9);
+//		return val % mod;
+	}
+	
 	public static float getChunkOffset(float val, float size) {
 		return val >= 0 ? val / size : (val / size) - 1;
 	}

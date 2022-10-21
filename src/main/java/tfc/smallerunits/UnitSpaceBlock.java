@@ -127,7 +127,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			lookVec = lookVec.scale(reach);
 			startVec = startVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ());
 			Vec3 endVec = startVec.add(lookVec);
-			UnitShape shape = new UnitShape(space);
+			UnitShape shape = new UnitShape(space, false);
 			
 			double upbDouble = space.unitsPerBlock;
 			final Vec3 fStartVec = startVec;
@@ -151,29 +151,34 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			UnitSpace space = capability.getUnit(pPos);
 			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
 			double upbDouble = space.unitsPerBlock;
-			UnitShape shape = new UnitShape(space);
-//			collectShape((pos) -> {
-//				// TODO:
-//				return true;
-//			}, (pos, state) -> {
-//				int x = pos.getX();
-//				int y = pos.getY();
-//				int z = pos.getZ();
-//				VoxelShape sp = state.getCollisionShape(space.myLevel, space.getOffsetPos(pos));
-//				for (AABB toAabb : sp.toAabbs()) {
-//					toAabb = toAabb.move(x, y, z);
-//					UnitBox b = new UnitBox(
-//							toAabb.minX / upbDouble,
-//							toAabb.minY / upbDouble,
-//							toAabb.minZ / upbDouble,
-//							toAabb.maxX / upbDouble,
-//							toAabb.maxY / upbDouble,
-//							toAabb.maxZ / upbDouble,
-//							new BlockPos(x, y, z)
-//					);
-//					shape.addBox(b);
+			UnitShape shape = new UnitShape(space, true);
+//			if (pLevel instanceof ServerLevel) {
+//				if (((EntityCollisionContext) pContext).getEntity() instanceof ServerPlayer) {
+//					collectShape((pos) -> {
+//						// TODO:
+//						return true;
+//					}, (pos, state) -> {
+//						int x = pos.getX();
+//						int y = pos.getY();
+//						int z = pos.getZ();
+//						VoxelShape sp = state.getCollisionShape(space.myLevel, space.getOffsetPos(pos));
+//						for (AABB toAabb : sp.toAabbs()) {
+//							toAabb = toAabb.move(x, y, z);
+//							UnitBox b = new UnitBox(
+//									toAabb.minX / upbDouble,
+//									toAabb.minY / upbDouble,
+//									toAabb.minZ / upbDouble,
+//									toAabb.maxX / upbDouble,
+//									toAabb.maxY / upbDouble,
+//									toAabb.maxZ / upbDouble,
+//									new BlockPos(x, y, z)
+//							);
+//							shape.addBox(b);
+//						}
+//					}, space);
 //				}
-//			}, space);
+//			}
+			
 			return shape;
 		}
 		return Shapes.empty();

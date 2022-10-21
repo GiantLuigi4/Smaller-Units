@@ -2,6 +2,7 @@ package tfc.smallerunits.simulation.chunk;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
@@ -89,17 +90,77 @@ public class BasicVerticalChunk extends LevelChunk {
 		return true;
 	}
 	
+	@Override
+	public LevelChunkSection getSection(int p_187657_) {
+		if (p_187657_ == yPos) return super.getSection(0);
+		return verticalLookup.applyAbs(p_187657_).getSection(p_187657_);
+	}
+	
+	@Override
+	public int getSectionsCount() {
+		return 3;
+	}
+	
+	@Override
+	public int getMinSection() {
+		return yPos - 1;
+	}
+	
+	@Override
+	public int getMaxSection() {
+		return yPos + 1;
+	}
+	
+	@Override
+	public int getMinBuildHeight() {
+//		return 0;
+		if (yPos == 0) return 0;
+		return (yPos - 1) * 16;
+//		return 0;
+//		return -16;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+//		return level.getMaxBuildHeight();
+		return (yPos + 1) * 16;
+//		return 16;
+//		return 32;
+	}
+	
+	@Override
+	public int getSectionIndex(int pY) {
+		return this.getSectionIndexFromSectionY(SectionPos.blockToSectionCoord(pY));
+	}
+	
+	@Override
+	public int getSectionIndexFromSectionY(int pSectionIndex) {
+//		int ms = this.getMinSection();
+//		int v = pSectionIndex + ms;
+//		return v;
+		
+		return level.getSectionIndexFromSectionY(pSectionIndex);
+//		return pSectionIndex + yPos;
+	}
+	
+	@Override
+	public int getSectionYFromSectionIndex(int pSectionIndex) {
+		return super.getSectionYFromSectionIndex(pSectionIndex);
+	}
+	
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
-		if (holder != null)
-			holder.setBlockDirty(pos);
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0) {
 			if (yPos + yO < 0) return Blocks.VOID_AIR.defaultBlockState();
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+			if (chunk.holder != null)
+				chunk.holder.setBlockDirty(pos);
 			return chunk.setBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), pState, pIsMoving);
 		}
+		if (holder != null)
+			holder.setBlockDirty(pos);
 		return setBlockState$(pos, pState, pIsMoving);
 	}
 	
@@ -136,12 +197,13 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 	
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
-		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
+//		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
+		LevelChunkSection levelchunksection = super.getSection(0);
 		boolean flag = levelchunksection.hasOnlyAir();
 		if (!level.isClientSide) {
 			BlockPos rp = ((ITickerWorld) level).getRegion().pos.toBlockPos();
 			int xo = (pPos.getX() / ((ITickerWorld) level).getUPB());
-			int yo = ((pPos.getY() + yPos * 16) / ((ITickerWorld) level).getUPB());
+			int yo = ((pPos.getY() + yPos * 17) / ((ITickerWorld) level).getUPB());
 			int zo = (pPos.getZ() / ((ITickerWorld) level).getUPB());
 			BlockPos parentPos = rp.offset(xo, yo, zo);
 			LevelChunk ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
@@ -153,6 +215,7 @@ public class BasicVerticalChunk extends LevelChunk {
 						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
 						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
+						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
 						space.unitsPerBlock = ((ITickerWorld) level).getUPB();
 						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
@@ -162,19 +225,21 @@ public class BasicVerticalChunk extends LevelChunk {
 				int k = pPos.getY();
 				int l = pPos.getZ() & 15;
 				int indx = getIndx(j, k, l);
-				space.removeState(blocks[indx]);
-				space.addState(pState);
 				ac.setUnsaved(true);
-				if (space.isEmpty() && space.isNatural) {
-					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					NetworkingHacks.unitPos.remove();
-					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
-					BlockState state = ac.getBlockState(parentPos);
-					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-					space.clear();
-					capabilityHandler.getSUCapability().removeUnit(pPos);
-					if (descriptor != null)
-						NetworkingHacks.unitPos.set(descriptor);
+				if (space != null) {
+					space.removeState(blocks[indx]);
+					space.addState(pState);
+					if (space.isEmpty() && space.isNatural) {
+						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+						NetworkingHacks.unitPos.remove();
+						ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
+						BlockState state = ac.getBlockState(parentPos);
+						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+						space.clear();
+						capabilityHandler.getSUCapability().removeUnit(pPos);
+						if (descriptor != null)
+							NetworkingHacks.unitPos.set(descriptor);
+					}
 				}
 			}
 		}
@@ -185,7 +250,8 @@ public class BasicVerticalChunk extends LevelChunk {
 			int j = pPos.getX() & 15;
 			int k = pPos.getY();
 			int l = pPos.getZ() & 15;
-			getSection(getSectionIndex(0)).setBlockState(j, k, l, pState);
+//			getSection(getSectionIndex(0)).setBlockState(j, k, l, pState);
+			super.getSection(0).setBlockState(j, k, l, pState);
 			pPos = pPos.above(yPos * 16);
 			int indx = getIndx(j, k, l);
 //			BlockState blockstate = levelchunksection.setBlockState(j, k, l, pState);
@@ -272,7 +338,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		int xo = (pos.getX() / ((ITickerWorld) level).getUPB());
 		int yo = (pos.getY() / ((ITickerWorld) level).getUPB());
 		int zo = (pos.getZ() / ((ITickerWorld) level).getUPB());
-		BlockPos parentPos = rp.offset(xo, yo, zo);
+		BlockPos parentPos = rp.offset(xo, yo + yPos * 16, zo);
 		
 		// TODO: this can be optimized, but it's good for now
 		ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
@@ -282,7 +348,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		space.addState(state);
 		
 		blocks[indx] = state;
-		getSection(getSectionIndex(0)).setBlockState(j, k, l, state);
+		super.getSection(0).setBlockState(j, k, l, state);
 		
 		if (level.isClientSide) {
 			if (state.hasBlockEntity()) {
