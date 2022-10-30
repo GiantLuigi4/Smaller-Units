@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -27,7 +28,6 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.simulation.world.client.FakeClientWorld;
-import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
@@ -56,7 +56,7 @@ public class TileRendererHelper {
 	}
 	
 	//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-	public static void drawUnit(BlockPos pos, int upb, boolean natural, boolean hammerOverride, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
+	public static void drawUnit(Frustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 		// TODO: this needs optimization and checking
 		// could probably convert this to VBOs
 
@@ -70,7 +70,7 @@ public class TileRendererHelper {
 		float g = 1;
 		float b = 0;
 		int type = 0;
-		if (IHateTheDistCleaner.isHammerHeld() && hammerOverride) {
+		if (forceIndicators) {
 			if (!natural) {
 				type = 1;
 				r = 0;

@@ -89,6 +89,8 @@ public class SyncPacketS2C extends Packet {
 			space.setUpb(space.unitsPerBlock);
 			space.isNatural = syncPacket.natural;
 			space.loadPallet(syncPacket.pallet);
+			if (cap.getUnit(syncPacket.realPos) != null)
+				cap.removeUnit(syncPacket.realPos);
 			cap.setUnit(syncPacket.realPos, space);
 			((SUCapableChunk) chunk).SU$markDirty(syncPacket.realPos);
 			toRemove.add(syncPacket);

@@ -188,6 +188,10 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public AABB bounds() {
+		if (totalBB == null) {
+			// TODO: is this a good solution?
+			return new AABB(0, 0, 0, 1, 1, 1);
+		}
 		if (this.isEmpty()) throw Util.pauseInIde(new UnsupportedOperationException("No bounds for empty shape."));
 		return totalBB;
 	}

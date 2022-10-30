@@ -31,7 +31,7 @@ public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 		
 		/* draw indicator */
 		TileRendererHelper.drawUnit(
-				new BlockPos(0, 0, 0), upb,
+				null, new BlockPos(0, 0, 0), upb,
 				true, false, true,
 				pBuffer.getBuffer(RenderType.solid()),
 				pPoseStack, pPackedLight,

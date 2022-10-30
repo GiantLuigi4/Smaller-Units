@@ -7,12 +7,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.client.IItemRenderProperties;
+import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -38,10 +41,11 @@ public class UnitSpaceItem extends Item {
 	public InteractionResult useOn(UseOnContext pContext) {
 		BlockPlaceContext ctx = new BlockPlaceContext(pContext);
 		BlockPos pos = ctx.getClickedPos();
-		ISUCapability capability = SUCapabilityManager.getCapability(pContext.getLevel().getChunkAt(pos));
+		LevelChunk chunk = pContext.getLevel().getChunkAt(pos);
+		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
 		if (capability.getUnit(pos) == null) {
-			UnitSpace space = capability.getOrMakeUnit(pos);
 			if (ctx.replacingClickedOnBlock() || pContext.getLevel().getBlockState(pos).isAir()) {
+				UnitSpace space = capability.getOrMakeUnit(pos);
 				if (pContext.getItemInHand().hasTag()) {
 					CompoundTag tag = pContext.getItemInHand().getTag();
 					assert tag != null;
@@ -50,6 +54,9 @@ public class UnitSpaceItem extends Item {
 					else space.setUpb(4);
 				}
 				pContext.getLevel().setBlockAndUpdate(pos, Registry.UNIT_SPACE.get().defaultBlockState());
+				chunk.setUnsaved(true);
+				if (chunk.getLevel() instanceof ServerLevel)
+					space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> chunk));
 				return InteractionResult.SUCCESS;
 			}
 		}

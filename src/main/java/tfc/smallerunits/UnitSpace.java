@@ -236,6 +236,7 @@ public class UnitSpace {
 						BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 						BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
 						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx]);
+						addState(states[indx]);
 //						((BasicCubicChunk) myLevel.getChunkAt(getOffsetPos(new BlockPos(x, y, z)))).setBlockFast(new BlockPos(x, y, z), states[indx]);
 					}
 				}

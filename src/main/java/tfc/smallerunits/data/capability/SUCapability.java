@@ -64,7 +64,7 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 			} else {
 				spaces.add(getUnits(index)[Integer.parseInt(allKey)] = UnitSpace.fromNBT(nbt, level));
 				modified = true;
-				allSpaces = spaces.toArray(new UnitSpace[0]);
+//				allSpaces = spaces.toArray(new UnitSpace[0]);
 			}
 		}
 	}

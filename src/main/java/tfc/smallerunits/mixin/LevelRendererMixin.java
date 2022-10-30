@@ -266,8 +266,9 @@ public abstract class LevelRendererMixin {
 		for (UnitSpace unit : capability.getUnits()) {
 			if (unit != null) {
 				TileRendererHelper.drawUnit(
+						frustum,
 						unit.pos, unit.unitsPerBlock, unit.isNatural,
-						true, unit.isEmpty(), null, stk,
+						IHateTheDistCleaner.isHammerHeld(), unit.isEmpty(), null, stk,
 						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
 						origin.getX(), origin.getY(), origin.getZ()
 				);
