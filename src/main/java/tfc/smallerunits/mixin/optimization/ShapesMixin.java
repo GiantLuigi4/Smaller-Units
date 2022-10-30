@@ -23,9 +23,12 @@ public class ShapesMixin {
 			else if (pShape2 instanceof UnitShape) cir.setReturnValue(((UnitShape) pShape2).intersects(pShape1));
 		}
 		// tbf, there's no real point in me having an instance of check for the ONLY_FIRST and ONLY_SECOND, 'cuz the result is the same... just faster
-		else if (pResultOperator == BooleanOp.FIRST) cir.setReturnValue(pShape1.isEmpty());
-		else if (pResultOperator == BooleanOp.SECOND) cir.setReturnValue(pShape2.isEmpty());
-		else if (pResultOperator == BooleanOp.NOT_SAME) {
+		else if (pResultOperator == BooleanOp.FIRST) {
+			if (pShape1 instanceof UnitShape || pShape2 instanceof UnitShape) cir.setReturnValue(pShape1.isEmpty());
+			
+		} else if (pResultOperator == BooleanOp.SECOND) {
+			if (pShape1 instanceof UnitShape || pShape2 instanceof UnitShape) cir.setReturnValue(pShape2.isEmpty());
+		} else if (pResultOperator == BooleanOp.NOT_SAME) {
 			if (pShape2 instanceof UnitShape) {
 				VoxelShape f = pShape2;
 				pShape2 = pShape1;
@@ -47,12 +50,12 @@ public class ShapesMixin {
 		if (pFunction == BooleanOp.OR) {
 			if (pShape1 instanceof UnitShape) cir.setReturnValue(su_or((UnitShape) pShape1, pShape2));
 			else if (pShape2 instanceof UnitShape) cir.setReturnValue(su_or((UnitShape) pShape2, pShape1));
-		} else if (pFunction == BooleanOp.ONLY_FIRST) {
-			// TODO
-			cir.setReturnValue(pShape1);
-		} else if (pFunction == BooleanOp.ONLY_SECOND) {
-			// TODO
-			cir.setReturnValue(pShape2);
+		} else if (pFunction == BooleanOp.FIRST) {
+			if (pShape1 instanceof UnitShape || pShape2 instanceof UnitShape)
+				cir.setReturnValue(pShape1);
+		} else if (pFunction == BooleanOp.SECOND) {
+			if (pShape1 instanceof UnitShape || pShape2 instanceof UnitShape)
+				cir.setReturnValue(pShape2);
 		}
 	}
 	
