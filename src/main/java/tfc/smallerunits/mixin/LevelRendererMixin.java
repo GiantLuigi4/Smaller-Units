@@ -2,7 +2,9 @@ package tfc.smallerunits.mixin;
 
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
@@ -37,10 +39,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
+import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.client.render.SURenderManager;
 import tfc.smallerunits.client.render.TileRendererHelper;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
-import tfc.smallerunits.client.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
@@ -49,6 +51,7 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.world.ITickerWorld;
 import tfc.smallerunits.simulation.world.client.FakeClientWorld;
 import tfc.smallerunits.utils.BreakData;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -66,9 +69,6 @@ public abstract class LevelRendererMixin {
 	private BlockEntityRenderDispatcher blockEntityRenderDispatcher;
 	
 	@Unique
-	public ChunkRenderDispatcher.RenderChunk renderChunk;
-	
-	@Unique
 	double pCamX, pCamY, pCamZ;
 	
 	@Inject(at = @At("HEAD"), method = "renderChunkLayer")
@@ -77,19 +77,13 @@ public abstract class LevelRendererMixin {
 		pCamY = d2;
 		pCamZ = i;
 	}
-	
-	// TODO: move off of redirect
-	// even js coremods are better than a redirect imo
-	// granted those aren't exactly able to be ported to fabric
-	// and if I'm not gonna be the one porting SU to fabric, I don't wanna force someone else to port js coremods to fabric
-	@Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;getCompiledChunk()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"))
-	public ChunkRenderDispatcher.CompiledChunk preRenderLayer(ChunkRenderDispatcher.RenderChunk instance) {
-		return (renderChunk = instance).getCompiledChunk();
-	}
 
 //	// TODO: move off of redirect
-//	@Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;getRenderableBlockEntities()Ljava/util/List;"))
-//	public List<BlockEntity> preRenderBEs(ChunkRenderDispatcher.CompiledChunk instance) {
+//	// even js coremods are better than a redirect imo
+//	// granted those aren't exactly able to be ported to fabric
+//	// and if I'm not gonna be the one porting SU to fabric, I don't wanna force someone else to port js coremods to fabric
+//	@Redirect(method = "renderChunkLayer", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;getCompiledChunk()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"))
+//	public ChunkRenderDispatcher.CompiledChunk preRenderLayer(ChunkRenderDispatcher.RenderChunk instance) {
 //		return (renderChunk = instance).getCompiledChunk();
 //	}
 	
@@ -240,9 +234,8 @@ public abstract class LevelRendererMixin {
 	
 	@Redirect(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;getCompiledChunk()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"))
 	public ChunkRenderDispatcher.CompiledChunk preGetCompiledChunk(ChunkRenderDispatcher.RenderChunk instance) {
-		renderChunk = instance;
-		BlockPos origin = renderChunk.getOrigin();
-		ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
+		BlockPos origin = instance.getOrigin();
+		ChunkRenderDispatcher.CompiledChunk chunk = instance.compiled.get();
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
 		if (capable == null)
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
@@ -252,19 +245,42 @@ public abstract class LevelRendererMixin {
 		stk.pushPose();
 		Vec3 cam = Minecraft.getInstance().getEntityRenderDispatcher().camera.getPosition();
 		stk.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
-		
-		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
-		VertexConsumer consumer = source.getBuffer(RenderType.solid());
+
+//		VertexConsumer consumer = null;
+//		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
+//		consumer = source.getBuffer(RenderType.solid());
 		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
+		
+		/* draw indicators */
+		RenderType.solid().setupRenderState();
+		ShaderInstance shader = GameRenderer.getPositionColorLightmapShader();
+		shader.apply();
+		RenderSystem.setShader(() -> shader);
+		BufferUploader.reset();
+		RenderSystem.setupShaderLights(shader);
+		if (shader.PROJECTION_MATRIX != null) {
+			shader.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
+			shader.PROJECTION_MATRIX.upload();
+		}
+		TileRendererHelper.markNewFrame();
 		for (UnitSpace unit : capability.getUnits()) {
 			if (unit != null) {
 				TileRendererHelper.drawUnit(
 						unit.pos, unit.unitsPerBlock, unit.isNatural,
-						true, unit.isEmpty(), consumer, stk,
+						true, unit.isEmpty(), null, stk,
 						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
 						origin.getX(), origin.getY(), origin.getZ()
 				);
-				
+			}
+		}
+		VertexBuffer.unbind();
+		VertexBuffer.unbindVertexArray();
+		shader.clear();
+		RenderType.solid().clearRenderState();
+		
+		/* breaking overlays */
+		for (UnitSpace unit : capability.getUnits()) {
+			if (unit != null) {
 				ITickerWorld world = (ITickerWorld) unit.getMyLevel();
 				for (BreakData integer : world.getBreakData().values()) {
 					BlockPos minPos = unit.getOffsetPos(new BlockPos(0, 0, 0));
@@ -330,8 +346,8 @@ public abstract class LevelRendererMixin {
 		ShaderInstance shaderinstance = RenderSystem.getShader();
 		Uniform uniform = shaderinstance.CHUNK_OFFSET;
 		
-		BlockPos origin = renderChunk.getOrigin();
-		ChunkRenderDispatcher.CompiledChunk chunk = renderChunk.compiled.get();
+		BlockPos origin = IHateTheDistCleaner.currentRenderChunk.get().getOrigin();
+		ChunkRenderDispatcher.CompiledChunk chunk = IHateTheDistCleaner.currentRenderChunk.get().compiled.get();
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
 		
 		if (capable == null)
@@ -341,7 +357,7 @@ public abstract class LevelRendererMixin {
 			uniform.set((float) ((double) origin.getX() - pCamX), (float) ((double) origin.getY() - pCamY), (float) ((double) origin.getZ() - pCamZ));
 		}
 		
-		SURenderManager.drawChunk(((LevelChunk) capable), level, renderChunk.getOrigin(), pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum, pCamX, pCamY, pCamZ, uniform);
+		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum, pCamX, pCamY, pCamZ, uniform);
 		return instance.isEmpty(pRenderType);
 	}
 }

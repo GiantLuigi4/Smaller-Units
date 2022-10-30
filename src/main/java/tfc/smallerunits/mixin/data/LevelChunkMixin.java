@@ -6,8 +6,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.SUChunkRender;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
 
 import java.util.ArrayList;
 

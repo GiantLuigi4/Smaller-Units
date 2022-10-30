@@ -25,8 +25,8 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	@Override
 	public CompoundTag serializeNBT() {
 		CompoundTag tag = new CompoundTag();
-		for (int i = 0; i < spaceMap.size(); i++) {
-			UnitSpace[] spaceMap = this.spaceMap.get(i);
+		for (Integer i : spaceMap.keySet()) {
+			UnitSpace[] spaceMap = this.spaceMap.get((int) i);
 			CompoundTag tg0 = new CompoundTag();
 			tg0.putInt("version", 0);
 			for (int i1 = 0; i1 < spaceMap.length; i1++) {

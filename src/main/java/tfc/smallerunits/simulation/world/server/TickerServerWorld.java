@@ -16,6 +16,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -42,7 +43,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
@@ -166,7 +167,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 //				return Blocks.VOID_AIR.defaultBlockState();
 			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = parent.getBlockState(bp);
+			BlockState state = parent.getBlockState(bp.offset(region.pos.toBlockPos()));
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
 			cache.put(bp, Pair.of(state, new VecMap<>(2)));
@@ -175,6 +176,17 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 		isLoaded = true;
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+	}
+	
+	@Override
+	public Holder<Biome> getBiome(BlockPos pos) {
+		BlockPos bp = region.pos.toBlockPos().offset(
+				// TODO: double check this
+				Math.floor(pos.getX() / (double) upb),
+				Math.floor(pos.getY() / (double) upb),
+				Math.floor(pos.getZ() / (double) upb)
+		);
+		return parent.getBiome(bp.offset(region.pos.toBlockPos()));
 	}
 	
 	public ParentLookup lookup;
@@ -373,7 +385,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156932_, AABB p_156933_, Consumer<U> p_156934_) {
 				// ?
 				for (Entity entity : entities) {
-					if (p_156933_.intersects(p_156933_)) {
+					if (p_156933_.intersects(entity.getBoundingBox())) {
 						if (p_156932_.getBaseClass().isInstance(entity)) {
 							p_156934_.accept((U) entity);
 						}
@@ -540,6 +552,41 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	public void blockEntityChanged(BlockPos pPos) {
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
 		vc.beChanges.add(vc.getBlockEntity(pPos));
+	}
+	
+	@Override
+	public void tickChunk(LevelChunk pChunk, int pRandomTickSpeed) {
+//		ChunkPos chunkpos = pChunk.getPos();
+//		boolean flag = this.isRaining();
+//		int i = chunkpos.getMinBlockX();
+//		int j = chunkpos.getMinBlockZ();
+//		ProfilerFiller profilerfiller = this.getProfiler();
+//
+//		profilerfiller.push("iceandsnow");
+//		if (this.random.nextInt(16) == 0) {
+//			BlockPos blockpos2 = this.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING, this.getBlockRandomPos(i, 0, j, 15));
+//			BlockPos blockpos3 = blockpos2.below();
+//			Biome biome = this.getBiome(blockpos2).value();
+//			if (this.isAreaLoaded(blockpos2, 1)) // Forge: check area to avoid loading neighbors in unloaded chunks
+//				if (biome.shouldFreeze(this, blockpos3)) {
+//					this.setBlockAndUpdate(blockpos3, Blocks.ICE.defaultBlockState());
+//				}
+//
+//			if (flag) {
+//				if (biome.shouldSnow(this, blockpos2)) {
+//					this.setBlockAndUpdate(blockpos2, Blocks.SNOW.defaultBlockState());
+//				}
+//
+//				BlockState blockstate1 = this.getBlockState(blockpos3);
+//				Biome.Precipitation biome$precipitation = biome.getPrecipitation();
+//				if (biome$precipitation == Biome.Precipitation.RAIN && biome.coldEnoughToSnow(blockpos3)) {
+//					biome$precipitation = Biome.Precipitation.SNOW;
+//				}
+//
+//				blockstate1.getBlock().handlePrecipitation(blockstate1, this, blockpos3, biome$precipitation);
+//			}
+//		}
+//		profilerfiller.pop();
 	}
 	
 	@Override
@@ -928,5 +975,10 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	public class EntityCallbacks extends ServerLevel.EntityCallbacks {
 		public EntityCallbacks() {
 		}
+	}
+	
+	@Override
+	public String toString() {
+		return "TickerServerLevel[" + ((ServerLevelData) this.getLevelData()).getLevelName() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 }

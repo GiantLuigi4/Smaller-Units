@@ -5,7 +5,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import tfc.smallerunits.client.tracking.CompiledChunkAccessor;
+import tfc.smallerunits.client.access.tracking.CompiledChunkAccessor;
 
 @Mixin(ChunkRenderDispatcher.RenderChunk.class)
 public class RenderChunkMixin {

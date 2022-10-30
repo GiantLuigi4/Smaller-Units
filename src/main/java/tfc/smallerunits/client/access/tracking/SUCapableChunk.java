@@ -1,4 +1,4 @@
-package tfc.smallerunits.client.tracking;
+package tfc.smallerunits.client.access.tracking;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;

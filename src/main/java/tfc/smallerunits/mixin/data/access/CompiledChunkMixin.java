@@ -3,7 +3,7 @@ package tfc.smallerunits.mixin.data.access;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import tfc.smallerunits.client.tracking.CompiledChunkAccessor;
+import tfc.smallerunits.client.access.tracking.CompiledChunkAccessor;
 
 @Mixin(ChunkRenderDispatcher.CompiledChunk.class)
 public class CompiledChunkMixin implements CompiledChunkAccessor {

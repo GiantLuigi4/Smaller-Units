@@ -14,7 +14,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.UnitPallet;

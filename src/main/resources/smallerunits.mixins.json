@@ -26,8 +26,9 @@
     "LevelRendererMixin", "compat.ChiselAndBitMeshMixin", "core.ClientLevelMixin", "core.LocalPlayerMixin",
     "core.MinecraftMixin", "core.MultiPlayerGameModeMixin", "core.PersistentEntitySectionManagerMixin",
     "core.access.ClientPacketListenerMixin", "dangit.ForgeWhy", "data.CompiledChunkMixin", "data.LevelChunkMixin",
-    "data.LevelMixin", "data.regions.ClientChunkCacheMixin", "data.regions.ClientLevelMixin", "debug.RenderWorldLast",
-    "quality.BlockEntityRendererDispatcherMixin", "quality.ParticleEngineAccessor"
+    "data.LevelMixin", "data.access.VertexBufferMixin", "data.regions.ClientChunkCacheMixin",
+    "data.regions.ClientLevelMixin", "debug.RenderWorldLast", "quality.BlockEntityRendererDispatcherMixin",
+    "quality.ParticleEngineAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

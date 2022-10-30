@@ -13,7 +13,7 @@ import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.world.ChunkWatchEvent;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.client.tracking.FastCapabilityHandler;
+import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
 
 // so I mostly just abandoned any documentation that I was given and write this
 // CCA's readme is actually extremely good

@@ -108,6 +108,11 @@ public class UnitChunkMap extends ChunkMap {
 			// TODO: check if it's in the parent's ticking range
 			return true;
 		}
+		
+		@Override
+		public boolean shouldForceTicks(long chunkPos) {
+			return true;
+		}
 	}
 	
 	@Nullable

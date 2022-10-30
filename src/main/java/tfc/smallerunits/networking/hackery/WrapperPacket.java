@@ -110,7 +110,10 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		NetworkContext context = new NetworkContext(ctx.getNetworkManager(), ((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).getPlayer(), ((Packet) this.wrapped));
 		preRead(context);
 		PacketUtilMess.preHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
-		context.pkt.handle(ctx.getNetworkManager().getPacketListener());
+		try {
+			context.pkt.handle(ctx.getNetworkManager().getPacketListener());
+		} catch (Throwable ignored) {
+		}
 		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
 		teardown(context);
 //		System.out.println();

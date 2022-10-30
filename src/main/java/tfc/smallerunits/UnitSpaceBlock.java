@@ -97,7 +97,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
 			UnitSpace space = capability.getUnit(pPos);
 			// if unit space is null, assume syncing is still occurring
-			if (space == null) return super.getShape(pState, pLevel, pPos, pContext);
+			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
 			
 			//// I'm stupid, why did I do it any way other than this?
 			//// lol

@@ -1,4 +1,4 @@
-package tfc.smallerunits.client.tracking;
+package tfc.smallerunits.client.access.tracking;
 
 public interface SUCompiledChunkAttachments {
 	SUCapableChunk getSUCapable();

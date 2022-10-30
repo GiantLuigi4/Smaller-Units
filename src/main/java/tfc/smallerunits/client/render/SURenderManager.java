@@ -13,8 +13,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
-import tfc.smallerunits.client.tracking.SUCapableWorld;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
+import tfc.smallerunits.client.access.tracking.SUCapableWorld;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 

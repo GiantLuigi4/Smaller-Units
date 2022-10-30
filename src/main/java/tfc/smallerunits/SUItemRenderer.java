@@ -28,6 +28,8 @@ public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 			}
 		}
 		pPoseStack.pushPose();
+		
+		/* draw indicator */
 		TileRendererHelper.drawUnit(
 				new BlockPos(0, 0, 0), upb,
 				true, false, true,
@@ -36,6 +38,7 @@ public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 				0, 0, 0
 		);
 		
+		/* draw text */
 		String text = "1/" + upb;
 		int scale = upb;
 		pPoseStack.translate(2 / 4f, 0.5, 1);

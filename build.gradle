@@ -134,7 +134,10 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven { url = "https://jitpack.io" }
-    maven { url "https://www.cursemaven.com" }
+    maven { url = "https://www.cursemaven.com" }
+    if (new File("libs").exists()) {
+        flatDir { dirs 'libs' }
+    }
 }
 
 configurations {
@@ -142,13 +145,30 @@ configurations {
 }
 
 dependencies {
-//    minecraft 'net.minecraftforge:forge:1.18.1-39.1.2'
-    minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
+//    minecraft 'net.minecraftforge:forge:1.18.1-39.1.19'
+    minecraft 'net.minecraftforge:forge:1.18.2-40.1.60'
 
     System.out.println("CF mods")
     System.out.println(": Compilied against")
     api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
     api fg.deobf("curse.maven:pehkui-319596:3808012")
+
+    System.out.println(": Flatdirs")
+    if (new File("libs").exists()) {
+        for (File f : new File("libs").listFiles()) {
+            String name = f.getName().replace(".jar", "")
+            String[] split = name.split("-", 2)
+            String lib = "flatdir.lib:" + split[0] + ":" + split[1]
+            System.out.println("| " + lib)
+            api fg.deobf(lib)
+        }
+    }
+
+    System.out.println(": Pre-deobf mods")
+    for (File fi : new File("run/libs").listFiles()) {
+        System.out.println(fi.getName())
+        api files(fi.toString())
+    }
 
     System.out.println(": Testing with")
     if (true) {
@@ -163,30 +183,15 @@ dependencies {
 
     if (true) {
         System.out.println("| Magic")
-        api fg.deobf("curse.maven:curios-309927:3748873")
         api fg.deobf("curse.maven:malum-484064:3838894")
         api fg.deobf("curse.maven:ortuslib-616457:3768197")
     }
 
     if (true) {
-        System.out.println("| QoL")
-//        api fg.deobf("curse.maven:carry_on-274259:3674344")
-        api fg.deobf("curse.maven:klee_slabs-241895:3830926")
-        api fg.deobf("curse.maven:balm-531761:3830790")
-
-        // this is incompatible with stuff, and I can't figure out what
-        api fg.deobf("curse.maven:better_loading_screen-594044:3722047")
-
-//        api fg.deobf("curse.maven:screen_copy-574902:3801788")
-    }
-
-    if (true) {
         System.out.println("| Misc")
         api fg.deobf("curse.maven:quark-243121:3840125")
-        api fg.deobf("curse.maven:autoreglib-250363:3642382")
 
         api fg.deobf("curse.maven:supplementaries-412082:3800501")
-        api fg.deobf("curse.maven:selene-499980:3802427")
 //        api fg.deobf("curse.maven:immweather-592449:3800547")
 
         api fg.deobf("curse.maven:twilight_forest-227639:3873593")
@@ -201,15 +206,31 @@ dependencies {
     }
 
     if (true) {
+        System.out.println("| Libraries")
+        // botania
+        api fg.deobf("curse.maven:patchouli-306770:3809545")
+        // malum, botania, twilight forest
+        api fg.deobf("curse.maven:curios-309927:3841948")
+        // create
+        api fg.deobf("curse.maven:flywheel-486392:3737402")
+        // super circuit maker
+        api fg.deobf("curse.maven:tklib-566563:3650390")
+        // colossal chests
+        api fg.deobf("curse.maven:cyc_core-232758:3832119")
+        api fg.deobf("curse.maven:cloth_config-348521:3782776")
+        // quark
+        api fg.deobf("curse.maven:autoreglib-250363:3642382")
+        // supplementaries
+        api fg.deobf("curse.maven:selene-499980:3802427")
+    }
+
+    if (true) {
         System.out.println("| Tech")
         api fg.deobf("curse.maven:botania-225643:3789677")
-        api fg.deobf("curse.maven:patchouli-306770:3809545")
 
         api fg.deobf("curse.maven:create-328085:3737418")
-        api fg.deobf("curse.maven:flywheel-486392:3737402")
 
         api fg.deobf("curse.maven:scm-248619:3670826")
-        api fg.deobf("curse.maven:tklib-566563:3650390")
     }
 
     if (true) {
@@ -220,8 +241,6 @@ dependencies {
         api fg.deobf("curse.maven:iron_chests-228756:3795374")
 
         api fg.deobf("curse.maven:colossal_chests-237875:3768512")
-        api fg.deobf("curse.maven:cyc_core-232758:3832119")
-        api fg.deobf("curse.maven:cloth_config-348521:3782776")
 
         api fg.deobf("curse.maven:refined_storage-243076:3712882")
     }
@@ -230,18 +249,15 @@ dependencies {
         System.out.println("| Optimization")
 
 //        api fg.deobf("curse.maven:rubidium-574856:4024781")
-//        api fg.deobf("curse.maven:krypton-549394:3819215")
+        api fg.deobf("curse.maven:krypton-549394:3819215")
+
+        api fg.deobf("curse.maven:ferrite-429235:3767288")
     }
 
     /* Invasive */
 //    api fg.deobf("curse.maven:dist_horizons-508933:3863541")
 //    api fg.deobf("curse.maven:nocubes-309664:3682612")
 //    api fg.deobf("curse.maven:shimmer-627824:3884288")
-
-    System.out.println("Pre-deobf mods")
-    for (File fi : new File("run/libs").listFiles()) {
-        api files(fi.toString())
-    }
 
     System.out.println("Mixin")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'

@@ -45,9 +45,9 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
@@ -701,5 +701,10 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	@Override
 	public void invalidateCache(BlockPos pos) {
 		cache.remove(pos);
+	}
+	
+	@Override
+	public String toString() {
+		return "FakeClientLevel@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 }

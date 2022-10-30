@@ -2,6 +2,7 @@ package tfc.smallerunits.mixin.data.regions;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,6 +31,17 @@ public class ClientLevelMixin implements RegionalAttachments {
 			findChunk(y, pos, (rp, r) -> {
 				if (r.subtractRef(rp) <= 0)
 					regionMap.remove(rp);
+			});
+	}
+	
+	// TODO: maybe get a better way of doing this?
+	@Inject(at = @At("HEAD"), method = "onChunkLoaded")
+	public void onLoadChunk(ChunkPos pChunkPos, CallbackInfo ci) {
+		int min = ((Level) (Object) this).getMinBuildHeight();
+		int max = ((Level) (Object) this).getMaxBuildHeight();
+		for (int y = min; y < max; y += 16)
+			findChunk(y, pChunkPos, (rp, r) -> {
+				r.addRef(rp);
 			});
 	}
 	

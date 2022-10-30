@@ -1,5 +1,7 @@
 package tfc.smallerunits.simulation.world.client;
 
+import it.unimi.dsi.fastutil.BigList;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Holder;
@@ -44,6 +46,8 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 //		((ITickerWorld) level).SU$removeEntity(pEntity);
 //	}
 	
+	BigList<LevelChunk> allChunks = new ObjectBigArrayBigList<>();
+	
 	@Override
 	public LevelChunk getChunk(int pChunkX, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
 		return getChunk(pChunkX, 0, pChunkZ, pRequiredStatus, pLoad);
@@ -51,7 +55,13 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
-		super.tick(pHasTimeLeft, p_201914_);
+//		for (int i = 0; i < allChunks.size(); i++) {
+//			LevelChunk chunk = allChunks.get(i);
+//			level.tickChunk(chunk, tickCount);
+////			((BasicVerticalChunk) chunk).randomTick();
+//		}
+		super.tick(pHasTimeLeft, false);
+
 //		for (BasicVerticalChunk[] column : columns) {
 //			if (column == null) continue;
 //			for (BasicVerticalChunk basicVerticalChunk : column) {
@@ -134,6 +144,7 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 								new ChunkPos(pChunkX, pChunkZ)
 						), getLookup(), upb
 				);
+				allChunks.add(ck[pChunkY]);
 				ck[pChunkY].setClientLightReady(true);
 			}
 			return ck[pChunkY];
@@ -152,6 +163,7 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 						new ChunkPos(pChunkX, pChunkZ)
 				), getLookup(), upb
 		);
+		allChunks.add(ck[i]);
 		ck[i].setClientLightReady(true);
 		
 		return ck[i];

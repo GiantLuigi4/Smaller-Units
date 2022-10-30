@@ -353,6 +353,7 @@ public class UnitShape extends VoxelShape {
 //					pCollisionBox.getCenter().multiply(1, 0, 1).add(0, pCollisionBox.minY, 0),
 //					space.unitsPerBlock
 //			);
+			// TODO: got an issue with tall block collision (fences, walls, etc)
 			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
 			int minX = (int) (motionBox.minX - 1);
 			minX = Math.max(bp.getX(), minX);

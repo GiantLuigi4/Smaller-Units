@@ -7,15 +7,17 @@ import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
 
 public class RenderWorld implements BlockAndTintGetter {
 	Level lvl;
-//	BlockState[] states;
+	//	BlockState[] states;
 	BlockPos minPos;
 	int upb;
+	LevelChunk chunk;
 	
 	//	public RenderWorld(Level lvl, BlockState[] states, BlockPos minPos, int upb) {
 	public RenderWorld(Level lvl, BlockPos minPos, int upb) {
@@ -23,6 +25,7 @@ public class RenderWorld implements BlockAndTintGetter {
 //		this.states = states;
 		this.minPos = minPos;
 		this.upb = upb;
+		chunk = lvl.getChunkAt(minPos);
 	}
 	
 	@Override
@@ -56,6 +59,15 @@ public class RenderWorld implements BlockAndTintGetter {
 //			int indx = (((x * upb) + y) * upb) + z;
 //			return states[indx];
 //		}
+		if (
+				chunk.getPos().getMaxBlockX() >= p_45571_.getX() &&
+						chunk.getPos().getMinBlockX() <= p_45571_.getX() &&
+						lvl.getMaxBuildHeight() >= p_45571_.getY() &&
+						lvl.getMinBuildHeight() <= p_45571_.getY() &&
+						chunk.getPos().getMaxBlockZ() >= p_45571_.getZ() &&
+						chunk.getPos().getMinBlockZ() <= p_45571_.getZ()
+		)
+			return chunk.getBlockState(p_45571_);
 		return lvl.getBlockState(p_45571_);
 	}
 	

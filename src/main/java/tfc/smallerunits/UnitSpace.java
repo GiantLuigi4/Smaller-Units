@@ -170,7 +170,6 @@ public class UnitSpace {
 //		setState(new BlockPos(0, 0, 0), Blocks.STONE);
 		
 		this.tag = null;
-		((ITickerWorld) myLevel).setLoaded();
 	}
 	
 	/* reason: race conditions */

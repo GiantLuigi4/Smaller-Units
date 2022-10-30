@@ -23,8 +23,8 @@ import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
-import tfc.smallerunits.client.tracking.FastCapabilityHandler;
-import tfc.smallerunits.client.tracking.SUCapableChunk;
+import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
+import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BasicVerticalChunk extends LevelChunk {
-	private final BlockState[] blocks = new BlockState[16 * 16 * 16];
+	private final BlockState[] blocks = new BlockState[16 * 16 * 16]; // TODO: I'd like to get rid of this
 	public final int yPos;
 	// holds the functional chunk and a method which gets the corresponding BasicVerticalChunk from an integer representing which vertical chunk
 	// quite basic... weird to word however

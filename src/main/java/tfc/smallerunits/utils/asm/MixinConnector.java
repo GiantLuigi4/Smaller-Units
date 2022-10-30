@@ -1,9 +1,13 @@
 package tfc.smallerunits.utils.asm;
 
-import org.objectweb.asm.tree.ClassNode;
+import net.minecraftforge.coremod.api.ASMAPI;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -83,11 +87,46 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-	
+		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
+			String target = ASMAPI.mapMethod("m_172993_"); // renderChunkLayer
+			String desc = "(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"; // TODO: I'd like to not assume Mojmap
+			
+			String refOwner = "net/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk";
+			String ref = ASMAPI.mapMethod("m_112835_"); // getCompiledChunk
+			String refDesc = "()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;";
+			for (MethodNode method : targetClass.methods) {
+				if (method.name.equals(target) && method.desc.equals(desc)) {
+					AbstractInsnNode targetNode = null;
+					for (AbstractInsnNode instruction : method.instructions) {
+						if (instruction instanceof MethodInsnNode methodNode) {
+							if (methodNode.owner.equals(refOwner) && methodNode.name.equals(ref) && methodNode.desc.equals(refDesc)) {
+								targetNode = methodNode;
+								break;
+							}
+						}
+					}
+					if (targetNode != null) {
+						InsnList list = new InsnList();
+						list.add(ASMAPI.buildMethodCall("tfc/smallerunits/utils/IHateTheDistCleaner", "updateRenderChunk", "(Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;)Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;", ASMAPI.MethodType.STATIC));
+						method.instructions.insertBefore(targetNode, list);
+					}
+				}
+			}
+		}
 	}
 	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		// TODO: transform level renderer class here, for compatibility purposes
+		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
+			try {
+				FileOutputStream outputStream = new FileOutputStream("LevelRenderer.class");
+				ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+				targetClass.accept(writer);
+				outputStream.write(writer.toByteArray());
+				outputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

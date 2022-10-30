@@ -1,6 +1,8 @@
 package tfc.smallerunits.simulation.world.server;
 
 import com.mojang.datafixers.DataFixer;
+import it.unimi.dsi.fastutil.BigList;
+import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.network.protocol.Packet;
@@ -12,12 +14,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
-import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.ChunkStatus;
-import net.minecraft.world.level.chunk.EmptyLevelChunk;
+import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
@@ -98,17 +98,32 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	
 	ArrayList<ChunkHolder> holders = new ArrayList<>();
 	
+	BigList<LevelChunk> allChunks = new ObjectBigArrayBigList<>();
+	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
-		super.tick(pHasTimeLeft, p_201914_);
-		for (BasicVerticalChunk[] column : columns) {
-			if (column == null) continue;
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
-//				level.tickChunk(basicVerticalChunk, 100);
-				basicVerticalChunk.randomTick();
-			}
+		int tickCount = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
+		for (int i = 0; i < allChunks.size(); i++) {
+			LevelChunk chunk = allChunks.get(i);
+			level.tickChunk(chunk, tickCount);
+			((BasicVerticalChunk) chunk).randomTick();
 		}
+		super.tick(pHasTimeLeft, false);
+		
+		for (ChunkHolder holder : holders) {
+			LevelChunk chunk = holder.getTickingChunk();
+			if (chunk != null)
+				holder.broadcastChanges(chunk);
+		}
+
+//		for (BasicVerticalChunk[] column : columns) {
+//			if (column == null) continue;
+//			for (BasicVerticalChunk basicVerticalChunk : column) {
+//				if (basicVerticalChunk == null) continue;
+////				level.tickChunk(basicVerticalChunk, 100);
+//				basicVerticalChunk.randomTick();
+//			}
+//		}
 	}
 	
 	public Iterable<ChunkHolder> getChunks() {
@@ -165,6 +180,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 								new ChunkPos(pChunkX, pChunkZ)
 						), getLookup(), upb
 				);
+				allChunks.add(ck[pChunkY]);
 				UnitChunkHolder holder = new UnitChunkHolder(ck[pChunkY].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
 				}, chunkMap, ck[pChunkY]);
 				holders.add(holder);
@@ -186,6 +202,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 						new ChunkPos(pChunkX, pChunkZ)
 				), getLookup(), upb
 		);
+		allChunks.add(ck[i]);
 		UnitChunkHolder holder = new UnitChunkHolder(ck[i].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
 		}, chunkMap, ck[i]);
 		holders.add(holder);
