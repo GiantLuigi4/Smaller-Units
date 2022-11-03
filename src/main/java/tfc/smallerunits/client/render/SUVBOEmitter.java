@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
@@ -24,6 +25,7 @@ import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
@@ -132,6 +134,8 @@ public class SUVBOEmitter {
 	
 	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
 		VertexConsumer consumer = null;
+		SectionPos chunkPos = SectionPos.of(space.pos);
+		BlockPos chunkOffset = new BlockPos(chunkPos.minBlockX(), chunkPos.minBlockY(), chunkPos.minBlockZ());
 		for (int x = 0; x < upb; x++) {
 			PoseStack stk = new PoseStack();
 			stk.last().pose().load(stack.last().pose());
@@ -146,10 +150,11 @@ public class SUVBOEmitter {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							BlockPos rPos = new BlockPos(x, y, z);
 							TranslatingVertexBuilder builder = new TranslatingVertexBuilder(1f / upb, consumer);
+							BlockPos offsetPos = space.getOffsetPos(new BlockPos(x, y, z));
 							builder.offset = new Vec3(
-									space.pos.getX() * 16,
-									space.pos.getY() * 16,
-									space.pos.getZ() * 16
+									((int) Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
+									((int) Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
+									((int) Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
 							dispatcher.renderLiquid(
 									space.getOffsetPos(rPos),

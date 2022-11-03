@@ -1,6 +1,5 @@
 package tfc.smallerunits.mixin.data.regions;
 
-import com.mojang.datafixers.util.Either;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.world.level.ChunkPos;
@@ -10,7 +9,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.ChunkHolderData;
@@ -18,7 +16,6 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 
 @Mixin(ChunkMap.class)
@@ -58,15 +55,16 @@ public class ChunkMapMixin implements RegionalAttachments {
 		return regionMap;
 	}
 	
-	@Inject(at = @At("RETURN"), method = {"lambda$scheduleChunkLoad$14", "lambda$scheduleChunkLoad$16", "m_198890_", "m_203107_"})
-	public void preProcessLoads(ChunkPos flag, CallbackInfoReturnable<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> cir) {
-		Optional<ChunkAccess> potentialAccess = cir.getReturnValue().left();
-		if (!potentialAccess.isPresent()) return;
-		int min = potentialAccess.get().getMinBuildHeight();
-		int max = potentialAccess.get().getMaxBuildHeight();
-		for (int y = min; y < max; y += 16)
-			findChunk(y, flag, (rp, r) -> r.addRef(rp));
-	}
+	// TODO: fix this so it doesn't cause deadlocks
+//	@Inject(at = @At("RETURN"), method = {"lambda$scheduleChunkLoad$14", "lambda$scheduleChunkLoad$16", "m_198890_", "m_203107_"})
+//	public void preProcessLoads(ChunkPos flag, CallbackInfoReturnable<Either<ChunkAccess, ChunkHolder.ChunkLoadingFailure>> cir) {
+//		Optional<ChunkAccess> potentialAccess = cir.getReturnValue().left();
+//		if (!potentialAccess.isPresent()) return;
+//		int min = potentialAccess.get().getMinBuildHeight();
+//		int max = potentialAccess.get().getMaxBuildHeight();
+//		for (int y = min; y < max; y += 16)
+//			findChunk(y, flag, (rp, r) -> r.addRef(rp));
+//	}
 	
 	@Override
 	public void SU$findChunk(int y, ChunkPos flag, BiConsumer<RegionPos, Region> regionHandler) {

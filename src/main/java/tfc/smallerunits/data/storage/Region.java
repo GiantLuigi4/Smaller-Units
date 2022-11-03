@@ -14,10 +14,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.client.FakeClientWorld;
-import tfc.smallerunits.simulation.world.server.LevelSourceProviderProvider;
-import tfc.smallerunits.simulation.world.server.TickerServerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.server.LevelSourceProviderProvider;
+import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
@@ -43,10 +43,10 @@ public class Region {
 		chunksLoaded++;
 	}
 	
-	public TickerServerWorld getServerWorld(MinecraftServer srv, ServerLevel parent, int upb) {
+	public TickerServerLevel getServerWorld(MinecraftServer srv, ServerLevel parent, int upb) {
 		if (levels[upb] == null) {
 			try {
-				levels[upb] = new TickerServerWorld(
+				levels[upb] = new TickerServerLevel(
 						srv,
 						// TODO: wrap level data
 						(ServerLevelData) parent.getLevelData(),
@@ -81,14 +81,14 @@ public class Region {
 			}
 		}
 		
-		return (TickerServerWorld) levels[upb];
+		return (TickerServerLevel) levels[upb];
 	}
 	
 	public Level getClientWorld(Level parent, int upb) {
 //		if (!(parent instanceof ClientLevel)) return null;
 		if (levels[upb] == null) {
 			try {
-				levels[upb] = new FakeClientWorld(
+				levels[upb] = new FakeClientLevel(
 						(ClientLevel) parent,
 						null, ((ClientLevel) parent).getLevelData(),
 						parent.dimension(), Holder.direct(parent.dimensionType()),

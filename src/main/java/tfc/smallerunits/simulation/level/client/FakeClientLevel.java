@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.client;
+package tfc.smallerunits.simulation.level.client;
 
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
@@ -54,7 +54,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.scale.ResizingUtils;
@@ -67,7 +67,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class FakeClientWorld extends ClientLevel implements ITickerWorld {
+public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 	public final Region region;
 	public final int upb;
 	public final VecMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new VecMap<>(2);
@@ -125,11 +125,11 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 		});
 	}
 	
-	public FakeClientWorld(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
+	public FakeClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
 		this.parent = parent;
 		this.region = region;
-		this.chunkSource = new TickerClientChunkCache(this, 0, upb);
+		this.chunkSource = new FakeClientChunkCache(this, 0, upb);
 		this.upb = upb;
 		this.isClientSide = true;
 		
@@ -143,11 +143,12 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 					Math.floor(pos.getY() / (double) upb),
 					Math.floor(pos.getZ() / (double) upb)
 			);
-			if (cache.containsKey(bp)) {
+			Pair<BlockState, VecMap<VoxelShape>> value = cache.getOrDefault(bp, null);
+			if (value != null) {
 //				BlockState state = cache.get(bp).getFirst();
 //				VoxelShape shape = state.getCollisionShape(parent, bp);
 				// TODO: empty shape check
-				return cache.get(bp).getFirst();
+				return value.getFirst();
 			}
 //			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
 //				return Blocks.VOID_AIR.defaultBlockState();
@@ -486,26 +487,42 @@ public class FakeClientWorld extends ClientLevel implements ITickerWorld {
 	@Override
 	public void sendBlockUpdated(BlockPos pPos, BlockState pOldState, BlockState pNewState, int pFlags) {
 		// TODO
+		ArrayList<BlockPos> positionsToRefresh = new ArrayList<>();
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		BlockPos rp = region.pos.toBlockPos();
-		int xo = ((pPos.getX()) / upb);
-		int yo = ((pPos.getY()) / upb);
-		int zo = ((pPos.getZ()) / upb);
-		BlockPos parentPos = rp.offset(xo, yo, zo);
-		ChunkAccess ac;
-		ac = parent.getChunkAt(parentPos);
-		
-		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
-		UnitSpace space = cap.getUnit(parentPos);
-		if (space == null) {
-			space = cap.getOrMakeUnit(parentPos);
-			space.setUpb(upb);
+		for (int xOff = -1; xOff <= 1; xOff++) {
+			for (int yOff = -1; yOff <= 1; yOff++) {
+				for (int zOff = -1; zOff <= 1; zOff++) {
+					pos.set(pPos.getX() - xOff, pPos.getY() - yOff, pPos.getZ() - zOff);
+					int xo = ((pos.getX()) / upb);
+					int yo = ((pos.getY()) / upb);
+					int zo = ((pos.getZ()) / upb);
+					positionsToRefresh.add(rp.offset(xo, yo, zo));
+				}
+			}
 		}
-//		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
-//		vc = vc.getSubChunk(cy);
-//		vc.setBlockFast(new BlockPos(x, y, z), state);
 		
-		((SUCapableChunk) ac).SU$markDirty(parentPos);
-//		super.sendBlockUpdated(pPos, pOldState, pNewState, pFlags);
+		for (BlockPos parentPos : positionsToRefresh) {
+//			int xo = ((toRefresh.getX()) / upb);
+//			int yo = ((toRefresh.getY()) / upb);
+//			int zo = ((toRefresh.getZ()) / upb);
+//			BlockPos parentPos = rp.offset(xo, yo, zo);
+			ChunkAccess ac;
+			ac = parent.getChunkAt(parentPos);
+			
+			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+			UnitSpace space = cap.getUnit(parentPos);
+			if (space == null) {
+				space = cap.getOrMakeUnit(parentPos);
+				space.setUpb(upb);
+			}
+//			BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
+//			vc = vc.getSubChunk(cy);
+//			vc.setBlockFast(new BlockPos(x, y, z), state);
+			
+			((SUCapableChunk) ac).SU$markDirty(parentPos);
+//			super.sendBlockUpdated(pPos, pOldState, pNewState, pFlags);
+		}
 	}
 	
 	@Override

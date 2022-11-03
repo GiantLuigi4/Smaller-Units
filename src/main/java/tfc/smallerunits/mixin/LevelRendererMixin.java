@@ -48,8 +48,8 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.client.FakeClientWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.selection.UnitHitResult;
@@ -217,7 +217,7 @@ public abstract class LevelRendererMixin {
 			// TODO: frustum checks
 			for (Level valueLevel : value.getLevels()) {
 				if (valueLevel != null) {
-					if (valueLevel instanceof FakeClientWorld) {
+					if (valueLevel instanceof FakeClientLevel) {
 						pPoseStack.pushPose();
 						TileRendererHelper.drawParticles(pPoseStack, pPartialTick, pFinishNanoTime, pRenderBlockOutline, pCamera, pGameRenderer, pLightTexture, pProjectionMatrix, value, valueLevel, renderBuffers, ci);
 						pPoseStack.popPose();
@@ -300,8 +300,8 @@ public abstract class LevelRendererMixin {
 		synchronized (capable.getTiles()) {
 			for (BlockEntity tile : capable.getTiles()) {
 				if (tile.getLevel() == null) continue; // idk how this happens, but ok?
-				if (new RegionPos(origin).equals(((FakeClientWorld) tile.getLevel()).region.pos)) {
-					int y = tile.getBlockPos().getY() / ((FakeClientWorld) tile.getLevel()).upb;
+				if (new RegionPos(origin).equals(((FakeClientLevel) tile.getLevel()).region.pos)) {
+					int y = tile.getBlockPos().getY() / ((FakeClientLevel) tile.getLevel()).upb;
 					if (y < origin.getY() + 16 &&
 							y >= origin.getY()) {
 						AABB renderBox = tile.getRenderBoundingBox();

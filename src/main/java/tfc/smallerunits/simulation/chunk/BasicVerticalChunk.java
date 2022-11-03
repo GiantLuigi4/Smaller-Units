@@ -29,8 +29,8 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.UnitChunkHolder;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.ArrayList;

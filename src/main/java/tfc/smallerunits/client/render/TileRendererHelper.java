@@ -26,8 +26,8 @@ import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.client.FakeClientWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
@@ -315,10 +315,10 @@ public class TileRendererHelper {
 	}
 	
 	public static void drawParticles(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, Region value, Level valueLevel, RenderBuffers renderBuffers, CallbackInfo ci) {
-		RegionPos pos = ((FakeClientWorld) valueLevel).getRegion().pos;
+		RegionPos pos = ((FakeClientLevel) valueLevel).getRegion().pos;
 		BlockPos bp = pos.toBlockPos();
 		
-		float scl = 1f / (((FakeClientWorld) valueLevel).getUPB());
+		float scl = 1f / (((FakeClientLevel) valueLevel).getUPB());
 		PoseStack mdlViewStk = RenderSystem.getModelViewStack();
 		mdlViewStk.pushPose();
 		
@@ -329,7 +329,7 @@ public class TileRendererHelper {
 		mdlViewStk.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
 		
 		// TODO: use forge method or smth
-		((FakeClientWorld) valueLevel).getParticleEngine().render(
+		((FakeClientLevel) valueLevel).getParticleEngine().render(
 				new PoseStack(), renderBuffers.bufferSource(),
 				pLightTexture, pCamera, pPartialTick
 		);

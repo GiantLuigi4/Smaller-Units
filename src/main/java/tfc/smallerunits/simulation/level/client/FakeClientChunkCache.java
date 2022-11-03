@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.client;
+package tfc.smallerunits.simulation.level.client;
 
 import it.unimi.dsi.fastutil.BigList;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
@@ -18,20 +18,20 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
-import tfc.smallerunits.simulation.world.ITickerChunkCache;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerChunkCache;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.function.BooleanSupplier;
 
-public class TickerClientChunkCache extends ClientChunkCache implements ITickerChunkCache {
+public class FakeClientChunkCache extends ClientChunkCache implements ITickerChunkCache {
 	public final BasicVerticalChunk[][] columns;
 	int upb;
 	Level level;
 	
 	EmptyLevelChunk empty;
 	
-	public TickerClientChunkCache(ClientLevel pLevel, int pViewDistance, int upb) {
+	public FakeClientChunkCache(ClientLevel pLevel, int pViewDistance, int upb) {
 		super(pLevel, pViewDistance);
 		level = pLevel;
 		this.upb = upb;

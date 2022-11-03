@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.server;
+package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.Util;
@@ -50,9 +50,9 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.world.EntityManager;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.SUTickList;
+import tfc.smallerunits.simulation.level.EntityManager;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.utils.storage.VecMap;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 @SuppressWarnings("removal")
-public class TickerServerWorld extends ServerLevel implements ITickerWorld {
+public class TickerServerLevel extends ServerLevel implements ITickerWorld {
 	private static final NoStorageSource src = NoStorageSource.make();
 	private static final LevelStorageSource.LevelStorageAccess noAccess;
 	
@@ -113,7 +113,7 @@ public class TickerServerWorld extends ServerLevel implements ITickerWorld {
 	public final Region region;
 	int upb;
 	
-	public TickerServerWorld(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) {
+	public TickerServerLevel(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) {
 		super(
 				server,
 				Util.backgroundExecutor(),

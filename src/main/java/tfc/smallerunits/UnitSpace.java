@@ -20,7 +20,7 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 import tfc.smallerunits.utils.math.Math1D;
 
 public class UnitSpace {

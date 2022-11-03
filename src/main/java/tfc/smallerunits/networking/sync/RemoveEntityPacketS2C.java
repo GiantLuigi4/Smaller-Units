@@ -9,7 +9,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 public class RemoveEntityPacketS2C extends Packet {

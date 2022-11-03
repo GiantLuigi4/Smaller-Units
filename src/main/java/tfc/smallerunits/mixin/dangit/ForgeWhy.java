@@ -14,8 +14,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.client.forge.SUModelDataManager;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.client.FakeClientWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
 import java.util.Map;
 
@@ -25,7 +25,7 @@ public class ForgeWhy {
 	private static void stopForgeFromCrashingTheGame(BlockEntity te, CallbackInfo ci) {
 		if (!(te.getLevel() instanceof ITickerWorld)) return;
 		ci.cancel();
-		SUModelDataManager manager = ((FakeClientWorld) te.getLevel()).modelDataManager;
+		SUModelDataManager manager = ((FakeClientLevel) te.getLevel()).modelDataManager;
 		manager.requestModelDataRefresh(te);
 	}
 	
@@ -33,7 +33,7 @@ public class ForgeWhy {
 	private static void preRequestRefresh(Level toUpdate, ChunkPos pos, CallbackInfo ci) {
 		if (!(toUpdate instanceof ITickerWorld)) return;
 		ci.cancel();
-		SUModelDataManager manager = ((FakeClientWorld) toUpdate).modelDataManager;
+		SUModelDataManager manager = ((FakeClientLevel) toUpdate).modelDataManager;
 		manager.refreshModelData(toUpdate, pos);
 	}
 	
@@ -41,15 +41,15 @@ public class ForgeWhy {
 	private static void preRequestRefresh(Level toUpdate, CallbackInfo ci) {
 		if (!(toUpdate instanceof ITickerWorld)) return;
 		ci.cancel();
-		SUModelDataManager manager = ((FakeClientWorld) toUpdate).modelDataManager;
+		SUModelDataManager manager = ((FakeClientLevel) toUpdate).modelDataManager;
 		manager.cleanCaches(toUpdate);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "onChunkUnload", cancellable = true)
 	private static void preUnload(ChunkEvent.Unload event, CallbackInfo ci) {
 		LevelAccessor accessor = event.getWorld();
-		if (accessor instanceof FakeClientWorld) {
-			SUModelDataManager manager = ((FakeClientWorld) accessor).modelDataManager;
+		if (accessor instanceof FakeClientLevel) {
+			SUModelDataManager manager = ((FakeClientLevel) accessor).modelDataManager;
 			manager.onChunkUnload(event);
 			ci.cancel();
 		}
@@ -57,22 +57,22 @@ public class ForgeWhy {
 	
 	@Inject(at = @At("HEAD"), method = "getModelData(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Lnet/minecraftforge/client/model/data/IModelData;", cancellable = true)
 	private static void preGetData(Level level, BlockPos pos, CallbackInfoReturnable<IModelData> cir) {
-		if (level instanceof FakeClientWorld) {
-			cir.setReturnValue(((FakeClientWorld) level).modelDataManager.getModelData(level, pos));
+		if (level instanceof FakeClientLevel) {
+			cir.setReturnValue(((FakeClientLevel) level).modelDataManager.getModelData(level, pos));
 		}
 	}
 	
 	@Inject(at = @At("HEAD"), method = "getModelData(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/ChunkPos;)Ljava/util/Map;", cancellable = true)
 	private static void preGetData(Level level, ChunkPos pos, CallbackInfoReturnable<Map<BlockPos, IModelData>> cir) {
-		if (level instanceof FakeClientWorld) {
-			cir.setReturnValue(((FakeClientWorld) level).modelDataManager.getModelData(level, pos));
+		if (level instanceof FakeClientLevel) {
+			cir.setReturnValue(((FakeClientLevel) level).modelDataManager.getModelData(level, pos));
 		}
 	}
 	
 	@Inject(at = @At("HEAD"), method = "cleanCaches", cancellable = true)
 	private static void preCleanCaches(Level level, CallbackInfo ci) {
-		if (level instanceof FakeClientWorld) {
-			((FakeClientWorld) level).modelDataManager.cleanCaches(level);
+		if (level instanceof FakeClientLevel) {
+			((FakeClientLevel) level).modelDataManager.cleanCaches(level);
 			ci.cancel();
 		}
 	}

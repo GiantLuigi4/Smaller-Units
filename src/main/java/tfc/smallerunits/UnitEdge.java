@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.data.storage.Region;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 
 public class UnitEdge extends Block {
 	public UnitEdge() {

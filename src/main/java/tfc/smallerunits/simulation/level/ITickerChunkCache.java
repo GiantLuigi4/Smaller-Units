@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world;
+package tfc.smallerunits.simulation.level;
 
 import net.minecraft.world.level.ChunkPos;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;

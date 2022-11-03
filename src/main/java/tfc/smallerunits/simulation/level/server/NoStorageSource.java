@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.server;
+package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import com.mojang.serialization.DynamicOps;

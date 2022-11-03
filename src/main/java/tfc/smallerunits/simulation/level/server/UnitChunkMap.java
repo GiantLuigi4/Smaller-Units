@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.server;
+package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -24,7 +24,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.mojangpls.NoPath;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 
 import java.util.ArrayList;
 import java.util.List;

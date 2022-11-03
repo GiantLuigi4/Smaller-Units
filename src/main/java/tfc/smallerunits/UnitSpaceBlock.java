@@ -41,7 +41,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacket;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitHitResult;

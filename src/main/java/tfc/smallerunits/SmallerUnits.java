@@ -6,12 +6,16 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
@@ -22,6 +26,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
@@ -52,6 +57,8 @@ public class SmallerUnits {
 //		forgeBus.addListener(this::connect0);
 		forgeBus.addListener(this::connect1);
 		forgeBus.addGenericListener(LevelChunk.class, SUCapabilityManager::onAttachCapabilities);
+		
+		forgeBus.addListener(SmallerUnits::onChunkLoaded);
 		
 		InfoRegistry.register("su:world_redir", () -> {
 			if (NetworkingHacks.unitPos.get() == null) return null;
@@ -86,6 +93,19 @@ public class SmallerUnits {
 				isOFPresent = true;
 			}
 		} catch (Throwable ignored) {
+		}
+	}
+	
+	private static void onChunkLoaded(ChunkEvent.Load loadEvent) {
+		if (loadEvent.getWorld() instanceof ServerLevel lvl) {
+			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
+				ChunkAccess access = loadEvent.getChunk();
+				int min = access.getMinBuildHeight();
+				int max = access.getMaxBuildHeight();
+				ChunkPos pos = access.getPos();
+				for (int y = min; y < max; y += 16)
+					attachments.SU$findChunk(y, pos, (rp, r) -> r.addRef(rp));
+			}
 		}
 	}
 	

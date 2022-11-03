@@ -1,7 +1,7 @@
 package tfc.smallerunits.simulation.chunk;
 
 import net.minecraft.world.level.ChunkPos;
-import tfc.smallerunits.simulation.world.ITickerChunkCache;
+import tfc.smallerunits.simulation.level.ITickerChunkCache;
 
 public class VChunkLookup {
 	final int myPos;

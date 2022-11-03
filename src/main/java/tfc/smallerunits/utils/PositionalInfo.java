@@ -14,7 +14,7 @@ import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
-import tfc.smallerunits.simulation.world.client.FakeClientWorld;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
 import java.util.Random;
@@ -59,7 +59,7 @@ public class PositionalInfo {
 				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = ((ClientLevel) space.getMyLevel());
 				
 				particleEngine = Minecraft.getInstance().particleEngine;
-				UnitParticleEngine upe = ((FakeClientWorld) space.getMyLevel()).getParticleEngine();
+				UnitParticleEngine upe = ((FakeClientLevel) space.getMyLevel()).getParticleEngine();
 				if (upe != null)
 					Minecraft.getInstance().particleEngine = upe;
 			}
@@ -107,7 +107,7 @@ public class PositionalInfo {
 				Minecraft.getInstance().level = ((LocalPlayer) player).clientLevel;
 				
 				particleEngine = Minecraft.getInstance().particleEngine;
-				Minecraft.getInstance().particleEngine = ((FakeClientWorld) spaceLevel).getParticleEngine();
+				Minecraft.getInstance().particleEngine = ((FakeClientLevel) spaceLevel).getParticleEngine();
 			}
 		}
 	}

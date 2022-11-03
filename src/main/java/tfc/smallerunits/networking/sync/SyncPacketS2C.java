@@ -19,7 +19,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 
 import java.util.ArrayList;
 

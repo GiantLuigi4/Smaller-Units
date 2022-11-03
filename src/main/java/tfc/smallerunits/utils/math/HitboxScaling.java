@@ -3,7 +3,7 @@ package tfc.smallerunits.utils.math;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.simulation.world.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerWorld;
 
 public class HitboxScaling {
 	public static AABB getOffsetAndScaledBox(AABB box, Vec3 entityPos, int upb) {

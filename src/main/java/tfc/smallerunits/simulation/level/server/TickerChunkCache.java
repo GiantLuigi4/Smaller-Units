@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.server;
+package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.BigList;
@@ -30,9 +30,9 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
-import tfc.smallerunits.simulation.world.ITickerChunkCache;
-import tfc.smallerunits.simulation.world.ITickerWorld;
-import tfc.smallerunits.simulation.world.UnitChunkHolder;
+import tfc.smallerunits.simulation.level.ITickerChunkCache;
+import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.UnitChunkHolder;
 
 import java.util.ArrayList;
 import java.util.concurrent.Executor;
@@ -131,12 +131,12 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	}
 	
 	public ParentLookup getLookup() {
-		return ((TickerServerWorld) level).lookup;
+		return ((TickerServerLevel) level).lookup;
 	}
 	
 	public ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
 		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY > upb) {
-			Region r = ((TickerServerWorld) level).region;
+			Region r = ((TickerServerLevel) level).region;
 			RegionPos pos = r.pos;
 			
 			int x = pChunkX < 0 ? -1 : ((pChunkX > upb) ? 1 : 0);
@@ -152,7 +152,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			pChunkY = ((pChunkY < 0) ? pChunkY + upb : ((pChunkY > upb) ? (pChunkX - (upb * 32)) : pChunkY));
 			pChunkZ = ((pChunkZ < 0) ? pChunkZ + upb : ((pChunkZ > upb) ? (pChunkX - (upb * 32)) : pChunkZ));
 			
-			Level parent = ((TickerServerWorld) level).parent;
+			Level parent = ((TickerServerLevel) level).parent;
 			Region otherRegion = null;
 			Level level = null;
 			otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);

@@ -64,6 +64,28 @@ public class VecMap<T> {
 		return trueMap.get(vec.getZ());
 	}
 	
+	public T getOrDefault(BlockPos vec, T defaultVal) {
+		if (level == 2) {
+			VecMap<T> map = this.map.getOrDefault(vec.getX(), null);
+			if (map == null) {
+//				map = new VecMap<>(1);
+//				this.map.put(vec.getX(), map);
+				return defaultVal;
+			}
+			return map.getOrDefault(vec, defaultVal);
+		}
+		if (level == 1) {
+			VecMap<T> map = this.map.getOrDefault(vec.getY(), null);
+			if (map == null) {
+//				map = new VecMap<>(0);
+//				this.map.put(vec.getY(), map);
+				return defaultVal;
+			}
+			return map.getOrDefault(vec, defaultVal);
+		}
+		return trueMap.getOrDefault(vec.getZ(), defaultVal);
+	}
+	
 	public T put(Vec3i vec, T renderChunk) {
 		if (level == 2) {
 			VecMap<T> map = this.map.getOrDefault(vec.getX(), null);

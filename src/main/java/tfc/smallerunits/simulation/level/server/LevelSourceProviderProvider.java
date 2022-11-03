@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.world.server;
+package tfc.smallerunits.simulation.level.server;
 
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.Level;
