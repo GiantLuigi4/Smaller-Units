@@ -611,7 +611,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
-		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb);
+		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
 		this.animateTick(pos.getX(), pos.getY(), pos.getZ());

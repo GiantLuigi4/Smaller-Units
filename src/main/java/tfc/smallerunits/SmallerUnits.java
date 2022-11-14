@@ -59,6 +59,7 @@ public class SmallerUnits {
 		forgeBus.addGenericListener(LevelChunk.class, SUCapabilityManager::onAttachCapabilities);
 		
 		forgeBus.addListener(SmallerUnits::onChunkLoaded);
+		forgeBus.addListener(SmallerUnits::onChunkUnloaded);
 		
 		InfoRegistry.register("su:world_redir", () -> {
 			if (NetworkingHacks.unitPos.get() == null) return null;
@@ -105,6 +106,22 @@ public class SmallerUnits {
 				ChunkPos pos = access.getPos();
 				for (int y = min; y < max; y += 16)
 					attachments.SU$findChunk(y, pos, (rp, r) -> r.addRef(rp));
+			}
+		}
+	}
+	
+	private static void onChunkUnloaded(ChunkEvent.Unload loadEvent) {
+		if (loadEvent.getWorld() instanceof ServerLevel lvl) {
+			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
+				ChunkAccess access = loadEvent.getChunk();
+				int min = access.getMinBuildHeight();
+				int max = access.getMaxBuildHeight();
+				ChunkPos pos = access.getPos();
+				for (int y = min; y < max; y += 16)
+					attachments.SU$findChunk(y, pos, (rp, r) -> {
+						if (r.subtractRef(rp) <= 0)
+							attachments.SU$getRegionMap().remove(rp);
+					});
 			}
 		}
 	}

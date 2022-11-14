@@ -167,7 +167,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerWorld {
 //				return Blocks.VOID_AIR.defaultBlockState();
 			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = parent.getBlockState(bp.offset(region.pos.toBlockPos()));
+			BlockState state = parent.getBlockState(bp);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
 			cache.put(bp, Pair.of(state, new VecMap<>(2)));
@@ -888,6 +888,20 @@ public class TickerServerLevel extends ServerLevel implements ITickerWorld {
 		return closest;
 	}
 	
+	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
+		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+		if (result == null) return result;
+		if (!result.getType().equals(HitResult.Type.MISS)) {
+			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+			off = off.normalize().scale(0.1);
+			Vec3 st = result.getLocation().add(off);
+			Vec3 ed = result.getLocation().subtract(off);
+//						return sp.clip(st, pContext.getTo(), pos);
+			return sp.clip(st, ed, pos);
+		}
+		return result;
+	}
+	
 	@Override
 	public BlockHitResult clip(ClipContext pContext) {
 		// I prefer this method over vanilla's method
@@ -899,33 +913,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerWorld {
 				(box) -> {
 					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
 				}, (pos, state) -> {
-//					int x = pos.getX();
-//					int y = pos.getY();
-//					int z = pos.getZ();
-					VoxelShape sp = state.getShape(this, pos);
-					BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
-					if (result == null) return result;
-					if (!result.getType().equals(HitResult.Type.MISS)) {
-						Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-						off = off.normalize().scale(0.1);
-						Vec3 st = result.getLocation().add(off);
-						Vec3 ed = result.getLocation().subtract(off);
-//						return sp.clip(st, pContext.getTo(), pos);
-						return sp.clip(st, ed, pos);
-					}
+					BlockHitResult result = runTrace(state.getCollisionShape(this, pos, pContext.collisionContext), pContext, pos);
+					if (result != null && result.getType() != HitResult.Type.MISS) return result;
+					if (pContext.fluid.canPick(state.getFluidState()))
+						result = runTrace(state.getFluidState().getShape(this, pos), pContext, pos);
 					return result;
-//					for (AABB toAabb : sp.toAabbs()) {
-//						toAabb = toAabb.move(x, y, z);
-//						UnitBox b = new UnitBox(
-//								toAabb.minX / upbDouble,
-//								toAabb.minY / upbDouble,
-//								toAabb.minZ / upbDouble,
-//								toAabb.maxX / upbDouble,
-//								toAabb.maxY / upbDouble,
-//								toAabb.maxZ / upbDouble,
-//								new BlockPos(x, y, z)
-//						);
-//					}
 				},
 				upb
 		);

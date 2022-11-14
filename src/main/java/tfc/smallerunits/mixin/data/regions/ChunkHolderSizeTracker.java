@@ -13,7 +13,7 @@ import tfc.smallerunits.data.tracking.ChunkHolderData;
 @Mixin(ChunkHolder.class)
 public class ChunkHolderSizeTracker implements ChunkHolderData {
 	@Unique
-	int minY, maxY;
+	int minY = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
 	
 	@Override
 	public int SU$getMaxY() {

@@ -29,6 +29,7 @@ public class UnitSpace {
 	public int unitsPerBlock = 16;
 	
 	public final Level level;
+	public RegionPos regionPos;
 	protected Level myLevel;
 	CompoundTag tag;
 	private BlockPos myPosInTheLevel;
@@ -97,6 +98,8 @@ public class UnitSpace {
 		unitsPerBlock = 1;
 		setUpb(16);
 		isNatural = false;
+		
+		regionPos = new RegionPos(pos);
 	}
 	
 	public Level getMyLevel() {

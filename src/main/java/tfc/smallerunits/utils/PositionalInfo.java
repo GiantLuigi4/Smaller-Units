@@ -51,7 +51,7 @@ public class PositionalInfo {
 	
 	public void adjust(Player pPlayer, UnitSpace space) {
 		AABB scaledBB;
-		pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, space.unitsPerBlock));
+		pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, space.unitsPerBlock, space.regionPos));
 		pPlayer.eyeHeight = (float) (this.eyeHeight * space.unitsPerBlock);
 		pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 		if (FMLEnvironment.dist.isClient()) {

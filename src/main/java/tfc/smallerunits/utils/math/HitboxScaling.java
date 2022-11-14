@@ -1,12 +1,14 @@
 package tfc.smallerunits.utils.math;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerWorld;
 
 public class HitboxScaling {
-	public static AABB getOffsetAndScaledBox(AABB box, Vec3 entityPos, int upb) {
+	public static AABB getOffsetAndScaledBox(AABB box, Vec3 entityPos, int upb, RegionPos regionPos) {
 		box = box.move(-entityPos.x, -entityPos.y, -entityPos.z);
 		box = new AABB(
 				box.minX * upb,
@@ -16,7 +18,8 @@ public class HitboxScaling {
 				box.maxY * upb,
 				box.maxZ * upb
 		);
-		box = box.move(entityPos.x * upb, entityPos.y * upb, entityPos.z * upb);
+		BlockPos bp = regionPos.toBlockPos();
+		box = box.move((entityPos.x - bp.getX()) * upb, (entityPos.y - bp.getY()) * upb, (entityPos.z - bp.getZ()) * upb);
 		return box;
 	}
 	

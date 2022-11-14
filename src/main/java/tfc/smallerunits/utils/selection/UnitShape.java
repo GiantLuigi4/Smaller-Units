@@ -343,7 +343,8 @@ public class UnitShape extends VoxelShape {
 			pCollisionBox = HitboxScaling.getOffsetAndScaledBox(
 					pCollisionBox,
 					pCollisionBox.getCenter().multiply(1, 0, 1).add(0, pCollisionBox.minY, 0),
-					space.unitsPerBlock
+					space.unitsPerBlock,
+					space.regionPos
 			);
 			pDesiredOffset *= space.unitsPerBlock;
 			AABB motionBox = pCollisionBox;
@@ -420,7 +421,7 @@ public class UnitShape extends VoxelShape {
 					return true;
 				}
 			}
-			AABB scaledBox = HitboxScaling.getOffsetAndScaledBox(toAabb, toAabb.getCenter().multiply(1, 0, 1).add(0, toAabb.minY, 0), space.unitsPerBlock);
+			AABB scaledBox = HitboxScaling.getOffsetAndScaledBox(toAabb, toAabb.getCenter().multiply(1, 0, 1).add(0, toAabb.minY, 0), space.unitsPerBlock, space.regionPos);
 			
 			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
 			int minX = (int) (scaledBox.minX - 1);
@@ -447,16 +448,16 @@ public class UnitShape extends VoxelShape {
 					for (int z = minZ; z <= maxZ; z++) {
 						AABB box = new AABB(
 								new BlockPos(x, y, z)
-						);
-						box = new AABB(
-								box.minX / (double) space.unitsPerBlock,
-								box.minY / (double) space.unitsPerBlock,
-								box.minZ / (double) space.unitsPerBlock,
-								box.maxX / (double) space.unitsPerBlock,
-								box.maxY / (double) space.unitsPerBlock,
-								box.maxZ / (double) space.unitsPerBlock
-						);
-						if (!toAabb.intersects(box)) continue;
+						).inflate(1);
+//						box = new AABB(
+//								box.minX / (double) space.unitsPerBlock,
+//								box.minY / (double) space.unitsPerBlock,
+//								box.minZ / (double) space.unitsPerBlock,
+//								box.maxX / (double) space.unitsPerBlock,
+//								box.maxY / (double) space.unitsPerBlock,
+//								box.maxZ / (double) space.unitsPerBlock
+//						).inflate(1);
+						if (!scaledBox.intersects(box)) continue;
 						
 						VoxelShape shape;
 						if (!positionsChecked.containsKey(new BlockPos(x, y, z))) {
@@ -471,15 +472,15 @@ public class UnitShape extends VoxelShape {
 						
 						for (AABB toAabb1 : shape.toAabbs()) {
 							toAabb1 = toAabb1.move(x, y, z);
-							toAabb1 = new AABB(
-									toAabb1.minX / (double) space.unitsPerBlock,
-									toAabb1.minY / (double) space.unitsPerBlock,
-									toAabb1.minZ / (double) space.unitsPerBlock,
-									toAabb1.maxX / (double) space.unitsPerBlock,
-									toAabb1.maxY / (double) space.unitsPerBlock,
-									toAabb1.maxZ / (double) space.unitsPerBlock
-							);
-							if (toAabb.intersects(toAabb1)) {
+//							toAabb1 = new AABB(
+//									toAabb1.minX / (double) space.unitsPerBlock,
+//									toAabb1.minY / (double) space.unitsPerBlock,
+//									toAabb1.minZ / (double) space.unitsPerBlock,
+//									toAabb1.maxX / (double) space.unitsPerBlock,
+//									toAabb1.maxY / (double) space.unitsPerBlock,
+//									toAabb1.maxZ / (double) space.unitsPerBlock
+//							);
+							if (scaledBox.intersects(toAabb1)) {
 								return true;
 							}
 						}

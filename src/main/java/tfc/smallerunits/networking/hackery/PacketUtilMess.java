@@ -25,13 +25,14 @@ public class PacketUtilMess {
 		if (pos != null) {
 			// TODO: is this needed?
 			synchronized (syncLock) {
-				while (synchronizationLock) {
-					try {
-						Thread.sleep(1);
-					} catch (Throwable ignored) {
-					}
-				}
-				synchronizationLock = true;
+//				while (synchronizationLock) {
+//					try {
+//						Thread.sleep(1);
+//					} catch (Throwable ignored) {
+//					}
+//				}
+//				synchronizationLock = true;
+
 //				Player player = null;
 				Player player = ((PacketListenerAccessor) listener).getPlayer();
 //				if (listener instanceof ServerGamePacketListenerImpl)
@@ -54,15 +55,16 @@ public class PacketUtilMess {
 				info.scalePlayerReach(player, pos.upb());
 				
 				AABB scaledBB;
-				player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, pos.upb()));
+				// TODO: some form of hitbox validation, because elsewise the server can freeze pretty easily
+				player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, pos.upb(), pos.pos()));
 				player.eyeHeight = (float) (info.eyeHeight * (pos.upb()));
+				((PacketListenerAccessor) listener).setWorld(player.level = spaceLevel);
 				player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 				info.setupClient(player, spaceLevel);
 				// TODO: do this more properly
 				player.xOld = player.xo = player.position().x;
 				player.yOld = player.yo = player.position().y;
 				player.zOld = player.zo = player.position().z;
-				((PacketListenerAccessor) listener).setWorld(player.level = spaceLevel);
 				pkts.put(packet, info);
 			}
 		}

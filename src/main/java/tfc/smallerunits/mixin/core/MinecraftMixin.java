@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
-import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RaytraceData;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.utils.PositionalInfo;
@@ -47,13 +46,13 @@ public class MinecraftMixin {
 	@Inject(at = @At("HEAD"), method = "startUseItem")
 	public void preUseItem(CallbackInfo cir) {
 		// TODO figure out why the server freaks out on edges with this
-		if (player.isShiftKeyDown())
+//		if (player.isShiftKeyDown())
 			movePlayerTo();
 	}
 	
 	@Inject(at = @At("RETURN"), method = "startUseItem")
 	public void postUseItem(CallbackInfo ci) {
-		if (player.isShiftKeyDown())
+//		if (player.isShiftKeyDown())
 			movePlayerBack();
 	}
 	
@@ -74,7 +73,8 @@ public class MinecraftMixin {
 			info.scalePlayerReach(player, space.unitsPerBlock);
 			info.adjust(player, space);
 			level = (ClientLevel) player.level;
-			NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(new RegionPos(((UnitHitResult) hitResult).geetBlockPos()), space.unitsPerBlock));
+//			NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(new RegionPos(((UnitHitResult) hitResult).geetBlockPos()), space.unitsPerBlock));
+			NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(space.regionPos, space.unitsPerBlock));
 			RaytraceData data = new RaytraceData(hitResult, info);
 			datas.add(data);
 			
