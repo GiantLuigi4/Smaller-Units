@@ -13,16 +13,16 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.Packet;
 
-public class RemoveUnitPacket extends Packet {
+public class RemoveUnitPacketS2C extends Packet {
 	BlockPos position;
 	int upb;
 	
-	public RemoveUnitPacket(BlockPos position, int upb) {
+	public RemoveUnitPacketS2C(BlockPos position, int upb) {
 		this.position = position;
 		this.upb = upb;
 	}
 	
-	public RemoveUnitPacket(FriendlyByteBuf buf) {
+	public RemoveUnitPacketS2C(FriendlyByteBuf buf) {
 		super(buf);
 		this.position = buf.readBlockPos();
 		this.upb = buf.readInt();

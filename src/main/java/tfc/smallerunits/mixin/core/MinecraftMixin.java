@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.data.tracking.RaytraceData;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.utils.PositionalInfo;
@@ -78,8 +79,12 @@ public class MinecraftMixin {
 			RaytraceData data = new RaytraceData(hitResult, info);
 			datas.add(data);
 			
+			if (player instanceof ICanUseUnits unitUser) {
+				unitUser.setResult(hitResult);
+			}
+			
 			double reach = player.getAttribute((Attribute) ForgeMod.REACH_DISTANCE.get()).getValue();// 154
-			hitResult = player.pick(reach, 1, true);
+			hitResult = player.pick(reach, 1, false);
 //			if (hitResult.getType() == HitResult.Type.MISS)
 //				hitResult = player.pick(reach, 1, false);
 		}

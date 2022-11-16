@@ -40,7 +40,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
-import tfc.smallerunits.networking.sync.RemoveUnitPacket;
+import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.simulation.level.ITickerWorld;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
@@ -429,7 +429,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
 		space.clear();
 		SUCapabilityManager.getCapability(chnk).removeUnit(pPos);
-		RemoveUnitPacket pckt = new RemoveUnitPacket(pPos, space.unitsPerBlock);
+		RemoveUnitPacketS2C pckt = new RemoveUnitPacketS2C(pPos, space.unitsPerBlock);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
 //		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
 	}

@@ -26,7 +26,7 @@ public class SUNetworkRegistry {
 		ArrayList<NetworkEntry<?>> entries = new ArrayList<>();
 		entries.add(new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new));
 		entries.add(new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new));
-		entries.add(new NetworkEntry<>(RemoveUnitPacket.class, RemoveUnitPacket::new));
+		entries.add(new NetworkEntry<>(RemoveUnitPacketS2C.class, RemoveUnitPacketS2C::new));
 		entries.add(new NetworkEntry<>(SpawningBlockEntitiesS2C.class, SpawningBlockEntitiesS2C::new));
 		entries.add(new NetworkEntry<>(DeleteBlockEntityS2C.class, DeleteBlockEntityS2C::new));
 		entries.add(new NetworkEntry<>(SpawnEntityPacketS2C.class, SpawnEntityPacketS2C::new));
@@ -34,6 +34,7 @@ public class SUNetworkRegistry {
 		entries.add(new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new));
 		entries.add(new NetworkEntry<>(UnitInteractionPacket.class, UnitInteractionPacket::new));
 		entries.add(new NetworkEntry<>(DestroyUnitPacket.class, DestroyUnitPacket::new));
+		entries.add(new NetworkEntry<>(RemoveUnitPacketC2S.class, RemoveUnitPacketC2S::new));
 		
 		entries.add(new NetworkEntry<>(WrapperPacket.class, WrapperPacket::new));
 		

@@ -52,7 +52,7 @@ public class UnitSpaceItem extends Item {
 					if (tag.contains("upb", Tag.TAG_INT))
 						space.setUpb(tag.getInt("upb"));
 					else space.setUpb(4);
-				}
+				} else space.setUpb(4);
 				pContext.getLevel().setBlockAndUpdate(pos, Registry.UNIT_SPACE.get().defaultBlockState());
 				chunk.setUnsaved(true);
 				if (chunk.getLevel() instanceof ServerLevel)

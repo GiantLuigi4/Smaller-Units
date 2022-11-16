@@ -422,6 +422,20 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 		return closest;
 	}
 	
+	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
+		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
+		if (result == null) return result;
+		if (!result.getType().equals(HitResult.Type.MISS)) {
+			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+			off = off.normalize().scale(0.1);
+			Vec3 st = result.getLocation().add(off);
+			Vec3 ed = result.getLocation().subtract(off);
+//						return sp.clip(st, pContext.getTo(), pos);
+			return sp.clip(st, ed, pos);
+		}
+		return result;
+	}
+	
 	@Override
 	public BlockHitResult clip(ClipContext pContext) {
 		// I prefer this method over vanilla's method
@@ -433,33 +447,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 				(box) -> {
 					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
 				}, (pos, state) -> {
-//					int x = pos.getX();
-//					int y = pos.getY();
-//					int z = pos.getZ();
-					VoxelShape sp = state.getShape(this, pos);
-					BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
-					if (result == null) return result;
-					if (!result.getType().equals(HitResult.Type.MISS)) {
-						Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-						off = off.normalize().scale(0.1);
-						Vec3 st = result.getLocation().add(off);
-						Vec3 ed = result.getLocation().subtract(off);
-//						return sp.clip(st, pContext.getTo(), pos);
-						return sp.clip(st, ed, pos);
-					}
+					BlockHitResult result = runTrace(state.getCollisionShape(this, pos, pContext.collisionContext), pContext, pos);
+					if (result != null && result.getType() != HitResult.Type.MISS) return result;
+					if (pContext.fluid.canPick(state.getFluidState()))
+						result = runTrace(state.getFluidState().getShape(this, pos), pContext, pos);
 					return result;
-//					for (AABB toAabb : sp.toAabbs()) {
-//						toAabb = toAabb.move(x, y, z);
-//						UnitBox b = new UnitBox(
-//								toAabb.minX / upbDouble,
-//								toAabb.minY / upbDouble,
-//								toAabb.minZ / upbDouble,
-//								toAabb.maxX / upbDouble,
-//								toAabb.maxY / upbDouble,
-//								toAabb.maxZ / upbDouble,
-//								new BlockPos(x, y, z)
-//						);
-//					}
 				},
 				upb
 		);
@@ -512,13 +504,10 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 			
 			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 			UnitSpace space = cap.getUnit(parentPos);
-			if (space == null) {
-				space = cap.getOrMakeUnit(parentPos);
-				space.setUpb(upb);
-			}
-//			BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
-//			vc = vc.getSubChunk(cy);
-//			vc.setBlockFast(new BlockPos(x, y, z), state);
+//			if (space == null) {
+//				space = cap.getOrMakeUnit(parentPos);
+//				space.setUpb(upb);
+//			}
 			
 			((SUCapableChunk) ac).SU$markDirty(parentPos);
 //			super.sendBlockUpdated(pPos, pOldState, pNewState, pFlags);

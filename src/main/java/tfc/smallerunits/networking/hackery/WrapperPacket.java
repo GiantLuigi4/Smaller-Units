@@ -59,6 +59,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 	}
 	
 	public Object read(FriendlyByteBuf obj) {
+		NetworkingHacks.increaseBlockPosPrecision.set(true);
 		try {
 			preRead(obj);
 			String name = new String(obj.readByteArray());
@@ -77,6 +78,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		} catch (Throwable err) {
 			theUnsafe.throwException(err);
 		}
+		NetworkingHacks.increaseBlockPosPrecision.remove();
 		return null;
 	}
 	
@@ -107,6 +109,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		// TODO: I don't know why this happens
 		if (wrapped == null) return;
 		
+		NetworkingHacks.increaseBlockPosPrecision.set(true);
 		NetworkContext context = new NetworkContext(ctx.getNetworkManager(), ((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).getPlayer(), ((Packet) this.wrapped));
 		preRead(context);
 		PacketUtilMess.preHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
@@ -116,6 +119,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		}
 		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
 		teardown(context);
+		NetworkingHacks.increaseBlockPosPrecision.remove();
 //		System.out.println();
 	}
 	

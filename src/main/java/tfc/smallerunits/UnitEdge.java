@@ -8,9 +8,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.simulation.level.ITickerWorld;
 
 public class UnitEdge extends Block {
@@ -48,5 +50,19 @@ public class UnitEdge extends Block {
 			BlockState state = tickerLevel.getParent().getBlockState(bp);
 			pLevel.levelEvent(pPlayer, 2001, pPos, getId(state));
 		}
+	}
+	
+	@Override
+	public void attack(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer) {
+		if (pPlayer instanceof ICanUseUnits unitUser)
+			unitUser.removeUnit();
+		super.attack(pState, pLevel, pPos, pPlayer);
+	}
+	
+	@Override
+	public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
+		if (player instanceof ICanUseUnits unitUser)
+			unitUser.removeUnit();
+		return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
 	}
 }

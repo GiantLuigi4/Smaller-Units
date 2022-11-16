@@ -52,6 +52,7 @@ public class SUVBOEmitter {
 	
 	public BufferStorage genBuffers(LevelChunk chunk, SUCapableChunk suCapableChunk, ISUCapability capability, BlockPos pos) {
 		UnitSpace space = capability.getUnit(pos);
+		
 		BufferStorage storage = getAndMark(pos);
 		storage.deactivate();
 		

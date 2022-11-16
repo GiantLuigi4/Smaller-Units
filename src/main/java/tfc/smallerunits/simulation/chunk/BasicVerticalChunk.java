@@ -203,7 +203,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (!level.isClientSide) {
 			BlockPos rp = ((ITickerWorld) level).getRegion().pos.toBlockPos();
 			int xo = (pPos.getX() / ((ITickerWorld) level).getUPB());
-			int yo = ((pPos.getY() + yPos * 17) / ((ITickerWorld) level).getUPB());
+			int yo = ((pPos.getY() + yPos * 16) / ((ITickerWorld) level).getUPB());
 			int zo = (pPos.getZ() / ((ITickerWorld) level).getUPB());
 			BlockPos parentPos = rp.offset(xo, yo, zo);
 			LevelChunk ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
@@ -338,7 +338,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		int xo = (pos.getX() / ((ITickerWorld) level).getUPB());
 		int yo = (pos.getY() / ((ITickerWorld) level).getUPB());
 		int zo = (pos.getZ() / ((ITickerWorld) level).getUPB());
-		BlockPos parentPos = rp.offset(xo, yo + yPos * 16, zo);
+		BlockPos parentPos = rp.offset(xo, yo + (yPos / 16) * upb, zo);
 		
 		// TODO: this can be optimized, but it's good for now
 		ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);

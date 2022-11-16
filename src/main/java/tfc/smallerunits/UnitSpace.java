@@ -10,6 +10,8 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.network.PacketDistributor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -175,6 +177,8 @@ public class UnitSpace {
 		this.tag = null;
 	}
 	
+	public static final Logger LOGGER = LogManager.getLogger();
+	
 	/* reason: race conditions */
 	public void tick() {
 		if (myLevel instanceof ServerLevel) {
@@ -191,7 +195,10 @@ public class UnitSpace {
 //				setState(new BlockPos(0, 0, 0), Blocks.STONE);
 			} else if (level instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
-				if (r == null) return;
+				if (r == null) {
+					LOGGER.fatal("Region@" + new RegionPos(pos) + " was null");
+					return;
+				}
 				if (myLevel != null)
 					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getClientWorld(level, upb);
