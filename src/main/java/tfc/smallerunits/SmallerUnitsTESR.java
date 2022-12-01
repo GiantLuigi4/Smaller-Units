@@ -592,6 +592,9 @@ public class SmallerUnitsTESR extends TileEntityRenderer<UnitTileEntity> {
 				int phase = destroyBlockProgress.getPartialBlockDamage() - 1;
 				phase = Math.min(phase, 7);
 				Entity entity = tileEntityIn.getWorld().getEntityByID(destroyBlockProgress.miningPlayerEntId);
+				if (entity == null) {
+					continue;
+				}
 				UnitRaytraceContext context = UnitRaytraceHelper.raytraceBlock(
 						tileEntityIn,
 						entity,

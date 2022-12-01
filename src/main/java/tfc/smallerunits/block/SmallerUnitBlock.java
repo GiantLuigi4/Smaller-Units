@@ -2166,4 +2166,34 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 //		return true;
 		return canRemove;
 	}
+	
+	@Override
+	public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+		if (!isMoving) {
+			if (worldIn instanceof ServerWorld) {
+				UnitTileEntity tileEntity = SUCapabilityManager.getUnitAtBlock(worldIn, pos);
+				if (tileEntity == null) return;
+				World world = tileEntity.getFakeWorld();
+				for (SmallUnit value : tileEntity.getBlockMap().values()) {
+					List<ItemStack> stacks = value.state.getDrops(
+							new LootContext.Builder(tileEntity.worldServer)
+									.withLuck(0)
+									.withRandom(tileEntity.worldServer.rand)
+									.withSeed(tileEntity.worldServer.rand.nextLong())
+									.withParameter(LootParameters.TOOL, ItemStack.EMPTY)
+									.withParameter(LootParameters.field_237457_g_, new Vector3d(value.pos.getX() + 0.5, value.pos.getY() + 0.5, value.pos.getZ() + 0.5))
+									.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.worldServer.getTileEntity(value.pos))
+									.withParameter(LootParameters.BLOCK_STATE, value.state)
+					);
+					for (ItemStack stack : stacks) {// 218
+						ItemEntity entity = new ItemEntity(world, value.pos.getX(), value.pos.getY(), value.pos.getZ(), stack);
+						world.addEntity(entity);
+					}
+					
+					state.spawnAdditionalDrops((ServerWorld) world, value.pos, ItemStack.EMPTY);// 220
+				}
+			}
+		}
+		super.onReplaced(state, worldIn, pos, newState, isMoving);
+	}
 }

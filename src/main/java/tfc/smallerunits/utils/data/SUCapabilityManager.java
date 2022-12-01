@@ -8,6 +8,7 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.EmptyChunk;
+import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
@@ -37,15 +38,21 @@ public class SUCapabilityManager {
 	}
 	
 	public static UnitTileEntity getUnitAtBlock(World world, BlockPos pos) {
-		Chunk chunk = (Chunk) world.getChunk(pos);
-		if (chunk == null) return null;
-		LazyOptional<SUCapability> capability = chunk.getCapability(SUCapabilityManager.SUCapability);
-		UnitTileEntity tileEntity = null;
-		if (capability.isPresent()) {
-			SUCapability cap = capability.resolve().get();
-			tileEntity = cap.getTile(world, pos);
+		if (world.isAreaLoaded(pos, 2)) {
+			ChunkPos p = new ChunkPos(pos);
+			IChunk chunk = world.getChunkProvider().getChunkNow(p.x, p.z);
+//			chunk = world.getChunk(p.x, p.z, ChunkStatus.FULL, false);
+			if (chunk instanceof Chunk) {
+				LazyOptional<SUCapability> capability = ((Chunk) chunk).getCapability(SUCapabilityManager.SUCapability);
+				UnitTileEntity tileEntity = null;
+				if (capability.isPresent()) {
+					SUCapability cap = capability.resolve().get();
+					tileEntity = cap.getTile(world, pos);
+				}
+				return tileEntity;
+			}
 		}
-		return tileEntity;
+		return null;
 	}
 	
 	public static void onChunkWatchEvent(ChunkWatchEvent event) {

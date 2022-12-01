@@ -1443,11 +1443,17 @@ public class FakeServerWorld extends ServerWorld {
 					owner.getPos().getZ() + entityIn.getPositionVec().getZ() / owner.unitsPerBlock
 			);
 			entityIn.setWorld(owner.getWorld());
-			ResizingUtils.resizeForUnit(entityIn, 1f / owner.unitsPerBlock);
-			boolean out = owner.getWorld().addEntity(entityIn);
-			entityIn.setMotion(entityIn.getMotion().mul(1f / owner.unitsPerBlock, 1f / owner.unitsPerBlock, 1f / owner.unitsPerBlock));
-//			out.onAddedToWorld();
-			return out;
+			// https://github.com/Tslat/Advent-Of-Ascension/blob/55cb9d4d2b6fcd08516b61a36b4fde13247cf877/source/content/world/teleporter/AoATeleporter.java#L132
+			Entity copy = entityIn.getType().create(owner.getWorld());
+			if (copy != null) {
+				copy.copyDataFromOld(entityIn);
+				ResizingUtils.resizeForUnit(copy, 1f / owner.unitsPerBlock);
+				boolean out = owner.getWorld().addEntity(copy);
+				copy.setMotion(copy.getMotion().mul(1f / owner.unitsPerBlock, 1f / owner.unitsPerBlock, 1f / owner.unitsPerBlock));
+//				out.onAddedToWorld();
+				return out;
+			}
+			return false;
 		} else {
 			entitiesToAddArrayList.add(entityIn);
 			entityIn.onAddedToWorld();

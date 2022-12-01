@@ -8,7 +8,7 @@ buildscript {
     }
     dependencies {
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '3.+', changing: true
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '4.+', changing: true
     }
 }
 
@@ -126,7 +126,7 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:jei-238222:3383214')
     runtimeOnly fg.deobf('curse.maven:carryon-274259:3206755')
     runtimeOnly fg.deobf('curse.maven:storagedrawers-223852:3180569')
-    runtimeOnly fg.deobf('curse.maven:quark-243121:3393195')
+//    runtimeOnly fg.deobf('curse.maven:quark-243121:3393195')
     runtimeOnly fg.deobf('curse.maven:oddities-301051:3088871')
     runtimeOnly fg.deobf('curse.maven:autoreglib-250363:3326041')
     compile fg.deobf('curse.maven:appeng-223794:3354897')
@@ -139,11 +139,13 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:mcjtylib-233105:3194349')
     runtimeOnly fg.deobf('curse.maven:rftoolsbase-326041:3206945')
 
+    runtimeOnly fg.deobf('curse.maven:rftoolsbase-422301:3847445')
+
     // if I use old create, I need to use old C&B
-    compile fg.deobf('curse.maven:chiselandbits-231095:3234842')
+//    compile fg.deobf('curse.maven:chiselandbits-231095:3234842')
 //    compile fg.deobf('curse.maven:create-328085:3278516')
-//    compile fg.deobf('curse.maven:chiselandbits-231095:3510598')
-//    compile fg.deobf('curse.maven:create-328085:3536025') //3278516
+    compile fg.deobf('curse.maven:chiselandbits-231095:3510598')
+    compile fg.deobf('curse.maven:create-328085:3536025') //3278516
 
 //    runtimeOnly fg.deobf('curse.maven:botania-225643:3175663')
     runtimeOnly fg.deobf('curse.maven:patchouli-306770:3204037')
@@ -183,7 +185,7 @@ dependencies {
     // then use the files dependency type to load it in
     compile files('CollisionReversion-1.0-SNAPSHOT-deobf.jar')
 //    compile fg.deobf('com.github.GiantLuigi4:CollisionReversion:08cf9671bf')
-    compile fg.deobf('curse.maven:hwyla-3033613:3033593')
+//    compile fg.deobf('curse.maven:hwyla-3033613:3033593')
     compile fg.deobf('curse.maven:VFE-325360:3107340')
 
     // this will only exist while vivecraft does not have an api which is meant to be used
@@ -193,7 +195,8 @@ dependencies {
 //    compile fg.deobf(files("minecrift-1.16.5-jrbudda-7-8b.jar"))
 
 
-    compile 'org.spongepowered:mixin:0.8'
+//    compile 'org.spongepowered:mixin:0.8'
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 apply plugin: 'org.spongepowered.mixin'
