@@ -24,8 +24,8 @@
   ],
   "mixins": [
 	"CapabilityProviderAccessor",
-	"ContainerMixin",
-	"ContainerMixin2",
+	  "ContainerMixin",
+	  "ContainerMixin2",
 	  "IndexedMessageCodecMixin",
 	  "PlayerEntityMixin",
 	  "ServerPlayerEntityMixin",
@@ -34,8 +34,9 @@
 	  "SimpleChannelMixin",
 	  "WorldAccessor",
 	  "continuity.ServerWorldInfoAccessor",
-	  "dev.access.TileEntityAccessor",
-	  "dev.create.SmartTileEntityMixin",
+	  //	  "dev.access.TileEntityAccessor",
+	  //	  "dev.create.SmartTileEntityMixin",
+
 	  "referenceremoval.RaidManagerAccessor",
 	  "referenceremoval.ServerTickListAccessor",
 	  "screens.BrewingStandTileEntityMixin",
@@ -44,7 +45,7 @@
 	  "screens.LecternTileEntityMixin$LecternInventoryMixin",
 	  "screens.LockableLootTileEntityMixin",
 	  "screens.RepairContainerMixin",
-	"screens.ServerPlayerEntityMixin",
+	  "screens.ServerPlayerEntityMixin",
   
 	"shapes.AbstractBlockStateMixin",
 	"shapes.VoxelShapesMixin",

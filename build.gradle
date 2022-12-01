@@ -142,10 +142,10 @@ dependencies {
     runtimeOnly fg.deobf('curse.maven:rftoolsbase-422301:3847445')
 
     // if I use old create, I need to use old C&B
-//    compile fg.deobf('curse.maven:chiselandbits-231095:3234842')
-//    compile fg.deobf('curse.maven:create-328085:3278516')
-    compile fg.deobf('curse.maven:chiselandbits-231095:3510598')
-    compile fg.deobf('curse.maven:create-328085:3536025') //3278516
+    compile fg.deobf('curse.maven:chiselandbits-231095:3234842')
+    compile fg.deobf('curse.maven:create-328085:3278516')
+//    compile fg.deobf('curse.maven:chiselandbits-231095:3510598')
+//    compile fg.deobf('curse.maven:create-328085:3536025') //3278516
 
 //    runtimeOnly fg.deobf('curse.maven:botania-225643:3175663')
     runtimeOnly fg.deobf('curse.maven:patchouli-306770:3204037')

@@ -2185,7 +2185,7 @@ public class SmallerUnitBlock extends Block implements ITileEntityProvider {
 									.withNullableParameter(LootParameters.BLOCK_ENTITY, tileEntity.worldServer.getTileEntity(value.pos))
 									.withParameter(LootParameters.BLOCK_STATE, value.state)
 					);
-					for (ItemStack stack : stacks) {// 218
+					for (ItemStack stack : stacks) {
 						ItemEntity entity = new ItemEntity(world, value.pos.getX(), value.pos.getY(), value.pos.getZ(), stack);
 						world.addEntity(entity);
 					}

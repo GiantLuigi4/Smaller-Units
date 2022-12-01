@@ -21,4 +21,9 @@ public class UnsafeUtils {
 	public static void throwError(Throwable err) {
 		theUnsafe.throwException(err);
 	}
+	
+	public static void setField(Field f, Object obj, Object value) {
+		long offset = theUnsafe.objectFieldOffset(f);
+		theUnsafe.putObject(obj, offset, value);
+	}
 }

@@ -2,6 +2,7 @@ package tfc.smallerunits.utils.world.server;
 
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -68,6 +69,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.common.util.WorldCapabilityData;
+import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.ChunkEvent;
@@ -101,6 +103,7 @@ import tfc.smallerunits.utils.world.common.FakeIChunk;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
@@ -499,6 +502,8 @@ public class FakeServerWorld extends ServerWorld {
 	
 	Chunk thisChunk;
 	
+	Int2ObjectOpenHashMap<PartEntity<?>> partEntities = null;
+	
 	//Due to usage of theUnsafe, all constructor and field declaration code must be in a method
 	public void init(UnitTileEntity owner) {
 		if (!hasInit) {
@@ -617,6 +622,15 @@ public class FakeServerWorld extends ServerWorld {
 			}
 			
 			MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+			
+			try {
+				// this doesn't exist on older forge versions, but has to exist on newer forge versions
+				Field f = ServerWorld.class.getDeclaredField("partEntities");
+				if (f != null) {
+					UnsafeUtils.setField(f, this, partEntities = new Int2ObjectOpenHashMap<>());
+				}
+			} catch (Throwable ignored) {
+			}
 		}
 	}
 	
@@ -870,6 +884,14 @@ public class FakeServerWorld extends ServerWorld {
 							64, owner.getWorld().dimension
 					)), updatePacket
 			);
+//			if (partEntities != null) {
+//				if (entity.isMultipartEntity()) {
+//					for(net.minecraftforge.entity.PartEntity<?> enderdragonpartentity : entity.getParts()) {
+//						enderdragonpartentity.remove(true); // TODO: ehm
+//						this.partEntities.remove(enderdragonpartentity.getEntityId());
+//					}
+//				}
+//			}
 		}
 		
 		for (TileEntity removedTile : removedTiles) {
@@ -1457,6 +1479,7 @@ public class FakeServerWorld extends ServerWorld {
 		} else {
 			entitiesToAddArrayList.add(entityIn);
 			entityIn.onAddedToWorld();
+			// TODO: fix this (should call the vanilla method somewhere)
 			return true;
 		}
 	}
@@ -1471,7 +1494,27 @@ public class FakeServerWorld extends ServerWorld {
 	
 	@Override
 	public void removeEntity(Entity entityIn) {
-		entitiesToRemove.add(entityIn);
+		removeEntity(entityIn, false);
+	}
+	
+	@Override
+	public void removeEntity(Entity entityIn, boolean keepData) {
+		removeEntityComplete(entityIn, keepData);
+	}
+	
+	@Override
+	public void removeEntityComplete(Entity entityIn, boolean keepData) {
+		SLittleEntityStatusPacket updatePacket = new SLittleEntityStatusPacket(owner.getPos(), entityIn).markRemoval();
+		Smallerunits.NETWORK_INSTANCE.send(PacketDistributor.NEAR.with(() ->
+				new PacketDistributor.TargetPoint(
+						owner.getPos().getX(),
+						owner.getPos().getY(),
+						owner.getPos().getZ(),
+						64, owner.getWorld().dimension
+				)), updatePacket
+		);
+		entitiesById.remove(entityIn.getEntityId());
+		super.removeEntityComplete(entityIn, keepData);
 	}
 	
 	@Override
