@@ -11,7 +11,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 public class EntityManager<T extends EntityAccess> extends PersistentEntitySectionManager<T> {
-	public EntityManager(ITickerWorld wld, Class<T> p_157503_, LevelCallback<T> p_157504_, EntityPersistentStorage<T> p_157505_) {
+	public EntityManager(ITickerLevel wld, Class<T> p_157503_, LevelCallback<T> p_157504_, EntityPersistentStorage<T> p_157505_) {
 		super(p_157503_, new LevelCallback<T>() {
 			@Override
 			public void onCreated(T pEntity) {

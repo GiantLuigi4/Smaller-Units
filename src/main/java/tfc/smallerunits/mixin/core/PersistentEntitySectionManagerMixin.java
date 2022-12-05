@@ -8,14 +8,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 @Mixin(PersistentEntitySectionManager.class)
 public class PersistentEntitySectionManagerMixin {
 	@Inject(at = @At("HEAD"), method = "getEffectiveStatus", cancellable = true)
 	private static <T extends EntityAccess> void preGetEffectiveStatus(T pEntity, Visibility pVisibility, CallbackInfoReturnable<Visibility> cir) {
 		if (pEntity instanceof Entity) {
-			if (((Entity) pEntity).getLevel() instanceof ITickerWorld) {
+			if (((Entity) pEntity).getLevel() instanceof ITickerLevel) {
 				cir.setReturnValue(Visibility.TICKING);
 			}
 		}

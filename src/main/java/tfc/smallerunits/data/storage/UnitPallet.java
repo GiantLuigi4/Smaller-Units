@@ -9,15 +9,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.logging.Loggers;
 
 import java.util.HashMap;
 
 // mojang's one is weird, it seems?
 public class UnitPallet {
-	private static final Logger LOGGER = LoggerFactory.getLogger("SU:UnitPallet");
 	HashMap<Integer, Integer> indexToIdMap;
 	HashMap<BlockState, Integer> stateToIdMap;
 	HashMap<Integer, BlockState> idToStateMap = new HashMap<>();
@@ -81,7 +79,7 @@ public class UnitPallet {
 			}
 			BlockState state = BlockState.CODEC
 					.decode(JsonOps.INSTANCE, element)
-					.getOrThrow(false, LOGGER::error)
+					.getOrThrow(false, Loggers.UNIT_PALLET_LOGGER::error)
 					.getFirst();
 			pallet.stateToIdMap.put(state, states.getInt(aKey));
 		}
@@ -106,7 +104,7 @@ public class UnitPallet {
 			int id = stateToIdMap.get(state);
 			JsonElement obj = BlockState.CODEC
 					.encode(state, JsonOps.INSTANCE, new JsonObject())
-					.getOrThrow(false, LOGGER::error);
+					.getOrThrow(false, Loggers.UNIT_PALLET_LOGGER::error);
 			String dat = obj.getAsJsonObject().get("Name").getAsJsonPrimitive().getAsString();
 			if (obj.getAsJsonObject().has("Properties")) {
 				try {

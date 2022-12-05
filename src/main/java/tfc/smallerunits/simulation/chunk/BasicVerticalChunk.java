@@ -23,13 +23,14 @@ import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
+import tfc.smallerunits.api.GeneralUtils;
 import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.utils.math.Math1D;
 
@@ -152,12 +153,22 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
-		if (yO != 0) {
-			if (yPos + yO < 0) return Blocks.VOID_AIR.defaultBlockState();
+		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0) {
+//			if (yPos + yO < 0) {
+//				// TODO: fix
+//				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+//				if (chunk == null) return Blocks.VOID_AIR.defaultBlockState();
+//				if (chunk.holder != null)
+//					chunk.holder.setBlockDirty(pos.offset(0, upb * 16, 0));
+//				return chunk.setBlockState(new BlockPos(pos.getX(), pos.getY() + upb * 16, pos.getZ()), pState, pIsMoving);
+//			}
+
+//			if (yPos + yO < 0)
+//				return Blocks.VOID_AIR.defaultBlockState();
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
 			if (chunk.holder != null)
-				chunk.holder.setBlockDirty(pos);
-			return chunk.setBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), pState, pIsMoving);
+				chunk.holder.setBlockDirty(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
+			return chunk.setBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pState, pIsMoving);
 		}
 		if (holder != null)
 			holder.setBlockDirty(pos);
@@ -174,13 +185,9 @@ public class BasicVerticalChunk extends LevelChunk {
 		super.addAndRegisterBlockEntity(pBlockEntity);
 		if (!level.isClientSide) return;
 		
-		ITickerWorld tickerWorld = ((ITickerWorld) level);
+		ITickerLevel tickerWorld = ((ITickerLevel) level);
 		
-		BlockPos rp = tickerWorld.getRegion().pos.toBlockPos();
-		int xo = ((pBlockEntity.getBlockPos().getX()) / upb);
-		int yo = ((pBlockEntity.getBlockPos().getY() + yPos * 16) / upb);
-		int zo = ((pBlockEntity.getBlockPos().getZ()) / upb);
-		BlockPos parentPos = rp.offset(xo, yo, zo);
+		BlockPos parentPos = GeneralUtils.getParentPos(pBlockEntity.getBlockPos(), this);
 		ChunkAccess ac;
 		ac = tickerWorld.getParent().getChunkAt(parentPos);
 		
@@ -196,17 +203,17 @@ public class BasicVerticalChunk extends LevelChunk {
 		((SUCapableChunk) ac).addTile(pBlockEntity);
 	}
 	
+	// TODO: I'm sure I can shrink this
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
 //		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
 		LevelChunkSection levelchunksection = super.getSection(0);
 		boolean flag = levelchunksection.hasOnlyAir();
+		int j = pPos.getX() & 15;
+		int k = pPos.getY();
+		int l = pPos.getZ() & 15;
 		if (!level.isClientSide) {
-			BlockPos rp = ((ITickerWorld) level).getRegion().pos.toBlockPos();
-			int xo = (pPos.getX() / ((ITickerWorld) level).getUPB());
-			int yo = ((pPos.getY() + yPos * 16) / ((ITickerWorld) level).getUPB());
-			int zo = (pPos.getZ() / ((ITickerWorld) level).getUPB());
-			BlockPos parentPos = rp.offset(xo, yo, zo);
-			LevelChunk ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
+			BlockPos parentPos = GeneralUtils.getParentPosPrecise(pPos, this); // this is returning the wrong thing
+			LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 			if (ac instanceof FastCapabilityHandler capabilityHandler) {
 				UnitSpace space = capabilityHandler.getSUCapability().getUnit(parentPos);
 				if (space == null) {
@@ -217,25 +224,23 @@ public class BasicVerticalChunk extends LevelChunk {
 						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
 						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
-						space.unitsPerBlock = ((ITickerWorld) level).getUPB();
+//						space.unitsPerBlock = ((ITickerWorld) level).getUPB();
+						space.setUpb(((ITickerLevel) level).getUPB());
 						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
 					}
 				}
-				int j = pPos.getX() & 15;
-				int k = pPos.getY();
-				int l = pPos.getZ() & 15;
 				int indx = getIndx(j, k, l);
 				ac.setUnsaved(true);
 				if (space != null) {
 					space.removeState(blocks[indx]);
 					space.addState(pState);
 					if (space.isEmpty() && space.isNatural) {
+						space.clear();
 						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 						NetworkingHacks.unitPos.remove();
 						ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
 						BlockState state = ac.getBlockState(parentPos);
 						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-						space.clear();
 						capabilityHandler.getSUCapability().removeUnit(pPos);
 						if (descriptor != null)
 							NetworkingHacks.unitPos.set(descriptor);
@@ -247,9 +252,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (flag && pState.isAir()) {
 			return null;
 		} else {
-			int j = pPos.getX() & 15;
-			int k = pPos.getY();
-			int l = pPos.getZ() & 15;
 //			getSection(getSectionIndex(0)).setBlockState(j, k, l, pState);
 			super.getSection(0).setBlockState(j, k, l, pState);
 			pPos = pPos.above(yPos * 16);
@@ -286,9 +288,10 @@ public class BasicVerticalChunk extends LevelChunk {
 					}
 					
 					if (pState.hasBlockEntity()) {
-						BlockEntity blockentity = this.getBlockEntity(pPos, LevelChunk.EntityCreationType.CHECK);
+						BlockPos realPos = pPos.offset(chunkPos.getWorldPosition());
+						BlockEntity blockentity = this.getBlockEntity(realPos, LevelChunk.EntityCreationType.CHECK);
 						if (blockentity == null) {
-							blockentity = ((EntityBlock) block).newBlockEntity(pPos, pState);
+							blockentity = ((EntityBlock) block).newBlockEntity(realPos, pState);
 							if (blockentity != null) {
 								this.addAndRegisterBlockEntity(blockentity);
 							}
@@ -309,12 +312,12 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		boolean lookupPass = false;
-		BlockState parentState = lookup.getState(pos);
+		BlockPos parentPos = GeneralUtils.getParentPos(pos, this);
+		BlockState parentState = lookup.getState(parentPos);
 		if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) lookupPass = true;
 		if (lookupPass) {
 			int yO = Math1D.getChunkOffset(pos.getY(), 16);
 			if (yO != 0) {
-				if (yPos + yO < 0) return Blocks.VOID_AIR.defaultBlockState();
 				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
 				return chunk.getBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()));
 			}
@@ -334,15 +337,11 @@ public class BasicVerticalChunk extends LevelChunk {
 		int k = pos.getY();
 		int l = pos.getZ() & 15;
 		int indx = getIndx(j, k, l);
-		BlockPos rp = ((ITickerWorld) level).getRegion().pos.toBlockPos();
-		int xo = (pos.getX() / ((ITickerWorld) level).getUPB());
-		int yo = (pos.getY() / ((ITickerWorld) level).getUPB());
-		int zo = (pos.getZ() / ((ITickerWorld) level).getUPB());
-		BlockPos parentPos = rp.offset(xo, yo + (yPos / 16) * upb, zo);
+		BlockPos parentPos = GeneralUtils.getParentPos(pos, this);
 		
 		// TODO: this can be optimized, but it's good for now
-		ChunkAccess ac = ((ITickerWorld) level).getParent().getChunkAt(parentPos);
-		ISUCapability capability = SUCapabilityManager.getCapability(((ITickerWorld) level).getParent(), ac);
+		ChunkAccess ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
+		ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
 		UnitSpace space = capability.getOrMakeUnit(parentPos);
 		space.removeState(blocks[indx]);
 		space.addState(state);
@@ -455,15 +454,13 @@ public class BasicVerticalChunk extends LevelChunk {
 //				}
 //			}
 		} else {
-			ITickerWorld tickerWorld = ((ITickerWorld) level);
+			ITickerLevel tickerWorld = ((ITickerLevel) level);
 			
-			BlockPos rp = tickerWorld.getRegion().pos.toBlockPos();
-			int xo = ((pPos.getX()) / upb);
-			int yo = ((pPos.getY() + yPos * 16) / upb);
-			int zo = ((pPos.getZ()) / upb);
-			BlockPos parentPos = rp.offset(xo, yo, zo);
+			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
+			BlockPos parentPos = GeneralUtils.getParentPos(pPos, this);
 			ChunkAccess ac;
 			ac = tickerWorld.getParent().getChunkAt(parentPos);
+			pPos = pPos.offset(getPos().getWorldPosition());
 			
 			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 			UnitSpace space = cap.getUnit(parentPos);
@@ -503,5 +500,11 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	public List<ServerPlayer> getPlayersTracking() {
 		return oldPlayersTracking;
+	}
+	
+	@Override
+	// TODO: do this more properly
+	public FluidState getFluidState(int pX, int pY, int pZ) {
+		return getBlockState(new BlockPos(pX, pY, pZ)).getFluidState();
 	}
 }

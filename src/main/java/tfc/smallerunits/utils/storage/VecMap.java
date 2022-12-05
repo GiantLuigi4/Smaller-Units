@@ -1,7 +1,7 @@
 package tfc.smallerunits.utils.storage;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 
@@ -16,8 +16,10 @@ public class VecMap<T> {
 	
 	public VecMap(int layers) {
 		this.level = layers;
-		if (layers == 0) trueMap = new Int2ObjectRBTreeMap<>();
-		else map = new Int2ObjectRBTreeMap<>();
+//		if (layers == 0) trueMap = new Int2ObjectAVLTreeMap<>();
+//		else map = new Int2ObjectAVLTreeMap<>();
+		if (layers == 0) trueMap = new Int2ObjectOpenHashMap<>();
+		else map = new Int2ObjectOpenHashMap<>();
 	}
 	
 	public T get(Vec3i vec) {

@@ -26,16 +26,20 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.PointedDripstoneBlock;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -54,25 +58,27 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerChunkCache;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
+import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.VecMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class FakeClientLevel extends ClientLevel implements ITickerWorld {
+public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	public final Region region;
 	public final int upb;
 	public final VecMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new VecMap<>(2);
 	public ParentLookup lookup;
-	public ParentLookup lookupTemp;
 	ClientLevel parent;
 	
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
@@ -102,29 +108,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 		super.playLocalSound(pPos, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
 	}
 	
-	@Override
-	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
-//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
-		double scl = 1f / upb;
-		BlockPos pos = getRegion().pos.toBlockPos();
-		pX *= scl;
-		pY *= scl;
-		pZ *= scl;
-		pX += pos.getX();
-		pY += pos.getX();
-		pZ += pos.getX();
-		double finalPX = pX;
-		double finalPY = pY;
-		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
-		});
-	}
-	
 	public FakeClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
 		this.parent = parent;
@@ -135,15 +118,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 		
 		particleEngine.setLevel(this);
 		
-		lookup = (pos) -> lookupTemp.getState(pos);
-		lookupTemp = pos -> {
-			BlockPos bp = region.pos.toBlockPos().offset(
-					// TODO: double check this
-					Math.floor(pos.getX() / (double) upb),
-					Math.floor(pos.getY() / (double) upb),
-					Math.floor(pos.getZ() / (double) upb)
-			);
-			Pair<BlockState, VecMap<VoxelShape>> value = cache.getOrDefault(bp, null);
+		lookup = (pos) -> {
+			Pair<BlockState, VecMap<VoxelShape>> value = cache.getOrDefault(pos, null);
 			if (value != null) {
 //				BlockState state = cache.get(bp).getFirst();
 //				VoxelShape shape = state.getCollisionShape(parent, bp);
@@ -156,14 +132,37 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 //			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
 //				return Blocks.VOID_AIR.defaultBlockState();
 			if (Minecraft.getInstance().level == null) return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = parent.getBlockState(bp);
+			BlockState state = parent.getBlockState(pos);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
-			cache.put(bp, Pair.of(state, new VecMap<>(2)));
+			cache.put(pos, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
 		
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+	}
+	
+	@Override
+	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+		double scl = 1f / upb;
+		BlockPos pos = getRegion().pos.toBlockPos();
+		pX *= scl;
+		pY *= scl;
+		pZ *= scl;
+		pX += pos.getX();
+		pY += pos.getY();
+		pZ += pos.getZ();
+		double finalPX = pX;
+		double finalPY = pY;
+		double finalPZ = pZ;
+		if (ResizingUtils.isResizingModPresent())
+			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (scl > 1) scl = 1 / scl;
+		double finalScl = scl;
+		completeOnTick.add(() -> {
+			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+		});
 	}
 	
 	// forge is stupid and does not account for there being more than 1 world at once
@@ -447,7 +446,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 				(box) -> {
 					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
 				}, (pos, state) -> {
-					BlockHitResult result = runTrace(state.getCollisionShape(this, pos, pContext.collisionContext), pContext, pos);
+					VoxelShape sp = switch (pContext.block) {
+						case VISUAL -> state.getVisualShape(this, pos, pContext.collisionContext);
+						case COLLIDER -> state.getCollisionShape(this, pos, pContext.collisionContext);
+						case OUTLINE -> state.getShape(this, pos, pContext.collisionContext);
+						default -> state.getCollisionShape(this, pos, pContext.collisionContext); // TODO
+					};
+					BlockHitResult result = runTrace(sp, pContext, pos);
 					if (result != null && result.getType() != HitResult.Type.MISS) return result;
 					if (pContext.fluid.canPick(state.getFluidState()))
 						result = runTrace(state.getFluidState().getShape(this, pos), pContext, pos);
@@ -486,9 +491,9 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 			for (int yOff = -1; yOff <= 1; yOff++) {
 				for (int zOff = -1; zOff <= 1; zOff++) {
 					pos.set(pPos.getX() - xOff, pPos.getY() - yOff, pPos.getZ() - zOff);
-					int xo = ((pos.getX()) / upb);
-					int yo = ((pos.getY()) / upb);
-					int zo = ((pos.getZ()) / upb);
+					int xo = Math1D.getChunkOffset(pos.getX(), upb);
+					int yo = Math1D.getChunkOffset(pos.getY(), upb);
+					int zo = Math1D.getChunkOffset(pos.getZ(), upb);
 					positionsToRefresh.add(rp.offset(xo, yo, zo));
 				}
 			}
@@ -504,12 +509,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 			
 			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 			UnitSpace space = cap.getUnit(parentPos);
+			if (space != null) {
+				((SUCapableChunk) ac).SU$markDirty(parentPos);
+			}
 //			if (space == null) {
 //				space = cap.getOrMakeUnit(parentPos);
 //				space.setUpb(upb);
 //			}
-			
-			((SUCapableChunk) ac).SU$markDirty(parentPos);
+
 //			super.sendBlockUpdated(pPos, pOldState, pNewState, pFlags);
 		}
 	}
@@ -594,6 +601,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 	
 	@Override
 	public void tickTime() {
+		// TODO: figure out lighting
+		getLightEngine().runUpdates(10000, false, true);
+//		getLightEngine().onBlockEmissionIncrease(new BlockPos(0, 0, 0), 15);
+//		getLightEngine().getLayerListener(LightLayer.BLOCK).getDataLayerData(SectionPos.of(0,0,0));
+		
 		for (Runnable runnable : completeOnTick) runnable.run();
 		completeOnTick.clear();
 		
@@ -603,7 +615,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
-		this.animateTick(pos.getX(), pos.getY(), pos.getZ());
+		this.animateTick(pos.getX(), pos.getY(), pos.getZ()); // TODO: this is borked
 
 //		this.tickEntities();
 		for (Entity entity : entitiesForRendering()) {
@@ -617,6 +629,19 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 				entity.tick();
 			}
 		}
+	}
+	
+	@Override
+	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
+		if (pLightType.equals(LightLayer.SKY)) return 0;
+		return super.getBrightness(pLightType, pBlockPos);
+	}
+	
+	@Override
+	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, Random pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
+		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
+		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
+//		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
 	}
 	
 	@Override
@@ -712,5 +737,71 @@ public class FakeClientLevel extends ClientLevel implements ITickerWorld {
 	@Override
 	public String toString() {
 		return "FakeClientLevel@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
+	}
+	
+	// TODO: try to optimize or shrink this?
+	@Override
+	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
+		if (this.isOutsideBuildHeight(pPos)) {
+			return false;
+		} else if (!this.isClientSide && this.isDebug()) {
+			return false;
+		} else {
+			LevelChunk levelchunk = this.getChunkAt(pPos);
+			
+			BlockPos actualPos = pPos;
+			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
+			net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
+			if (this.captureBlockSnapshots && !this.isClientSide) {
+				blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.create(this.dimension(), this, pPos, pFlags);
+				this.capturedBlockSnapshots.add(blockSnapshot);
+			}
+			
+			BlockState old = levelchunk.getBlockState(pPos);
+			int oldLight = old.getLightEmission(this, pPos);
+			int oldOpacity = old.getLightBlock(this, pPos);
+			
+			BlockState blockstate = levelchunk.setBlockState(pPos, pState, (pFlags & 64) != 0);
+			if (blockstate == null) {
+				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
+				return false;
+			} else {
+				BlockState blockstate1 = levelchunk.getBlockState(pPos);
+				if ((pFlags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getLightBlock(this, pPos) != oldOpacity || blockstate1.getLightEmission(this, pPos) != oldLight || blockstate1.useShapeForLightOcclusion() || blockstate.useShapeForLightOcclusion())) {
+					this.getProfiler().push("queueCheckLight");
+					this.getChunkSource().getLightEngine().checkBlock(actualPos);
+					this.getProfiler().pop();
+				}
+				
+				if (blockSnapshot == null) // Don't notify clients or update physics while capturing blockstates
+					this.markAndNotifyBlock(actualPos, levelchunk, blockstate, pState, pFlags, pRecursionLeft);
+				
+				return true;
+			}
+		}
+	}
+	
+	@Override
+	public BlockState getBlockState(BlockPos pPos) {
+		return getChunkAt(pPos).getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
+	}
+	
+	@Override
+	public FluidState getFluidState(BlockPos pPos) {
+		return getChunkAt(pPos).getFluidState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
+	}
+	
+	@Override
+	public void setBlockEntity(BlockEntity pBlockEntity) {
+		LevelChunk chunk = this.getChunkAt(pBlockEntity.getBlockPos());
+		pBlockEntity.worldPosition = chunk.getPos().getWorldPosition().offset(pBlockEntity.getBlockPos().getX() & 15, pBlockEntity.getBlockPos().getY() & 15, pBlockEntity.getBlockPos().getZ() & 15);
+		// TODO: figure out of deserialization and reserialization is necessary or not
+		chunk.addAndRegisterBlockEntity(pBlockEntity);
+	}
+	
+	@Override
+	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
+		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
+		return chunkCache.getChunk(x, y, z, pRequiredStatus, pLoad);
 	}
 }

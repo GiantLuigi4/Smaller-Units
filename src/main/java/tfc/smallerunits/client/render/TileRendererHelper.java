@@ -26,15 +26,15 @@ import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
 		stk.pushPose();
 		Level lvl = tile.getLevel();
-		if (lvl instanceof ITickerWorld) {
-			int upb = ((ITickerWorld) lvl).getUPB();
+		if (lvl instanceof ITickerLevel) {
+			int upb = ((ITickerLevel) lvl).getUPB();
 			float scl = 1f / upb;
 			stk.scale(scl, scl, scl);
 		}
@@ -78,7 +78,7 @@ public class TileRendererHelper {
 				type = 2;
 				g = 0;
 			}
-		} else if (!isEmpty) {
+		} else if (!isEmpty || natural) {
 			return;
 		}
 		
@@ -338,10 +338,10 @@ public class TileRendererHelper {
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {
 		if (progr < 10) {
-			if (level instanceof ITickerWorld) {
+			if (level instanceof ITickerLevel) {
 				PoseStack.Pose posestack$pose = pPoseStack.last();
 				VertexConsumer consumer = renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(progr));
-				int upb = ((ITickerWorld) level).getUPB();
+				int upb = ((ITickerLevel) level).getUPB();
 				consumer = new TextureScalingVertexBuilder(consumer, upb);
 				VertexConsumer vertexconsumer1 = new SheetedDecalTextureGenerator(consumer, posestack$pose.pose(), posestack$pose.normal());
 				pPoseStack.pushPose();

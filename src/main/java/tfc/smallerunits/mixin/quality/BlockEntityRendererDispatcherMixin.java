@@ -7,7 +7,7 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 @Mixin(BlockEntityRenderer.class)
 public interface BlockEntityRendererDispatcherMixin<T extends BlockEntity> {
@@ -19,7 +19,7 @@ public interface BlockEntityRendererDispatcherMixin<T extends BlockEntity> {
 	 */
 	@Overwrite
 	default boolean shouldRender(T pBlockEntity, Vec3 pCameraPos) {
-		if (pBlockEntity.getLevel() instanceof ITickerWorld tickerWorld) {
+		if (pBlockEntity.getLevel() instanceof ITickerLevel tickerWorld) {
 			double upb = tickerWorld.getUPB();
 			double px = pBlockEntity.getBlockPos().getX() / upb + tickerWorld.getRegion().pos.toBlockPos().getX();
 			double py = pBlockEntity.getBlockPos().getY() / upb + tickerWorld.getRegion().pos.toBlockPos().getX();

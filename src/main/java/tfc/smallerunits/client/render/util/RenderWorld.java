@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -69,6 +70,16 @@ public class RenderWorld implements BlockAndTintGetter {
 		)
 			return chunk.getBlockState(p_45571_);
 		return lvl.getBlockState(p_45571_);
+	}
+	
+	@Override
+	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
+		return lvl.getBrightness(pLightType, pBlockPos);
+	}
+	
+	@Override
+	public int getRawBrightness(BlockPos pBlockPos, int pAmount) {
+		return lvl.getRawBrightness(pBlockPos, pAmount);
 	}
 	
 	@Override

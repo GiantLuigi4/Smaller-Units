@@ -1,8 +1,7 @@
 package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
-import it.unimi.dsi.fastutil.BigList;
-import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashBigSet;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.network.protocol.Packet;
@@ -27,14 +26,14 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.simulation.WorldStitcher;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 
-import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -53,11 +52,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 	}
 	
-	@Override
-	public void removeEntity(Entity pEntity) {
-		super.removeEntity(pEntity);
-		((ITickerWorld) level).SU$removeEntity(pEntity);
-	}
+	private final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();
 	
 	@Override
 	public boolean hasChunk(int pX, int pZ) {
@@ -96,24 +91,41 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		return getChunk(pChunkX, 0, pChunkZ, pRequiredStatus, pLoad);
 	}
 	
-	ArrayList<ChunkHolder> holders = new ArrayList<>();
+	private final ObjectOpenHashBigSet<LevelChunk> allChunks = new ObjectOpenHashBigSet<>();
 	
-	BigList<LevelChunk> allChunks = new ObjectBigArrayBigList<>();
+	@Override
+	public void removeEntity(Entity pEntity) {
+		super.removeEntity(pEntity);
+		((ITickerLevel) level).SU$removeEntity(pEntity);
+	}
 	
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
 		int tickCount = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
-		for (int i = 0; i < allChunks.size(); i++) {
-			LevelChunk chunk = allChunks.get(i);
-			level.tickChunk(chunk, tickCount);
-			((BasicVerticalChunk) chunk).randomTick();
+		synchronized (allChunks) {
+//			for (int i = 0; i < allChunks.size(); i++) {
+//				LevelChunk chunk = allChunks.get(i);
+//				if (chunk != null) {
+//					level.tickChunk(chunk, tickCount);
+//					((BasicVerticalChunk) chunk).randomTick();
+//				} else {
+//					LOGGER.warn("A chunk was null");
+//				}
+//			}
+			for (LevelChunk allChunk : allChunks) {
+				level.tickChunk(allChunk, tickCount);
+//				((BasicVerticalChunk) allChunk).randomTick();
+			}
 		}
+		
 		super.tick(pHasTimeLeft, false);
 		
-		for (ChunkHolder holder : holders) {
-			LevelChunk chunk = holder.getTickingChunk();
-			if (chunk != null)
-				holder.broadcastChanges(chunk);
+		synchronized (holders) {
+			for (ChunkHolder holder : holders) {
+				LevelChunk chunk = holder.getTickingChunk();
+				if (chunk != null)
+					holder.broadcastChanges(chunk);
+			}
 		}
 
 //		for (BasicVerticalChunk[] column : columns) {
@@ -135,7 +147,32 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	}
 	
 	public ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
-		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY > upb) {
+		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY >= (upb * 32)) {
+			// TODO: fix
+//			if (pChunkY < 0) {
+//				RegionPos regionPos = ((ITickerWorld) level).getRegion().pos;
+//
+//				ITickerWorld tickerLevel = (ITickerWorld) level;
+//				if (tickerLevel.getParent() instanceof RegionalAttachments attachments) {
+//					// TODO: do this more properly
+//					RegionPos rPos = new RegionPos(regionPos.x, regionPos.y - 1, regionPos.z);
+//					Region r = attachments.SU$getRegion(rPos);
+//					if (r == null) {
+//						LOGGER.warn("Region@" + rPos + " was null");
+//						return empty;
+//					}
+//					Level lvl;
+//					if (tickerLevel.getParent() instanceof ServerLevel)
+//						lvl = r.getServerWorld(level.getServer(), level, upb);
+//					else
+//						lvl = r.getClientWorld(level, upb);
+//					return lvl.getChunk(pChunkX, pChunkZ, pRequiredStatus);
+//				}
+//			}
+			
+			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad);
+			if (neighborChunk != null) return neighborChunk;
+			
 			Region r = ((TickerServerLevel) level).region;
 			RegionPos pos = r.pos;
 			
@@ -173,18 +210,23 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
 			if (ck[pChunkY] == null) {
-				ck[pChunkY] = new BasicVerticalChunk(
-						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
-						new VChunkLookup(
-								this, pChunkY, ck,
-								new ChunkPos(pChunkX, pChunkZ)
-						), getLookup(), upb
-				);
-				allChunks.add(ck[pChunkY]);
-				UnitChunkHolder holder = new UnitChunkHolder(ck[pChunkY].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
-				}, chunkMap, ck[pChunkY]);
-				holders.add(holder);
-				ck[pChunkY].holder = holder;
+				ck[pChunkY] = createChunk(0, new ChunkPos(pChunkX, pChunkZ));
+//				ck[pChunkY] = new BasicVerticalChunk(
+//						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
+//						new VChunkLookup(
+//								this, pChunkY, ck,
+//								new ChunkPos(pChunkX, pChunkZ)
+//						), getLookup(), upb
+//				);
+//				synchronized (allChunks) {
+//					allChunks.add(ck[pChunkY]);
+//				}
+//				UnitChunkHolder holder = new UnitChunkHolder(ck[pChunkY].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
+//				}, chunkMap, ck[pChunkY]);
+//				synchronized (holders) {
+//					holders.add(holder);
+//				}
+//				ck[pChunkY].holder = holder;
 			}
 			return ck[pChunkY];
 		}
@@ -199,14 +241,23 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 				level, new ChunkPos(pChunkX, pChunkZ), i,
 				new VChunkLookup(
 						this, i, ck,
-						new ChunkPos(pChunkX, pChunkZ)
+						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
-		allChunks.add(ck[i]);
+		synchronized (allChunks) {
+			allChunks.add(ck[i]);
+		}
 		UnitChunkHolder holder = new UnitChunkHolder(ck[i].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
 		}, chunkMap, ck[i]);
-		holders.add(holder);
+		synchronized (holders) {
+			holders.add(holder);
+		}
 		ck[i].holder = holder;
 		return ck[i];
+	}
+	
+	@Override
+	public EmptyLevelChunk getEmpty() {
+		return empty;
 	}
 }

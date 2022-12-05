@@ -8,6 +8,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.utils.BreakData;
@@ -16,12 +17,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 
-public interface ITickerWorld {
+public interface ITickerLevel {
 	int getUPB();
+	
 	void handleRemoval();
+	
 	void SU$removeEntity(Entity pEntity);
+	
 	void SU$removeEntity(UUID uuid);
+	
 	Level getParent();
+	
 	Region getRegion();
 	
 	ParentLookup getLookup();
@@ -43,4 +49,6 @@ public interface ITickerWorld {
 	}
 	
 	void invalidateCache(BlockPos pos);
+	
+	ChunkAccess getChunk(int i, int i1, int i2, ChunkStatus pRequiredStatus, boolean pLoad);
 }

@@ -15,7 +15,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 public class SpawningBlockEntitiesS2C extends Packet {
@@ -93,13 +93,13 @@ public class SpawningBlockEntitiesS2C extends Packet {
 			
 			Minecraft.getInstance().level = clvl;
 			
-			BlockPos rp = ((ITickerWorld) lvl).getRegion().pos.toBlockPos();
+			BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();
 			BlockPos pos = be.getBlockPos();
 			int xo = (pos.getX() / upb);
 			int yo = (pos.getY() / upb);
 			int zo = (pos.getZ() / upb);
 			BlockPos parentPos = rp.offset(xo, yo, zo);
-			ChunkAccess ac = ((ITickerWorld) lvl).getParent().getChunkAt(parentPos);
+			ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
 			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 			((SUCapableChunk) ac).addTile(be);
 

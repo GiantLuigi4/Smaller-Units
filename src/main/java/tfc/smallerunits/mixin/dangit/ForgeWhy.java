@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.client.forge.SUModelDataManager;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.Map;
 public class ForgeWhy {
 	@Inject(at = @At("HEAD"), method = "requestModelDataRefresh", cancellable = true)
 	private static void stopForgeFromCrashingTheGame(BlockEntity te, CallbackInfo ci) {
-		if (!(te.getLevel() instanceof ITickerWorld)) return;
+		if (!(te.getLevel() instanceof ITickerLevel)) return;
 		ci.cancel();
 		SUModelDataManager manager = ((FakeClientLevel) te.getLevel()).modelDataManager;
 		manager.requestModelDataRefresh(te);
@@ -31,7 +31,7 @@ public class ForgeWhy {
 	
 	@Inject(at = @At("HEAD"), method = "refreshModelData", cancellable = true)
 	private static void preRequestRefresh(Level toUpdate, ChunkPos pos, CallbackInfo ci) {
-		if (!(toUpdate instanceof ITickerWorld)) return;
+		if (!(toUpdate instanceof ITickerLevel)) return;
 		ci.cancel();
 		SUModelDataManager manager = ((FakeClientLevel) toUpdate).modelDataManager;
 		manager.refreshModelData(toUpdate, pos);
@@ -39,7 +39,7 @@ public class ForgeWhy {
 	
 	@Inject(at = @At("HEAD"), method = "cleanCaches", cancellable = true)
 	private static void preRequestRefresh(Level toUpdate, CallbackInfo ci) {
-		if (!(toUpdate instanceof ITickerWorld)) return;
+		if (!(toUpdate instanceof ITickerLevel)) return;
 		ci.cancel();
 		SUModelDataManager manager = ((FakeClientLevel) toUpdate).modelDataManager;
 		manager.cleanCaches(toUpdate);

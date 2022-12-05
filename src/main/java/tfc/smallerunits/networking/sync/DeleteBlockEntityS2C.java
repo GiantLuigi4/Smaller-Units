@@ -12,7 +12,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.ArrayList;
@@ -75,13 +75,13 @@ public class DeleteBlockEntityS2C extends Packet {
 
 //			BlockState[] states = new BlockState[16 * 16 * 16];
 			
-			BlockPos rp = ((ITickerWorld) lvl).getRegion().pos.toBlockPos();
+			BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();
 			BlockPos pos = up;
 			int xo = (pos.getX() / upb);
 			int yo = (pos.getY() / upb);
 			int zo = (pos.getZ() / upb);
 			BlockPos parentPos = rp.offset(xo, yo, zo);
-			ChunkAccess ac = ((ITickerWorld) lvl).getParent().getChunkAt(parentPos);
+			ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
 			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 			synchronized (((SUCapableChunk) ac).getTiles()) {
 				ArrayList<BlockEntity> bes = ((SUCapableChunk) ac).getTiles();

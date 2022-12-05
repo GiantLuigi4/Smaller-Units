@@ -5,7 +5,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.storage.RegionPos;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 public class HitboxScaling {
 	public static AABB getOffsetAndScaledBox(AABB box, Vec3 entityPos, int upb, RegionPos regionPos) {
@@ -25,23 +25,23 @@ public class HitboxScaling {
 	
 	// TODO?
 	public static double scaleX(UnitSpace space, double coord) {
-		coord -= ((ITickerWorld) space.getMyLevel()).getRegion().pos.x;
+		coord -= ((ITickerLevel) space.getMyLevel()).getRegion().pos.x;
 		coord *= 1d / space.unitsPerBlock;
-		coord += ((ITickerWorld) space.getMyLevel()).getRegion().pos.x;
+		coord += ((ITickerLevel) space.getMyLevel()).getRegion().pos.x;
 		return coord;
 	}
 	
 	public static double scaleY(UnitSpace space, double coord) {
-		coord -= ((ITickerWorld) space.getMyLevel()).getRegion().pos.y;
+		coord -= ((ITickerLevel) space.getMyLevel()).getRegion().pos.y;
 		coord *= 1d / space.unitsPerBlock;
-		coord += ((ITickerWorld) space.getMyLevel()).getRegion().pos.y;
+		coord += ((ITickerLevel) space.getMyLevel()).getRegion().pos.y;
 		return coord;
 	}
 	
 	public static double scaleZ(UnitSpace space, double coord) {
-		coord -= ((ITickerWorld) space.getMyLevel()).getRegion().pos.z;
+		coord -= ((ITickerLevel) space.getMyLevel()).getRegion().pos.z;
 		coord *= 1d / space.unitsPerBlock;
-		coord += ((ITickerWorld) space.getMyLevel()).getRegion().pos.z;
+		coord += ((ITickerLevel) space.getMyLevel()).getRegion().pos.z;
 		return coord;
 	}
 }

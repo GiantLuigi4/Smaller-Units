@@ -80,6 +80,7 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		UnitSpace[] spaceMap = getUnits((pos.getY() >> 5) & 32);
+		spaces.remove(spaceMap[indx]);
 		spaceMap[indx] = space;
 //		int relIndex = indx + (((pos.getY() >> 5) & 32) * 16 * 16 * 16);
 		spaces.add(space);

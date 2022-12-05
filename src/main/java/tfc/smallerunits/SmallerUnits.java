@@ -22,8 +22,6 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
@@ -36,8 +34,6 @@ import tfc.smallerunits.utils.scale.PehkuiSupport;
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("smallerunits")
 public class SmallerUnits {
-	public static final Logger LOGGER = LogManager.getLogger();
-	
 	private static boolean isOFPresent;
 	
 	public SmallerUnits() {

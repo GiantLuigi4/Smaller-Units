@@ -50,15 +50,17 @@ public abstract class LevelChunkMixin implements SUCapableChunk {
 	
 	@Override
 	public void addTile(BlockEntity be) {
-		for (BlockEntity renderableBlockEntity : renderableBlockEntities) {
-			if (renderableBlockEntity.getBlockPos().equals(be.getBlockPos())) {
-				renderableBlockEntities.remove(renderableBlockEntity);
-				break;
+		synchronized (renderableBlockEntities) {
+			for (BlockEntity renderableBlockEntity : renderableBlockEntities) {
+				if (renderableBlockEntity.getBlockPos().equals(be.getBlockPos())) {
+					renderableBlockEntities.remove(renderableBlockEntity);
+					break;
+				}
 			}
-		}
-		if (Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(be) != null) {
-			// I believe this is how this should work
-			renderableBlockEntities.add(be);
+			if (Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(be) != null) {
+				// I believe this is how this should work
+				renderableBlockEntities.add(be);
+			}
 		}
 	}
 	

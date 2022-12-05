@@ -9,7 +9,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 public class RemoveEntityPacketS2C extends Packet {
@@ -69,7 +69,7 @@ public class RemoveEntityPacketS2C extends Packet {
 //			BlockState[] states = new BlockState[16 * 16 * 16];
 			
 			lvl.getEntity(id).remove(Entity.RemovalReason.DISCARDED);
-			((ITickerWorld) lvl).handleRemoval();
+			((ITickerLevel) lvl).handleRemoval();
 
 //			((SUCapableChunk) chunk).SU$markDirty(realPos);
 			

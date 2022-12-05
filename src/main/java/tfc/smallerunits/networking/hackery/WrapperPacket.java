@@ -7,6 +7,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraftforge.network.NetworkEvent;
 import sun.misc.Unsafe;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
+import tfc.smallerunits.logging.Loggers;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -116,6 +117,8 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		try {
 			context.pkt.handle(ctx.getNetworkManager().getPacketListener());
 		} catch (Throwable ignored) {
+			Loggers.PACKET_HACKS_LOGGER.error("-- A wrapped packet has encountered an error: desyncs are imminent --");
+			ignored.printStackTrace();
 		}
 		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
 		teardown(context);

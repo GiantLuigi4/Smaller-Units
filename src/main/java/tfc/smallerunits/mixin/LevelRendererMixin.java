@@ -48,7 +48,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
@@ -139,14 +139,14 @@ public abstract class LevelRendererMixin {
 	public void renderEntities(Level lvl, PoseStack stk, Camera cam, float pct, MultiBufferSource buffers) {
 		Iterable<Entity> entities;
 		if (lvl instanceof ClientLevel) entities = ((ClientLevel) lvl).entitiesForRendering();
-		else entities = ((ITickerWorld) lvl).getAllEntities();
+		else entities = ((ITickerLevel) lvl).getAllEntities();
 		stk.pushPose();
 		stk.translate(
 				-cam.getPosition().x,
 				-cam.getPosition().y,
 				-cam.getPosition().z
 		);
-		stk.scale(1f / ((ITickerWorld) lvl).getUPB(), 1f / ((ITickerWorld) lvl).getUPB(), 1f / ((ITickerWorld) lvl).getUPB());
+		stk.scale(1f / ((ITickerLevel) lvl).getUPB(), 1f / ((ITickerLevel) lvl).getUPB(), 1f / ((ITickerLevel) lvl).getUPB());
 		for (Entity entity : entities)
 			SURenderManager.drawEntity((LevelRenderer) (Object) this, lvl, stk, cam, pct, buffers, entity);
 		stk.popPose();
@@ -282,7 +282,7 @@ public abstract class LevelRendererMixin {
 		/* breaking overlays */
 		for (UnitSpace unit : capability.getUnits()) {
 			if (unit != null) {
-				ITickerWorld world = (ITickerWorld) unit.getMyLevel();
+				ITickerLevel world = (ITickerLevel) unit.getMyLevel();
 				for (BreakData integer : world.getBreakData().values()) {
 					BlockPos minPos = unit.getOffsetPos(new BlockPos(0, 0, 0));
 					BlockPos maxPos = unit.getOffsetPos(new BlockPos(unit.unitsPerBlock, unit.unitsPerBlock, unit.unitsPerBlock));
@@ -305,8 +305,8 @@ public abstract class LevelRendererMixin {
 					if (y < origin.getY() + 16 &&
 							y >= origin.getY()) {
 						AABB renderBox = tile.getRenderBoundingBox();
-						if (tile.getLevel() instanceof ITickerWorld) {
-							int upb = ((ITickerWorld) tile.getLevel()).getUPB();
+						if (tile.getLevel() instanceof ITickerLevel) {
+							int upb = ((ITickerLevel) tile.getLevel()).getUPB();
 							float scl = 1f / upb;
 							renderBox = new AABB(
 									renderBox.minX * scl,

@@ -24,7 +24,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.mojangpls.NoPath;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class UnitChunkMap extends ChunkMap {
 	public List<ServerPlayer> getPlayers(ChunkPos pPos, boolean pBoundaryOnly) {
 		// TODO: filter for chunk
 		// TODO: figure out what "filter for chunk" means
-		ITickerWorld tickerWorld = (ITickerWorld) lvl;
+		ITickerLevel tickerWorld = (ITickerLevel) lvl;
 		Level parent = tickerWorld.getParent();
 		Region region = tickerWorld.getRegion();
 		RegionPos pos = region.pos;

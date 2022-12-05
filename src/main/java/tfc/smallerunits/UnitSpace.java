@@ -10,8 +10,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.network.PacketDistributor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -22,7 +20,7 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.Math1D;
 
 public class UnitSpace {
@@ -151,8 +149,8 @@ public class UnitSpace {
 		UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
 		loadPallet(pallet);
 		if (tag.contains("ticks")) {
-			if (myLevel instanceof ITickerWorld) {
-				((ITickerWorld) myLevel).loadTicks(tag.getCompound("ticks"));
+			if (myLevel instanceof ITickerLevel) {
+				((ITickerLevel) myLevel).loadTicks(tag.getCompound("ticks"));
 			}
 		}
 		CompoundTag tiles = tag.getCompound("tiles");
@@ -171,13 +169,11 @@ public class UnitSpace {
 			if (be == null) continue;
 			myLevel.setBlockEntity(be);
 		}
-		((ITickerWorld) myLevel).setLoaded();
+		((ITickerLevel) myLevel).setLoaded();
 //		setState(new BlockPos(0, 0, 0), Blocks.STONE);
 		
 		this.tag = null;
 	}
-	
-	public static final Logger LOGGER = LogManager.getLogger();
 	
 	/* reason: race conditions */
 	public void tick() {
@@ -190,17 +186,17 @@ public class UnitSpace {
 				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
 				if (r == null) return;
 				if (myLevel != null)
-					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+					((ITickerLevel) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
 //				setState(new BlockPos(0, 0, 0), Blocks.STONE);
 			} else if (level instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
 				if (r == null) {
-					LOGGER.fatal("Region@" + new RegionPos(pos) + " was null");
+					Loggers.UNITSPACE_LOGGER.error("Region@" + new RegionPos(pos) + " was null");
 					return;
 				}
 				if (myLevel != null)
-					((ITickerWorld) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
+					((ITickerLevel) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getClientWorld(level, upb);
 				
 				// TODO: allow for optimization?
@@ -218,9 +214,7 @@ public class UnitSpace {
 			for (int y = 0; y < unitsPerBlock; y++) {
 				for (int z = 0; z < unitsPerBlock; z++) {
 					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockState(myPosInTheLevel.offset(x, y, z));
-					if (!state.isAir()) {
-						numBlocks++;
-					}
+					addState(state);
 				}
 			}
 		}
@@ -314,8 +308,8 @@ public class UnitSpace {
 		tag.putInt("upb", unitsPerBlock);
 		UnitPallet pallet = new UnitPallet(this);
 		tag.put("blocks", pallet.toNBT());
-		if (myLevel instanceof ITickerWorld)
-			tag.put("ticks", ((ITickerWorld) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
+		if (myLevel instanceof ITickerLevel)
+			tag.put("ticks", ((ITickerLevel) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
 		CompoundTag tiles = new CompoundTag();
 		for (int x = 0; x < unitsPerBlock; x++) {
 			for (int y = 0; y < unitsPerBlock; y++) {

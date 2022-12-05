@@ -1,7 +1,7 @@
 package tfc.smallerunits.utils.scale;
 
 import net.minecraft.resources.ResourceLocation;
-import tfc.smallerunits.SmallerUnits;
+import tfc.smallerunits.logging.Loggers;
 import virtuoel.pehkui.api.ScaleData;
 import virtuoel.pehkui.api.ScaleModifier;
 import virtuoel.pehkui.api.ScaleRegistries;
@@ -15,7 +15,7 @@ public class PehkuiSupport {
 	public static final AtomicReference<ScaleType> SUScaleType = new AtomicReference<>();
 	
 	public static void setup() {
-		SmallerUnits.LOGGER.info("Pehkui detected; enabling support");
+		Loggers.SU_LOGGER.info("Pehkui detected; enabling support");
 		
 		ScaleModifier modifier = new ScaleModifier() {
 			@Override

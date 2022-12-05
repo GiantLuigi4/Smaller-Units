@@ -15,7 +15,7 @@ import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketC2S;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 @Mixin(AbstractClientPlayer.class)
 public class AbstractClientPlayerMixin implements ICanUseUnits {
@@ -35,8 +35,8 @@ public class AbstractClientPlayerMixin implements ICanUseUnits {
 	
 	@Override
 	public void removeUnit() {
-		if (hit != null && clientLevel instanceof ITickerWorld) {
-			Level lvl = ((ITickerWorld) clientLevel).getParent();
+		if (hit != null && clientLevel instanceof ITickerLevel) {
+			Level lvl = ((ITickerLevel) clientLevel).getParent();
 			
 			if (hit.getType().equals(HitResult.Type.BLOCK)) {
 				if (hit instanceof BlockHitResult result) {

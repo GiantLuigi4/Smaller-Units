@@ -14,7 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.logging.Loggers;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.simulation.level.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
@@ -129,7 +129,7 @@ public class Region {
 	public void updateWorlds(BlockPos pos) {
 		for (Level level : levels) {
 			if (level != null) {
-				((ITickerWorld) level).invalidateCache(pos);
+				((ITickerLevel) level).invalidateCache(pos);
 			}
 		}
 	}

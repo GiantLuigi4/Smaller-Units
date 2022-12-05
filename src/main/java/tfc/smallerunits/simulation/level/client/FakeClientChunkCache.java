@@ -15,11 +15,13 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.simulation.WorldStitcher;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.simulation.level.SULightManager;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.function.BooleanSupplier;
@@ -38,6 +40,7 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
 //		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
 		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+		lightEngine = new SULightManager(this, true, true);
 	}
 
 //	@Override
@@ -73,15 +76,18 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 	}
 	
 	public ParentLookup getLookup() {
-		return ((ITickerWorld) level).getLookup();
+		return ((ITickerLevel) level).getLookup();
 	}
 	
 	int isRecurring = 0;
 	
 	public LevelChunk getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
 		if (upb == 0) return empty;
-		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY > upb) {
-			Region r = ((ITickerWorld) level).getRegion();
+		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY >= (upb * 32)) {
+			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad);
+			if (neighborChunk != null) return neighborChunk;
+			
+			Region r = ((ITickerLevel) level).getRegion();
 			RegionPos pos = r.pos;
 			
 			int x = pChunkX < 0 ? -1 : ((pChunkX > upb) ? 1 : 0);
@@ -110,11 +116,11 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 			pChunkY = ((pChunkY < 0) ? pChunkY + upb : ((pChunkY > upb) ? (pChunkX - (upb * 32)) : pChunkY));
 			pChunkZ = ((pChunkZ < 0) ? pChunkZ + upb : ((pChunkZ > upb) ? (pChunkX - (upb * 32)) : pChunkZ));
 			
-			Level parent = ((ITickerWorld) level).getParent();
+			Level parent = ((ITickerLevel) level).getParent();
 			Region otherRegion = null;
 			Level level = null;
 			
-			otherRegion = ((RegionalAttachments) ((ITickerWorld) this.level).getParent()).SU$getRegion(pos);
+			otherRegion = ((RegionalAttachments) ((ITickerLevel) this.level).getParent()).SU$getRegion(pos);
 			if (otherRegion != null && IHateTheDistCleaner.isClientLevel(parent)) {
 				level = otherRegion.getClientWorld(parent, upb);
 			} else {
@@ -141,11 +147,12 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
 						new VChunkLookup(
 								this, pChunkY, ck,
-								new ChunkPos(pChunkX, pChunkZ)
+								new ChunkPos(pChunkX, pChunkZ), upb * 32
 						), getLookup(), upb
 				);
 				allChunks.add(ck[pChunkY]);
 				ck[pChunkY].setClientLightReady(true);
+				getLightEngine().enableLightSources(new ChunkPos(pChunkX, pChunkZ), true);
 			}
 			return ck[pChunkY];
 		}
@@ -160,12 +167,18 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 				level, new ChunkPos(pChunkX, pChunkZ), i,
 				new VChunkLookup(
 						this, i, ck,
-						new ChunkPos(pChunkX, pChunkZ)
+						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
 		allChunks.add(ck[i]);
 		ck[i].setClientLightReady(true);
+		getLightEngine().enableLightSources(new ChunkPos(pChunkX, pChunkZ), true);
 		
 		return ck[i];
+	}
+	
+	@Override
+	public EmptyLevelChunk getEmpty() {
+		return empty;
 	}
 }

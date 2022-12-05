@@ -41,7 +41,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitHitResult;
@@ -246,7 +246,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
 				ItemStack itm = pPlayer.getItemInHand(pHand);
 				
-				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerWorld) space.myLevel).getRegion().pos, space.unitsPerBlock));
+				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) space.myLevel).getRegion().pos, space.unitsPerBlock));
 
 //				AABB srcBB = pPlayer.getBoundingBox();
 //				ClientLevel trueLvl = (ClientLevel) pPlayer.getLevel();

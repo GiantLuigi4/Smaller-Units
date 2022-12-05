@@ -13,7 +13,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.ICanUseUnits;
-import tfc.smallerunits.simulation.level.ITickerWorld;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 public class UnitEdge extends Block {
 	public UnitEdge() {
@@ -37,7 +37,7 @@ public class UnitEdge extends Block {
 	
 	@Override
 	protected void spawnDestroyParticles(Level pLevel, Player pPlayer, BlockPos pPos, BlockState pState) {
-		if (pLevel instanceof ITickerWorld tickerLevel) {
+		if (pLevel instanceof ITickerLevel tickerLevel) {
 			Region region = tickerLevel.getRegion();
 			int upb = tickerLevel.getUPB();
 			BlockPos bp = region.pos.toBlockPos().offset(
