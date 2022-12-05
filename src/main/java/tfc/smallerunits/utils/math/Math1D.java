@@ -23,9 +23,11 @@ public class Math1D {
 	}
 	
 	public static int getChunkOffset(int val, int size) {
-		if (size == 16)
-			return val >> 4;
-		return val >= 0 ? val / size : (val / size) - 1;
+//		if (size == 16)
+//			return val >> 4;
+//		size -= 1;
+		if (val < 0) return -((((-val) - 1) / size) + 1);
+		return val / size;
 	}
 	
 	public static int oldChunkMod(int val, int mod) {

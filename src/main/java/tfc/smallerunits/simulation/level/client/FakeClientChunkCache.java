@@ -142,18 +142,8 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		} else {
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
-			if (ck[pChunkY] == null) {
-				ck[pChunkY] = new BasicVerticalChunk(
-						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
-						new VChunkLookup(
-								this, pChunkY, ck,
-								new ChunkPos(pChunkX, pChunkZ), upb * 32
-						), getLookup(), upb
-				);
-				allChunks.add(ck[pChunkY]);
-				ck[pChunkY].setClientLightReady(true);
-				getLightEngine().enableLightSources(new ChunkPos(pChunkX, pChunkZ), true);
-			}
+			if (ck[pChunkY] == null)
+				ck[pChunkY] = createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
 			return ck[pChunkY];
 		}
 	}

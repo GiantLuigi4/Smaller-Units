@@ -210,7 +210,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
 			if (ck[pChunkY] == null) {
-				ck[pChunkY] = createChunk(0, new ChunkPos(pChunkX, pChunkZ));
+				ck[pChunkY] = createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
 //				ck[pChunkY] = new BasicVerticalChunk(
 //						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
 //						new VChunkLookup(

@@ -16,9 +16,9 @@ public class GeneralUtils {
 		int j = pPos.getX();
 		int k = pPos.getY();
 		int l = pPos.getZ();
-		int xo = (j / tickerWorld.getUPB());
+		int xo = Math1D.getChunkOffset(j, tickerWorld.getUPB());
 		int yo = Math1D.getChunkOffset(k, tickerWorld.getUPB());
-		int zo = (l / tickerWorld.getUPB());
+		int zo = Math1D.getChunkOffset(l, tickerWorld.getUPB());
 		return rPos.offset(new BlockPos(xo, yo, zo));
 	}
 	
@@ -30,9 +30,12 @@ public class GeneralUtils {
 		int l = pPos.getZ() & 15;
 		ChunkPos chunkPos = verticalChunk.getPos();
 		int yPos = verticalChunk.yPos;
-		int xo = ((j + (chunkPos.getMinBlockX())) / tickerWorld.getUPB());
-		int yo = Math1D.getChunkOffset((k + yPos * 16), tickerWorld.getUPB());
-		int zo = ((l + (chunkPos.getMinBlockZ())) / tickerWorld.getUPB());
+//		int xo = ((j + (chunkPos.getMinBlockX())) / tickerWorld.getUPB());
+//		int yo = Math1D.getChunkOffset((k + yPos * 16), tickerWorld.getUPB());
+//		int zo = ((l + (chunkPos.getMinBlockZ())) / tickerWorld.getUPB());
+		int xo = Math1D.getChunkOffset(j + chunkPos.getMinBlockX(), tickerWorld.getUPB());
+		int yo = Math1D.getChunkOffset(k + yPos * 16, tickerWorld.getUPB());
+		int zo = Math1D.getChunkOffset(l + chunkPos.getMinBlockZ(), tickerWorld.getUPB());
 		return rPos.offset(new BlockPos(xo, yo, zo));
 	}
 	
@@ -53,9 +56,9 @@ public class GeneralUtils {
 		int l = pPos.getZ() & 15;
 		ChunkPos chunkPos = verticalChunk.getPos();
 		int yPos = verticalChunk.yPos;
-		int xo = ((j + (chunkPos.getMinBlockX())) / tickerWorld.getUPB());
-		int yo = ((k + yPos * 16) / tickerWorld.getUPB()); // TODO: fix this, maybe
-		int zo = ((l + (chunkPos.getMinBlockZ())) / tickerWorld.getUPB());
+		int xo = Math1D.getChunkOffset(j + chunkPos.getMinBlockX(), tickerWorld.getUPB());
+		int yo = Math1D.getChunkOffset(k + yPos * 16, tickerWorld.getUPB());
+		int zo = Math1D.getChunkOffset(l + chunkPos.getMinBlockZ(), tickerWorld.getUPB());
 		return rPos.offset(new BlockPos(xo, yo, zo));
 	}
 }

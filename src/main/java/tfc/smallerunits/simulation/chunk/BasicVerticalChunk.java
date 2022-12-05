@@ -153,7 +153,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
-		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0) {
+		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
 //			if (yPos + yO < 0) {
 //				// TODO: fix
 //				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
@@ -219,14 +219,16 @@ public class BasicVerticalChunk extends LevelChunk {
 				if (space == null) {
 					BlockState state = ac.getBlockState(parentPos);
 					if (state.isAir()) { // TODO: do this better
-						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
-						// TODO: debug why space can still be null after this or what
-						space.isNatural = true;
-//						space.unitsPerBlock = ((ITickerWorld) level).getUPB();
-						space.setUpb(((ITickerLevel) level).getUPB());
-						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+						if (!pState.isAir()) {
+							ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+							ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+							space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
+							// TODO: debug why space can still be null after this or what
+							space.isNatural = true;
+//							space.unitsPerBlock = ((ITickerWorld) level).getUPB();
+							space.setUpb(((ITickerLevel) level).getUPB());
+							space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+						}
 					}
 				}
 				int indx = getIndx(j, k, l);
@@ -317,12 +319,13 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) lookupPass = true;
 		if (lookupPass) {
 			int yO = Math1D.getChunkOffset(pos.getY(), 16);
-			if (yO != 0) {
+			if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
 				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-				return chunk.getBlockState$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()));
+				return chunk.getBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
 			}
 			return getBlockState$(pos);
 		} else {
+//			System.out.println(GeneralUtils.getParentPos(pos, this));
 			return Registry.UNIT_EDGE.get().defaultBlockState();
 		}
 	}
