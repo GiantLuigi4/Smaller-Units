@@ -789,7 +789,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
 		LevelChunk chunk = this.getChunkAt(pBlockEntity.getBlockPos());
-		pBlockEntity.worldPosition = chunk.getPos().getWorldPosition().offset(pBlockEntity.getBlockPos().getX() & 15, pBlockEntity.getBlockPos().getY() & 15, pBlockEntity.getBlockPos().getZ() & 15);
+		pBlockEntity.worldPosition = chunk.getPos().getWorldPosition().offset(pBlockEntity.getBlockPos().getX() & 15, pBlockEntity.getBlockPos().getY(), pBlockEntity.getBlockPos().getZ() & 15);
 		// TODO: figure out of deserialization and reserialization is necessary or not
 		chunk.addAndRegisterBlockEntity(pBlockEntity);
 	}

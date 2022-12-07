@@ -12,6 +12,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -183,24 +185,13 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public void addAndRegisterBlockEntity(BlockEntity pBlockEntity) {
 		super.addAndRegisterBlockEntity(pBlockEntity);
-		if (!level.isClientSide) return;
-		
-		ITickerLevel tickerWorld = ((ITickerLevel) level);
-		
-		BlockPos parentPos = GeneralUtils.getParentPos(pBlockEntity.getBlockPos(), this);
-		ChunkAccess ac;
-		ac = tickerWorld.getParent().getChunkAt(parentPos);
-		
-		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
-		UnitSpace space = cap.getUnit(parentPos);
-//		if (space == null) {
-//			space = cap.getOrMakeUnit(parentPos);
-//			space.isNatural = true;
-//			space.setUpb(upb);
-//			space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
-//		}
-		// TODO: check if a renderer exists, or smth?
-		((SUCapableChunk) ac).addTile(pBlockEntity);
+	}
+	
+	@Override
+	public <T extends BlockEntity> TickingBlockEntity createTicker(T pBlockEntity, BlockEntityTicker<T> pTicker) {
+		if (yPos == 0)
+			return super.createTicker(pBlockEntity, pTicker);
+		return verticalLookup.applyAbs(0).createTicker(pBlockEntity, pTicker);
 	}
 	
 	// TODO: I'm sure I can shrink this
@@ -429,6 +420,19 @@ public class BasicVerticalChunk extends LevelChunk {
 				blockentity.setRemoved();
 			}
 		}
+		
+		if (!level.isClientSide) return;
+		
+		ITickerLevel tickerWorld = ((ITickerLevel) level);
+		
+		BlockPos parentPos = GeneralUtils.getParentPos(pBlockEntity.getBlockPos().offset(0, -(yPos * 16), 0), this);
+		ChunkAccess ac;
+		ac = tickerWorld.getParent().getChunkAt(parentPos);
+
+//		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+//		UnitSpace space = cap.getUnit(parentPos);
+		// TODO: check if a renderer exists, or smth?
+		((SUCapableChunk) ac).addTile(pBlockEntity);
 	}
 	
 	@Override
