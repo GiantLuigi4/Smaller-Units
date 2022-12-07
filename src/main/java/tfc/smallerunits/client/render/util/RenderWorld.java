@@ -12,6 +12,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 
 public class RenderWorld implements BlockAndTintGetter {
 	Level lvl;
@@ -52,14 +53,6 @@ public class RenderWorld implements BlockAndTintGetter {
 	
 	@Override
 	public BlockState getBlockState(BlockPos p_45571_) {
-//		BlockPos offset = p_45571_.offset(-minPos.getX(), -minPos.getY(), -minPos.getZ());
-//		int x = offset.getX();
-//		int y = offset.getY();
-//		int z = offset.getZ();
-//		if (x >= 0 && y >= 0 && z >= 0 && x < upb && y < upb && z < upb) {
-//			int indx = (((x * upb) + y) * upb) + z;
-//			return states[indx];
-//		}
 		if (
 				chunk.getPos().getMaxBlockX() >= p_45571_.getX() &&
 						chunk.getPos().getMinBlockX() <= p_45571_.getX() &&
@@ -67,8 +60,16 @@ public class RenderWorld implements BlockAndTintGetter {
 						lvl.getMinBuildHeight() <= p_45571_.getY() &&
 						chunk.getPos().getMaxBlockZ() >= p_45571_.getZ() &&
 						chunk.getPos().getMinBlockZ() <= p_45571_.getZ()
-		)
+		) {
+			if (chunk instanceof BasicVerticalChunk bvc) {
+				if (
+						p_45571_.getY() >= (bvc.yPos * 16) &&
+								p_45571_.getY() < (bvc.yPos * 16) + 16
+				)
+					return bvc.getBlockState$(p_45571_);
+			}
 			return chunk.getBlockState(p_45571_);
+		}
 		return lvl.getBlockState(p_45571_);
 	}
 	

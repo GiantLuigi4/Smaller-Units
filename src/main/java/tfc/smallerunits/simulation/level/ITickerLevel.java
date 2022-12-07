@@ -51,4 +51,6 @@ public interface ITickerLevel {
 	void invalidateCache(BlockPos pos);
 	
 	ChunkAccess getChunk(int i, int i1, int i2, ChunkStatus pRequiredStatus, boolean pLoad);
+	
+	void markRenderDirty(BlockPos pLevelPos);
 }

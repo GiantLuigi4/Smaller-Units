@@ -49,6 +49,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.api.GeneralUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
@@ -601,14 +602,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public void tickTime() {
-		// TODO: figure out lighting
-		getLightEngine().runUpdates(10000, false, true);
-//		getLightEngine().onBlockEmissionIncrease(new BlockPos(0, 0, 0), 15);
-//		getLightEngine().getLayerListener(LightLayer.BLOCK).getDataLayerData(SectionPos.of(0,0,0));
-		
-		for (Runnable runnable : completeOnTick) runnable.run();
-		completeOnTick.clear();
-		
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
@@ -629,12 +622,10 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 				entity.tick();
 			}
 		}
-	}
-	
-	@Override
-	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
-		if (pLightType.equals(LightLayer.SKY)) return 0;
-		return super.getBrightness(pLightType, pBlockPos);
+		
+		getLightEngine().runUpdates(10000, false, true);
+		for (Runnable runnable : completeOnTick) runnable.run();
+		completeOnTick.clear();
 	}
 	
 	@Override
@@ -700,11 +691,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> positions) {
-		BlockPos rp = region.pos.toBlockPos();
-		int xo = ((cp.x * 16) / upb) + (x / upb);
-		int yo = ((cy * 16) / upb) + (y / upb);
-		int zo = ((cp.z * 16) / upb) + (z / upb);
-		BlockPos parentPos = rp.offset(xo, yo, zo);
+		BlockPos parentPos = GeneralUtils.getParentPos(new BlockPos(x, y, z), cp, 0, this);
 		ChunkAccess ac;
 		// vertical lookups shouldn't be too expensive
 		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
@@ -725,7 +712,15 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
 		vc = vc.getSubChunk(cy);
 		vc.setBlockFast(new BlockPos(x, y, z), state);
+		// TODO: mark lighting engine dirty
 		
+		((SUCapableChunk) ac).SU$markDirty(parentPos);
+	}
+	
+	@Override
+	public void markRenderDirty(BlockPos pLevelPos) {
+		BlockPos parentPos = GeneralUtils.getParentPos(pLevelPos, this);
+		ChunkAccess ac = parent.getChunkAt(parentPos);
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
 	
@@ -803,5 +798,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
 		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
 		return chunkCache.getChunk(x, y, z, pRequiredStatus, pLoad);
+	}
+	
+	@Override
+	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
+		BlockPos parentPos = GeneralUtils.getParentPos(pBlockPos, this);
+		int lt = parent.getBrightness(pLightType, parentPos);
+		if (pLightType.equals(LightLayer.SKY)) return lt;
+		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
 	}
 }

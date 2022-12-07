@@ -171,4 +171,9 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 	public EmptyLevelChunk getEmpty() {
 		return empty;
 	}
+	
+	@Override
+	public ITickerLevel tickerLevel() {
+		return (ITickerLevel) level;
+	}
 }

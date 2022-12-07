@@ -1,3 +1,6 @@
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 buildscript {
     repositories {
         // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
@@ -284,3 +287,28 @@ jar {
 }
 
 jar.finalizedBy('reobfJar')
+
+// I debug stuff a lot, and I mess with ATs a lot
+// everytime I change ATs, I need to reswap the game jar for the recomp jar
+System.out.println("Swap for recomp jar")
+String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
+File fl = new File("/1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2")
+if (fl.exists()) {
+    File fl1 = new File(dir + "/1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2.jar")
+    File fl2 = new File(dir + "/1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2-recomp.jar")
+    if (fl2.exists()) {
+        if (fl1.length() != fl2.length()) {
+            if (fl1.exists())
+                fl1.delete()
+
+            FileInputStream inputStream = new FileInputStream(fl2)
+            byte[] bytes = inputStream.readAllBytes()
+            fl1.createNewFile()
+            FileOutputStream outputStream = new FileOutputStream(fl1)
+            outputStream.write(bytes)
+            outputStream.flush()
+            outputStream.close()
+            inputStream.close()
+        }
+    }
+}

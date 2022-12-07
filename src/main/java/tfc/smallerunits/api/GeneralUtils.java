@@ -39,6 +39,22 @@ public class GeneralUtils {
 		return rPos.offset(new BlockPos(xo, yo, zo));
 	}
 	
+	public static BlockPos getParentPos(BlockPos pPos, ChunkPos pos, int y, ITickerLevel tickerWorld) {
+		BlockPos rPos = tickerWorld.getRegion().pos.toBlockPos();
+		int j = pPos.getX() & 15;
+		int k = pPos.getY();
+		int l = pPos.getZ() & 15;
+		ChunkPos chunkPos = pos;
+		int yPos = y;
+//		int xo = ((j + (chunkPos.getMinBlockX())) / tickerWorld.getUPB());
+//		int yo = Math1D.getChunkOffset((k + yPos * 16), tickerWorld.getUPB());
+//		int zo = ((l + (chunkPos.getMinBlockZ())) / tickerWorld.getUPB());
+		int xo = Math1D.getChunkOffset(j + chunkPos.getMinBlockX(), tickerWorld.getUPB());
+		int yo = Math1D.getChunkOffset(k + yPos * 16, tickerWorld.getUPB());
+		int zo = Math1D.getChunkOffset(l + chunkPos.getMinBlockZ(), tickerWorld.getUPB());
+		return rPos.offset(new BlockPos(xo, yo, zo));
+	}
+	
 	/**
 	 * Gets the block pos of the unit space relative to the given chunk
 	 * This method assumes that the x, y, and z positions are all able to be clamped to a value from 0-15

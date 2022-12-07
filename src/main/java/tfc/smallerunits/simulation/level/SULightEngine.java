@@ -51,8 +51,12 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	SectionPos lastSection = null;
 	LightSection section = null;
 	
+	ITickerLevel level;
+	
 	public SULightEngine(LightChunkGetter p_75640_, LightLayer p_75641_, BlockLightSectionStorage p_75642_) {
 		super(p_75640_, p_75641_, p_75642_);
+		if (p_75640_ instanceof ITickerChunkCache chunkCache)
+			this.level = chunkCache.tickerLevel();
 	}
 	
 	@Override
@@ -143,22 +147,32 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 		if (pLevelPos.getX() < 0) return 0;
 		if (pLevelPos.getY() < 0) return 0;
 		if (pLevelPos.getZ() < 0) return 0;
+		if (pLevelPos.getX() >= level.getUPB() * 32 * 16) return 0;
+		if (pLevelPos.getY() >= level.getUPB() * 32 * 16) return 0;
+		if (pLevelPos.getZ() >= level.getUPB() * 32 * 16) return 0;
 		return getSection(pLevelPos).get(pLevelPos.getX() & 15, pLevelPos.getY() & 15, pLevelPos.getZ() & 15);
 	}
 	
-	public void setLight(BlockPos pos, byte value) {
-		getSection(pos).set(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15, value);
+	public void setLight(BlockPos pLevelPos, byte value) {
+		if (pLevelPos.getX() < 0) return;
+		if (pLevelPos.getY() < 0) return;
+		if (pLevelPos.getZ() < 0) return;
+		if (pLevelPos.getX() >= level.getUPB() * 32 * 16) return;
+		if (pLevelPos.getY() >= level.getUPB() * 32 * 16) return;
+		if (pLevelPos.getZ() >= level.getUPB() * 32 * 16) return;
+		getSection(pLevelPos).set(pLevelPos.getX() & 15, pLevelPos.getY() & 15, pLevelPos.getZ() & 15, value);
+		level.markRenderDirty(pLevelPos);
 		// TODO: mark render dirty
 	}
 	
 	public LightSection getSection(BlockPos pos) {
 		SectionPos sectionPos = SectionPos.of(pos);
-//		if (lastSection == null || !lastSection.equals(sectionPos)) {
-		LightSection section = lightSectionHashMap.getOrDefault(sectionPos, null);
-		if (section == null) lightSectionHashMap.put(sectionPos, section = new LightSection());
-//			this.section = section;
-//			lastSection = sectionPos;
-//		}
+		if (lastSection == null || !lastSection.equals(sectionPos)) {
+			LightSection section = lightSectionHashMap.getOrDefault(sectionPos, null);
+			if (section == null) lightSectionHashMap.put(sectionPos, section = new LightSection());
+			this.section = section;
+			lastSection = sectionPos;
+		}
 		return section;
 	}
 	
@@ -166,33 +180,33 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	public void checkBlock(BlockPos p_75686_) {
 		int oldValue = getLightValue(p_75686_);
 		int newValue = chunkSource.getLevel().getLightEmission(p_75686_);
+		
 		if (oldValue < newValue) {
 			positionsToUpdate.add(p_75686_.immutable());
 			setLight(p_75686_, (byte) newValue);
 		} else if (oldValue > newValue) {
-			// TODO: set all light values in range to 0 and schedule edges for relighting
-			
 			setLight(p_75686_, (byte) newValue);
+			
 			for (LightOffset lightOffset : kernel) {
 				int d = lightOffset.dist;
-				if (d > oldValue) continue;
+				if (d > (oldValue + 1)) break; // no point in continuing past the light source's range
+				
 				pos.set(p_75686_.getX() + lightOffset.x, p_75686_.getY() + lightOffset.y, p_75686_.getZ() + lightOffset.z);
+				
+				// mark lights at the edge of the range as needing to be propagated again
 				if (d == (oldValue + 1)) {
-					positionsToUpdate.add(pos.immutable());
-					setLight(pos, (byte) 0);
+					if (getLightValue(pos) != 0)
+						positionsToUpdate.add(pos.immutable());
+//					setLight(pos, (byte) 0);
 					continue;
 				}
-				setLight(pos, (byte) 0);
-			}
-			
-			for (LightOffset lightOffset : kernel) {
-				int d = lightOffset.dist;
-				if (d > oldValue) continue;
-				pos.set(p_75686_.getX() + lightOffset.x, p_75686_.getY() + lightOffset.y, p_75686_.getZ() + lightOffset.z);
+				
+				// mark light sources as needing to be propagated again
 				int light;
 				setLight(pos, (byte) (light = chunkSource.getLevel().getLightEmission(pos)));
 				if (light != 0) positionsToUpdate.add(pos.immutable());
 			}
+			
 			if (newValue != 0) positionsToUpdate.add(p_75686_.immutable());
 		} else {
 			setLight(p_75686_, (byte) calcLightValue(p_75686_));

@@ -60,7 +60,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		return false;
 	}
 	
-	protected BlockState getBlockState$(BlockPos pos) {
+	public BlockState getBlockState$(BlockPos pos) {
 		// locals would be redundant, this is an internal method
 		// this method assumes that pos.y will always be in bounds of the specific BasicVerticalChunk
 		BlockState state = blocks[getIndx(pos.getX() & 15, pos.getY(), pos.getZ() & 15)];
@@ -272,7 +272,8 @@ public class BasicVerticalChunk extends LevelChunk {
 				boolean flag1 = levelchunksection.hasOnlyAir();
 				// TODO
 				if (flag != flag1) {
-					this.level.getChunkSource().getLightEngine().updateSectionStatus(pPos, !flag1);
+//					this.level.getChunkSource().getLightEngine().updateSectionStatus(pPos, !flag1);
+					level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pPos).offset(0, yPos * 16, 0));
 				}
 				
 				boolean flag2 = blockstate.hasBlockEntity();
@@ -352,6 +353,8 @@ public class BasicVerticalChunk extends LevelChunk {
 		blocks[indx] = state;
 		super.getSection(0).setBlockState(j, k, l, state);
 		
+		level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
+		
 		if (level.isClientSide) {
 			if (state.hasBlockEntity()) {
 				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(new BlockPos(j, k, l).offset(this.chunkPos.getWorldPosition().getX(), this.yPos * 16, this.chunkPos.getWorldPosition().getZ()), state);
@@ -417,31 +420,15 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
-//		if (pBlockEntity == null) return;
-//		if (!level.isClientSide) {
-//			if (besRemoved.contains(pBlockEntity.getBlockPos())) {
-//				besRemoved.remove(pBlockEntity.getBlockPos());
-//			}
-//			for (BlockEntity beChange : beChanges) {
-//				if (beChange == null) continue;
-//				if (beChange.getBlockPos().equals(pBlockEntity.getBlockPos())) {
-//					beChange.setRemoved();
-//					beChanges.remove(beChange);
-//					break;
-//				}
-//			}
-//			beChanges.add(pBlockEntity);
-////			BlockPos rp = ((TickerServerWorld) level).region.pos.toBlockPos();
-////			BlockPos pos = pBlockEntity.getBlockPos();
-////			int xo = (pos.getX() / upb);
-////			int yo = (pos.getY() / upb);
-////			int zo = (pos.getZ() / upb);
-////			BlockPos parentPos = rp.offset(xo, yo, zo);
-////			ChunkAccess ac = ((TickerServerWorld) level).parent.getChunkAt(parentPos);
-////			ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-////			((SUCapableChunk) ac).getTiles().add(pBlockEntity);
-//		}
-		super.setBlockEntity(pBlockEntity);
+		BlockPos blockpos = pBlockEntity.getBlockPos();
+		if (this.getBlockState(new BlockPos(blockpos.getX() & 15, blockpos.getY() - (yPos * 16), blockpos.getZ() & 15)).hasBlockEntity()) {
+			pBlockEntity.setLevel(this.level);
+			pBlockEntity.clearRemoved();
+			BlockEntity blockentity = this.blockEntities.put(blockpos.immutable(), pBlockEntity);
+			if (blockentity != null && blockentity != pBlockEntity) {
+				blockentity.setRemoved();
+			}
+		}
 	}
 	
 	@Override

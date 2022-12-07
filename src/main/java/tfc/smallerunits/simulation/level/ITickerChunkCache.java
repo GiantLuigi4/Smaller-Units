@@ -12,4 +12,6 @@ public interface ITickerChunkCache {
 	ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad);
 	
 	EmptyLevelChunk getEmpty();
+	
+	ITickerLevel tickerLevel();
 }

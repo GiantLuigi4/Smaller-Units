@@ -32,6 +32,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.simulation.level.NotThreadedSULightManager;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 
 import java.util.concurrent.Executor;
@@ -50,6 +51,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
 		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+		lightEngine = new NotThreadedSULightManager(this, this.chunkMap, true);
 	}
 	
 	private final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();
@@ -114,7 +116,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 //			}
 			for (LevelChunk allChunk : allChunks) {
 				level.tickChunk(allChunk, tickCount);
-//				((BasicVerticalChunk) allChunk).randomTick();
+				((BasicVerticalChunk) allChunk).randomTick();
 			}
 		}
 		
@@ -208,9 +210,13 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			return chunks[pChunkY];
 		} else {
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
-			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
-			if (ck[pChunkY] == null) {
-				ck[pChunkY] = createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
+//			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
+			if (ck == null || ck[pChunkY] == null) {
+				BasicVerticalChunk vc = createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
+				if (ck == null) {
+					ck = columns[pChunkX * (33 * upb) + pChunkZ];
+					ck[pChunkY] = vc;
+				}
 //				ck[pChunkY] = new BasicVerticalChunk(
 //						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
 //						new VChunkLookup(
@@ -233,31 +239,37 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	}
 	
 	@Override
-	public BasicVerticalChunk createChunk(int i, ChunkPos ckPos) {
+	public BasicVerticalChunk createChunk(int yPos, ChunkPos ckPos) {
 		int pChunkX = ckPos.x;
 		int pChunkZ = ckPos.z;
 		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
-		ck[i] = new BasicVerticalChunk(
-				level, new ChunkPos(pChunkX, pChunkZ), i,
+		if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
+		ck[yPos] = new BasicVerticalChunk(
+				level, new ChunkPos(pChunkX, pChunkZ), yPos,
 				new VChunkLookup(
-						this, i, ck,
+						this, yPos, ck,
 						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
 		synchronized (allChunks) {
-			allChunks.add(ck[i]);
+			allChunks.add(ck[yPos]);
 		}
-		UnitChunkHolder holder = new UnitChunkHolder(ck[i].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
-		}, chunkMap, ck[i]);
+		UnitChunkHolder holder = new UnitChunkHolder(ck[yPos].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
+		}, chunkMap, ck[yPos], yPos);
 		synchronized (holders) {
 			holders.add(holder);
 		}
-		ck[i].holder = holder;
-		return ck[i];
+		ck[yPos].holder = holder;
+		return ck[yPos];
 	}
 	
 	@Override
 	public EmptyLevelChunk getEmpty() {
 		return empty;
+	}
+	
+	@Override
+	public ITickerLevel tickerLevel() {
+		return (ITickerLevel) level;
 	}
 }

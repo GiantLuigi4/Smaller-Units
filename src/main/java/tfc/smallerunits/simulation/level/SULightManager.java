@@ -1,25 +1,27 @@
 package tfc.smallerunits.simulation.level;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 
 // TODO: figure out why I can't get mojang's one to work
 public class SULightManager extends LevelLightEngine {
-	public SULightManager(LightChunkGetter p_75805_, boolean p_75806_, boolean p_75807_) {
-		super(p_75805_, p_75806_, p_75807_);
-		this.blockEngine = new SULightEngine(p_75805_, LightLayer.BLOCK, null);
+	public SULightManager(LightChunkGetter level, boolean block, boolean sky) {
+		super(level, block, sky);
+		this.blockEngine = new SULightEngine(level, LightLayer.BLOCK, null);
 	}
 	
 	@Override
-	public void updateSectionStatus(BlockPos p_75835_, boolean p_75836_) {
-		super.updateSectionStatus(p_75835_, p_75836_);
+	public void updateSectionStatus(BlockPos pos, boolean empty) {
+		this.updateSectionStatus(SectionPos.of(pos), empty);
+		
 	}
 	
 	@Override
-	public void onBlockEmissionIncrease(BlockPos p_75824_, int p_75825_) {
-		super.onBlockEmissionIncrease(p_75824_, p_75825_);
+	public void onBlockEmissionIncrease(BlockPos pos, int value) {
+		super.onBlockEmissionIncrease(pos, value);
 	}
 	
 	@Override
