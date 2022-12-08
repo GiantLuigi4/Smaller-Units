@@ -1,0 +1,13 @@
+{
+  "item.smallerunits.su_grower": "Einheit Vergrößerer",
+  "item.smallerunits.su_shrinker": "Einheit Verkleinerer",
+  "item.smallerunits.unit_space": "Einheitsraum",
+  "block.smallerunits.unit_space": "Einheitsraum",
+  "itemGroup.Smaller Units": "Kleinere Einheiten",
+  "smallerunits.advancements.root.name": "Je kleiner, desto besser!",
+  "smallerunits.advancements.root.description": "Stelle einen Hammer der Umskalierung her",
+  "smallerunits.advancements.rude.name": "Nun das ist einfach unhöflich!",
+  "smallerunits.advancements.rude.description": "Verändere gewaltsam die Größe eines Spielers mit einem Hammer der Umskalierung",
+  "smallerunits.vivecraft.support.version.error": "\u00a7eSmaller Units\u00a7r support for \u00a7eVivecraft\u00a7r could not be enabled\n\u00a7eSmaller Units\u00a77 is known to work with \u00a7eVivecraft\u00a7r \u00a7o1.16.5 jrbudda-7-5\u00a7r",
+  "smallerunits.tooltip.scale": "Maßstab: 1/%s"
+}
