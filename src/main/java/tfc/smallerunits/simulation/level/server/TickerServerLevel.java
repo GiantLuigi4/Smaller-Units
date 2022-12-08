@@ -59,6 +59,7 @@ import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 	}
 	
-	public final VecMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new VecMap<>(2);
+	public final GroupMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new GroupMap<>(2);
 	
 	@Override
 	public Level getParent() {

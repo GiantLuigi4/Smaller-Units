@@ -52,25 +52,37 @@ public class RenderWorld implements BlockAndTintGetter {
 	}
 	
 	@Override
-	public BlockState getBlockState(BlockPos p_45571_) {
+	public BlockState getBlockState(BlockPos pos) {
+		// TODO: cache states
+		return getState(pos);
+	}
+	
+	public boolean inRange(int v0, int v1) {
+		int d = v0 - v1;
+		if (d < 0) d = -d;
+		return d <= 1;
+	}
+	
+	protected BlockState getState(BlockPos pos) {
 		if (
-				chunk.getPos().getMaxBlockX() >= p_45571_.getX() &&
-						chunk.getPos().getMinBlockX() <= p_45571_.getX() &&
-						lvl.getMaxBuildHeight() >= p_45571_.getY() &&
-						lvl.getMinBuildHeight() <= p_45571_.getY() &&
-						chunk.getPos().getMaxBlockZ() >= p_45571_.getZ() &&
-						chunk.getPos().getMinBlockZ() <= p_45571_.getZ()
+				chunk.getPos().getMaxBlockX() >= pos.getX() &&
+						chunk.getPos().getMinBlockX() <= pos.getX() &&
+//						lvl.getMaxBuildHeight() >= pos.getY() &&
+//						lvl.getMinBuildHeight() <= pos.getY() &&
+						chunk.getPos().getMaxBlockZ() >= pos.getZ() &&
+						chunk.getPos().getMinBlockZ() <= pos.getZ()
 		) {
-			if (chunk instanceof BasicVerticalChunk bvc) {
-				if (
-						p_45571_.getY() >= (bvc.yPos * 16) &&
-								p_45571_.getY() < (bvc.yPos * 16) + 16
-				)
-					return bvc.getBlockState$(p_45571_);
-			}
-			return chunk.getBlockState(p_45571_);
+//			if (chunk instanceof BasicVerticalChunk bvc) {
+			BasicVerticalChunk bvc = (BasicVerticalChunk) chunk;
+			if (
+					pos.getY() >= (bvc.yPos * 16) &&
+							pos.getY() < (bvc.yPos * 16) + 16
+			)
+				return bvc.getBlockState$(pos);
+//			}
+			return chunk.getBlockState(pos);
 		}
-		return lvl.getBlockState(p_45571_);
+		return lvl.getBlockState(pos);
 	}
 	
 	@Override

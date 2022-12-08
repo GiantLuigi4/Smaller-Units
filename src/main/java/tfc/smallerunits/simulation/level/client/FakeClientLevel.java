@@ -65,12 +65,10 @@ import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -78,7 +76,7 @@ import java.util.function.Supplier;
 public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	public final Region region;
 	public final int upb;
-	public final VecMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new VecMap<>(2);
+	public final GroupMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new GroupMap<>(2);
 	public ParentLookup lookup;
 	ClientLevel parent;
 	
@@ -800,10 +798,32 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		return chunkCache.getChunk(x, y, z, pRequiredStatus, pLoad);
 	}
 	
+	public BlockPos lightCacheCenter = null;
+	private int[] lightCache = new int[3 * 3 * 3];
+	
+	public void setupLightCache(BlockPos center) {
+		if (center != null)
+			Arrays.fill(lightCache, -1);
+		this.lightCacheCenter = center;
+	}
+	
 	@Override
 	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
 		BlockPos parentPos = GeneralUtils.getParentPos(pBlockPos, this);
-		int lt = parent.getBrightness(pLightType, parentPos);
+		int lt;
+		
+		// TODO: caching of light values
+//		if (pLightType.equals(LightLayer.SKY)) {
+//			if (lightCacheCenter != null) {
+//				lt = parent.getBrightness(pLightType, parentPos);
+//			} else {
+//				lt = parent.getBrightness(pLightType, parentPos);
+//			}
+//		} else {
+//			lt = parent.getBrightness(pLightType, parentPos);
+//		}
+		
+		lt = parent.getBrightness(pLightType, parentPos);
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
 	}

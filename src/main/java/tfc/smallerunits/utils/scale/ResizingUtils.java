@@ -13,6 +13,7 @@ public class ResizingUtils {
 	
 	public static void resize(Entity entity, int amt) {
 		//TODO: chiseled me integration
+		if (entity == null) return;
 		float newSize = getSize(entity);
 		
 		if (amt > 0) {
@@ -27,6 +28,7 @@ public class ResizingUtils {
 	}
 	
 	public static float getSize(Entity entity) {
+		if (entity == null) return 1;
 		AtomicReference<Float> size = new AtomicReference<>(1f);
 		if (ModList.get().isLoaded("pehkui"))
 			size.set(size.get() * PehkuiSupport.SUScaleType.get().getScaleData(entity).getTargetScale());
@@ -34,6 +36,7 @@ public class ResizingUtils {
 	}
 	
 	public static void resizeForUnit(Entity entity, float amt) {
+		if (entity == null) return;
 		//TODO: chiseled me integration
 		if (ModList.get().isLoaded("pehkui")) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setScale(amt);

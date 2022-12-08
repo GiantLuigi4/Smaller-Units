@@ -302,6 +302,8 @@ public class BasicVerticalChunk extends LevelChunk {
 			}
 		}
 	}
+
+//	Block edgeBlock = Registry.UNIT_EDGE.get();
 	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
@@ -318,6 +320,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			return getBlockState$(pos);
 		} else {
 //			System.out.println(GeneralUtils.getParentPos(pos, this));
+//			return edgeBlock.defaultBlockState();
 			return Registry.UNIT_EDGE.get().defaultBlockState();
 		}
 	}
@@ -345,17 +348,17 @@ public class BasicVerticalChunk extends LevelChunk {
 		super.getSection(0).setBlockState(j, k, l, state);
 		
 		level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
-		
-		if (level.isClientSide) {
-			if (state.hasBlockEntity()) {
-				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(new BlockPos(j, k, l).offset(this.chunkPos.getWorldPosition().getX(), this.yPos * 16, this.chunkPos.getWorldPosition().getZ()), state);
-				if (be == null) return;
-				setBlockEntity(be);
 
-//				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-				((SUCapableChunk) ac).addTile(be);
-			}
-		}
+//		if (level.isClientSide) {
+//			if (state.hasBlockEntity()) {
+//				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(new BlockPos(j, k, l).offset(this.chunkPos.getWorldPosition().getX(), this.yPos * 16, this.chunkPos.getWorldPosition().getZ()), state);
+//				if (be == null) return;
+//				setBlockEntity(be);
+//
+////				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+//				((SUCapableChunk) ac).addTile(be);
+//			}
+//		}
 	}
 	
 	public void setBlockFast(BlockPos pos, BlockState state) {

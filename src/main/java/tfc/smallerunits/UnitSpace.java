@@ -161,11 +161,17 @@ public class UnitSpace {
 					Integer.parseInt(strs[1]),
 					Integer.parseInt(strs[2])
 			);
-			BlockEntity be = BlockEntity.loadStatic(
-					pos1,
-					getBlock(pos1.getX(), pos1.getY(), pos1.getZ()),
-					tiles.getCompound(pos)
-			);
+			// TODO: fix
+			BlockEntity be = null;
+			try {
+				be = BlockEntity.loadStatic(
+						pos1,
+						myLevel.getBlockState(pos1),
+						tiles.getCompound(pos)
+				);
+			} catch (Exception err) {
+				err.printStackTrace();
+			}
 			if (be == null) continue;
 			myLevel.setBlockEntity(be);
 		}
