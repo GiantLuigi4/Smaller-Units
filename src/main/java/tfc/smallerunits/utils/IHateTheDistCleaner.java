@@ -4,6 +4,8 @@ import com.mojang.math.Vector3f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.ParticleEngine;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -15,6 +17,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import tfc.smallerunits.TileResizingItem;
+import tfc.smallerunits.client.render.compat.UnitParticleEngine;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -86,5 +90,27 @@ public class IHateTheDistCleaner {
 	
 	public static boolean isCameraPresent() {
 		return camera != null;
+	}
+	
+	public static Object adjustClient(Player pPlayer, Level spaceLevel) {
+		ParticleEngine engine = null;
+		Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = (ClientLevel) spaceLevel;
+		
+		engine = Minecraft.getInstance().particleEngine;
+		UnitParticleEngine upe = ((FakeClientLevel) spaceLevel).getParticleEngine();
+		if (upe != null)
+			Minecraft.getInstance().particleEngine = upe;
+		return engine;
+	}
+	
+	public static void resetClient(Player pPlayer, Level lvl, Object engine) {
+		if (pPlayer.level.isClientSide) {
+			if (pPlayer instanceof LocalPlayer) {
+				((LocalPlayer) pPlayer).clientLevel = (ClientLevel) lvl;
+				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel;
+				
+				if (engine != null) Minecraft.getInstance().particleEngine = (ParticleEngine) engine;
+			}
+		}
 	}
 }

@@ -827,4 +827,9 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
 	}
+	
+	@Override
+	public int randomTickCount() {
+		return 0;
+	}
 }

@@ -1,6 +1,7 @@
 {
   "item.smallerunits.su_grower": "Увеличитель блоков",
   "item.smallerunits.su_shrinker": "Уменьшитель блоков",
+  "item.smallerunits.unit_space": "missingno",
   "block.smallerunits.unit_space": "missingno",
   "itemGroup.Smaller Units": "Маленькие блоки",
   "smallerunits.advancements.root.name": "Чем меньше, тем лучше!",

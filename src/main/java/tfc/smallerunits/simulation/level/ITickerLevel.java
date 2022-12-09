@@ -53,4 +53,6 @@ public interface ITickerLevel {
 	ChunkAccess getChunk(int i, int i1, int i2, ChunkStatus pRequiredStatus, boolean pLoad);
 	
 	void markRenderDirty(BlockPos pLevelPos);
+	
+	int randomTickCount();
 }

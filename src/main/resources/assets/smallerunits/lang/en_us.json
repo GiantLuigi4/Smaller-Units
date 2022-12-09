@@ -1,12 +1,12 @@
 {
   "item.smallerunits.su_grower": "Unit Grower",
   "item.smallerunits.su_shrinker": "Unit Shrinker",
+  "item.smallerunits.unit_space": "Unit Space",
   "block.smallerunits.unit_space": "Unit Space",
   "itemGroup.Smaller Units": "Smaller Units",
   "smallerunits.advancements.root.name": "Smaller is better!",
   "smallerunits.advancements.root.description": "Make a hammer of resizing",
   "smallerunits.advancements.rude.name": "Well that's just rude!",
   "smallerunits.advancements.rude.description": "Forcefully set a player's size using a hammer of resizing",
-  "smallerunits.vivecraft.support.version.error": "\u00a7eSmaller Units\u00a7r support for \u00a7eVivecraft\u00a7r could not be enabled\n\u00a7eSmaller Units\u00a77 is known to work with \u00a7eVivecraft\u00a7r \u00a7o1.16.5 jrbudda-7-5\u00a7r",
   "smallerunits.tooltip.scale": "Scale: 1/%s"
 }

@@ -21,7 +21,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.simulation.level.SULightManager;
+import tfc.smallerunits.simulation.light.SULightManager;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.function.BooleanSupplier;

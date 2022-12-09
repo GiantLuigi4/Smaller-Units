@@ -2,7 +2,6 @@ package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
@@ -178,6 +177,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 	}
 	
+	int randomTickCount = Integer.MIN_VALUE;
+	
 	@Override
 	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
 		double scl = 1f / upb;
@@ -191,25 +192,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		double finalPX = pX;
 		double finalPY = pY;
 		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
+			scl *= 1 / ResizingUtils.getSize(pPlayer);
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
 			parent.playSound(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch);
-		});
-	}
-	
-	@Override
-	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
-//		super.playSound(pPlayer, pEntity, pEvent, pCategory, pVolume, pPitch);
-		double scl = 1f / upb;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
 		});
 	}
 	
@@ -219,25 +207,15 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
-	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
-//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
+//		super.playSound(pPlayer, pEntity, pEvent, pCategory, pVolume, pPitch);
 		double scl = 1f / upb;
-		BlockPos pos = getRegion().pos.toBlockPos();
-		pX *= scl;
-		pY *= scl;
-		pZ *= scl;
-		pX += pos.getX();
-		pY += pos.getY();
-		pZ += pos.getZ();
-		double finalPX = pX;
-		double finalPY = pY;
-		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
+			scl *= 1 / ResizingUtils.getSize(pPlayer);
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+			parent.playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
 		});
 	}
 	
@@ -638,53 +616,26 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
-	public void tick(BooleanSupplier pHasTimeLeft) {
-		if (upb == 0) return;
-		
-		if (!getServer().isReady()) return;
-		if (!isLoaded) return;
-		
-		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
-		
-		resetEmptyTime();
-		super.tick(pHasTimeLeft);
-		getChunkSource().pollTask();
-		
-		for (Entity entity : entitiesRemoved) {
-			removeEntity(entity);
-		}
-		entitiesRemoved.clear();
-		
-		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
-			List<ServerPlayer> players = null;
-			if (column == null) continue;
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
-				if (players == null) {
-					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
-					for (ServerPlayer player : players) {
-						// TODO: do this properly
-						try {
-							getChunkSource().chunkMap.move(player);
-						} catch (Throwable ignored) {
-						}
-					}
-				}
-				
-				NetworkingHacks.unitPos.remove();
-				
-				for (BlockPos pos : basicVerticalChunk.besRemoved) {
-					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
-					if (be != null && !be.isRemoved())
-						be.setRemoved();
-				}
-				basicVerticalChunk.beChanges.clear();
-			}
-		}
-		
-		getLightEngine().runUpdates(10000, false, true);
-		for (Runnable runnable : completeOnTick) runnable.run();
-		completeOnTick.clear();
+	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+		double scl = 1f / upb;
+		BlockPos pos = getRegion().pos.toBlockPos();
+		pX *= scl;
+		pY *= scl;
+		pZ *= scl;
+		pX += pos.getX();
+		pY += pos.getY();
+		pZ += pos.getZ();
+		double finalPX = pX;
+		double finalPY = pY;
+		double finalPZ = pZ;
+//		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
+//			scl *= 1 / ResizingUtils.getSize(pPlayer);
+		if (scl > 1) scl = 1 / scl;
+		double finalScl = scl;
+		completeOnTick.add(() -> {
+			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+		});
 	}
 	
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
@@ -939,5 +890,63 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		int lt = parent.getBrightness(pLightType, parentPos);
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
+	}
+	
+	@Override
+	public void tick(BooleanSupplier pHasTimeLeft) {
+		if (upb == 0) return;
+		randomTickCount = Integer.MIN_VALUE;
+		
+		if (!getServer().isReady()) return;
+		if (!isLoaded) return;
+		
+		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		
+		resetEmptyTime();
+		super.tick(pHasTimeLeft);
+		getChunkSource().pollTask();
+		
+		for (Entity entity : entitiesRemoved) {
+			removeEntity(entity);
+		}
+		entitiesRemoved.clear();
+		
+		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
+			List<ServerPlayer> players = null;
+			if (column == null) continue;
+			for (BasicVerticalChunk basicVerticalChunk : column) {
+				if (basicVerticalChunk == null) continue;
+				if (players == null) {
+					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
+					for (ServerPlayer player : players) {
+						// TODO: do this properly
+						try {
+							getChunkSource().chunkMap.move(player);
+						} catch (Throwable ignored) {
+						}
+					}
+				}
+				
+				NetworkingHacks.unitPos.remove();
+				
+				for (BlockPos pos : basicVerticalChunk.besRemoved) {
+					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
+					if (be != null && !be.isRemoved())
+						be.setRemoved();
+				}
+				basicVerticalChunk.beChanges.clear();
+			}
+		}
+		
+		getLightEngine().runUpdates(10000, false, true);
+		for (Runnable runnable : completeOnTick) runnable.run();
+		completeOnTick.clear();
+	}
+	
+	@Override
+	public int randomTickCount() {
+		if (randomTickCount == Integer.MIN_VALUE)
+			randomTickCount = parent.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
+		return randomTickCount;
 	}
 }

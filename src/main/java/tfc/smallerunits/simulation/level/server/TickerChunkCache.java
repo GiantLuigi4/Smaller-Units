@@ -32,8 +32,8 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.chunk.VChunkLookup;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.simulation.level.NotThreadedSULightManager;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
+import tfc.smallerunits.simulation.light.NotThreadedSULightManager;
 
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;

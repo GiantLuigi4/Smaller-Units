@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.level;
+package tfc.smallerunits.simulation.light;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;

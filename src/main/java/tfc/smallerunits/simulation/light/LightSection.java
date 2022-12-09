@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.level;
+package tfc.smallerunits.simulation.light;
 
 public class LightSection {
 	// TODO: check

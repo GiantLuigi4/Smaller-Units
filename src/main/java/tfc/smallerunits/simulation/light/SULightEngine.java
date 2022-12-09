@@ -1,4 +1,4 @@
-package tfc.smallerunits.simulation.level;
+package tfc.smallerunits.simulation.light;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -13,6 +13,8 @@ import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.BlockLightSectionStorage;
 import net.minecraft.world.level.lighting.LayerLightEngine;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import tfc.smallerunits.simulation.level.ITickerChunkCache;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.lighting.LightOffset;
 
 import javax.annotation.Nullable;

@@ -1,10 +1,12 @@
 {
   "item.smallerunits.su_grower": "Ingranditore di unità",
   "item.smallerunits.su_shrinker": "Rimpicciolitore di unità",
+  "item.smallerunits.unit_space": "Contenitore di unità",
   "block.smallerunits.unit_space": "Contenitore di unità",
   "itemGroup.Smaller Units": "Piccole unità",
   "smallerunits.advancements.root.name": "Più piccolo è meglio!",
   "smallerunits.advancements.root.description": "Crea un martello del ridimensionaggio",
   "smallerunits.advancements.rude.name": "Questo è da maleducati!",
-  "smallerunits.advancements.rude.description": "Imposta la dimensione di un giocatore forzatamente con un martello del ridimensionaggio"
+  "smallerunits.advancements.rude.description": "Imposta la dimensione di un giocatore forzatamente con un martello del ridimensionaggio",
+  "smallerunits.tooltip.scale": "Scala: 1/%s"
 }

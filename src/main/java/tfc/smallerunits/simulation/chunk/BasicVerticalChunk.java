@@ -6,7 +6,6 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -254,6 +253,8 @@ public class BasicVerticalChunk extends LevelChunk {
 			if (blockstate == pState) {
 				return null;
 			} else {
+				BlockPos offsetPos = chunkPos.getWorldPosition().offset(pPos).offset(0, yPos * 16, 0);
+				
 				blocks[indx] = pState;
 				Block block = pState.getBlock();
 				this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING).update(j, k, l, pState);
@@ -264,21 +265,21 @@ public class BasicVerticalChunk extends LevelChunk {
 				// TODO
 				if (flag != flag1) {
 //					this.level.getChunkSource().getLightEngine().updateSectionStatus(pPos, !flag1);
-					level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pPos).offset(0, yPos * 16, 0));
+					level.getLightEngine().checkBlock(offsetPos);
 				}
 				
 				boolean flag2 = blockstate.hasBlockEntity();
 				if (!this.level.isClientSide) {
-					blockstate.onRemove(this.level, pPos, pState, pIsMoving);
+					blockstate.onRemove(this.level, offsetPos, pState, pIsMoving);
 				} else if ((!blockstate.is(block) || !pState.hasBlockEntity()) && flag2) {
-					this.removeBlockEntity(pPos);
+					this.removeBlockEntity(offsetPos);
 				}
 				
 				if (!blocks[indx].is(block)) {
 					return null;
 				} else {
 					if (!this.level.isClientSide && !this.level.captureBlockSnapshots) {
-						pState.onPlace(this.level, pPos, blockstate, pIsMoving);
+						pState.onPlace(this.level, offsetPos, blockstate, pIsMoving);
 					}
 					
 					if (pState.hasBlockEntity()) {
@@ -391,12 +392,12 @@ public class BasicVerticalChunk extends LevelChunk {
 	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
 	
 	public void randomTick() {
-		for (int k = 0; k < level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING); ++k) {
+		for (int k = 0; k < ((ITickerLevel) level).randomTickCount(); ++k) {
 			BlockPos blockpos1 = level.getBlockRandomPos(0, 0, 0, 15);
 			BlockState blockstate = this.getBlockState(blockpos1);
 			BlockPos wp = blockpos1.offset(chunkPos.getWorldPosition()).relative(Direction.UP, yPos * 16 - 1);
 			if (blockstate.isRandomlyTicking()) {
-				if (!level.isClientSide() && level instanceof ServerLevel) {
+				if (!level.isClientSide() && level instanceof ServerLevel) { // TODO: ?
 					blockstate.randomTick((ServerLevel) level, wp.above(), level.random);
 				}
 			}
@@ -453,20 +454,20 @@ public class BasicVerticalChunk extends LevelChunk {
 		} else {
 			ITickerLevel tickerWorld = ((ITickerLevel) level);
 			
-			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
+			pPos = new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15);
 			BlockPos parentPos = GeneralUtils.getParentPos(pPos, this);
 			ChunkAccess ac;
 			ac = tickerWorld.getParent().getChunkAt(parentPos);
-			pPos = pPos.offset(getPos().getWorldPosition());
-			
-			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
-			UnitSpace space = cap.getUnit(parentPos);
+
+//			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+//			UnitSpace space = cap.getUnit(parentPos);
 //			if (space == null) {
 //				space = cap.getOrMakeUnit(parentPos);
 //				space.isNatural = true;
 //				space.setUpb(upb);
 //				space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> (LevelChunk) ac));
 //			}
+			pPos = pPos.offset(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
 			// TODO: check if a renderer exists, or smth?
 			ArrayList<BlockEntity> toRemove = new ArrayList<>();
 			synchronized (((SUCapableChunk) ac).getTiles()) {

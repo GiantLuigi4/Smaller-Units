@@ -1,0 +1,23 @@
+{
+  "display": {
+    "title": {
+      "translate": "smallerunits.advancements.rude.name"
+    },
+    "description": {
+      "translate": "smallerunits.advancements.rude.description"
+    },
+    "icon": {
+      "item": "smallerunits:su_grower"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "strike_player": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "parent": "smallerunits:root"
+}
