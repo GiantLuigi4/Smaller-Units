@@ -49,7 +49,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.api.GeneralUtils;
+import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
@@ -689,7 +689,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> positions) {
-		BlockPos parentPos = GeneralUtils.getParentPos(new BlockPos(x, y, z), cp, 0, this);
+		BlockPos parentPos = PositionUtils.getParentPos(new BlockPos(x, y, z), cp, 0, this);
 		ChunkAccess ac;
 		// vertical lookups shouldn't be too expensive
 		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
@@ -717,7 +717,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public void markRenderDirty(BlockPos pLevelPos) {
-		BlockPos parentPos = GeneralUtils.getParentPos(pLevelPos, this);
+		BlockPos parentPos = PositionUtils.getParentPos(pLevelPos, this);
 		ChunkAccess ac = parent.getChunkAt(parentPos);
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
@@ -809,7 +809,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
-		BlockPos parentPos = GeneralUtils.getParentPos(pBlockPos, this);
+		BlockPos parentPos = PositionUtils.getParentPos(pBlockPos, this);
 		int lt;
 		
 		// TODO: caching of light values

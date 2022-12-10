@@ -135,30 +135,31 @@ public class SUVBOEmitter {
 	
 	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
 		VertexConsumer consumer = null;
-		SectionPos chunkPos = SectionPos.of(space.pos);
+		SectionPos chunkPos = SectionPos.of(new BlockPos(space.pos.getX() & 511, space.pos.getY() & 511, space.pos.getZ() & 511));
 		BlockPos chunkOffset = new BlockPos(chunkPos.minBlockX(), chunkPos.minBlockY(), chunkPos.minBlockZ());
+		PoseStack stk = new PoseStack();
+		stk.last().pose().load(stack.last().pose());
+		stk.last().normal().load(stack.last().normal());
+		BlockPos.MutableBlockPos blockPosMut = new BlockPos.MutableBlockPos();
 		for (int x = 0; x < upb; x++) {
-			PoseStack stk = new PoseStack();
-			stk.last().pose().load(stack.last().pose());
-			stk.last().normal().load(stack.last().normal());
 			for (int y = 0; y < upb; y++) {
 				for (int z = 0; z < upb; z++) {
+					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
 					if (block.equals(Blocks.AIR.defaultBlockState())) continue;
 					if (!block.getFluidState().isEmpty()) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
-							BlockPos rPos = new BlockPos(x, y, z);
 							TranslatingVertexBuilder builder = new TranslatingVertexBuilder(1f / upb, consumer);
-							BlockPos offsetPos = space.getOffsetPos(new BlockPos(x, y, z));
+							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 							builder.offset = new Vec3(
 									((int) Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
 									((int) Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
 									((int) Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
 							dispatcher.renderLiquid(
-									space.getOffsetPos(rPos),
+									offsetPos,
 									wld, builder, block,
 									block.getFluidState()
 							);
@@ -170,13 +171,13 @@ public class SUVBOEmitter {
 //							if (consumer == null) consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
-							BlockPos rPos = new BlockPos(x, y, z);
-							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), space.getOffsetPos(rPos));
+							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
+							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), offsetPos);
 							if (data == null) data = EmptyModelData.INSTANCE;
 							dispatcher.renderBatched(
-									block, space.getOffsetPos(rPos),
+									block, offsetPos,
 									wld, stk, consumer,
-									true, new Random(space.getOffsetPos(rPos).asLong()),
+									true, new Random(offsetPos.asLong()),
 									data
 							);
 //							if (SmallerUnits.isIsOFPresent()) {

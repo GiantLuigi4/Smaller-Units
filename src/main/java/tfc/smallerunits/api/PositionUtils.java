@@ -2,14 +2,25 @@ package tfc.smallerunits.api;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.Math1D;
 
-public class GeneralUtils {
-//	public static BlockPos getParentOffset(Level level, BlockPos pos) {
-//		// TODO:
-//	}
+public class PositionUtils {
+	// TODO: test this
+	public static double getDistance(Level level, BlockPos smallWorldPos, BlockPos actualPos) {
+		if (level instanceof ITickerLevel tickerLevel) {
+			BlockPos parentPos = getParentPos(smallWorldPos, tickerLevel);
+			double scl = 1d / tickerLevel.getUPB();
+			BlockPos rPos = tickerLevel.getRegion().pos.toBlockPos();
+			double x = (smallWorldPos.getX() & 15) * scl + rPos.getX();
+			double y = (smallWorldPos.getX() & 15) * scl + rPos.getY();
+			double z = (smallWorldPos.getX() & 15) * scl + rPos.getZ();
+			return actualPos.distToCenterSqr(x, y, z);
+		}
+		return actualPos.distToCenterSqr(smallWorldPos.getX(), smallWorldPos.getY(), smallWorldPos.getZ());
+	}
 	
 	public static BlockPos getParentPos(BlockPos pPos, ITickerLevel tickerWorld) {
 		BlockPos rPos = tickerWorld.getRegion().pos.toBlockPos();
@@ -76,5 +87,27 @@ public class GeneralUtils {
 		int yo = Math1D.getChunkOffset(k + yPos * 16, tickerWorld.getUPB());
 		int zo = Math1D.getChunkOffset(l + chunkPos.getMinBlockZ(), tickerWorld.getUPB());
 		return rPos.offset(new BlockPos(xo, yo, zo));
+	}
+	
+	/**
+	 * Gets the scale factor of blocks in a given level
+	 *
+	 * @param lvl the level to check
+	 * @return the scale factor
+	 */
+	public static double getWorldScale(Level lvl) {
+		if (lvl instanceof ITickerLevel tickerLevel) return 1d / tickerLevel.getUPB();
+		return 1;
+	}
+	
+	/**
+	 * Gets the amount of blocks that can fit into a real world block in one axis for a given level
+	 *
+	 * @param lvl the level to check
+	 * @return the amount of blocks
+	 */
+	public static int getWorldUpb(Level lvl) {
+		if (lvl instanceof ITickerLevel tickerLevel) return tickerLevel.getUPB();
+		return 1;
 	}
 }

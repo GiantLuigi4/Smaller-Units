@@ -45,7 +45,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.api.GeneralUtils;
+import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -855,7 +855,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			if (this.shouldTickBlocksAt(ChunkPos.asLong(blockeventdata.pos()))) {
 				if (this.doBlockEvent(blockeventdata)) {
 					for (Player player : parent.players()) {
-						BlockPos parentPos = GeneralUtils.getParentPos(blockeventdata.pos(), this);
+						BlockPos parentPos = PositionUtils.getParentPos(blockeventdata.pos(), this);
 						if (
 								player.distanceToSqr(parentPos.getX(), parentPos.getY(), parentPos.getZ()) <
 //										((64 / Math.sqrt(upb)))
@@ -886,7 +886,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
-		BlockPos parentPos = GeneralUtils.getParentPos(pBlockPos, this);
+		BlockPos parentPos = PositionUtils.getParentPos(pBlockPos, this);
 		int lt = parent.getBrightness(pLightType, parentPos);
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));

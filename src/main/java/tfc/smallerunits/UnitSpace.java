@@ -271,7 +271,7 @@ public class UnitSpace {
 	}
 	
 	public BlockPos getOffsetPos(BlockPos pos) {
-		return myPosInTheLevel.offset(pos);
+		return pos.offset(myPosInTheLevel);
 	}
 	
 	public void setFast(int x, int y, int z, BlockState state) {

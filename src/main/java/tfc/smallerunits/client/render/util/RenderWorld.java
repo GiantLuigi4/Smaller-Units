@@ -12,7 +12,9 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 
 public class RenderWorld implements BlockAndTintGetter {
 	Level lvl;
@@ -108,5 +110,9 @@ public class RenderWorld implements BlockAndTintGetter {
 	@Override
 	public int getMinBuildHeight() {
 		return lvl.getMinBuildHeight();
+	}
+	
+	public Region getRegion() {
+		return ((ITickerLevel) lvl).getRegion();
 	}
 }
