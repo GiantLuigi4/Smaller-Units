@@ -60,6 +60,7 @@ import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
+import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -895,6 +896,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
+		ThreadLocals.posLocal.enableForThread();
+		
 		randomTickCount = Integer.MIN_VALUE;
 		
 		if (!getServer().isReady()) return;

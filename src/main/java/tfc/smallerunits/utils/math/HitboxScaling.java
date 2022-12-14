@@ -3,7 +3,6 @@ package tfc.smallerunits.utils.math;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
@@ -24,24 +23,24 @@ public class HitboxScaling {
 	}
 	
 	// TODO?
-	public static double scaleX(UnitSpace space, double coord) {
-		coord -= ((ITickerLevel) space.getMyLevel()).getRegion().pos.x;
-		coord *= 1d / space.unitsPerBlock;
-		coord += ((ITickerLevel) space.getMyLevel()).getRegion().pos.x;
+	public static double scaleX(ITickerLevel level, double coord) {
+//		coord -= level.getRegion().pos.x;
+		coord *= level.getUPB();
+		coord += level.getRegion().pos.x;
 		return coord;
 	}
 	
-	public static double scaleY(UnitSpace space, double coord) {
-		coord -= ((ITickerLevel) space.getMyLevel()).getRegion().pos.y;
-		coord *= 1d / space.unitsPerBlock;
-		coord += ((ITickerLevel) space.getMyLevel()).getRegion().pos.y;
+	public static double scaleY(ITickerLevel level, double coord) {
+//		coord -= level.getRegion().pos.y;
+		coord *= level.getUPB();
+		coord += level.getRegion().pos.y;
 		return coord;
 	}
 	
-	public static double scaleZ(UnitSpace space, double coord) {
-		coord -= ((ITickerLevel) space.getMyLevel()).getRegion().pos.z;
-		coord *= 1d / space.unitsPerBlock;
-		coord += ((ITickerLevel) space.getMyLevel()).getRegion().pos.z;
+	public static double scaleZ(ITickerLevel level, double coord) {
+//		coord -= level.getRegion().pos.z;
+		coord *= level.getUPB();
+		coord += level.getRegion().pos.z;
 		return coord;
 	}
 }

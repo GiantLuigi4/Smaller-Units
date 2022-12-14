@@ -10,7 +10,7 @@
     "core.access.ServerPacketListenerMixin", "dangit.FriendlyByteBufMixin", "dangit.MojangWhy",
     "data.FastCapabilityChunkMixin", "data.regions.ChunkHolderAccessor", "data.regions.ChunkHolderSizeTracker",
     "data.regions.ChunkMapMixin", "data.regions.ServerLevelMixin", "optimization.LevelMixin",
-    "optimization.ShapesMixin", "optimization.VoxelShapeAccessor", "quality.PlayerMixin"
+    "optimization.ShapesMixin", "optimization.VoxelShapeAccessor", "quality.EntityMixin", "quality.PlayerMixin"
   ],
   "client": [
     "LevelRendererMixin", "compat.ChiselAndBitMeshMixin", "core.ClientLevelMixin", "core.LocalPlayerMixin",
@@ -18,7 +18,7 @@
     "core.access.ClientPacketListenerMixin", "dangit.ForgeWhy", "data.AbstractClientPlayerMixin",
     "data.CompiledChunkMixin", "data.LevelChunkMixin", "data.LevelMixin", "data.access.VertexBufferMixin",
     "data.regions.ClientChunkCacheMixin", "data.regions.ClientLevelMixin", "debug.RenderWorldLast",
-    "quality.BlockEntityRendererDispatcherMixin", "quality.ParticleEngineAccessor"
+    "quality.BlockEntityRendererDispatcherMixin", "quality.CameraMixin", "quality.ParticleEngineAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

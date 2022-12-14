@@ -1,10 +1,19 @@
 package tfc.smallerunits.api;
 
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.storage.RegionPos;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
 
 public class PositionUtils {
@@ -33,7 +42,7 @@ public class PositionUtils {
 		return rPos.offset(new BlockPos(xo, yo, zo));
 	}
 	
-	public static BlockPos getParentPos(BlockPos pPos, BasicVerticalChunk verticalChunk) {
+	public static BlockPos getParentPos(BlockPos pPos, BasicVerticalChunk verticalChunk, BlockPos.MutableBlockPos output) {
 		ITickerLevel tickerWorld = (ITickerLevel) verticalChunk.getLevel();
 		BlockPos rPos = tickerWorld.getRegion().pos.toBlockPos();
 		int j = pPos.getX() & 15;
@@ -47,7 +56,8 @@ public class PositionUtils {
 		int xo = Math1D.getChunkOffset(j + chunkPos.getMinBlockX(), tickerWorld.getUPB());
 		int yo = Math1D.getChunkOffset(k + yPos * 16, tickerWorld.getUPB());
 		int zo = Math1D.getChunkOffset(l + chunkPos.getMinBlockZ(), tickerWorld.getUPB());
-		return rPos.offset(new BlockPos(xo, yo, zo));
+		output.set(rPos.getX() + xo, rPos.getY() + yo, rPos.getZ() + zo);
+		return output;
 	}
 	
 	public static BlockPos getParentPos(BlockPos pPos, ChunkPos pos, int y, ITickerLevel tickerWorld) {
@@ -109,5 +119,40 @@ public class PositionUtils {
 	public static int getWorldUpb(Level lvl) {
 		if (lvl instanceof ITickerLevel tickerLevel) return tickerLevel.getUPB();
 		return 1;
+	}
+	
+	protected static BlockPos onPos(Level lvl, BlockPos pos, Entity entity) {
+		if (lvl.isEmptyBlock(pos)) {
+			BlockPos blockpos1 = pos.below();
+			BlockState blockstate = lvl.getBlockState(blockpos1);
+			if (blockstate.collisionExtendsVertically(lvl, blockpos1, entity)) {
+				return blockpos1;
+			}
+		}
+		
+		return pos;
+	}
+	
+	public static Pair<Level, BlockPos> getOnPos(Entity entity, int upb) {
+		Level lvl = entity.getLevel();
+		Vec3 position = entity.getPosition(0);
+		int i = Mth.floor(position.x);
+		int j = Mth.floor(position.y);
+		int k = Mth.floor(position.z);
+		
+		BlockPos blockpos = new BlockPos(i, j, k);
+		RegionPos regionPos = new RegionPos(blockpos);
+		Region r = ((RegionalAttachments) lvl).SU$getRegionMap().get(regionPos);
+		if (r == null) return null;
+		
+		// TODO: adjust entity
+		Level smallWorld = r.getLevels()[upb];
+		if (smallWorld == null) return null;
+		
+		double x = HitboxScaling.scaleX((ITickerLevel) smallWorld, position.x);
+		double y = HitboxScaling.scaleY((ITickerLevel) smallWorld, position.y);
+		double z = HitboxScaling.scaleZ((ITickerLevel) smallWorld, position.z);
+		BlockPos scaledPos = new BlockPos(Math.floor(x), Math.floor(y), Math.floor(z));
+		return Pair.of(smallWorld, onPos(smallWorld, scaledPos, entity));
 	}
 }

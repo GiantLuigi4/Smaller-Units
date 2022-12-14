@@ -237,13 +237,15 @@ public class UnitSpace {
 //		for (int i = 0; i < states.length; i++) states[i] = Blocks.AIR.defaultBlockState();
 		pallet.acceptStates(states, false);
 		try {
+			BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 			for (int x = 0; x < unitsPerBlock; x++) {
 				for (int y = 0; y < unitsPerBlock; y++) {
 					for (int z = 0; z < unitsPerBlock; z++) {
 						int indx = (((x * unitsPerBlock) + y) * unitsPerBlock) + z;
 						if (states[indx] == null) continue;
 						if (states[indx] == Blocks.AIR.defaultBlockState()) continue;
-						BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
+						pos.set(x, y, z);
+						BlockPos pz = getOffsetPos(pos);
 						BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
 						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx]);
 						addState(states[indx]);

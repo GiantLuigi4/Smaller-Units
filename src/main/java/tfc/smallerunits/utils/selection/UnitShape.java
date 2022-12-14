@@ -8,18 +8,19 @@ import net.minecraft.core.AxisCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.BooleanOp;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.*;
 import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
+import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
 import javax.annotation.Nullable;
@@ -40,11 +41,14 @@ public class UnitShape extends VoxelShape {
 	protected AABB totalBB = null;
 	protected Vec3 offset = new Vec3(0, 0, 0);
 	
-	public UnitShape(UnitSpace space, boolean collision) {
+	public CollisionContext collisionContext;
+	
+	public UnitShape(UnitSpace space, boolean collision, CollisionContext pContext) {
 		super(new UnitDiscreteShape(0, 0, 0));
 		((UnitDiscreteShape) ((VoxelShapeAccessor) this).getShape()).sp = this;
 		this.space = space;
 		this.collision = true;
+		this.collisionContext = pContext;
 	}
 	
 	private static double swivelOffset(AxisCycle axiscycle, AABB pCollisionBox, AABB box, double offsetX) {
@@ -210,6 +214,22 @@ public class UnitShape extends VoxelShape {
 	
 	@Nullable
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
+		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
+			Entity entity = entityCollisionContext.getEntity();
+			PositionalInfo info = new PositionalInfo(entity);
+			info.adjust(entity, space);
+			if (entity instanceof Player player)
+				info.scalePlayerReach(player, space.unitsPerBlock);
+			collisionContext = CollisionContext.of(entity);
+			BlockHitResult d = clip$(pStartVec, pEndVec, pPos);
+			collisionContext = entityCollisionContext;
+			info.reset(entity);
+			return d;
+		}
+		return clip$(pStartVec, pEndVec, pPos);
+	}
+	
+	private BlockHitResult clip$(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		Vec3 vec3 = pEndVec.subtract(pStartVec);
 		if (vec3.lengthSqr() < 1.0E-7D) return null;
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
@@ -309,19 +329,32 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape optimize() {
-		UnitShape copy = new UnitShape(space, collision);
+		UnitShape copy = new UnitShape(space, collision, collisionContext);
 		for (AABB box : boxesTrace) copy.addBox((UnitBox) box);
 		return this;
 	}
 	
 	@Override
 	protected double collideX(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
+		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
+			Entity entity = entityCollisionContext.getEntity();
+			PositionalInfo info = new PositionalInfo(entity);
+			info.adjust(entity, space);
+			if (entity instanceof Player player)
+				info.scalePlayerReach(player, space.unitsPerBlock);
+			collisionContext = CollisionContext.of(entity);
+			double d = collideX$(pMovementAxis, pCollisionBox, pDesiredOffset);
+			collisionContext = entityCollisionContext;
+			info.reset(entity);
+			return d;
+		}
+		return collideX$(pMovementAxis, pCollisionBox, pDesiredOffset);
+	}
+	
+	protected double collideX$(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
 		if (!collision)
 			return pDesiredOffset;
 		
-		// TODO: somehow this collides with selection shapes on server?
-//		if (this.isEmpty()) return pDesiredOffset;
-//		else if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
 		if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
 		
 		AxisCycle axiscycle = pMovementAxis.inverse();
@@ -378,7 +411,7 @@ public class UnitShape extends VoxelShape {
 						BlockState state = space.getMyLevel().getBlockState(new BlockPos(x, y, z));
 //						state.getShape(space.getMyLevel(), new BlockPos(x, y, z));
 						if (!state.isAir() && !(state.getBlock() instanceof UnitEdge)) {
-							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z));
+							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z), collisionContext);
 							if (shape.isEmpty())
 								continue;
 							
@@ -401,7 +434,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape move(double pXOffset, double pYOffset, double pZOffset) {
-		UnitShape copy = new UnitShape(space, collision);
+		UnitShape copy = new UnitShape(space, collision, collisionContext);
 		copy.offset = offset.add(pXOffset, pYOffset, pZOffset);
 		for (AABB box : boxesTrace) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
 		return copy;
@@ -414,6 +447,22 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	public Boolean intersects(VoxelShape pShape2) {
+		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
+			Entity entity = entityCollisionContext.getEntity();
+			PositionalInfo info = new PositionalInfo(entity);
+			info.adjust(entity, space);
+			if (entity instanceof Player player)
+				info.scalePlayerReach(player, space.unitsPerBlock);
+			collisionContext = CollisionContext.of(entity);
+			boolean d = intersects$(pShape2);
+			collisionContext = entityCollisionContext;
+			info.reset(entity);
+			return d;
+		}
+		return intersects$(pShape2);
+	}
+	
+	protected boolean intersects$(VoxelShape pShape2) {
 		HashMap<BlockPos, VoxelShape> positionsChecked = new HashMap<>();
 		for (AABB toAabb : pShape2.toAabbs()) {
 			for (AABB box : boxesTrace) {
@@ -443,11 +492,13 @@ public class UnitShape extends VoxelShape {
 //					-offset.z / (double) space.unitsPerBlock
 //			);
 			
+			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 			for (int x = minX; x <= maxX; x++) {
 				for (int y = minY; y <= maxY; y++) {
 					for (int z = minZ; z <= maxZ; z++) {
+						mutableBlockPos.set(x, y, z);
 						AABB box = new AABB(
-								new BlockPos(x, y, z)
+								mutableBlockPos
 						).inflate(1);
 //						box = new AABB(
 //								box.minX / (double) space.unitsPerBlock,
@@ -460,15 +511,17 @@ public class UnitShape extends VoxelShape {
 						if (!scaledBox.intersects(box)) continue;
 						
 						VoxelShape shape;
-						if (!positionsChecked.containsKey(new BlockPos(x, y, z))) {
-							BlockState state = space.getMyLevel().getBlockState(new BlockPos(x, y, z));
+						BlockPos immut = mutableBlockPos.immutable();
+						if (!positionsChecked.containsKey(immut)) {
+							BlockState state = space.getMyLevel().getBlockState(immut);
 							if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
-								shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z));
+								shape = state.getCollisionShape(space.getMyLevel(), immut, collisionContext);
 							else
 								shape = Shapes.empty();
 						} else
-							shape = positionsChecked.get(new BlockPos(x, y, z));
-						positionsChecked.put(new BlockPos(x, y, z), shape);
+							shape = positionsChecked.get(immut);
+						positionsChecked.put(immut, shape);
+						if (shape.isEmpty()) continue;
 						
 						for (AABB toAabb1 : shape.toAabbs()) {
 							toAabb1 = toAabb1.move(x, y, z);

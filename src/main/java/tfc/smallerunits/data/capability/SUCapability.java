@@ -79,10 +79,10 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	public void setUnit(BlockPos pos, UnitSpace space) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		UnitSpace[] spaceMap = getUnits((pos.getY() >> 5) & 32);
+		UnitSpace[] spaceMap = getUnits((pos.getY() >> 4) & 31);
 		spaces.remove(spaceMap[indx]);
 		spaceMap[indx] = space;
-//		int relIndex = indx + (((pos.getY() >> 5) & 32) * 16 * 16 * 16);
+//		int relIndex = indx + (((pos.getY() >> 4 ) & 31) * 16 * 16 * 16);
 		spaces.add(space);
 		modified = true;
 	}
@@ -91,18 +91,18 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	public void removeUnit(BlockPos pos) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		UnitSpace[] spaceMap = getUnits((pos.getY() >> 5) & 32);
+		UnitSpace[] spaceMap = getUnits((pos.getY() >> 4) & 31);
 		spaces.remove(spaceMap[indx]);
 		spaceMap[indx] = null;
 		modified = true;
-//		int relIndex = indx + (((pos.getY() >> 5) & 32) * 16 * 16 * 16);
+//		int relIndex = indx + (((pos.getY() >> 4 ) & 31) * 16 * 16 * 16);
 	}
 	
 	@Override
 	public void makeUnit(BlockPos pos) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		UnitSpace[] spaceMap = getUnits((pos.getY() >> 5) & 32);
+		UnitSpace[] spaceMap = getUnits((pos.getY() >> 4) & 31);
 		spaces.remove(spaceMap[indx]);
 		spaceMap[indx] = new UnitSpace(pos, level);
 		spaces.add(spaceMap[indx]);
@@ -113,10 +113,10 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	public UnitSpace getOrMakeUnit(BlockPos pos) {
 //		int indx = ((Math1D.chunkMod(pos.getX(), 16) * 16) + Math1D.chunkMod(pos.getY(), 16)) * 16 + Math1D.chunkMod(pos.getZ(), 16);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		UnitSpace[] spaceMap = getUnits((pos.getY() >> 5) & 32);
+		UnitSpace[] spaceMap = getUnits((pos.getY() >> 4) & 31);
 		if (spaceMap[indx] == null) {
 			spaceMap[indx] = new UnitSpace(pos, level);
-//			int relIndex = indx + (((pos.getY() >> 5) & 32) * 16 * 16 * 16);
+//			int relIndex = indx + (((pos.getY() >> 4 ) & 31) * 16 * 16 * 16);
 			spaces.add(spaceMap[indx]);
 			modified = true;
 		}
@@ -136,7 +136,7 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	public UnitSpace getUnit(BlockPos pos) {
 //		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
 		int indx = (((pos.getX() & 15) * 16) + (pos.getY() & 15)) * 16 + (pos.getZ() & 15);
-		UnitSpace[] spaceMap = getUnits((pos.getY() >> 5) & 32);
+		UnitSpace[] spaceMap = getUnits((pos.getY() >> 4) & 31);
 		return spaceMap[indx];
 	}
 }

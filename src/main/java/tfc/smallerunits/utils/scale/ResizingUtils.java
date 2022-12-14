@@ -2,6 +2,7 @@ package tfc.smallerunits.utils.scale;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.fml.ModList;
+import virtuoel.pehkui.api.ScaleTypes;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +33,14 @@ public class ResizingUtils {
 		AtomicReference<Float> size = new AtomicReference<>(1f);
 		if (ModList.get().isLoaded("pehkui"))
 			size.set(size.get() * PehkuiSupport.SUScaleType.get().getScaleData(entity).getTargetScale());
+		return size.get();
+	}
+	
+	public static float getActualSize(Entity entity) {
+		if (entity == null) return 1;
+		AtomicReference<Float> size = new AtomicReference<>(1f);
+		if (ModList.get().isLoaded("pehkui"))
+			size.set(size.get() * ScaleTypes.BASE.getScaleData(entity).getTargetScale());
 		return size.get();
 	}
 	

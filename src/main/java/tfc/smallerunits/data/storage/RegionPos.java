@@ -8,11 +8,7 @@ import java.util.Objects;
 public class RegionPos {
 	public final int x, y, z;
 	
-	public RegionPos(int pX, int pY, int pZ) {
-		this.x = pX;
-		this.y = pY;
-		this.z = pZ;
-	}
+	BlockPos pos;
 	
 	public RegionPos(BlockPos pPos) {
 		this(pPos.getX() >> 9, pPos.getY() >> 9, pPos.getZ() >> 9);
@@ -51,7 +47,14 @@ public class RegionPos {
 		return false;
 	}
 	
+	public RegionPos(int pX, int pY, int pZ) {
+		this.x = pX;
+		this.y = pY;
+		this.z = pZ;
+		pos = new BlockPos(x << 9, y << 9, z << 9);
+	}
+	
 	public BlockPos toBlockPos() {
-		return new BlockPos(x << 9, y << 9, z << 9);
+		return pos;
 	}
 }

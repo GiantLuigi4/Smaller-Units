@@ -105,16 +105,9 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
 		int tickCount = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
 		synchronized (allChunks) {
-//			for (int i = 0; i < allChunks.size(); i++) {
-//				LevelChunk chunk = allChunks.get(i);
-//				if (chunk != null) {
-//					level.tickChunk(chunk, tickCount);
-//					((BasicVerticalChunk) chunk).randomTick();
-//				} else {
-//					LOGGER.warn("A chunk was null");
-//				}
-//			}
-			for (LevelChunk allChunk : allChunks) {
+			// TODO: new chunks set
+			ObjectOpenHashBigSet<LevelChunk> copy = new ObjectOpenHashBigSet(allChunks);
+			for (LevelChunk allChunk : copy) {
 				level.tickChunk(allChunk, tickCount);
 				((BasicVerticalChunk) allChunk).randomTick();
 			}

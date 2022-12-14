@@ -61,7 +61,7 @@ public class ShapesMixin {
 	
 	@Unique
 	private static VoxelShape su_or(UnitShape first, VoxelShape other) {
-		UnitShape sp = new UnitShape(first.space, first.collision);
+		UnitShape sp = new UnitShape(first.space, first.collision, first.collisionContext);
 		for (AABB toAabb : other.toAabbs()) {
 			if (toAabb instanceof UnitBox) sp.addBox((UnitBox) toAabb);
 			else

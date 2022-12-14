@@ -34,6 +34,7 @@ import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -193,53 +194,67 @@ public class BasicVerticalChunk extends LevelChunk {
 		return verticalLookup.applyAbs(0).createTicker(pBlockEntity, pTicker);
 	}
 	
-	// TODO: I'm sure I can shrink this
+	// TODO: optimize?
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
+		if (level.isClientSide) return setBlockState$$(pPos, pState, pIsMoving);
+		
+		int j = pPos.getX() & 15;
+		int k = pPos.getY();
+		int l = pPos.getZ() & 15;
+		
+		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, this); // this is returning the wrong thing
+		LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
+		UnitSpace space = null;
+		int indx = getIndx(j, k, l);
+		BlockState oldState = blocks[indx];
+		if (ac instanceof FastCapabilityHandler capabilityHandler) {
+			space = capabilityHandler.getSUCapability().getUnit(parentPos);
+			if (space == null) {
+				BlockState state = ac.getBlockState(parentPos);
+				if (state.isAir()) { // TODO: do this better
+					if (!pState.isAir()) {
+						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
+						// TODO: debug why space can still be null after this or what
+						space.isNatural = true;
+//							space.unitsPerBlock = ((ITickerWorld) level).getUPB();
+						space.setUpb(((ITickerLevel) level).getUPB());
+						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+					}
+				}
+			}
+		}
+		BlockState output = setBlockState$$(pPos, pState, pIsMoving);
+		if (ac instanceof FastCapabilityHandler capabilityHandler) {
+			ac.setUnsaved(true);
+			if (space != null) {
+				space.removeState(oldState);
+				space.addState(pState);
+				if (space.isEmpty() && space.isNatural) {
+					space.clear();
+					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+					NetworkingHacks.unitPos.remove();
+					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
+					BlockState state = ac.getBlockState(parentPos);
+					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+					capabilityHandler.getSUCapability().removeUnit(pPos);
+					if (descriptor != null)
+						NetworkingHacks.unitPos.set(descriptor);
+				}
+			}
+		}
+		return output;
+	}
+	
+	// TODO: I'm sure I can shrink this
+	public BlockState setBlockState$$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
 //		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
 		LevelChunkSection levelchunksection = super.getSection(0);
 		boolean flag = levelchunksection.hasOnlyAir();
 		int j = pPos.getX() & 15;
 		int k = pPos.getY();
 		int l = pPos.getZ() & 15;
-		if (!level.isClientSide) {
-			BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, this); // this is returning the wrong thing
-			LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
-			if (ac instanceof FastCapabilityHandler capabilityHandler) {
-				UnitSpace space = capabilityHandler.getSUCapability().getUnit(parentPos);
-				if (space == null) {
-					BlockState state = ac.getBlockState(parentPos);
-					if (state.isAir()) { // TODO: do this better
-						if (!pState.isAir()) {
-							ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-							ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-							space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
-							// TODO: debug why space can still be null after this or what
-							space.isNatural = true;
-//							space.unitsPerBlock = ((ITickerWorld) level).getUPB();
-							space.setUpb(((ITickerLevel) level).getUPB());
-							space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
-						}
-					}
-				}
-				int indx = getIndx(j, k, l);
-				ac.setUnsaved(true);
-				if (space != null) {
-					space.removeState(blocks[indx]);
-					space.addState(pState);
-					if (space.isEmpty() && space.isNatural) {
-						space.clear();
-						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-						NetworkingHacks.unitPos.remove();
-						ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
-						BlockState state = ac.getBlockState(parentPos);
-						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-						capabilityHandler.getSUCapability().removeUnit(pPos);
-						if (descriptor != null)
-							NetworkingHacks.unitPos.set(descriptor);
-					}
-				}
-			}
-		}
 		// TODO
 		if (flag && pState.isAir()) {
 			return null;
@@ -309,13 +324,15 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		boolean lookupPass = false;
-		BlockPos parentPos = PositionUtils.getParentPos(pos, this);
+		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
 		BlockState parentState = lookup.getState(parentPos);
 		if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) lookupPass = true;
 		if (lookupPass) {
 			int yO = Math1D.getChunkOffset(pos.getY(), 16);
 			if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
 				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+				if (chunk == null)
+					return Blocks.VOID_AIR.defaultBlockState();
 				return chunk.getBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
 			}
 			return getBlockState$(pos);
@@ -336,7 +353,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		int k = pos.getY();
 		int l = pos.getZ() & 15;
 		int indx = getIndx(j, k, l);
-		BlockPos parentPos = PositionUtils.getParentPos(pos, this);
+		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
 		
 		// TODO: this can be optimized, but it's good for now
 		ChunkAccess ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
@@ -429,7 +446,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		
 		ITickerLevel tickerWorld = ((ITickerLevel) level);
 		
-		BlockPos parentPos = PositionUtils.getParentPos(pBlockEntity.getBlockPos().offset(0, -(yPos * 16), 0), this);
+		BlockPos parentPos = PositionUtils.getParentPos(pBlockEntity.getBlockPos().offset(0, -(yPos * 16), 0), this, ThreadLocals.posLocal.get());
 		ChunkAccess ac;
 		ac = tickerWorld.getParent().getChunkAt(parentPos);
 
@@ -455,7 +472,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			ITickerLevel tickerWorld = ((ITickerLevel) level);
 			
 			pPos = new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15);
-			BlockPos parentPos = PositionUtils.getParentPos(pPos, this);
+			BlockPos parentPos = PositionUtils.getParentPos(pPos, this, ThreadLocals.posLocal.get());
 			ChunkAccess ac;
 			ac = tickerWorld.getParent().getChunkAt(parentPos);
 
