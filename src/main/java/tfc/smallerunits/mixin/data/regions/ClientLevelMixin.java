@@ -29,8 +29,10 @@ public class ClientLevelMixin implements RegionalAttachments {
 		int max = pChunk.getMaxBuildHeight();
 		for (int y = min; y < max; y += 16)
 			findChunk(y, pos, (rp, r) -> {
-				if (r.subtractRef(rp) <= 0)
-					regionMap.remove(rp);
+				if (r.subtractRef(rp) <= 0) {
+					Region region = regionMap.remove(rp);
+					if (region != null) region.close();
+				}
 			});
 	}
 	

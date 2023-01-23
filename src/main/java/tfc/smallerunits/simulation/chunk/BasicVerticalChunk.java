@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BasicVerticalChunk extends LevelChunk {
-	private final BlockState[] blocks = new BlockState[16 * 16 * 16]; // TODO: I'd like to get rid of this
 	public final int yPos;
 	// holds the functional chunk and a method which gets the corresponding BasicVerticalChunk from an integer representing which vertical chunk
 	// quite basic... weird to word however
@@ -52,38 +51,32 @@ public class BasicVerticalChunk extends LevelChunk {
 	private int upb;
 	public UnitChunkHolder holder = null;
 	
+	LevelChunkSection section;
+	
 	public final int getIndx(int x, int y, int z) {
 		// truthfully, this is x, z, y order, but it really does not matter at all
 		return x + (((y * 16) + z) * 16);
 	}
 	
 	public boolean isLoaded() {
-		for (BlockState block : blocks) if (block != null) return true;
-		return false;
+		return !section.hasOnlyAir();
 	}
 	
 	public BlockState getBlockState$(BlockPos pos) {
 		// locals would be redundant, this is an internal method
 		// this method assumes that pos.y will always be in bounds of the specific BasicVerticalChunk
-		BlockState state = blocks[getIndx(pos.getX() & 15, pos.getY(), pos.getZ() & 15)];
-		if (state == null) state = Blocks.AIR.defaultBlockState();
-		return state;
+		return section.getBlockState(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
 	}
 	
 	public BasicVerticalChunk(Level pLevel, ChunkPos pPos, int y, VChunkLookup verticalLookup, ParentLookup lookup, int upb) {
 		super(pLevel, pPos);
 		this.yPos = y;
 		this.verticalLookup = verticalLookup;
-		// this actually shouldn't cause any extra memory overhead, it just removes a bunch of null check
-		// afaik,
-		// sizeof((long) nullptr) == 8
-		// sizeof((long) Pointer<BlockState>) == 8
-		// in java, you're never really dealing with objects, only pointers
-		// however, it will likely slow down world loading a bit
-		for (int i = 0; i < blocks.length; i++) blocks[i] = Blocks.AIR.defaultBlockState();
 		this.lookup = lookup;
 		this.upb = upb;
 		setLoaded(true);
+		
+		section = super.getSection(0);
 		// TODO: use mixin to null out unnecessary fields, maybe
 	}
 	
@@ -95,7 +88,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public LevelChunkSection getSection(int p_187657_) {
-		if (p_187657_ == yPos) return super.getSection(0);
+		if (p_187657_ == yPos) return section;
 		return verticalLookup.applyAbs(p_187657_).getSection(p_187657_);
 	}
 	
@@ -206,7 +199,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 		UnitSpace space = null;
 		int indx = getIndx(j, k, l);
-		BlockState oldState = blocks[indx];
+		BlockState oldState = section.getBlockState(j, k, l);
 		if (ac instanceof FastCapabilityHandler capabilityHandler) {
 			space = capabilityHandler.getSUCapability().getUnit(parentPos);
 			if (space == null) {
@@ -249,9 +242,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	// TODO: I'm sure I can shrink this
 	public BlockState setBlockState$$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
-//		LevelChunkSection levelchunksection = getSection(getSectionIndex(pPos.getY()));
-		LevelChunkSection levelchunksection = super.getSection(0);
-		boolean flag = levelchunksection.hasOnlyAir();
+		boolean flag = section.hasOnlyAir();
 		int j = pPos.getX() & 15;
 		int k = pPos.getY();
 		int l = pPos.getZ() & 15;
@@ -259,27 +250,22 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (flag && pState.isAir()) {
 			return null;
 		} else {
-//			getSection(getSectionIndex(0)).setBlockState(j, k, l, pState);
-			super.getSection(0).setBlockState(j, k, l, pState);
 			pPos = pPos.above(yPos * 16);
 			int indx = getIndx(j, k, l);
-//			BlockState blockstate = levelchunksection.setBlockState(j, k, l, pState);
-			BlockState blockstate = blocks[indx];
+			BlockState blockstate = section.setBlockState(j, k, l, pState);
 			if (blockstate == pState) {
 				return null;
 			} else {
 				BlockPos offsetPos = chunkPos.getWorldPosition().offset(pPos.getX(), pPos.getY() & 15, pPos.getZ()).offset(0, yPos * 16, 0);
 				
-				blocks[indx] = pState;
 				Block block = pState.getBlock();
 				this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.WORLD_SURFACE).update(j, k, l, pState);
-				boolean flag1 = levelchunksection.hasOnlyAir();
+				boolean flag1 = section.hasOnlyAir();
 				// TODO
 				if (flag != flag1) {
-//					this.level.getChunkSource().getLightEngine().updateSectionStatus(pPos, !flag1);
 					level.getLightEngine().checkBlock(offsetPos);
 				}
 				
@@ -290,7 +276,7 @@ public class BasicVerticalChunk extends LevelChunk {
 					this.removeBlockEntity(offsetPos);
 				}
 				
-				if (!blocks[indx].is(block)) {
+				if (!section.getBlockState(j, k, l).is(block)) {
 					return null;
 				} else {
 					if (!this.level.isClientSide && !this.level.captureBlockSnapshots) {
@@ -359,11 +345,10 @@ public class BasicVerticalChunk extends LevelChunk {
 		ChunkAccess ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 		ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
 		UnitSpace space = capability.getOrMakeUnit(parentPos);
-		space.removeState(blocks[indx]);
+		space.removeState(section.getBlockState(j, k, l));
 		space.addState(state);
 		
-		blocks[indx] = state;
-		super.getSection(0).setBlockState(j, k, l, state);
+		section.setBlockState(j, k, l, state);
 		
 		level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
 

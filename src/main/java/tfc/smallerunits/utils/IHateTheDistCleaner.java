@@ -113,4 +113,8 @@ public class IHateTheDistCleaner {
 			}
 		}
 	}
+	
+	public static Object getScreen() {
+		return Minecraft.getInstance().screen;
+	}
 }

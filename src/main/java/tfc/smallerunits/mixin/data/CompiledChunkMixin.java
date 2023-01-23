@@ -6,18 +6,21 @@ import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 
+import java.lang.ref.WeakReference;
+
 @Mixin(ChunkRenderDispatcher.CompiledChunk.class)
 public class CompiledChunkMixin implements SUCompiledChunkAttachments {
 	@Unique
-	private SUCapableChunk chnk;
+	private WeakReference<SUCapableChunk> chnk;
 	
 	@Override
 	public SUCapableChunk getSUCapable() {
-		return chnk;
+		if (chnk == null) return null;
+		return chnk.get();
 	}
 	
 	@Override
 	public void setSUCapable(SUCapableChunk chunk) {
-		chnk = chunk;
+		chnk = new WeakReference<>(chunk);
 	}
 }

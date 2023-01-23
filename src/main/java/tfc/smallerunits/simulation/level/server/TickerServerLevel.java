@@ -30,6 +30,7 @@ import net.minecraft.world.level.chunk.storage.EntityStorage;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.LevelStorageSource;
@@ -63,6 +64,7 @@ import tfc.smallerunits.utils.storage.VecMap;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +93,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public Level getParent() {
-		return parent;
+		return parent.get();
 	}
 	
 	@Override
@@ -113,7 +115,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		super.finalize();
 	}
 	
-	public final Level parent;
+	public final WeakReference<Level> parent;
 	//	public final UnitSpace parentU;
 	public final Region region;
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
@@ -135,7 +137,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				p_8582_
 		);
 //		this.parentU = parentU;
-		this.parent = parent;
+		this.parent = new WeakReference<>(parent);
 		this.upb = upb;
 		this.chunkSource = new TickerChunkCache(
 				this, noAccess,
@@ -158,16 +160,16 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				// TODO: empty shape check
 				return cache.get(pos).getFirst();
 			}
-//			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+//			if (!parent.get().isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
 //				return Blocks.VOID_AIR.defaultBlockState();
 //			ChunkPos cp = new ChunkPos(bp);
-//			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+//			if (parent.get().getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
 //				return Blocks.VOID_AIR.defaultBlockState();
 			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
-			if (!parent.isLoaded(pos))
+			if (!this.parent.get().isLoaded(pos))
 				return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = parent.getBlockState(pos);
+			BlockState state = this.parent.get().getBlockState(pos);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
@@ -198,7 +200,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.playSound(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch);
+			parent.get().playSound(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch);
 		});
 	}
 	
@@ -216,7 +218,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
+			parent.get().playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
 		});
 	}
 	
@@ -228,7 +230,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				Math.floor(pos.getY() / (double) upb),
 				Math.floor(pos.getZ() / (double) upb)
 		);
-		return parent.getBiome(bp.offset(region.pos.toBlockPos()));
+		return parent.get().getBiome(bp.offset(region.pos.toBlockPos()));
 	}
 	
 	public ParentLookup lookup;
@@ -253,7 +255,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public float getShade(Direction pDirection, boolean pShade) {
-		return parent.getShade(pDirection, pShade);
+		return parent.get().getShade(pDirection, pShade);
 	}
 	
 	@Override
@@ -441,7 +443,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		ChunkAccess ac;
 		// vertical lookups shouldn't be too expensive
 		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
-			ac = parent.getChunkAt(parentPos);
+			ac = parent.get().getChunkAt(parentPos);
 			accessHashMap.put(new ChunkPos(parentPos), ac);
 			if (!positions.contains(parentPos)) {
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
@@ -468,7 +470,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		{
 			CompoundTag blockTicks = new CompoundTag();
 			ArrayList<ScheduledTick<Block>> ticks = ((SUTickList) this.blockTicks).getTicksInArea(box);
-			Registry<Block> blockRegistry = parent.registryAccess().registryOrThrow(Registry.BLOCK_REGISTRY);
+			Registry<Block> blockRegistry = parent.get().registryAccess().registryOrThrow(Registry.BLOCK_REGISTRY);
 			for (ScheduledTick<Block> tick : ticks) {
 				CompoundTag tag1 = new CompoundTag();
 				tag1.putLong("ttime", tick.triggerTick() - getGameTime());
@@ -482,7 +484,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		{
 			CompoundTag blockTicks = new CompoundTag();
 			ArrayList<ScheduledTick<Fluid>> ticks = ((SUTickList) this.fluidTicks).getTicksInArea(box);
-			Registry<Fluid> fluidRegistry = parent.registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
+			Registry<Fluid> fluidRegistry = parent.get().registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
 			for (ScheduledTick<Fluid> tick : ticks) {
 				CompoundTag tag1 = new CompoundTag();
 				tag1.putLong("ttime", tick.triggerTick() - getGameTime());
@@ -499,8 +501,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	public void loadTicks(CompoundTag tag) {
-		Registry<Block> blockRegistry = parent.registryAccess().registryOrThrow(Registry.BLOCK_REGISTRY);
-		Registry<Fluid> fluidRegistry = parent.registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
+		Registry<Block> blockRegistry = parent.get().registryAccess().registryOrThrow(Registry.BLOCK_REGISTRY);
+		Registry<Fluid> fluidRegistry = parent.get().registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
 		CompoundTag blocks = tag.getCompound("blocks");
 		for (String allKey : blocks.getAllKeys()) {
 			CompoundTag tick = blocks.getCompound(allKey);
@@ -539,13 +541,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public long getGameTime() {
-		return parent.getGameTime();
+		return parent.get().getGameTime();
 	}
 	
 	@Override
 	public RegistryAccess registryAccess() {
 		if (parent == null) return super.registryAccess();
-		return parent.registryAccess();
+		return parent.get().registryAccess();
 	}
 	
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
@@ -635,7 +637,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
 		});
 	}
 	
@@ -750,14 +752,14 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 //				// TODO: empty shape check
 //				return cache.get(bp).getFirst();
 //			}
-////			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+////			if (!parent.get().isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
 ////				return Blocks.VOID_AIR.defaultBlockState();
 ////			ChunkPos cp = new ChunkPos(bp);
-////			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+////			if (parent.get().getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
 ////				return Blocks.VOID_AIR.defaultBlockState();
 //			if (!getServer().isReady())
 //				return Blocks.VOID_AIR.defaultBlockState();
-//			BlockState state = parent.getBlockState(bp);
+//			BlockState state = parent.get().getBlockState(bp);
 ////			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 ////				return state;
 //			cache.put(bp, Pair.of(state, new VecMap<>(2)));
@@ -855,7 +857,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			BlockEventData blockeventdata = this.blockEvents.removeFirst();
 			if (this.shouldTickBlocksAt(ChunkPos.asLong(blockeventdata.pos()))) {
 				if (this.doBlockEvent(blockeventdata)) {
-					for (Player player : parent.players()) {
+					for (Player player : parent.get().players()) {
 						BlockPos parentPos = PositionUtils.getParentPos(blockeventdata.pos(), this);
 						if (
 								player.distanceToSqr(parentPos.getX(), parentPos.getY(), parentPos.getZ()) <
@@ -888,7 +890,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
 		BlockPos parentPos = PositionUtils.getParentPos(pBlockPos, this);
-		int lt = parent.getBrightness(pLightType, parentPos);
+		int lt = parent.get().getBrightness(pLightType, parentPos);
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
 	}
@@ -949,7 +951,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public int randomTickCount() {
 		if (randomTickCount == Integer.MIN_VALUE)
-			randomTickCount = parent.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
+			randomTickCount = parent.get().getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
 		return randomTickCount;
+	}
+	
+	@Override
+	public int getHeight(Heightmap.Types pHeightmapType, int pX, int pZ) {
+		return getMaxBuildHeight(); // TODO: do this properly
+//		return 0;
 	}
 }

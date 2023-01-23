@@ -1,6 +1,7 @@
 package tfc.smallerunits.mixin.core;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.ai.attributes.Attribute;
@@ -14,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.tracking.ICanUseUnits;
@@ -36,8 +38,14 @@ public class MinecraftMixin {
 	@Shadow
 	@Nullable
 	public ClientLevel level;
+	@Shadow
+	@Nullable
+	public Screen screen;
 	@Unique
 	ArrayList<RaytraceData> datas = new ArrayList<>();
+	
+	@Unique
+	ThreadLocal<Screen> previousScreen = new ThreadLocal<>();
 	
 	@Inject(at = @At("HEAD"), method = "startAttack")
 	public void preAttack(CallbackInfoReturnable<Boolean> cir) {
@@ -48,7 +56,7 @@ public class MinecraftMixin {
 	public void preUseItem(CallbackInfo cir) {
 		// TODO figure out why the server freaks out on edges with this
 //		if (player.isShiftKeyDown())
-			movePlayerTo();
+		movePlayerTo();
 	}
 	
 	@Inject(at = @At("RETURN"), method = "startUseItem")
@@ -88,6 +96,7 @@ public class MinecraftMixin {
 //			if (hitResult.getType() == HitResult.Type.MISS)
 //				hitResult = player.pick(reach, 1, false);
 		}
+		previousScreen.set(this.screen);
 	}
 	
 	@Inject(at = @At("RETURN"), method = "startAttack")
@@ -102,11 +111,24 @@ public class MinecraftMixin {
 	
 	@Unique
 	private void movePlayerBack() {
-		while (!datas.isEmpty()) {
-			NetworkingHacks.unitPos.remove();
-			RaytraceData data = datas.remove(datas.size() - 1);
-			data.info.reset(player);
-			hitResult = data.result;
+		if (!datas.isEmpty()) {
+			if (screen != previousScreen.get()) {
+				RaytraceData data = datas.get(datas.size() - 1);
+				
+				PositionalInfo info = data.info;
+				if (data.result instanceof UnitHitResult uhr) {
+					ISUCapability capability = SUCapabilityManager.getCapability(level.getChunkAt(uhr.geetBlockPos()));
+					if (screen != null)
+						((SUScreenAttachments) screen).setup(info, capability.getUnit(uhr.geetBlockPos()));
+				}
+			}
+			
+			while (!datas.isEmpty()) {
+				NetworkingHacks.unitPos.remove();
+				RaytraceData data = datas.remove(datas.size() - 1);
+				data.info.reset(player);
+				hitResult = data.result;
+			}
 		}
 	}
 }

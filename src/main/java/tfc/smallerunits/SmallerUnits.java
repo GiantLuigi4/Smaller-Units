@@ -24,6 +24,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.crafting.CraftingRegistry;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
@@ -115,8 +116,10 @@ public class SmallerUnits {
 				ChunkPos pos = access.getPos();
 				for (int y = min; y < max; y += 16)
 					attachments.SU$findChunk(y, pos, (rp, r) -> {
-						if (r.subtractRef(rp) <= 0)
-							attachments.SU$getRegionMap().remove(rp);
+						if (r.subtractRef(rp) <= 0) {
+							Region region = attachments.SU$getRegionMap().remove(rp);
+							if (region != null) region.close();
+						}
 					});
 			}
 		}

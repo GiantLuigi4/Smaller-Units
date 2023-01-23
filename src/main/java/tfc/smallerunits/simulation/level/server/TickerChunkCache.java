@@ -184,7 +184,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			pChunkY = ((pChunkY < 0) ? pChunkY + upb : ((pChunkY > upb) ? (pChunkX - (upb * 32)) : pChunkY));
 			pChunkZ = ((pChunkZ < 0) ? pChunkZ + upb : ((pChunkZ > upb) ? (pChunkX - (upb * 32)) : pChunkZ));
 			
-			Level parent = ((TickerServerLevel) level).parent;
+			Level parent = ((TickerServerLevel) level).parent.get();
 			Region otherRegion = null;
 			Level level = null;
 			otherRegion = ((RegionalAttachments) ((ServerChunkCache) parent.getChunkSource()).chunkMap).SU$getRegion(pos);

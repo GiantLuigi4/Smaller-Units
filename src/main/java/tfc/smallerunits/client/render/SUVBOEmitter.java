@@ -2,7 +2,6 @@ package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ChunkBufferBuilderPack;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -35,8 +34,6 @@ import java.util.Random;
 public class SUVBOEmitter {
 	private static final ArrayList<BufferStorage> vbosFree = new ArrayList<>();
 	private static final Object lock = new Object();
-	private static final DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<RenderType, BufferBuilder>().setDefaultVal(() -> new BufferBuilder(16));
-	private static final ChunkBufferBuilderPack bufferBuilderPack = new ChunkBufferBuilderPack();
 	
 	private final HashMap<BlockPos, BufferStorage> used = new HashMap<>();
 	private final HashMap<BlockPos, BufferStorage> free = new HashMap<>();
@@ -92,11 +89,8 @@ public class SUVBOEmitter {
 		stack.scale(scl, scl, scl);
 		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
 		buffers.setDefaultVal((type) -> {
-//			BufferBuilder builder = new ThreadedVertexBuilder(0, bufferBuilderPack.builder(type));
-//			BufferBuilder builder = new ThreadedVertexBuilder(0, SUVBOEmitter.buffers.get(type));
-//			BufferBuilder builder = SUVBOEmitter.buffers.get(type);
-			BufferBuilder builder = bufferBuilderPack.builder(type);
-			if (!builder.building()) builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+			BufferBuilder builder = storage.getBuilder(type);
+			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 			return builder;
 		});
 		int upb = space.unitsPerBlock;
@@ -105,24 +99,10 @@ public class SUVBOEmitter {
 		for (int i = 0; i < RenderType.chunkBufferLayers().size(); i++) {
 			RenderType chunkBufferLayer = RenderType.chunkBufferLayers().get(i);
 			ForgeHooksClient.setRenderType(chunkBufferLayer);
-//			ReusableThread td = threads[i % 16];
-//			while (td.isInUse()) {
-//			}
-//			td.setAction(() -> {
 			handleLayer(chunkBufferLayer, buffers, space.getRenderWorld(), stack, upb, space, dispatcher, states);
-//			});
-//			td.start();
 		}
-//		for (ReusableThread thread : threads) {
-//			while (thread.isInUse()) {
-//			}
-//		}
 		Minecraft.getInstance().getProfiler().popPush("finish");
-//		buffers.forEach((type, buf) -> {
-//			if (buf instanceof ThreadedVertexBuilder) {
-//				((ThreadedVertexBuilder) buf).finish(threads);
-//			}
-//		});
+		
 		ForgeHooksClient.setRenderType(null);
 		Minecraft.getInstance().getProfiler().popPush("upload");
 		buffers.forEach(storage::upload);
@@ -135,6 +115,7 @@ public class SUVBOEmitter {
 	
 	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
 		VertexConsumer consumer = null;
+		TranslatingVertexBuilder vertexBuilder = null;
 		SectionPos chunkPos = SectionPos.of(new BlockPos(space.pos.getX() & 511, space.pos.getY() & 511, space.pos.getZ() & 511));
 		BlockPos chunkOffset = new BlockPos(chunkPos.minBlockX(), chunkPos.minBlockY(), chunkPos.minBlockZ());
 		PoseStack stk = new PoseStack();
@@ -150,17 +131,19 @@ public class SUVBOEmitter {
 					if (block.equals(Blocks.AIR.defaultBlockState())) continue;
 					if (!block.getFluidState().isEmpty()) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {
-							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
-							TranslatingVertexBuilder builder = new TranslatingVertexBuilder(1f / upb, consumer);
+							if (vertexBuilder == null) {
+								if (consumer == null) consumer = buffers.get(chunkBufferLayer);
+								vertexBuilder = new TranslatingVertexBuilder(1f / upb, consumer);
+							}
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
-							builder.offset = new Vec3(
+							vertexBuilder.offset = new Vec3(
 									((int) Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
 									((int) Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
 									((int) Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
 							dispatcher.renderLiquid(
 									offsetPos,
-									wld, builder, block,
+									wld, vertexBuilder, block,
 									block.getFluidState()
 							);
 						}
@@ -168,9 +151,11 @@ public class SUVBOEmitter {
 					if (block.getRenderShape() != RenderShape.INVISIBLE) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
-//							if (consumer == null) consumer = Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
+							
+							// TODO: check this
+							// TODO: what is there to check here?
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), offsetPos);
 							if (data == null) data = EmptyModelData.INSTANCE;
@@ -180,36 +165,8 @@ public class SUVBOEmitter {
 									true, new Random(offsetPos.asLong()),
 									data
 							);
-//							if (SmallerUnits.isIsOFPresent()) {
-//								dispatcher.getModelRenderer().tesselateBlock(
-//										wld, dispatcher.getBlockModel(block),
-//										block, space.getOffsetPos(rPos),
-//										stk, consumer, true,
-//										new Random(space.getOffsetPos(rPos).asLong()),
-//										space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-//										data
-//								);
-//							} else {
-//								if (Minecraft.getInstance().options.ambientOcclusion.getId() == AmbientOcclusionStatus.MAX.getId()) {
-//									dispatcher.getModelRenderer().tesselateWithAO(
-//											wld, dispatcher.getBlockModel(block),
-//											block, space.getOffsetPos(rPos),
-//											stk, consumer, true,
-//											new Random(space.getOffsetPos(rPos).asLong()),
-//											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-//											data
-//									);
-//								} else {
-//									dispatcher.getModelRenderer().tesselateWithoutAO(
-//											wld, dispatcher.getBlockModel(block),
-//											block, space.getOffsetPos(rPos),
-//											stk, consumer, true,
-//											new Random(space.getOffsetPos(rPos).asLong()),
-//											space.getOffsetPos(rPos).asLong(), OverlayTexture.NO_OVERLAY,
-//											data
-//									);
-//								}
-//							}
+
+//							stk.translate(-x, -y, -z);
 							stk.popPose();
 						}
 					}

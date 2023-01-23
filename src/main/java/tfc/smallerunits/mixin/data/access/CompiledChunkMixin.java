@@ -5,18 +5,20 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.CompiledChunkAccessor;
 
+import java.lang.ref.WeakReference;
+
 @Mixin(ChunkRenderDispatcher.CompiledChunk.class)
 public class CompiledChunkMixin implements CompiledChunkAccessor {
 	@Unique
-	ChunkRenderDispatcher.RenderChunk mixinIShouldNotHaveToDoThis;
+	WeakReference<ChunkRenderDispatcher.RenderChunk> mixinIShouldNotHaveToDoThis;
 	
 	@Override
 	public void SU$setRenderChunk(ChunkRenderDispatcher.RenderChunk chunk) {
-		mixinIShouldNotHaveToDoThis = chunk;
+		mixinIShouldNotHaveToDoThis = new WeakReference<>(chunk);
 	}
 	
 	@Override
 	public ChunkRenderDispatcher.RenderChunk SU$getRenderChunk() {
-		return mixinIShouldNotHaveToDoThis;
+		return mixinIShouldNotHaveToDoThis.get();
 	}
 }

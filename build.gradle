@@ -193,7 +193,7 @@ dependencies {
 
     if (true) {
         System.out.println("| Misc")
-        api fg.deobf("curse.maven:quark-243121:3840125")
+//        api fg.deobf("curse.maven:quark-243121:3840125")
 
         api fg.deobf("curse.maven:supplementaries-412082:3800501")
 //        api fg.deobf("curse.maven:immweather-592449:3800547")

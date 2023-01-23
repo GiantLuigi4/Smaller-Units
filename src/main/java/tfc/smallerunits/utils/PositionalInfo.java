@@ -11,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
@@ -22,7 +23,7 @@ public class PositionalInfo {
 	public final Level lvl;
 	public final AABB box;
 	public final float eyeHeight;
-	private static final UUID SU_REACH_UUID = new UUID(new Random(847329).nextLong(), new Random(426324).nextLong());
+	public static final UUID SU_REACH_UUID = new UUID(new Random(847329).nextLong(), new Random(426324).nextLong());
 	private boolean isReachSet = false;
 	private Object particleEngine = null;
 	public final Vec3 oPos;
@@ -47,21 +48,25 @@ public class PositionalInfo {
 	}
 	
 	public void adjust(Entity pEntity, UnitSpace space) {
+		adjust(pEntity, space.getMyLevel(), space.unitsPerBlock, space.regionPos);
+	}
+	
+	public void adjust(Entity pEntity, Level level, int upb, RegionPos regionPos) {
 		AABB scaledBB;
-		pEntity.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, space.unitsPerBlock, space.regionPos));
-		pEntity.eyeHeight = (float) (this.eyeHeight * space.unitsPerBlock);
+		pEntity.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, upb, regionPos));
+		pEntity.eyeHeight = (float) (this.eyeHeight * upb);
 		pEntity.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 		if (pEntity instanceof Player player)
-			setupClient(player, space.getMyLevel());
+			setupClient(player, level);
 		// TODO: fix this
-		pEntity.xo = HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), pEntity.xo);
-		pEntity.yo = HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), pEntity.yo);
-		pEntity.zo = HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), pEntity.zo);
-		pEntity.xOld = HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), pEntity.xOld);
-		pEntity.yOld = HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), pEntity.yOld);
-		pEntity.zOld = HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), pEntity.zOld);
+		pEntity.xo = HitboxScaling.scaleX((ITickerLevel) level, pEntity.xo);
+		pEntity.yo = HitboxScaling.scaleY((ITickerLevel) level, pEntity.yo);
+		pEntity.zo = HitboxScaling.scaleZ((ITickerLevel) level, pEntity.zo);
+		pEntity.xOld = HitboxScaling.scaleX((ITickerLevel) level, pEntity.xOld);
+		pEntity.yOld = HitboxScaling.scaleY((ITickerLevel) level, pEntity.yOld);
+		pEntity.zOld = HitboxScaling.scaleZ((ITickerLevel) level, pEntity.zOld);
 		
-		pEntity.level = space.getMyLevel();
+		pEntity.level = level;
 	}
 	
 	public void reset(Entity pEntity) {

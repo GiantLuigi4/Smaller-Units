@@ -23,10 +23,7 @@ public class LevelMixin implements SUCapableWorld {
 	
 	@Inject(at = @At("HEAD"), method = "close")
 	public void preClose(CallbackInfo ci) {
-		emitter.free();
-		if (!FMLEnvironment.production && emitter != null) {
-			Loggers.WORLD_LOGGER.info("World " + toString() + " offloaded!");
-			emitter = null;
-		}
+		if (emitter != null) emitter.free();
+		if (!FMLEnvironment.production) Loggers.WORLD_LOGGER.info("World " + toString() + " offloaded!");
 	}
 }

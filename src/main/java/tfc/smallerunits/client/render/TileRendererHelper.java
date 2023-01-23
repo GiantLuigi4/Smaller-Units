@@ -45,7 +45,7 @@ public class TileRendererHelper {
 		);
 	}
 	
-	private static VertexBuffer[] buffers = new VertexBuffer[16];
+	private static VertexBuffer[] buffers = new VertexBuffer[256];
 	
 	private static int lastType = -1;
 	private static int lastScale = -1;

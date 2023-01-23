@@ -13,6 +13,8 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
@@ -20,6 +22,7 @@ import tfc.smallerunits.simulation.level.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
@@ -166,5 +169,19 @@ public class Region {
 	
 	public Level[] getLevels() {
 		return levels;
+	}
+	
+	public void close() {
+		for (Level level : levels) {
+			try {
+				if (level != null) {
+					MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(level));
+					level.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				// TODO: probably should handle this
+			}
+		}
 	}
 }

@@ -5,6 +5,9 @@ import net.minecraft.server.level.ChunkMap;
 import net.minecraft.world.level.ChunkPos;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
@@ -78,5 +81,13 @@ public class ChunkMapMixin implements RegionalAttachments {
 		Region r = regionMap.getOrDefault(pos, null);
 		if (r == null) regionMap.put(pos, r = new Region(pos));
 		regionHandler.accept(pos, r);
+	}
+	
+	@Inject(at = @At("HEAD"), method = "close")
+	public void preClose(CallbackInfo ci) {
+		for (Region value : regionMap.values()) {
+			value.close();
+		}
+		regionMap.clear();
 	}
 }

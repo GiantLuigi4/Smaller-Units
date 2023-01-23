@@ -8,7 +8,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
-import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
@@ -24,7 +23,8 @@ public class WorldStitcher {
 					if (!pLoad) {
 						return null;
 					}
-					Loggers.CHUNK_CACHE.warn("Region@" + rPos + " was null");
+//					if (!FMLEnvironment.production)
+//						Loggers.CHUNK_CACHE.warn("Region@" + rPos + " was null");
 					return chunkCache.getEmpty();
 				}
 				Level lvl;

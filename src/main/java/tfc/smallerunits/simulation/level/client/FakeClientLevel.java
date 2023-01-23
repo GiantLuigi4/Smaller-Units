@@ -39,6 +39,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -69,6 +70,7 @@ import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -79,7 +81,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	public final int upb;
 	public final GroupMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new GroupMap<>(2);
 	public ParentLookup lookup;
-	ClientLevel parent;
+	WeakReference<ClientLevel> parent;
 	
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
 	// if I do Minecraft.getInstance().getTextureManager(), it messes up particle textures
@@ -99,7 +101,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
+			parent.get().playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
 		});
 	}
 	
@@ -110,7 +112,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	public FakeClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
-		this.parent = parent;
+		this.parent = new WeakReference<>(parent);
 		this.region = region;
 		this.chunkSource = new FakeClientChunkCache(this, 0, upb);
 		this.upb = upb;
@@ -126,13 +128,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 				// TODO: empty shape check
 				return value.getFirst();
 			}
-//			if (!parent.isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
+//			if (!parent.get().isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
 //				return Blocks.VOID_AIR.defaultBlockState();
 //			ChunkPos cp = new ChunkPos(bp);
-//			if (parent.getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
+//			if (parent.get().getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
 //				return Blocks.VOID_AIR.defaultBlockState();
 			if (Minecraft.getInstance().level == null) return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = parent.getBlockState(pos);
+			BlockState state = this.parent.get().getBlockState(pos);
 //			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
 //				return state;
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
@@ -161,7 +163,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
 		});
 	}
 	
@@ -178,7 +180,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	public void destroyBlockProgress(int pBreakerId, BlockPos pPos, int pProgress) {
 //		Entity ent = getEntity(pBreakerId);
 //		if (!(ent instanceof Player)) {
-//			ent = parent.getEntity(pBreakerId);
+//			ent = parent.get().getEntity(pBreakerId);
 //			if (!(ent instanceof Player)) {
 //				return;
 //			}
@@ -206,14 +208,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	@Override
 	public void sendPacketToServer(Packet<?> pPacket) {
 		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
-		parent.sendPacketToServer(pPacket);
+		parent.get().sendPacketToServer(pPacket);
 		NetworkingHacks.unitPos.remove();
 	}
 	
 	@Override
 	public void disconnect() {
 		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
-		parent.disconnect();
+		parent.get().disconnect();
 		NetworkingHacks.unitPos.remove();
 	}
 	
@@ -471,7 +473,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		int zo = ((pBlockPos.getZ()) / upb);
 		BlockPos parentPos = rp.offset(xo, yo, zo);
 		ChunkAccess ac;
-		ac = parent.getChunkAt(parentPos);
+		ac = parent.get().getChunkAt(parentPos);
 		
 		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 		UnitSpace space = cap.getUnit(parentPos);
@@ -505,7 +507,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 //			int zo = ((toRefresh.getZ()) / upb);
 //			BlockPos parentPos = rp.offset(xo, yo, zo);
 			ChunkAccess ac;
-			ac = parent.getChunkAt(parentPos);
+			ac = parent.get().getChunkAt(parentPos);
 			
 			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 			UnitSpace space = cap.getUnit(parentPos);
@@ -523,7 +525,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public RecipeManager getRecipeManager() {
-		return parent.getRecipeManager();
+		return parent.get().getRecipeManager();
 	}
 	
 	@Override
@@ -564,7 +566,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public Level getParent() {
-		return parent;
+		return parent.get();
 	}
 	
 	@Override
@@ -580,8 +582,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	@Override
 	public RegistryAccess registryAccess() {
 		// TODO: find a proper solution
-		if (parent == null) parent = Minecraft.getInstance().level;
-		return parent.registryAccess();
+		if (parent == null) parent = new WeakReference<>(Minecraft.getInstance().level);
+		return parent.get().registryAccess();
 	}
 	
 	@Override
@@ -696,7 +698,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		ChunkAccess ac;
 		// vertical lookups shouldn't be too expensive
 		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
-			ac = parent.getChunkAt(parentPos);
+			ac = parent.get().getChunkAt(parentPos);
 			accessHashMap.put(new ChunkPos(parentPos), ac);
 			if (!positions.contains(parentPos)) {
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
@@ -721,7 +723,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	@Override
 	public void markRenderDirty(BlockPos pLevelPos) {
 		BlockPos parentPos = PositionUtils.getParentPos(pLevelPos, this);
-		ChunkAccess ac = parent.getChunkAt(parentPos);
+		ChunkAccess ac = parent.get().getChunkAt(parentPos);
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
 	
@@ -818,15 +820,15 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		// TODO: caching of light values
 //		if (pLightType.equals(LightLayer.SKY)) {
 //			if (lightCacheCenter != null) {
-//				lt = parent.getBrightness(pLightType, parentPos);
+//				lt = parent.get().getBrightness(pLightType, parentPos);
 //			} else {
-//				lt = parent.getBrightness(pLightType, parentPos);
+//				lt = parent.get().getBrightness(pLightType, parentPos);
 //			}
 //		} else {
-//			lt = parent.getBrightness(pLightType, parentPos);
+//			lt = parent.get().getBrightness(pLightType, parentPos);
 //		}
 		
-		lt = parent.getBrightness(pLightType, parentPos);
+		lt = parent.get().getBrightness(pLightType, parentPos);
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
 	}
@@ -834,5 +836,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	@Override
 	public int randomTickCount() {
 		return 0;
+	}
+	
+	@Override
+	public int getHeight(Heightmap.Types pHeightmapType, int pX, int pZ) {
+		return getMaxBuildHeight(); // TODO: do this properly
+//		return 0;
 	}
 }
