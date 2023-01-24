@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkMap;
@@ -26,6 +27,7 @@ import tfc.smallerunits.mojangpls.NoPath;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -127,5 +129,15 @@ public class UnitChunkMap extends ChunkMap {
 	@Override
 	public List<ServerPlayer> getPlayersCloseForSpawning(ChunkPos p_183889_) {
 		return List.of();
+	}
+	
+	@Override
+	public void write(ChunkPos pChunkPos, CompoundTag pChunkData) {
+	}
+	
+	@Nullable
+	@Override
+	public CompoundTag read(ChunkPos pChunkPos) throws IOException {
+		return null;
 	}
 }

@@ -21,6 +21,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.data.tracking.RaytraceData;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
@@ -62,7 +63,7 @@ public class MinecraftMixin {
 	@Inject(at = @At("RETURN"), method = "startUseItem")
 	public void postUseItem(CallbackInfo ci) {
 //		if (player.isShiftKeyDown())
-			movePlayerBack();
+		movePlayerBack();
 	}
 	
 	@Inject(at = @At("HEAD"), method = "continueAttack")
@@ -116,10 +117,13 @@ public class MinecraftMixin {
 				RaytraceData data = datas.get(datas.size() - 1);
 				
 				PositionalInfo info = data.info;
-				if (data.result instanceof UnitHitResult uhr) {
-					ISUCapability capability = SUCapabilityManager.getCapability(level.getChunkAt(uhr.geetBlockPos()));
-					if (screen != null)
-						((SUScreenAttachments) screen).setup(info, capability.getUnit(uhr.geetBlockPos()));
+				if (screen != null) {
+					if (data.result instanceof UnitHitResult uhr) {
+						if (level instanceof ITickerLevel tk) {
+							ISUCapability capability = SUCapabilityManager.getCapability(tk.getParent().getChunkAt(uhr.getBlockPos()));
+							((SUScreenAttachments) screen).setup(info, capability.getUnit(uhr.getBlockPos()));
+						}
+					}
 				}
 			}
 			

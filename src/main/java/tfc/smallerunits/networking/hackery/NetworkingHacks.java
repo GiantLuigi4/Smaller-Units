@@ -9,6 +9,7 @@ import java.util.HashMap;
 public class NetworkingHacks {
 	public static ThreadLocal<LevelDescriptor> unitPos = ThreadLocal.withInitial(() -> null);
 	public static ThreadLocal<Boolean> increaseBlockPosPrecision = ThreadLocal.withInitial(() -> false);
+	public static ThreadLocal<NetworkHandlingContext> currentContext = ThreadLocal.withInitial(() -> null);
 	private static HashMap<Packet, LevelDescriptor> positions = new HashMap<>();
 	
 	public static LevelDescriptor getPosFor(Packet packet) {

@@ -1,44 +1,46 @@
 package tfc.smallerunits.mixin.core.gui.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.eventbus.api.Event;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 
-@Mixin(value = ForgeHooksClient.class, remap = false)
-public class ForgeHooksClientMixin {
+@Mixin(KeyboardHandler.class)
+public class KeyboardHandlerMixin {
+	@Shadow
+	@Final
+	private Minecraft minecraft;
+	
 	@Unique
 	private static final ThreadLocal<Screen> currentScreen = new ThreadLocal<>();
 	
-	@Inject(at = @At("HEAD"), method = "drawScreenInternal")
-	private static void preDrawScreen(Screen screen, PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-		currentScreen.set(screen);
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V"), method = "keyPress")
+	public void preKeyPress(long pWindowPointer, int pKey, int pScanCode, int pAction, int pModifiers, CallbackInfo ci) {
+		currentScreen.set(minecraft.screen);
 		if (Minecraft.getInstance().player != null) {
-			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
+			SUScreenAttachments screenAttachments = ((SUScreenAttachments) minecraft.screen);
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
-				screenAttachments.update(Minecraft.getInstance().player);
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
 				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
 			}
 		}
 	}
 	
-	@Inject(at = @At("RETURN"), method = "drawScreenInternal")
-	private static void postDrawScreen(Screen screen, PoseStack poseStack, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V", shift = At.Shift.AFTER), method = "keyPress")
+	public void postKeyPress(long pWindowPointer, int pKey, int pScanCode, int pAction, int pModifiers, CallbackInfo ci) {
 		if (Minecraft.getInstance().player != null) {
-			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
+			SUScreenAttachments screenAttachments = ((SUScreenAttachments) currentScreen.get());
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				info.reset(Minecraft.getInstance().player);
@@ -52,11 +54,15 @@ public class ForgeHooksClientMixin {
 		}
 	}
 	
-	@Inject(at = @At("HEAD"), method = "onScreenPotionSize")
-	private static void preScreenPotionSize(Screen screen, CallbackInfoReturnable<Event.Result> cir) {
-		currentScreen.set(screen);
+	@Inject(at = @At("HEAD"), method = "charTyped")
+	public void preTypeChar(long pWindowPointer, int pCodePoint, int pModifiers, CallbackInfo ci) {
+		currentScreen.set(minecraft.screen);
+	}
+	
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V"), method = "charTyped")
+	public void preTypeChar$(long pWindowPointer, int pCodePoint, int pModifiers, CallbackInfo ci) {
 		if (Minecraft.getInstance().player != null) {
-			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
+			SUScreenAttachments screenAttachments = ((SUScreenAttachments) minecraft.screen);
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
@@ -65,10 +71,10 @@ public class ForgeHooksClientMixin {
 		}
 	}
 	
-	@Inject(at = @At("RETURN"), method = "onScreenPotionSize")
-	private static void postScreenPotionSize(Screen screen, CallbackInfoReturnable<Event.Result> cir) {
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;wrapScreenError(Ljava/lang/Runnable;Ljava/lang/String;Ljava/lang/String;)V", shift = At.Shift.AFTER), method = "charTyped")
+	public void postTypeChar$(long pWindowPointer, int pCodePoint, int pModifiers, CallbackInfo ci) {
 		if (Minecraft.getInstance().player != null) {
-			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
+			SUScreenAttachments screenAttachments = ((SUScreenAttachments) currentScreen.get());
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				info.reset(Minecraft.getInstance().player);

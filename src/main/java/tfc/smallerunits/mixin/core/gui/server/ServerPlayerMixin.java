@@ -18,6 +18,7 @@ public class ServerPlayerMixin {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) ((Player) (Object) this).containerMenu);
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
+				screenAttachments.update((Player) (Object) this);
 				info.scalePlayerReach(((Player) (Object) this), screenAttachments.getUpb());
 				info.adjust((Player) (Object) this, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
 			}

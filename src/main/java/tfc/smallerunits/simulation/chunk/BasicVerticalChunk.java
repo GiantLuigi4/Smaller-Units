@@ -172,7 +172,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pPos, LevelChunk.EntityCreationType pCreationType) {
-		return super.getBlockEntity(pPos, pCreationType);
+		return super.getBlockEntity(pPos, pCreationType); // TODO: debug???
 	}
 	
 	@Override
@@ -418,7 +418,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
 		BlockPos blockpos = pBlockEntity.getBlockPos();
-		if (this.getBlockState(new BlockPos(blockpos.getX() & 15, blockpos.getY() - (yPos * 16), blockpos.getZ() & 15)).hasBlockEntity()) {
+		if (this.getBlockState$(new BlockPos(blockpos.getX(), blockpos.getY() - (yPos * 16), blockpos.getZ())).hasBlockEntity()) {
 			pBlockEntity.setLevel(this.level);
 			pBlockEntity.clearRemoved();
 			BlockEntity blockentity = this.blockEntities.put(blockpos.immutable(), pBlockEntity);

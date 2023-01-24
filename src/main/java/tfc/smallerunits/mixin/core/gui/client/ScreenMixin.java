@@ -1,6 +1,7 @@
 package tfc.smallerunits.mixin.core.gui.client;
 
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -19,6 +20,15 @@ public class ScreenMixin implements SUScreenAttachments {
 	int upb;
 	@Unique
 	RegionPos regionPos;
+	
+	@Override
+	public void update(Player player) {
+		if (info != null) {
+			synchronized (this) {
+				info = new PositionalInfo(player);
+			}
+		}
+	}
 	
 	@Override
 	public void setup(PositionalInfo info, UnitSpace unit) {

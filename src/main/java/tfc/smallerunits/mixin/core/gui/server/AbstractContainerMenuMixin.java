@@ -1,5 +1,6 @@
 package tfc.smallerunits.mixin.core.gui.server;
 
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,6 +20,15 @@ public class AbstractContainerMenuMixin implements SUScreenAttachments {
 	int upb;
 	@Unique
 	RegionPos regionPos;
+	
+	@Override
+	public void update(Player player) {
+		if (info != null) {
+			synchronized (this) {
+				info = new PositionalInfo(player);
+			}
+		}
+	}
 	
 	@Override
 	public void setup(PositionalInfo info, UnitSpace unit) {

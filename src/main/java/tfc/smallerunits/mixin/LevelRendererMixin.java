@@ -298,7 +298,13 @@ public abstract class LevelRendererMixin {
 		}
 		
 		synchronized (capable.getTiles()) {
-			for (BlockEntity tile : capable.getTiles()) {
+			BlockEntity[] bes = new BlockEntity[0];
+			// TODO: debug????
+			try {
+				bes = capable.getTiles().toArray(bes);
+			} catch (Throwable ignored) {
+			}
+			for (BlockEntity tile : bes) {
 				if (tile.getLevel() == null) continue; // idk how this happens, but ok?
 				if (new RegionPos(origin).equals(((FakeClientLevel) tile.getLevel()).region.pos)) {
 					int y = tile.getBlockPos().getY() / ((FakeClientLevel) tile.getLevel()).upb;

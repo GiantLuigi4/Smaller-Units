@@ -134,6 +134,10 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		// TODO: debug this garbage
 		((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).setWorld(preHandleLevel);
 		
+		NetworkingHacks.currentContext.set(new NetworkHandlingContext(
+				context, info, ctx.getDirection(), preHandleLevel
+		));
+		
 		try {
 			context.pkt.handle(ctx.getNetworkManager().getPacketListener());
 		} catch (Throwable ignored) {
@@ -144,8 +148,10 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		if (toServer) {
 			Object newV = context.player.containerMenu;
 			if (old != newV) {
-				NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-				((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+				if (newV != context.player.inventoryMenu) {
+					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+					((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+				}
 			}
 		} else {
 			Object newV = IHateTheDistCleaner.getScreen();
@@ -160,6 +166,8 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
 		teardown(context);
 		NetworkingHacks.increaseBlockPosPrecision.remove();
+		NetworkingHacks.unitPos.remove();
+		NetworkingHacks.currentContext.remove();
 //		System.out.println();
 	}
 	
