@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.level;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.Entity;
@@ -42,7 +43,7 @@ public interface ITickerLevel {
 	
 	void clear(BlockPos myPosInTheLevel, BlockPos offset);
 	
-	void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> placesBlocks);
+	void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, ArrayList<BlockPos> placesBlocks, HashMap<SectionPos, ChunkAccess> chunkCache);
 	
 	default HashMap<Integer, BreakData> getBreakData() {
 		return null;

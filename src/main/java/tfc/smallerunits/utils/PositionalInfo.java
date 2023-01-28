@@ -1,5 +1,6 @@
 package tfc.smallerunits.utils;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -11,6 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
@@ -36,6 +38,15 @@ public class PositionalInfo {
 		eyeHeight = pEntity.eyeHeight;
 		oPos = new Vec3(pEntity.xo, pEntity.yo, pEntity.zo);
 		oldPos = new Vec3(pEntity.xOld, pEntity.yOld, pEntity.zOld);
+		if (FMLEnvironment.dist.isClient()) {
+			if (pEntity.getLevel().isClientSide) {
+				particleEngine = IHateTheDistCleaner.getParticleEngine();
+				
+				if (particleEngine instanceof UnitParticleEngine) {
+					System.out.println("stop");
+				}
+			}
+		}
 	}
 	
 	public void scalePlayerReach(Player pPlayer, int upb) {
@@ -48,16 +59,24 @@ public class PositionalInfo {
 	}
 	
 	public void adjust(Entity pEntity, UnitSpace space) {
-		adjust(pEntity, space.getMyLevel(), space.unitsPerBlock, space.regionPos);
+		adjust(pEntity, space.getMyLevel(), space.unitsPerBlock, space.regionPos, true);
+	}
+	
+	public void adjust(Entity pEntity, UnitSpace space, boolean updateParticleEngine) {
+		adjust(pEntity, space.getMyLevel(), space.unitsPerBlock, space.regionPos, updateParticleEngine);
 	}
 	
 	public void adjust(Entity pEntity, Level level, int upb, RegionPos regionPos) {
+		adjust(pEntity, level, upb, regionPos, true);
+	}
+	
+	public void adjust(Entity pEntity, Level level, int upb, RegionPos regionPos, boolean updateParticleEngine) {
 		AABB scaledBB;
 		pEntity.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, upb, regionPos));
 		pEntity.eyeHeight = (float) (this.eyeHeight * upb);
 		pEntity.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 		if (pEntity instanceof Player player)
-			setupClient(player, level);
+			setupClient(player, level, updateParticleEngine);
 		// TODO: fix this
 		pEntity.xo = HitboxScaling.scaleX((ITickerLevel) level, pEntity.xo);
 		pEntity.yo = HitboxScaling.scaleY((ITickerLevel) level, pEntity.yo);
@@ -79,11 +98,11 @@ public class PositionalInfo {
 		}
 		pEntity.level = lvl;
 		if (pEntity instanceof Player player) {
-			if (FMLEnvironment.dist.isClient()) {
-				if (pEntity.level.isClientSide) {
-					IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
+			resetClient(player);
+			if (particleEngine != null)
+				if (Minecraft.getInstance().particleEngine instanceof UnitParticleEngine) {
+					System.out.println("why");
 				}
-			}
 		}
 		pEntity.setBoundingBox(box);
 		pEntity.setPosRaw(pos.x, pos.y, pos.z);
@@ -96,10 +115,24 @@ public class PositionalInfo {
 		pEntity.eyeHeight = eyeHeight;
 	}
 	
-	public void setupClient(Player player, Level spaceLevel) {
+	public void resetClient(Player player) {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
-				particleEngine = IHateTheDistCleaner.adjustClient(player, spaceLevel);
+				IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
+			}
+		}
+	}
+	
+	public void setupClient(Player player, Level spaceLevel, boolean updateParticleEngine) {
+		if (FMLEnvironment.dist.isClient()) {
+			if (player.level.isClientSide) {
+				Object o = IHateTheDistCleaner.adjustClient(player, spaceLevel);
+//				if (updateParticleEngine && RenderSystem.isOnGameThread()) particleEngine = o;
+//
+//				// TODO: fix
+//				if (particleEngine instanceof UnitParticleEngine) {
+//					System.out.println("harold");
+//				}
 			}
 		}
 	}

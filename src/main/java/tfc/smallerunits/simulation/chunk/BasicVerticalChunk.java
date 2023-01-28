@@ -37,6 +37,7 @@ import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class BasicVerticalChunk extends LevelChunk {
@@ -334,15 +335,20 @@ public class BasicVerticalChunk extends LevelChunk {
 		return getBlockState(pos).getFluidState();
 	}
 	
-	private void setBlockFast$(BlockPos pos, BlockState state) {
+	private void setBlockFast$(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		int j = pos.getX() & 15;
 		int k = pos.getY();
 		int l = pos.getZ() & 15;
 		int indx = getIndx(j, k, l);
 		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
 		
-		// TODO: this can be optimized, but it's good for now
-		ChunkAccess ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
+		SectionPos pPosAsSectionPos = SectionPos.of(parentPos);
+		ChunkAccess ac = chunkCache.get(pPosAsSectionPos);
+		if (ac == null) {
+			ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
+			chunkCache.put(pPosAsSectionPos, ac);
+		}
+		
 		ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
 		UnitSpace space = capability.getOrMakeUnit(parentPos);
 		space.removeState(section.getBlockState(j, k, l));
@@ -364,11 +370,11 @@ public class BasicVerticalChunk extends LevelChunk {
 //		}
 	}
 	
-	public void setBlockFast(BlockPos pos, BlockState state) {
+	public void setBlockFast(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0) {
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			chunk.setBlockFast$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), state);
+			chunk.setBlockFast$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), state, chunkCache);
 //			if (level.isClientSide) {
 //				if (state.hasBlockEntity()) {
 //					BlockEntity be;
@@ -387,7 +393,7 @@ public class BasicVerticalChunk extends LevelChunk {
 //			}
 			return;
 		}
-		setBlockFast$(new BlockPos(pos), state);
+		setBlockFast$(new BlockPos(pos), state, chunkCache);
 	}
 	
 	ArrayList<ServerPlayer> oldPlayersTracking = new ArrayList<>();

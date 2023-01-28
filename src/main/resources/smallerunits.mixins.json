@@ -19,10 +19,11 @@
     "core.MinecraftMixin", "core.MultiPlayerGameModeMixin", "core.PersistentEntitySectionManagerMixin",
     "core.access.ClientPacketListenerMixin", "core.gui.client.ForgeHooksClientMixin",
     "core.gui.client.KeyboardHandlerMixin", "core.gui.client.MinecraftMixin", "core.gui.client.MouseHandlerMixin",
-    "core.gui.client.ScreenMixin", "dangit.ForgeWhy", "data.AbstractClientPlayerMixin", "data.CompiledChunkMixin",
-    "data.LevelChunkMixin", "data.LevelMixin", "data.access.VertexBufferMixin", "data.regions.ClientChunkCacheMixin",
-    "data.regions.ClientLevelMixin", "data.regions.LevelMixin", "debug.RenderWorldLast",
-    "quality.BlockEntityRendererDispatcherMixin", "quality.CameraMixin", "quality.ParticleEngineAccessor"
+    "core.gui.client.ScreenMixin", "dangit.ClientLevelMixin", "dangit.ForgeWhy", "data.AbstractClientPlayerMixin",
+    "data.CompiledChunkMixin", "data.LevelChunkMixin", "data.LevelMixin", "data.access.VertexBufferMixin",
+    "data.regions.ClientChunkCacheMixin", "data.regions.ClientLevelMixin", "data.regions.LevelMixin",
+    "debug.RenderWorldLast", "quality.BlockEntityRendererDispatcherMixin", "quality.CameraMixin",
+    "quality.ParticleEngineAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

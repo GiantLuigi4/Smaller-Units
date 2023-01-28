@@ -7,13 +7,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -22,6 +25,7 @@ import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class SyncPacketS2C extends Packet {
 	private static final ArrayList<SyncPacketS2C> deferred = new ArrayList<>();
@@ -88,7 +92,8 @@ public class SyncPacketS2C extends Packet {
 			space.unitsPerBlock = syncPacket.upb;
 			space.setUpb(space.unitsPerBlock);
 			space.isNatural = syncPacket.natural;
-			space.loadPallet(syncPacket.pallet);
+			HashSet<BlockPos> positionsWithBE = new HashSet<>();
+			space.loadPallet(syncPacket.pallet, positionsWithBE);
 			if (cap.getUnit(syncPacket.realPos) != null)
 				cap.removeUnit(syncPacket.realPos);
 			cap.setUnit(syncPacket.realPos, space);
@@ -120,7 +125,22 @@ public class SyncPacketS2C extends Packet {
 				ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				((SUCapableChunk) ac).addTile(be);
+				
+				positionsWithBE.remove(be.getBlockPos());
 			}
+			
+			for (BlockPos blockPos : positionsWithBE) {
+				BlockState state = lvl.getBlockState(blockPos);
+				
+				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(blockPos, state);
+				if (be == null) return;
+				lvl.setBlockEntity(be);
+				
+				BlockPos parentPos = PositionUtils.getParentPos(blockPos, (ITickerLevel) space.getMyLevel());
+				ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
+				((SUCapableChunk) ac).addTile(be);
+			}
+			
 			Minecraft.getInstance().level = clvl;
 		}
 		deferred.removeAll(toRemove);

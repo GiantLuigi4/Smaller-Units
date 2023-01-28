@@ -36,7 +36,7 @@ public class MouseHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}
@@ -72,13 +72,44 @@ public class MouseHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
+			}
+		}
+	}
+	
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPre(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)Z", shift = At.Shift.AFTER), method = "onScroll")
+	public void postPreScroll(long pWindowPointer, double pXOffset, double pYOffset, CallbackInfo ci) {
+		Screen screen = currentScreen.get();
+		if (Minecraft.getInstance().player != null && screen != null) {
+			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
+			PositionalInfo info = screenAttachments.getPositionalInfo();
+			if (info != null) {
+				info.reset(Minecraft.getInstance().player);
+				NetworkingHacks.unitPos.remove();
+				
+				if (Minecraft.getInstance().screen != null && Minecraft.getInstance().screen != currentScreen.get()) {
+					SUScreenAttachments attachments = (SUScreenAttachments) Minecraft.getInstance().screen;
+					attachments.setup(info, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				}
+			}
+		}
+	}
+	
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPost(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)Z"), method = "onScroll")
+	public void prePostScroll(long pWindowPointer, double pXOffset, double pYOffset, CallbackInfo ci) {
+		Screen screen = currentScreen.get();
+		if (Minecraft.getInstance().player != null && screen != null) {
+			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
+			PositionalInfo info = screenAttachments.getPositionalInfo();
+			if (info != null) {
+				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}
 	
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPost(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)Z", shift = At.Shift.AFTER), method = "onScroll")
-	public void postScroll(long pWindowPointer, double pXOffset, double pYOffset, CallbackInfo ci) {
+	public void postPostScroll(long pWindowPointer, double pXOffset, double pYOffset, CallbackInfo ci) {
 		Screen screen = currentScreen.get();
 		if (Minecraft.getInstance().player != null && screen != null) {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
@@ -104,7 +135,7 @@ public class MouseHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}
@@ -135,7 +166,7 @@ public class MouseHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}
@@ -167,7 +198,7 @@ public class MouseHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}

@@ -32,7 +32,7 @@ public class KeyboardHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}
@@ -66,7 +66,7 @@ public class KeyboardHandlerMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
 	}

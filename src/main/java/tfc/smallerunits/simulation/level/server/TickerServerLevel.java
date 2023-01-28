@@ -434,22 +434,24 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		getBlockState(pos).tick(this, pos, this.random);
 	}
 	
-	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> positions) {
+	@Override
+	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, ArrayList<BlockPos> positions, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		BlockPos rp = region.pos.toBlockPos();
 		int xo = ((cp.x * 16) / upb) + (x / upb);
 		int yo = ((cy * 16) / upb) + (y / upb);
 		int zo = ((cp.z * 16) / upb) + (z / upb);
 		BlockPos parentPos = rp.offset(xo, yo, zo);
 		ChunkAccess ac;
+		SectionPos pos = SectionPos.of(parentPos);
 		// vertical lookups shouldn't be too expensive
-		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
+		if (!chunkCache.containsKey(pos)) {
 			ac = parent.get().getChunkAt(parentPos);
-			accessHashMap.put(new ChunkPos(parentPos), ac);
+			chunkCache.put(pos, ac);
 			if (!positions.contains(parentPos)) {
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				positions.add(parentPos);
 			}
-		} else ac = accessHashMap.get(new ChunkPos(parentPos));
+		} else ac = chunkCache.get(pos);
 		
 		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 		UnitSpace space = cap.getUnit(parentPos);
@@ -459,7 +461,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
 		vc = vc.getSubChunk(cy);
-		vc.setBlockFast(new BlockPos(x, y, z), state);
+		vc.setBlockFast(new BlockPos(x, y, z), state, chunkCache);
 		
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
@@ -551,12 +553,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
+		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
 		for (int x = myPosInTheLevel.getX(); x < offset.getX(); x++) {
 			for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
 				for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
 					BlockPos pz = new BlockPos(x, y, z);
 					BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(pz);
-					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null);
+					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null, cache);
 				}
 			}
 		}

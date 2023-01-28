@@ -1,6 +1,7 @@
 package tfc.smallerunits;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.storage.Region;
@@ -22,6 +24,9 @@ import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.Math1D;
+
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class UnitSpace {
 	// TODO: migrate to chunk class
@@ -233,6 +238,11 @@ public class UnitSpace {
 	}
 	
 	public void loadPallet(UnitPallet pallet) {
+		loadPallet(pallet, null);
+	}
+	
+	public void loadPallet(UnitPallet pallet, HashSet<BlockPos> positionsWithBE) {
+		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
 		final BlockState[] states = new BlockState[unitsPerBlock * unitsPerBlock * unitsPerBlock];
 //		for (int i = 0; i < states.length; i++) states[i] = Blocks.AIR.defaultBlockState();
 		pallet.acceptStates(states, false);
@@ -247,8 +257,11 @@ public class UnitSpace {
 						pos.set(x, y, z);
 						BlockPos pz = getOffsetPos(pos);
 						BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx]);
+						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
 						addState(states[indx]);
+						if (positionsWithBE != null)
+							if (states[indx].hasBlockEntity())
+								positionsWithBE.add(pz);
 //						((BasicCubicChunk) myLevel.getChunkAt(getOffsetPos(new BlockPos(x, y, z)))).setBlockFast(new BlockPos(x, y, z), states[indx]);
 					}
 				}
@@ -279,16 +292,17 @@ public class UnitSpace {
 	public void setFast(int x, int y, int z, BlockState state) {
 		BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 		BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-		vc.setBlockFast(new BlockPos(x, pz.getY(), z), state);
+		vc.setBlockFast(new BlockPos(x, pz.getY(), z), state, new HashMap<>());
 	}
 	
 	public void clear() {
+		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
 		for (int x = 0; x < unitsPerBlock; x++) {
 			for (int y = 0; y < unitsPerBlock; y++) {
 				for (int z = 0; z < unitsPerBlock; z++) {
 					BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 					BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-					vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), Blocks.AIR.defaultBlockState());
+					vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), Blocks.AIR.defaultBlockState(), cache);
 					vc.removeBlockEntity(new BlockPos(pz.getX(), pz.getY(), pz.getZ()));
 				}
 			}

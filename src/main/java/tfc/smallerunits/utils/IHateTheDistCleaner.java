@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import tfc.smallerunits.TileResizingItem;
+import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
@@ -109,6 +110,10 @@ public class IHateTheDistCleaner {
 				((LocalPlayer) pPlayer).clientLevel = (ClientLevel) lvl;
 				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel;
 				
+				if (Minecraft.getInstance().level instanceof ParticleEngineHolder engineHolder) {
+					if ((Minecraft.getInstance().particleEngine = engineHolder.myEngine()) != null)
+						return;
+				}
 				if (engine != null) Minecraft.getInstance().particleEngine = (ParticleEngine) engine;
 			}
 		}
@@ -116,5 +121,14 @@ public class IHateTheDistCleaner {
 	
 	public static Object getScreen() {
 		return Minecraft.getInstance().screen;
+	}
+	
+	public static Object getParticleEngine() {
+		if (Minecraft.getInstance().level instanceof ParticleEngineHolder engineHolder) {
+			ParticleEngine engine = engineHolder.myEngine();
+			if (engine == null) engineHolder.setParticleEngine(engine = Minecraft.getInstance().particleEngine);
+			return engine;
+		}
+		return Minecraft.getInstance().particleEngine;
 	}
 }

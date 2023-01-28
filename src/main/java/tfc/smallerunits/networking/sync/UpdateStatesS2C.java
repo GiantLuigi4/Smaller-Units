@@ -2,6 +2,7 @@ package tfc.smallerunits.networking.sync;
 
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -76,7 +77,7 @@ public class UpdateStatesS2C extends Packet {
 			
 			BlockState[] states = new BlockState[16 * 16 * 16];
 			pallet.acceptStates(states, false);
-			HashMap<ChunkPos, ChunkAccess> accessHashMap = new HashMap<>();
+			HashMap<SectionPos, ChunkAccess> accessHashMap = new HashMap<>();
 			ArrayList<BlockPos> placesBlocks = new ArrayList<>();
 //			Minecraft.getInstance().getProfiler().push("sync");
 			for (int x = 0; x < 16; x++) {
@@ -85,7 +86,7 @@ public class UpdateStatesS2C extends Packet {
 						int indx = ((x * 16) + y) * 16 + z;
 						if (states[indx] == null) continue;
 //						space.setFast(x, y, z, states[indx]);
-						((ITickerLevel) lvl).setFromSync(cp, cy, x, y, z, states[indx], accessHashMap, placesBlocks);
+						((ITickerLevel) lvl).setFromSync(cp, cy, x, y, z, states[indx], placesBlocks, accessHashMap);
 					}
 				}
 			}

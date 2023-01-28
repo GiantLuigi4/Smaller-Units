@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
+import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
 import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -76,12 +77,21 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class FakeClientLevel extends ClientLevel implements ITickerLevel {
+public class FakeClientLevel extends ClientLevel implements ITickerLevel, ParticleEngineHolder {
 	public final Region region;
 	public final int upb;
 	public final GroupMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new GroupMap<>(2);
 	public ParentLookup lookup;
 	WeakReference<ClientLevel> parent;
+	
+	@Override
+	public ParticleEngine myEngine() {
+		return particleEngine;
+	}
+	
+	@Override
+	public void setParticleEngine(ParticleEngine engine) {
+	}
 	
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
 	// if I do Minecraft.getInstance().getTextureManager(), it messes up particle textures
@@ -681,30 +691,32 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 	
 	@Override
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
+		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
 		for (int x = myPosInTheLevel.getX(); x < offset.getX(); x++) {
 			for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
 				for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
 					BlockPos pz = new BlockPos(x, y, z);
 					BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(pz);
-					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null);
+					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null, cache);
 				}
 			}
 		}
 	}
 	
 	@Override
-	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, HashMap<ChunkPos, ChunkAccess> accessHashMap, ArrayList<BlockPos> positions) {
+	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, ArrayList<BlockPos> positions, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		BlockPos parentPos = PositionUtils.getParentPos(new BlockPos(x, y, z), cp, 0, this);
 		ChunkAccess ac;
 		// vertical lookups shouldn't be too expensive
-		if (!accessHashMap.containsKey(new ChunkPos(parentPos))) {
+		SectionPos pos = SectionPos.of(parentPos);
+		if (!chunkCache.containsKey(pos)) {
 			ac = parent.get().getChunkAt(parentPos);
-			accessHashMap.put(new ChunkPos(parentPos), ac);
+			chunkCache.put(pos, ac);
 			if (!positions.contains(parentPos)) {
 				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
 				positions.add(parentPos);
 			}
-		} else ac = accessHashMap.get(new ChunkPos(parentPos));
+		} else ac = chunkCache.get(pos);
 		
 		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 		UnitSpace space = cap.getUnit(parentPos);
@@ -714,7 +726,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel {
 		}
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(cp.getWorldPosition());
 		vc = vc.getSubChunk(cy);
-		vc.setBlockFast(new BlockPos(x, y, z), state);
+		vc.setBlockFast(new BlockPos(x, y, z), state, chunkCache);
 		// TODO: mark lighting engine dirty
 		
 		((SUCapableChunk) ac).SU$markDirty(parentPos);

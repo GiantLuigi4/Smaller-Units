@@ -60,7 +60,7 @@ public class PacketUtilMess {
 				player.eyeHeight = (float) (info.eyeHeight * (pos.upb()));
 				((PacketListenerAccessor) listener).setWorld(player.level = spaceLevel);
 				player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-				info.setupClient(player, spaceLevel);
+				info.setupClient(player, spaceLevel, true);
 				// TODO: do this more properly
 				player.xOld = player.xo = player.position().x;
 				player.yOld = player.yo = player.position().y;
