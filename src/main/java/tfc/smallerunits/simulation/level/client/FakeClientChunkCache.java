@@ -86,6 +86,7 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY >= (upb * 32)) {
 			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad);
 			if (neighborChunk != null) return neighborChunk;
+			if (!pLoad) return null;
 			
 			Region r = ((ITickerLevel) level).getRegion();
 			RegionPos pos = r.pos;

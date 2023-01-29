@@ -25,14 +25,29 @@ public class VChunkLookup {
 		return applyAbs(i + myPos);
 	}
 	
+	public BasicVerticalChunk applyNoLoad(int i) {
+		return applyAbsNoLoad(i + myPos);
+	}
+	
 	public BasicVerticalChunk applyAbs(int i) {
 		if (i < 0 || i >= maxPos) {
-			ChunkAccess chunk = tickerChunkCache.getChunk(ckPos.x, i, ckPos.z, ChunkStatus.FULL, true); // TODO: make it so this doesn't have to be true?;
+			ChunkAccess chunk = tickerChunkCache.getChunk(ckPos.x, i, ckPos.z, ChunkStatus.FULL, true);
 			if (chunk instanceof BasicVerticalChunk vc) return vc;
 			return null;
 		}
 		BasicVerticalChunk vc = chunks[i];
 		if (vc == null) vc = chunks[i] = tickerChunkCache.createChunk(i, ckPos);
+		return vc;
+	}
+	
+	public BasicVerticalChunk applyAbsNoLoad(int i) {
+		if (i < 0 || i >= maxPos) {
+			ChunkAccess chunk = tickerChunkCache.getChunk(ckPos.x, i, ckPos.z, ChunkStatus.FULL, false);
+			if (chunk instanceof BasicVerticalChunk vc) return vc;
+			return null;
+		}
+		BasicVerticalChunk vc = chunks[i];
+		if (vc == null) vc = chunks[i] = tickerChunkCache.createChunk(i, ckPos); // TODO: this shouldn't create
 		return vc;
 	}
 }

@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.storage.Region;
@@ -221,10 +222,17 @@ public class UnitSpace {
 	public BlockState[] getBlocks() {
 		numBlocks = 0;
 		final BlockState[] states = new BlockState[unitsPerBlock * unitsPerBlock * unitsPerBlock];
+		BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
 		for (int x = 0; x < unitsPerBlock; x++) {
-			for (int y = 0; y < unitsPerBlock; y++) {
-				for (int z = 0; z < unitsPerBlock; z++) {
-					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockState(myPosInTheLevel.offset(x, y, z));
+			for (int z = 0; z < unitsPerBlock; z++) {
+				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+				if (chunk == null) continue;
+				
+				for (int y = 0; y < unitsPerBlock; y++) {
+					blockPos.set(x, y + myPosInTheLevel.getY(), z);
+					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = chunk.getBlockState(blockPos);
 					addState(state);
 				}
 			}
@@ -249,14 +257,19 @@ public class UnitSpace {
 		try {
 			BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 			for (int x = 0; x < unitsPerBlock; x++) {
-				for (int y = 0; y < unitsPerBlock; y++) {
-					for (int z = 0; z < unitsPerBlock; z++) {
+				for (int z = 0; z < unitsPerBlock; z++) {
+					int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+					int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+					if (chunk == null) continue;
+					BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
+					
+					for (int y = 0; y < unitsPerBlock; y++) {
 						int indx = (((x * unitsPerBlock) + y) * unitsPerBlock) + z;
 						if (states[indx] == null) continue;
 						if (states[indx] == Blocks.AIR.defaultBlockState()) continue;
 						pos.set(x, y, z);
 						BlockPos pz = getOffsetPos(pos);
-						BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
 						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
 						addState(states[indx]);
 						if (positionsWithBE != null)
@@ -298,10 +311,15 @@ public class UnitSpace {
 	public void clear() {
 		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
 		for (int x = 0; x < unitsPerBlock; x++) {
-			for (int y = 0; y < unitsPerBlock; y++) {
-				for (int z = 0; z < unitsPerBlock; z++) {
+			for (int z = 0; z < unitsPerBlock; z++) {
+				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
+				
+				for (int y = 0; y < unitsPerBlock; y++) {
 					BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
-					BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
 					vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), Blocks.AIR.defaultBlockState(), cache);
 					vc.removeBlockEntity(new BlockPos(pz.getX(), pz.getY(), pz.getZ()));
 				}
@@ -311,10 +329,18 @@ public class UnitSpace {
 	
 	public BlockEntity[] getTiles() {
 		final BlockEntity[] states = new BlockEntity[unitsPerBlock * unitsPerBlock * unitsPerBlock];
-		for (int x = 0; x < unitsPerBlock; x++)
-			for (int y = 0; y < unitsPerBlock; y++)
-				for (int z = 0; z < unitsPerBlock; z++)
-					states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = myLevel.getBlockEntity(myPosInTheLevel.offset(x, y, z));
+		for (int x = 0; x < unitsPerBlock; x++) {
+			for (int z = 0; z < unitsPerBlock; z++) {
+				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				
+				for (int y = 0; y < unitsPerBlock; y++) {
+					states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = chunk.getBlockEntity(myPosInTheLevel.offset(x, y, z));
+				}
+			}
+		}
 		return states;
 	}
 	
@@ -334,9 +360,14 @@ public class UnitSpace {
 			tag.put("ticks", ((ITickerLevel) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
 		CompoundTag tiles = new CompoundTag();
 		for (int x = 0; x < unitsPerBlock; x++) {
-			for (int y = 0; y < unitsPerBlock; y++) {
-				for (int z = 0; z < unitsPerBlock; z++) {
-					BlockEntity be = myLevel.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
+			for (int z = 0; z < unitsPerBlock; z++) {
+				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				
+				for (int y = 0; y < unitsPerBlock; y++) {
+					BlockEntity be = chunk.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
 					if (be != null) {
 						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
 					}

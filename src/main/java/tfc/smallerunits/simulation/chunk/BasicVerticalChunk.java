@@ -49,7 +49,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	public final ArrayList<BlockPos> besRemoved = new ArrayList<>();
 	public ArrayList<BlockEntity> beChanges = new ArrayList<>();
 	ParentLookup lookup;
-	private int upb;
+	private final int upb;
 	public UnitChunkHolder holder = null;
 	
 	LevelChunkSection section;
@@ -317,7 +317,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (lookupPass) {
 			int yO = Math1D.getChunkOffset(pos.getY(), 16);
 			if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
-				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+				BasicVerticalChunk chunk = verticalLookup.applyAbsNoLoad(yPos + yO);
 				if (chunk == null)
 					return Blocks.VOID_AIR.defaultBlockState();
 				return chunk.getBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
@@ -424,7 +424,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
 		BlockPos blockpos = pBlockEntity.getBlockPos();
-		if (this.getBlockState$(new BlockPos(blockpos.getX(), blockpos.getY() - (yPos * 16), blockpos.getZ())).hasBlockEntity()) {
+		if (this.getBlockState(new BlockPos(blockpos.getX(), blockpos.getY() - (yPos * 16), blockpos.getZ())).hasBlockEntity()) {
 			pBlockEntity.setLevel(this.level);
 			pBlockEntity.clearRemoved();
 			BlockEntity blockentity = this.blockEntities.put(blockpos.immutable(), pBlockEntity);

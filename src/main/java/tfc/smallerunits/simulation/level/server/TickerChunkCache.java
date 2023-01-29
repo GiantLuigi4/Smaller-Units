@@ -143,30 +143,9 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	
 	public ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
 		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY >= (upb * 32)) {
-			// TODO: fix
-//			if (pChunkY < 0) {
-//				RegionPos regionPos = ((ITickerWorld) level).getRegion().pos;
-//
-//				ITickerWorld tickerLevel = (ITickerWorld) level;
-//				if (tickerLevel.getParent() instanceof RegionalAttachments attachments) {
-//					// TODO: do this more properly
-//					RegionPos rPos = new RegionPos(regionPos.x, regionPos.y - 1, regionPos.z);
-//					Region r = attachments.SU$getRegion(rPos);
-//					if (r == null) {
-//						LOGGER.warn("Region@" + rPos + " was null");
-//						return empty;
-//					}
-//					Level lvl;
-//					if (tickerLevel.getParent() instanceof ServerLevel)
-//						lvl = r.getServerWorld(level.getServer(), level, upb);
-//					else
-//						lvl = r.getClientWorld(level, upb);
-//					return lvl.getChunk(pChunkX, pChunkZ, pRequiredStatus);
-//				}
-//			}
-			
 			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad);
 			if (neighborChunk != null) return neighborChunk;
+			if (!pLoad) return null;
 			
 			Region r = ((TickerServerLevel) level).region;
 			RegionPos pos = r.pos;

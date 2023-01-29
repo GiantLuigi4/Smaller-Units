@@ -33,6 +33,7 @@ import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.phys.AABB;
@@ -300,6 +301,15 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		int pY = 0;
 		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
 		ChunkAccess chunkaccess = ((TickerChunkCache) this.getChunkSource()).getChunk(pX, pY, pZ, ChunkStatus.FULL, true);
+		return (LevelChunk) chunkaccess;
+	}
+	
+	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {
+		int pX = SectionPos.blockToSectionCoord(pPos.getX());
+//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
+		int pY = 0;
+		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
+		ChunkAccess chunkaccess = ((TickerChunkCache) this.getChunkSource()).getChunk(pX, pY, pZ, ChunkStatus.FULL, false);
 		return (LevelChunk) chunkaccess;
 	}
 	
@@ -657,26 +667,32 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		
 		// TODO: there are better ways to do this
 		for (int x = minX; x < maxX; x += 16) {
-			for (int y = minY; y < maxY; y += 16) {
-				for (int z = minZ; z < maxZ; z += 16) {
+			for (int z = minZ; z < maxZ; z += 16) {
+				for (int y = minY; y < maxY; y += 16) {
 					AABB box = new AABB(
 							x, y, z,
 							x + 16, y + 16, z + 16
 					);
 					if (simpleChecker.apply(box)) {
 						for (int x0 = 0; x0 < 16; x0++) {
-							for (int y0 = 0; y0 < 16; y0++) {
-								for (int z0 = 0; z0 < 16; z0++) {
-									int x1 = x + x0;
+							int x1 = x + x0;
+							for (int z0 = 0; z0 < 16; z0++) {
+								int z1 = z + z0;
+								
+								int pX = SectionPos.blockToSectionCoord(x1);
+								int pZ = SectionPos.blockToSectionCoord(z1);
+								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
+								if (chunk == null) continue;
+								
+								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;
-									int z1 = z + z0;
 									box = new AABB(
 											x1, y1, z1,
 											x1 + 1, y1 + 1, z1 + 1
 									);
 									if (simpleChecker.apply(box)) {
 										BlockPos pos = new BlockPos(x1, y1, z1);
-										BlockState state = getBlockState(pos);
+										BlockState state = chunk.getBlockState(pos);
 										if (state.isAir()) continue;
 										BlockHitResult result = boxFiller.apply(pos, state);
 										if (result != null) {
@@ -836,12 +852,16 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public BlockState getBlockState(BlockPos pPos) {
-		return getChunkAt(pPos).getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
+		LevelChunk chunk = getChunkAtNoLoad(pPos);
+		if (chunk == null) return Blocks.VOID_AIR.defaultBlockState();
+		return chunk.getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
 	
 	@Override
 	public FluidState getFluidState(BlockPos pPos) {
-		return getChunkAt(pPos).getFluidState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
+		LevelChunk chunk = getChunkAtNoLoad(pPos);
+		if (chunk == null) return Fluids.EMPTY.defaultFluidState();
+		return chunk.getFluidState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
 	
 	@Override

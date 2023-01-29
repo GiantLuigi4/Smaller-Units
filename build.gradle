@@ -149,7 +149,7 @@ configurations {
 
 dependencies {
 //    minecraft 'net.minecraftforge:forge:1.18.1-39.1.19'
-    minecraft 'net.minecraftforge:forge:1.18.2-40.1.19'
+    minecraft 'net.minecraftforge:forge:1.18.2-40.1.69'
 //    minecraft 'net.minecraftforge:forge:1.18.2-40.1.60'
 
     System.out.println("CF mods")

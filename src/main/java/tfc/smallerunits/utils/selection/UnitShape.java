@@ -7,11 +7,14 @@ import net.minecraft.Util;
 import net.minecraft.core.AxisCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -313,14 +316,24 @@ public class UnitShape extends VoxelShape {
 	public void collectShape(Function<BlockPos, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space) {
 		int upbInt = space.unitsPerBlock;
 		
+		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+		BlockPos origin = space.getOffsetPos(new BlockPos(0,0,0));
 		for (int x = 0; x < upbInt; x++) {
-			for (int y = 0; y < upbInt; y++) {
-				for (int z = 0; z < upbInt; z++) {
-					BlockState state = space.getBlock(x, y, z);
-					if (state.isAir()) continue;
-//					if (state == null) continue;
-					if (simpleChecker.apply(new BlockPos(x, y, z))) {
-						boxFiller.accept(new BlockPos(x, y, z), state);
+			for (int z = 0; z < upbInt; z++) {
+				int pX = SectionPos.blockToSectionCoord(x + origin.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
+				ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				
+				for (int y = 0; y < upbInt; y++) {
+					mutableBlockPos.set(x, y, z);
+					
+					if (simpleChecker.apply(mutableBlockPos)) {
+						mutableBlockPos.set(x, y + origin.getY(), z);
+						BlockState state = chunk.getBlockState(mutableBlockPos);
+						if (state.isAir()) continue;
+						mutableBlockPos.set(x, y, z);
+						boxFiller.accept(mutableBlockPos, state);
 					}
 				}
 			}
@@ -392,7 +405,10 @@ public class UnitShape extends VoxelShape {
 //					space.unitsPerBlock
 //			);
 			// TODO: got an issue with tall block collision (fences, walls, etc)
-			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
+			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+			mutableBlockPos.set(0, 0, 0);
+			
+			BlockPos bp = space.getOffsetPos(mutableBlockPos);
 			int minX = (int) (motionBox.minX - 1);
 			minX = Math.max(bp.getX(), minX);
 			int minY = (int) (motionBox.minY - 1);
@@ -405,13 +421,19 @@ public class UnitShape extends VoxelShape {
 			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
 			int maxZ = (int) Math.ceil(motionBox.maxZ + 1);
 			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
+			
 			for (int x = minX; x <= maxX; x++) {
-				for (int y = minY; y <= maxY; y++) {
-					for (int z = minZ; z <= maxZ; z++) {
-						BlockState state = space.getMyLevel().getBlockState(new BlockPos(x, y, z));
-//						state.getShape(space.getMyLevel(), new BlockPos(x, y, z));
+				for (int z = minZ; z <= maxZ; z++) {
+					int pX = SectionPos.blockToSectionCoord(x);
+					int pZ = SectionPos.blockToSectionCoord(z);
+					ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+					if (chunk == null) continue;
+					
+					for (int y = minY; y <= maxY; y++) {
+						mutableBlockPos.set(x, y, z);
+						BlockState state = chunk.getBlockState(mutableBlockPos);
 						if (!state.isAir() && !(state.getBlock() instanceof UnitEdge)) {
-							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), new BlockPos(x, y, z), collisionContext);
+							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), mutableBlockPos, collisionContext);
 							if (shape.isEmpty())
 								continue;
 							
@@ -463,6 +485,9 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	protected boolean intersects$(VoxelShape pShape2) {
+		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+		mutableBlockPos.set(0, 0, 0);
+		
 		HashMap<BlockPos, VoxelShape> positionsChecked = new HashMap<>();
 		for (AABB toAabb : pShape2.toAabbs()) {
 			for (AABB box : boxesTrace) {
@@ -472,7 +497,8 @@ public class UnitShape extends VoxelShape {
 			}
 			AABB scaledBox = HitboxScaling.getOffsetAndScaledBox(toAabb, toAabb.getCenter().multiply(1, 0, 1).add(0, toAabb.minY, 0), space.unitsPerBlock, space.regionPos);
 			
-			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
+			mutableBlockPos.set(0, 0, 0);
+			BlockPos bp = space.getOffsetPos(mutableBlockPos);
 			int minX = (int) (scaledBox.minX - 1);
 			minX = Math.max(bp.getX(), minX);
 			int minY = (int) (scaledBox.minY - 1);
@@ -492,10 +518,14 @@ public class UnitShape extends VoxelShape {
 //					-offset.z / (double) space.unitsPerBlock
 //			);
 			
-			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 			for (int x = minX; x <= maxX; x++) {
-				for (int y = minY; y <= maxY; y++) {
-					for (int z = minZ; z <= maxZ; z++) {
+				for (int z = minZ; z <= maxZ; z++) {
+					int pX = SectionPos.blockToSectionCoord(x);
+					int pZ = SectionPos.blockToSectionCoord(z);
+					ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+					if (chunk == null) continue;
+					
+					for (int y = minY; y <= maxY; y++) {
 						mutableBlockPos.set(x, y, z);
 						AABB box = new AABB(
 								mutableBlockPos
@@ -513,7 +543,7 @@ public class UnitShape extends VoxelShape {
 						VoxelShape shape;
 						BlockPos immut = mutableBlockPos.immutable();
 						if (!positionsChecked.containsKey(immut)) {
-							BlockState state = space.getMyLevel().getBlockState(immut);
+							BlockState state = chunk.getBlockState(immut);
 							if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
 								shape = state.getCollisionShape(space.getMyLevel(), immut, collisionContext);
 							else

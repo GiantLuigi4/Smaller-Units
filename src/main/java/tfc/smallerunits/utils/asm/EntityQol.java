@@ -2,12 +2,15 @@ package tfc.smallerunits.utils.asm;
 
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
@@ -18,8 +21,26 @@ import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public class EntityQol {
+	protected static void forEachBlock(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, Level level, BiConsumer<BlockPos, ChunkAccess> function) {
+		BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
+		for (int l1 = minX; l1 < maxX; ++l1) {
+			for (int j2 = minZ; j2 < maxZ; ++j2) {
+				int pX = SectionPos.blockToSectionCoord(l1);
+				int pZ = SectionPos.blockToSectionCoord(j2);
+				ChunkAccess chunk = level.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				
+				for (int i2 = minY; i2 < maxY; ++i2) {
+					blockpos$mutableblockpos.set(l1, i2, j2);
+					function.accept(blockpos$mutableblockpos, chunk);
+				}
+			}
+		}
+	}
+	
 	public static boolean inAnyFluid(AABB box, Level level, RegionPos regionPos) {
 		box = box.move(0, -0.6, 0);
 		Vec3 center = box.getCenter();
@@ -34,10 +55,15 @@ public class EntityQol {
 		
 		BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
 		for (int l1 = i; l1 < j; ++l1) {
-			for (int i2 = k; i2 < l; ++i2) {
-				for (int j2 = i1; j2 < j1; ++j2) {
+			for (int j2 = i1; j2 < j1; ++j2) {
+				int pX = SectionPos.blockToSectionCoord(l1);
+				int pZ = SectionPos.blockToSectionCoord(j2);
+				ChunkAccess chunk = level.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				
+				for (int i2 = k; i2 < l; ++i2) {
 					blockpos$mutableblockpos.set(l1, i2, j2);
-					if (!level.getBlockState(blockpos$mutableblockpos).getFluidState().isEmpty())
+					if (!chunk.getBlockState(blockpos$mutableblockpos).getFluidState().isEmpty())
 						return true;
 				}
 			}
@@ -65,10 +91,16 @@ public class EntityQol {
 		
 		boolean inFluid = false;
 		for (int l1 = i; l1 < j; ++l1) {
-			for (int i2 = k; i2 < l; ++i2) {
-				for (int j2 = i1; j2 < j1; ++j2) {
+			for (int j2 = i1; j2 < j1; ++j2) {
+				int pX = SectionPos.blockToSectionCoord(l1);
+				int pZ = SectionPos.blockToSectionCoord(j2);
+				ChunkAccess chunk = level.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				
+				for (int i2 = k; i2 < l; ++i2) {
 					blockpos$mutableblockpos.set(l1, i2, j2);
-					FluidState fluidState = level.getFluidState(blockpos$mutableblockpos);
+					
+					FluidState fluidState = chunk.getFluidState(blockpos$mutableblockpos);
 					if (fluidState.is(fluids)) {
 						double d1 = (double) ((float) i2 + fluidState.getHeight(level, blockpos$mutableblockpos));
 						if (d1 >= aabb.minY) {
