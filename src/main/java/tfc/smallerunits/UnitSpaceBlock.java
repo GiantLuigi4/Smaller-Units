@@ -248,7 +248,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
 				ItemStack itm = pPlayer.getItemInHand(pHand);
 				
-				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) space.myLevel).getRegion().pos, space.unitsPerBlock));
+				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) space.myLevel).getRegion().pos, space.unitsPerBlock));
 
 //				AABB srcBB = pPlayer.getBoundingBox();
 //				ClientLevel trueLvl = (ClientLevel) pPlayer.getLevel();
@@ -339,7 +339,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 ////					));
 //
 //			if (pPlayer instanceof ServerPlayer) {
-//				NetworkingHacks.unitPos.set(pPos);
+//				NetworkingHacks.setPos(pPos);
 //
 //				AABB srcBB = pPlayer.getBoundingBox();
 //				ServerLevel trueLvl = ((ServerPlayer) pPlayer).getLevel();

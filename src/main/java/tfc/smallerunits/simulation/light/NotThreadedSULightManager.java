@@ -47,17 +47,20 @@ public class NotThreadedSULightManager extends ThreadedLevelLightEngine {
 	
 	@Override
 	public int runUpdates(int maxUpdates, boolean runBlock, boolean runSky) {
-		if (this.blockEngine != null && this.skyEngine != null) {
+		boolean block = blockEngine != null && blockEngine.hasLightWork();
+		boolean sky = skyEngine != null && skyEngine.hasLightWork();
+		if (block && sky) {
 			int i = maxUpdates / 2;
 			int j = this.blockEngine.runUpdates(i, runBlock, runSky);
 			int k = maxUpdates - i + j;
 			int l = this.skyEngine.runUpdates(k, runBlock, runSky);
 			return j == 0 && l > 0 ? this.blockEngine.runUpdates(l, runBlock, runSky) : l;
-		} else if (this.blockEngine != null) {
+		} else if (block) {
 			return this.blockEngine.runUpdates(maxUpdates, runBlock, runSky);
-		} else {
-			return this.skyEngine != null ? this.skyEngine.runUpdates(maxUpdates, runBlock, runSky) : maxUpdates;
+		} else if (sky) {
+			return this.skyEngine.runUpdates(maxUpdates, runBlock, runSky);
 		}
+		return maxUpdates;
 	}
 	
 	@Override

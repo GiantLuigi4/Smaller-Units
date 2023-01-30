@@ -49,7 +49,7 @@ public class PacketUtilMess {
 				Level spaceLevel = region.getLevel(listener, player, pos.upb());
 //				ISUCapability capability = SUCapabilityManager.getCapability(lvl, new ChunkPos(pos));
 				
-				NetworkingHacks.unitPos.set(pos);
+				NetworkingHacks.setPos(pos);
 //				UnitSpace space = capability.getOrMakeUnit(pos);
 				PositionalInfo info = new PositionalInfo(player);
 				info.scalePlayerReach(player, pos.upb());

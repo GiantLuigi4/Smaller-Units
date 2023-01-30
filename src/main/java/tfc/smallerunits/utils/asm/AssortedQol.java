@@ -1,15 +1,32 @@
 package tfc.smallerunits.utils.asm;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.FogType;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.data.capability.ISUCapability;
+import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.selection.UnitHitResult;
+
+import java.util.List;
+import java.util.Map;
 
 public class AssortedQol {
 	public static FogType getFogType(Level level, RegionPos regionPos, Vec3 position, Vec3 camPos) {
@@ -35,5 +52,56 @@ public class AssortedQol {
 		}
 		
 		return FogType.NONE;
+	}
+	
+	public static void handleBlockInfo(HitResult block, CallbackInfoReturnable<List<String>> cir, List<String> strings) {
+		if (block instanceof UnitHitResult result) {
+			if (strings.get(strings.size() - 1).equals("smallerunits:unit_space")) {
+				strings.remove(strings.size() - 1);
+				strings.remove(strings.size() - 1);
+			} else {
+				strings.add("");
+			}
+			
+			Level level = Minecraft.getInstance().level;
+			ISUCapability capability = SUCapabilityManager.getCapability(level, new ChunkPos(result.getBlockPos()));
+			UnitSpace space = capability.getUnit(result.getBlockPos());
+			BlockState state = space.getBlock(result.geetBlockPos().getX(), result.geetBlockPos().getY(), result.geetBlockPos().getZ());
+			
+			BlockPos blockpos = space.getOffsetPos(result.geetBlockPos());
+			List<String> list = strings;
+			
+			list.add(ChatFormatting.UNDERLINE + "Targeted Small Block: " + blockpos.getX() + ", " + blockpos.getY() + ", " + blockpos.getZ());
+			list.add(String.valueOf((Object) Registry.BLOCK.getKey(state.getBlock())));
+			
+			for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {
+				Property<?> property = entry.getKey();
+				Comparable<?> comparable = entry.getValue();
+				String s = Util.getPropertyName(property, comparable);
+				if (Boolean.TRUE.equals(comparable)) {
+					s = ChatFormatting.GREEN + s;
+				} else if (Boolean.FALSE.equals(comparable)) {
+					s = ChatFormatting.RED + s;
+				}
+				
+				boolean isNumber = true;
+				for (char c : s.toCharArray()) {
+					if (!Character.isDigit(c)) {
+						isNumber = false;
+						break;
+					}
+				}
+				if (isNumber) s = ChatFormatting.GOLD + s;
+				
+				list.add(property.getName() + ": " + s);
+			}
+			
+			for (Object o : state.getTags().toArray()) {
+				list.add("#" + ((TagKey<Block>) o).location());
+			}
+//			blockstate.getTags().map((p_205379_) -> {
+//				return "#" + p_205379_.location();
+//			}).forEach(list::add);
+		}
 	}
 }

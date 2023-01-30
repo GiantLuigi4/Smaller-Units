@@ -47,9 +47,9 @@ public class AbstractClientPlayerMixin implements ICanUseUnits {
 						lvl.removeBlock(result.getBlockPos(), false);
 						// TODO: move the networking hacks position to the parent world (if I setup my networking hacks to support recursion)
 						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-						NetworkingHacks.unitPos.set(null);
+						NetworkingHacks.unitPos.remove();
 						SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(new RemoveUnitPacketC2S(result.getBlockPos()));
-						NetworkingHacks.unitPos.set(descriptor);
+						NetworkingHacks.setPos(descriptor);
 					}
 				}
 			}

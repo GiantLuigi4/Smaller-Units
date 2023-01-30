@@ -83,8 +83,8 @@ public class MinecraftMixin {
 			info.scalePlayerReach(player, space.unitsPerBlock);
 			info.adjust(player, space);
 			level = (ClientLevel) player.level;
-//			NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(new RegionPos(((UnitHitResult) hitResult).geetBlockPos()), space.unitsPerBlock));
-			NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(space.regionPos, space.unitsPerBlock));
+//			NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(new RegionPos(((UnitHitResult) hitResult).geetBlockPos()), space.unitsPerBlock));
+			NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(space.regionPos, space.unitsPerBlock));
 			RaytraceData data = new RaytraceData(hitResult, info);
 			datas.add(data);
 			

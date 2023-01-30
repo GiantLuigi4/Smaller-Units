@@ -229,10 +229,11 @@ public class UnitSpace {
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
 				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
 				if (chunk == null) continue;
+				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
 				for (int y = 0; y < unitsPerBlock; y++) {
 					blockPos.set(x, y + myPosInTheLevel.getY(), z);
-					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = chunk.getBlockState(blockPos);
+					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = vc.getBlockStateSmallOnly(blockPos);
 					addState(state);
 				}
 			}
@@ -389,7 +390,7 @@ public class UnitSpace {
 		SyncPacketS2C pkt = new SyncPacketS2C(this);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
 		if (descriptor != null)
-			NetworkingHacks.unitPos.set(descriptor);
+			NetworkingHacks.setPos(descriptor);
 	}
 	
 	public void removeState(BlockState block) {

@@ -29,7 +29,7 @@ public class ForgeHooksClientMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				screenAttachments.update(Minecraft.getInstance().player);
-				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
+				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
 				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}
@@ -59,7 +59,7 @@ public class ForgeHooksClientMixin {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
-				NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
+				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
 				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
 			}
 		}

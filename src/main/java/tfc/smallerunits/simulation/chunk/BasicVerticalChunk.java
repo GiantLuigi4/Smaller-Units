@@ -90,7 +90,8 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public LevelChunkSection getSection(int p_187657_) {
 		if (p_187657_ == yPos) return section;
-		return verticalLookup.applyAbs(p_187657_).getSection(p_187657_);
+		int yO = chunkRelative(p_187657_, upb) + p_187657_;
+		return verticalLookup.applyAbs(p_187657_).getSection(yO);
 	}
 	
 	@Override
@@ -162,6 +163,9 @@ public class BasicVerticalChunk extends LevelChunk {
 //			if (yPos + yO < 0)
 //				return Blocks.VOID_AIR.defaultBlockState();
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+			if (chunk == null) {
+				return Blocks.VOID_AIR.defaultBlockState();
+			}
 			if (chunk.holder != null)
 				chunk.holder.setBlockDirty(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
 			return chunk.setBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pState, pIsMoving);
@@ -234,7 +238,7 @@ public class BasicVerticalChunk extends LevelChunk {
 					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
 					capabilityHandler.getSUCapability().removeUnit(pPos);
 					if (descriptor != null)
-						NetworkingHacks.unitPos.set(descriptor);
+						NetworkingHacks.setPos(descriptor);
 				}
 			}
 		}
@@ -330,6 +334,17 @@ public class BasicVerticalChunk extends LevelChunk {
 		}
 	}
 	
+	public BlockState getBlockStateSmallOnly(BlockPos pos) {
+		int yO = Math1D.getChunkOffset(pos.getY(), 16);
+		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
+			BasicVerticalChunk chunk = verticalLookup.applyAbsNoLoad(yPos + yO);
+			if (chunk == null)
+				return Blocks.VOID_AIR.defaultBlockState();
+			return chunk.getBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
+		}
+		return getBlockState$(pos);
+	}
+	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
 		return getBlockState(pos).getFluidState();
@@ -402,7 +417,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	public void randomTick() {
 		for (int k = 0; k < ((ITickerLevel) level).randomTickCount(); ++k) {
 			BlockPos blockpos1 = level.getBlockRandomPos(0, 0, 0, 15);
-			BlockState blockstate = this.getBlockState(blockpos1);
+			BlockState blockstate = this.getBlockState$(blockpos1);
 			BlockPos wp = blockpos1.offset(chunkPos.getWorldPosition()).relative(Direction.UP, yPos * 16 - 1);
 			if (blockstate.isRandomlyTicking()) {
 				if (!level.isClientSide() && level instanceof ServerLevel) { // TODO: ?

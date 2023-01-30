@@ -32,7 +32,7 @@ public class NetworkContextMixin {
 		
 		Runnable r = () -> {
 			NetworkingHacks.increaseBlockPosPrecision.set(true);
-			NetworkingHacks.unitPos.set(descriptor);
+			NetworkingHacks.setPos(descriptor);
 			NetworkingHacks.currentContext.set(nhcontext);
 			
 			info.adjust(context.player, nhcontext.targetLevel, descriptor.upb(), descriptor.pos());
@@ -69,7 +69,7 @@ public class NetworkContextMixin {
 		
 		NetworkingHacks.increaseBlockPosPrecision.set(true);
 		
-		NetworkingHacks.unitPos.set(descriptor);
+		NetworkingHacks.setPos(descriptor);
 		NetworkingHacks.currentContext.set(nhcontext);
 		
 		return r;

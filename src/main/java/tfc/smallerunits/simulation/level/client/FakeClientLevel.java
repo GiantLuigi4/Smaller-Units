@@ -51,6 +51,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
@@ -131,6 +132,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		
 		particleEngine.setLevel(this);
 		
+		
+		ThreadLocal<WeakReference<LevelChunk>> lastChunk = new ThreadLocal<>();
 		lookup = (pos) -> {
 			Pair<BlockState, VecMap<VoxelShape>> value = cache.getOrDefault(pos, null);
 			if (value != null) {
@@ -139,15 +142,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 				// TODO: empty shape check
 				return value.getFirst();
 			}
-//			if (!parent.get().isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
-//				return Blocks.VOID_AIR.defaultBlockState();
-//			ChunkPos cp = new ChunkPos(bp);
-//			if (parent.get().getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
-//				return Blocks.VOID_AIR.defaultBlockState();
+			
 			if (Minecraft.getInstance().level == null) return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = this.parent.get().getBlockState(pos);
-//			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
-//				return state;
+			
+			ChunkPos ckPos = new ChunkPos(pos);
+			if (lastChunk.get() == null || !lastChunk.get().get().getPos().equals(ckPos))
+				lastChunk.set(new WeakReference<>(this.parent.get().getChunkAt(pos)));
+
+			BlockState state = lastChunk.get().get().getBlockState(pos);
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
@@ -218,14 +220,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void sendPacketToServer(Packet<?> pPacket) {
-		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
 		parent.get().sendPacketToServer(pPacket);
 		NetworkingHacks.unitPos.remove();
 	}
 	
 	@Override
 	public void disconnect() {
-		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
 		parent.get().disconnect();
 		NetworkingHacks.unitPos.remove();
 	}
@@ -407,7 +409,35 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 								int pX = SectionPos.blockToSectionCoord(x1);
 								int pZ = SectionPos.blockToSectionCoord(z1);
 								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
-								if (chunk == null) continue;
+								if (chunk == null) {
+									for (int y0 = 0; y0 < 16; y0++) {
+										int y1 = y + y0;
+										box = new AABB(
+												x1, y1, z1,
+												x1 + 1, y1 + 1, z1 + 1
+										);
+										if (simpleChecker.apply(box)) {
+											BlockPos pos = new BlockPos(x1, y1, z1);
+											BlockPos pos1 = PositionUtils.getParentPos(pos, this);
+											BlockState state = lookup.getState(pos1);
+											if (state.isAir()) continue;
+											BlockHitResult result = AABB.clip(
+													Collections.singleton(new AABB(0, 0, 0, 1, 1, 1)),
+													start, end,
+													pos
+											);
+											if (result != null) {
+												double dd = result.getLocation().distanceTo(start);
+												if (dd < d) {
+													d = dd;
+													closest = result;
+												}
+											}
+										}
+									}
+									continue;
+								}
+								// TODO: parent world trace in empty chunks
 								
 								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;
@@ -810,7 +840,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	@Override
 	public BlockState getBlockState(BlockPos pPos) {
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
-		if (chunk == null) return Blocks.VOID_AIR.defaultBlockState();
+		if (chunk == null) {
+			BlockPos parentPos = PositionUtils.getParentPos(pPos, this);
+			BlockState parentState = lookup.getState(parentPos);
+			if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) {
+				return Blocks.VOID_AIR.defaultBlockState();
+			}
+			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState();
+		}
 		return chunk.getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
 	

@@ -256,6 +256,8 @@ dependencies {
         api fg.deobf("curse.maven:krypton-549394:3819215")
 
         api fg.deobf("curse.maven:ferrite-429235:3767288")
+
+        api fg.deobf("curse.maven:alternate_current-548115:3789218")
     }
 
     /* Invasive */

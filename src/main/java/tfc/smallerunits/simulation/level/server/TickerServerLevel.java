@@ -47,6 +47,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -154,6 +155,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.region = region;
 		this.blockTicks = new SUTickList<>(null, null);
 		this.fluidTicks = new SUTickList<>(null, null);
+		
+		ThreadLocal<WeakReference<LevelChunk>> lastChunk = new ThreadLocal<>();
 		lookup = (pos) -> {
 			if (cache.containsKey(pos)) {
 //				BlockState state = cache.get(bp).getFirst();
@@ -161,18 +164,17 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				// TODO: empty shape check
 				return cache.get(pos).getFirst();
 			}
-//			if (!parent.get().isLoaded(bp)) // TODO: check if there's a way to do this which doesn't cripple the server
-//				return Blocks.VOID_AIR.defaultBlockState();
-//			ChunkPos cp = new ChunkPos(bp);
-//			if (parent.get().getChunk(cp.x, cp.z, ChunkStatus.FULL, false) == null)
-//				return Blocks.VOID_AIR.defaultBlockState();
+			
 			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
 			if (!this.parent.get().isLoaded(pos))
 				return Blocks.VOID_AIR.defaultBlockState();
-			BlockState state = this.parent.get().getBlockState(pos);
-//			if (state.equals(Blocks.VOID_AIR.defaultBlockState()))
-//				return state;
+			
+			ChunkPos ckPos = new ChunkPos(pos);
+			if (lastChunk.get() == null || !lastChunk.get().get().getPos().equals(ckPos))
+				lastChunk.set(new WeakReference<>(this.parent.get().getChunkAt(pos)));
+			
+			BlockState state = lastChunk.get().get().getBlockState(pos);
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
@@ -565,8 +567,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
 		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
 		for (int x = myPosInTheLevel.getX(); x < offset.getX(); x++) {
-			for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
-				for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
+			for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
+				for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
 					BlockPos pz = new BlockPos(x, y, z);
 					BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(pz);
 					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null, cache);
@@ -853,7 +855,14 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public BlockState getBlockState(BlockPos pPos) {
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
-		if (chunk == null) return Blocks.VOID_AIR.defaultBlockState();
+		if (chunk == null) {
+			BlockPos parentPos = PositionUtils.getParentPos(pPos, this);
+			BlockState parentState = lookup.getState(parentPos);
+			if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) {
+				return Blocks.VOID_AIR.defaultBlockState();
+			}
+			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState();
+		}
 		return chunk.getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
 	
@@ -928,7 +937,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (!getServer().isReady()) return;
 		if (!isLoaded) return;
 		
-		NetworkingHacks.unitPos.set(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
 		
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);

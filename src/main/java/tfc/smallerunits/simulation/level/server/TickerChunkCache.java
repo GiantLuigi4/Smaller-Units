@@ -2,8 +2,10 @@ package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashBigSet;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.core.SectionPos;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.server.level.ChunkHolder;
@@ -66,7 +68,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	public void broadcastAndSend(Entity pEntity, Packet<?> pPacket) {
 		NetworkingHacks.LevelDescriptor descriptor = maybeRemoveUnitPos(pEntity, pPacket);
 		super.broadcastAndSend(pEntity, pPacket);
-		NetworkingHacks.unitPos.set(descriptor);
+		NetworkingHacks.setPos(descriptor);
 	}
 	
 	public NetworkingHacks.LevelDescriptor maybeRemoveUnitPos(Entity pEntity, Packet<?> pPacket) {
@@ -84,7 +86,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	public void broadcast(Entity pEntity, Packet<?> pPacket) {
 		NetworkingHacks.LevelDescriptor descriptor = maybeRemoveUnitPos(pEntity, pPacket);
 		super.broadcast(pEntity, pPacket);
-		NetworkingHacks.unitPos.set(descriptor);
+		NetworkingHacks.setPos(descriptor);
 	}
 	
 	@Nullable
@@ -208,6 +210,19 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			}
 			return ck[pChunkY];
 		}
+	}
+	
+	@Override
+	public void blockChanged(BlockPos pPos) {
+		int i = SectionPos.blockToSectionCoord(pPos.getX());
+		int j = SectionPos.blockToSectionCoord(pPos.getZ());
+		int y = SectionPos.blockToSectionCoord(pPos.getY());
+		
+		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(i, j, false);
+		if (vc == null) return;
+		vc = vc.getSubChunk(y);
+		if (vc == null) return;
+		vc.holder.blockChanged(new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15));
 	}
 	
 	@Override

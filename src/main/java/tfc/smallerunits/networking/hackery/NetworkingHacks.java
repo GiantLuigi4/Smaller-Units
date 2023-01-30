@@ -22,6 +22,10 @@ public class NetworkingHacks {
 		positions.put(pkt, pos);
 	}
 	
+	public static void setPos(LevelDescriptor descriptor) {
+		unitPos.set(descriptor);
+	}
+	
 	public record LevelDescriptor(RegionPos pos, int upb) {
 		public static LevelDescriptor read(CompoundTag tg) {
 			return new LevelDescriptor(

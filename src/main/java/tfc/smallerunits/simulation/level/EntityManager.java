@@ -10,6 +10,12 @@ import java.io.Writer;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+//m_157562_(J)V
+//m_157568_(J)Z
+//m_157577_()V
+//m_157582_()V
+//m_157587_()Lit/unimi/dsi/fastutil/longs/LongSet;
+//m_157554_()V
 public class EntityManager<T extends EntityAccess> extends PersistentEntitySectionManager<T> {
 	public EntityManager(ITickerLevel wld, Class<T> p_157503_, LevelCallback<T> p_157504_, EntityPersistentStorage<T> p_157505_) {
 		super(p_157503_, new LevelCallback<T>() {
@@ -86,12 +92,10 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 	
 	@Override
 	public void autoSave() {
-		super.autoSave();
 	}
 	
 	@Override
 	public void saveAll() {
-		super.saveAll();
 	}
 	
 	@Override

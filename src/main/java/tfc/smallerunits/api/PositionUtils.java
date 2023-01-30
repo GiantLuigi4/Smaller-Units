@@ -56,6 +56,7 @@ public class PositionUtils {
 		int xo = Math1D.getChunkOffset(j + chunkPos.getMinBlockX(), tickerWorld.getUPB());
 		int yo = Math1D.getChunkOffset(k + yPos * 16, tickerWorld.getUPB());
 		int zo = Math1D.getChunkOffset(l + chunkPos.getMinBlockZ(), tickerWorld.getUPB());
+		
 		output.set(rPos.getX() + xo, rPos.getY() + yo, rPos.getZ() + zo);
 		return output;
 	}
