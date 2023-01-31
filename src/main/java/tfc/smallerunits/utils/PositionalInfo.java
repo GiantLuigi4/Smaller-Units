@@ -15,6 +15,7 @@ import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
 import java.util.Random;
@@ -32,18 +33,24 @@ public class PositionalInfo {
 	public final Vec3 oldPos;
 	
 	public PositionalInfo(Entity pEntity) {
+		this(pEntity, true);
+	}
+	
+	public PositionalInfo(Entity pEntity, boolean cacheParticleEngine) {
 		pos = new Vec3(pEntity.getX(), pEntity.getY(), pEntity.getZ());
 		lvl = pEntity.level;
 		box = pEntity.getBoundingBox();
 		eyeHeight = pEntity.eyeHeight;
 		oPos = new Vec3(pEntity.xo, pEntity.yo, pEntity.zo);
 		oldPos = new Vec3(pEntity.xOld, pEntity.yOld, pEntity.zOld);
-		if (FMLEnvironment.dist.isClient()) {
+		if (FMLEnvironment.dist.isClient() && cacheParticleEngine) {
 			if (pEntity.getLevel().isClientSide) {
-				particleEngine = IHateTheDistCleaner.getParticleEngine();
-				
-				if (particleEngine instanceof UnitParticleEngine) {
-					System.out.println("stop");
+				if (pEntity instanceof Player player) {
+					particleEngine = IHateTheDistCleaner.getParticleEngine(player);
+					
+					if (particleEngine instanceof UnitParticleEngine || particleEngine == null) {
+						System.out.println("stop");
+					}
 				}
 			}
 		}
@@ -100,7 +107,7 @@ public class PositionalInfo {
 		if (pEntity instanceof Player player) {
 			resetClient(player);
 			if (particleEngine != null)
-				if (Minecraft.getInstance().particleEngine instanceof UnitParticleEngine) {
+				if (Minecraft.getInstance().particleEngine instanceof UnitParticleEngine || particleEngine == null) {
 					System.out.println("why");
 				}
 		}
@@ -119,6 +126,13 @@ public class PositionalInfo {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
 				IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
+				
+				if (Minecraft.getInstance().level instanceof FakeClientLevel) {
+					System.out.println("WHY");
+				}
+				if (Minecraft.getInstance().particleEngine == null) {
+					System.out.println("STOP");
+				}
 			}
 		}
 	}
@@ -126,7 +140,11 @@ public class PositionalInfo {
 	public void setupClient(Player player, Level spaceLevel, boolean updateParticleEngine) {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
-				Object o = IHateTheDistCleaner.adjustClient(player, spaceLevel);
+				Object o = IHateTheDistCleaner.adjustClient(player, spaceLevel, particleEngine != null);
+
+				if (Minecraft.getInstance().particleEngine == null) {
+					System.out.println("STOP");
+				}
 //				if (updateParticleEngine && RenderSystem.isOnGameThread()) particleEngine = o;
 //
 //				// TODO: fix

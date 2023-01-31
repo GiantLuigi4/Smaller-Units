@@ -673,7 +673,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			}
 		}
 		
-		getLightEngine().runUpdates(10000, false, true);
+		getLightEngine().runUpdates(10000, true, false);
 		for (Runnable runnable : completeOnTick) runnable.run();
 		completeOnTick.clear();
 	}

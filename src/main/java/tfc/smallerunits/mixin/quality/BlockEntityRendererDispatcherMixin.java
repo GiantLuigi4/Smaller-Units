@@ -22,8 +22,8 @@ public interface BlockEntityRendererDispatcherMixin<T extends BlockEntity> {
 		if (pBlockEntity.getLevel() instanceof ITickerLevel tickerWorld) {
 			double upb = tickerWorld.getUPB();
 			double px = pBlockEntity.getBlockPos().getX() / upb + tickerWorld.getRegion().pos.toBlockPos().getX();
-			double py = pBlockEntity.getBlockPos().getY() / upb + tickerWorld.getRegion().pos.toBlockPos().getX();
-			double pz = (pBlockEntity.getBlockPos().getZ() / upb) + tickerWorld.getRegion().pos.toBlockPos().getX();
+			double py = pBlockEntity.getBlockPos().getY() / upb + tickerWorld.getRegion().pos.toBlockPos().getY();
+			double pz = (pBlockEntity.getBlockPos().getZ() / upb) + tickerWorld.getRegion().pos.toBlockPos().getZ();
 			px += 0.5;
 			py += 0.5;
 			pz += 0.5;

@@ -60,7 +60,7 @@ public class SUVBOEmitter {
 		}
 		
 		Player player = Minecraft.getInstance().player;
-		PositionalInfo info = new PositionalInfo(player);
+		PositionalInfo info = new PositionalInfo(player, false);
 		info.scalePlayerReach(player, space.unitsPerBlock);
 		info.adjust(player, space);
 

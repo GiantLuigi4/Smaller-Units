@@ -27,6 +27,7 @@ import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
+import tfc.smallerunits.data.access.ChunkAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
@@ -39,6 +40,8 @@ import tfc.smallerunits.utils.threading.ThreadLocals;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static tfc.smallerunits.simulation.WorldStitcher.chunkRelative;
 
 public class BasicVerticalChunk extends LevelChunk {
 	public final int yPos;
@@ -78,6 +81,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		setLoaded(true);
 		
 		section = super.getSection(0);
+		((ChunkAccessor) this).setSectionArray(new LevelChunkSection[]{section});
 		// TODO: use mixin to null out unnecessary fields, maybe
 	}
 	
@@ -149,7 +153,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
-		int yO = Math1D.getChunkOffset(pos.getY(), 16);
+			int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
 //			if (yPos + yO < 0) {
 //				// TODO: fix
@@ -415,6 +419,9 @@ public class BasicVerticalChunk extends LevelChunk {
 	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
 	
 	public void randomTick() {
+		if (getSections()[0].hasOnlyAir())
+			return;
+		
 		for (int k = 0; k < ((ITickerLevel) level).randomTickCount(); ++k) {
 			BlockPos blockpos1 = level.getBlockRandomPos(0, 0, 0, 15);
 			BlockState blockstate = this.getBlockState$(blockpos1);

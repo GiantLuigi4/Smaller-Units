@@ -196,7 +196,11 @@ public class UnitSpace {
 			if (level instanceof ServerLevel) {
 				ChunkMap cm = ((ServerLevel) level).getChunkSource().chunkMap;
 				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
-				if (r == null) return;
+				if (r == null) {
+//					if (level.isLoaded(pos))
+//					Loggers.UNITSPACE_LOGGER.error("Region@" + new RegionPos(pos) + " was null");
+					return;
+				}
 				if (myLevel != null)
 					((ITickerLevel) myLevel).clear(myPosInTheLevel, myPosInTheLevel.offset(upb, upb, upb));
 				myLevel = r.getServerWorld(level.getServer(), (ServerLevel) level, upb);
@@ -232,7 +236,7 @@ public class UnitSpace {
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
 				for (int y = 0; y < unitsPerBlock; y++) {
-					blockPos.set(x, y + myPosInTheLevel.getY(), z);
+					blockPos.set(x + myPosInTheLevel.getX(), y + myPosInTheLevel.getY(), z + myPosInTheLevel.getZ());
 					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = vc.getBlockStateSmallOnly(blockPos);
 					addState(state);
 				}

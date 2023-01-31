@@ -9,7 +9,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -35,7 +34,6 @@ import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -44,14 +42,11 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
 import java.util.Random;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 public class UnitSpaceBlock extends Block implements EntityBlock {
 	public UnitSpaceBlock() {
@@ -98,42 +93,9 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
 			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
 			UnitSpace space = capability.getUnit(pPos);
-			// if unit space is null, assume syncing is still occurring
 			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
 			
-			//// I'm stupid, why did I do it any way other than this?
-			//// lol
-			//// ah right, server side
-			Vec3 startVec;
-			Vec3 lookVec;
-			// this should work
-			if (FMLEnvironment.dist.isClient() && IHateTheDistCleaner.isClientLevel((Level) pLevel)) {
-				IHateTheDistCleaner.updateCamera();
-				if (IHateTheDistCleaner.isCameraPresent()) {
-					startVec = IHateTheDistCleaner.getCameraPos();
-					lookVec = new Vec3(IHateTheDistCleaner.getCameraLook());
-				} else {
-					startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(Minecraft.getInstance().getFrameTime());
-					lookVec = ((EntityCollisionContext) pContext).getEntity().getViewVector(Minecraft.getInstance().getFrameTime());
-				}
-			} else {
-				startVec = ((EntityCollisionContext) pContext).getEntity().getEyePosition(Minecraft.getInstance().getFrameTime());
-				lookVec = ((EntityCollisionContext) pContext).getEntity().getViewVector(Minecraft.getInstance().getFrameTime());
-			}
-			double reach;
-			if (entity instanceof LivingEntity) {
-				AttributeInstance instance = ((LivingEntity) entity).getAttribute(ForgeMod.REACH_DISTANCE.get());
-				if (instance == null) reach = 6;
-				else reach = instance.getValue();
-			} else reach = 6;
-			lookVec = lookVec.scale(reach);
-			startVec = startVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ());
-			Vec3 endVec = startVec.add(lookVec);
 			UnitShape shape = new UnitShape(space, false, pContext);
-			
-			double upbDouble = space.unitsPerBlock;
-			final Vec3 fStartVec = startVec;
-			
 			shape.setupNeigbors(pLevel, pPos);
 			
 			return shape;
@@ -152,61 +114,11 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
 			UnitSpace space = capability.getUnit(pPos);
 			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
-			double upbDouble = space.unitsPerBlock;
-			UnitShape shape = new UnitShape(space, true, pContext);
-//			if (pLevel instanceof ServerLevel) {
-//				if (((EntityCollisionContext) pContext).getEntity() instanceof ServerPlayer) {
-//					collectShape((pos) -> {
-//						// TODO:
-//						return true;
-//					}, (pos, state) -> {
-//						int x = pos.getX();
-//						int y = pos.getY();
-//						int z = pos.getZ();
-//						VoxelShape sp = state.getCollisionShape(space.myLevel, space.getOffsetPos(pos));
-//						for (AABB toAabb : sp.toAabbs()) {
-//							toAabb = toAabb.move(x, y, z);
-//							UnitBox b = new UnitBox(
-//									toAabb.minX / upbDouble,
-//									toAabb.minY / upbDouble,
-//									toAabb.minZ / upbDouble,
-//									toAabb.maxX / upbDouble,
-//									toAabb.maxY / upbDouble,
-//									toAabb.maxZ / upbDouble,
-//									new BlockPos(x, y, z)
-//							);
-//							shape.addBox(b);
-//						}
-//					}, space);
-//				}
-//			}
 			
+			UnitShape shape = new UnitShape(space, true, pContext);
 			return shape;
 		}
 		return Shapes.empty();
-	}
-	
-	@Override
-	public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
-		return super.getCloneItemStack(state, target, level, pos, player);
-	}
-	
-	public void collectShape(Function<BlockPos, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space) {
-		int upbInt = space.unitsPerBlock;
-		
-		for (int x = 0; x < upbInt; x++) {
-			for (int y = 0; y < upbInt; y++) {
-				for (int z = 0; z < upbInt; z++) {
-					BlockState state = space.getBlock(x, y, z);
-					if (state.isAir()) continue;
-//					if (state == null) continue;
-					if (simpleChecker.apply(new BlockPos(x, y, z))) {
-						boxFiller.accept(new BlockPos(x, y, z), state);
-					}
-					// TODO: raytrace simple box
-				}
-			}
-		}
 	}
 	
 	@Override
@@ -429,7 +341,8 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
 		LevelChunk chnk = pLevel.getChunkAt(pPos);
 		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-		space.clear();
+		if (space != null && !space.isEmpty())
+			space.clear();
 		SUCapabilityManager.getCapability(chnk).removeUnit(pPos);
 		RemoveUnitPacketS2C pckt = new RemoveUnitPacketS2C(pPos, space.unitsPerBlock);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
@@ -452,7 +365,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			if (space == null) return false;
 			if (space.myLevel == null) return false;
 			
-			PositionalInfo info = new PositionalInfo(entity);
+			PositionalInfo info = new PositionalInfo(entity, false);
 			info.adjust(entity, space);
 			if (entity instanceof Player player)
 				info.scalePlayerReach(player, space.unitsPerBlock);

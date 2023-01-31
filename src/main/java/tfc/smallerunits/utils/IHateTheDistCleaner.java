@@ -93,14 +93,16 @@ public class IHateTheDistCleaner {
 		return camera != null;
 	}
 	
-	public static Object adjustClient(Player pPlayer, Level spaceLevel) {
+	public static Object adjustClient(Player pPlayer, Level spaceLevel, boolean updateParticleEngine) {
 		ParticleEngine engine = null;
 		Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = (ClientLevel) spaceLevel;
 		
-		engine = Minecraft.getInstance().particleEngine;
-		UnitParticleEngine upe = ((FakeClientLevel) spaceLevel).getParticleEngine();
-		if (upe != null)
-			Minecraft.getInstance().particleEngine = upe;
+		if (updateParticleEngine) {
+			engine = Minecraft.getInstance().particleEngine;
+			UnitParticleEngine upe = ((FakeClientLevel) spaceLevel).getParticleEngine();
+			if (upe != null)
+				Minecraft.getInstance().particleEngine = upe;
+		}
 		return engine;
 	}
 	
@@ -111,8 +113,10 @@ public class IHateTheDistCleaner {
 				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel;
 				
 				if (Minecraft.getInstance().level instanceof ParticleEngineHolder engineHolder) {
-					if ((Minecraft.getInstance().particleEngine = engineHolder.myEngine()) != null)
-						return;
+					if (engineHolder.myEngine() != null) {
+						if ((Minecraft.getInstance().particleEngine = engineHolder.myEngine()) != null)
+							return;
+					}
 				}
 				if (engine != null) Minecraft.getInstance().particleEngine = (ParticleEngine) engine;
 			}
@@ -123,12 +127,15 @@ public class IHateTheDistCleaner {
 		return Minecraft.getInstance().screen;
 	}
 	
-	public static Object getParticleEngine() {
-		if (Minecraft.getInstance().level instanceof ParticleEngineHolder engineHolder) {
-			ParticleEngine engine = engineHolder.myEngine();
-			if (engine == null) engineHolder.setParticleEngine(engine = Minecraft.getInstance().particleEngine);
-			return engine;
+	public static Object getParticleEngine(Player player) {
+		if (player == Minecraft.getInstance().player) {
+			if (player.level instanceof ParticleEngineHolder engineHolder) {
+				ParticleEngine engine = engineHolder.myEngine();
+				if (engine == null) engineHolder.setParticleEngine(engine = Minecraft.getInstance().particleEngine);
+				return engine;
+			}
+			return Minecraft.getInstance().particleEngine;
 		}
-		return Minecraft.getInstance().particleEngine;
+		return null;
 	}
 }

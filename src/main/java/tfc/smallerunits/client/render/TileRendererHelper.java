@@ -32,10 +32,17 @@ import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
 		stk.pushPose();
+		
 		Level lvl = tile.getLevel();
-		if (lvl instanceof ITickerLevel) {
-			int upb = ((ITickerLevel) lvl).getUPB();
-			float scl = 1f / upb;
+		float scl = 1;
+		if (lvl instanceof ITickerLevel tkLvl) {
+			int upb = tkLvl.getUPB();
+			scl = 1f / upb;
+			stk.translate(
+					tkLvl.getRegion().pos.toBlockPos().getX(),
+					tkLvl.getRegion().pos.toBlockPos().getY(),
+					tkLvl.getRegion().pos.toBlockPos().getZ()
+			);
 			stk.scale(scl, scl, scl);
 		}
 		stk.translate(

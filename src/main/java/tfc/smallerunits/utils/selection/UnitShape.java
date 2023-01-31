@@ -219,7 +219,7 @@ public class UnitShape extends VoxelShape {
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
 			Entity entity = entityCollisionContext.getEntity();
-			PositionalInfo info = new PositionalInfo(entity);
+			PositionalInfo info = new PositionalInfo(entity, false);
 			info.adjust(entity, space);
 			if (entity instanceof Player player)
 				info.scalePlayerReach(player, space.unitsPerBlock);
@@ -329,7 +329,7 @@ public class UnitShape extends VoxelShape {
 					mutableBlockPos.set(x, y, z);
 					
 					if (simpleChecker.apply(mutableBlockPos)) {
-						mutableBlockPos.set(x, y + origin.getY(), z);
+						mutableBlockPos.set((x + origin.getX()) & 15, y + origin.getY(), (z + origin.getZ()) & 15);
 						BlockState state = chunk.getBlockState(mutableBlockPos);
 						if (state.isAir()) continue;
 						mutableBlockPos.set(x, y, z);
@@ -351,7 +351,7 @@ public class UnitShape extends VoxelShape {
 	protected double collideX(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
 		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
 			Entity entity = entityCollisionContext.getEntity();
-			PositionalInfo info = new PositionalInfo(entity);
+			PositionalInfo info = new PositionalInfo(entity, false);
 			info.adjust(entity, space);
 			if (entity instanceof Player player)
 				info.scalePlayerReach(player, space.unitsPerBlock);
@@ -471,7 +471,7 @@ public class UnitShape extends VoxelShape {
 	public Boolean intersects(VoxelShape pShape2) {
 		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
 			Entity entity = entityCollisionContext.getEntity();
-			PositionalInfo info = new PositionalInfo(entity);
+			PositionalInfo info = new PositionalInfo(entity, false);
 			info.adjust(entity, space);
 			if (entity instanceof Player player)
 				info.scalePlayerReach(player, space.unitsPerBlock);

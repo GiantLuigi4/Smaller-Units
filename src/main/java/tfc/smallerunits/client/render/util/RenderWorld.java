@@ -50,6 +50,16 @@ public class RenderWorld implements BlockAndTintGetter {
 	@Nullable
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pPos) {
+		if (
+				chunk.getPos().getMaxBlockX() >= pPos.getX() &&
+						chunk.getPos().getMinBlockX() <= pPos.getX() &&
+//						lvl.getMaxBuildHeight() >= pos.getY() &&
+//						lvl.getMinBuildHeight() <= pos.getY() &&
+						chunk.getPos().getMaxBlockZ() >= pPos.getZ() &&
+						chunk.getPos().getMinBlockZ() <= pPos.getZ()
+		) {
+			return chunk.getBlockEntity(pPos);
+		}
 		return lvl.getBlockEntity(pPos);
 	}
 	

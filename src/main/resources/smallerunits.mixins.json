@@ -7,13 +7,13 @@
   "plugin": "tfc.smallerunits.utils.asm.MixinConnector",
   "mixins": [
     "ChunkSerializerAccessor", "compat.alternate_current.ACLevelAccessMixin", "core.ConnectionMixin",
-    "core.PacketUtilsMixin", "core.ServerLevelMixin", "core.access.ServerPacketListenerMixin",
-    "core.gui.common.NetworkContextMixin", "core.gui.common.PehkuiMixin", "core.gui.server.AbstractContainerMenuMixin",
-    "core.gui.server.PlayerMixin", "core.gui.server.ServerPlayerMixin", "dangit.FriendlyByteBufMixin",
-    "dangit.MojangWhy", "data.FastCapabilityChunkMixin", "data.regions.ChunkHolderAccessor",
-    "data.regions.ChunkHolderSizeTracker", "data.regions.ChunkMapMixin", "data.regions.ServerLevelMixin",
-    "optimization.LevelMixin", "optimization.ShapesMixin", "optimization.VoxelShapeAccessor", "quality.EntityMixin",
-    "quality.PlayerMixin"
+    "core.PacketUtilsMixin", "core.ServerLevelMixin", "core.access.ChunkAccessMixin",
+    "core.access.ServerPacketListenerMixin", "core.gui.common.NetworkContextMixin", "core.gui.common.PehkuiMixin",
+    "core.gui.server.AbstractContainerMenuMixin", "core.gui.server.PlayerMixin", "core.gui.server.ServerPlayerMixin",
+    "dangit.FriendlyByteBufMixin", "dangit.MojangWhy", "data.FastCapabilityChunkMixin",
+    "data.regions.ChunkHolderAccessor", "data.regions.ChunkHolderSizeTracker", "data.regions.ChunkMapMixin",
+    "data.regions.ServerLevelMixin", "optimization.LevelMixin", "optimization.ShapesMixin",
+    "optimization.VoxelShapeAccessor", "quality.EntityMixin", "quality.ForgeHooksMixin", "quality.PlayerMixin"
   ],
   "client": [
     "LevelRendererMixin",

@@ -975,7 +975,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			}
 		}
 		
-		getLightEngine().runUpdates(10000, false, true);
+		getLightEngine().runUpdates(10000, true, false);
 		for (Runnable runnable : completeOnTick) runnable.run();
 		completeOnTick.clear();
 	}

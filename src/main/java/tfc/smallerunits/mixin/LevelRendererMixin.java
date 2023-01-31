@@ -18,7 +18,6 @@ import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -237,8 +236,15 @@ public abstract class LevelRendererMixin {
 		BlockPos origin = instance.getOrigin();
 		ChunkRenderDispatcher.CompiledChunk chunk = instance.compiled.get();
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
+		
 		if (capable == null)
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
+		
+		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
+		
+		UnitSpace[] spaces = capability.getUnits();
+		// no reason to do SU related rendering in chunks where SU has not been used
+		if (spaces.length == 0) return instance.getCompiledChunk();
 		
 		Frustum frustum = capturedFrustum != null ? capturedFrustum : cullingFrustum;
 		
@@ -249,7 +255,6 @@ public abstract class LevelRendererMixin {
 //		VertexConsumer consumer = null;
 //		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
 //		consumer = source.getBuffer(RenderType.solid());
-		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
 		
 		/* draw indicators */
 		RenderType.solid().setupRenderState();
@@ -263,17 +268,26 @@ public abstract class LevelRendererMixin {
 			shader.PROJECTION_MATRIX.upload();
 		}
 		TileRendererHelper.markNewFrame();
-		for (UnitSpace unit : capability.getUnits()) {
+		float[] color = RenderSystem.getShaderColor();
+		
+		boolean hammerHeld = IHateTheDistCleaner.isHammerHeld();
+		for (UnitSpace unit : spaces) {
 			if (unit != null) {
 				TileRendererHelper.drawUnit(
 						frustum,
 						unit.pos, unit.unitsPerBlock, unit.isNatural,
-						IHateTheDistCleaner.isHammerHeld(), unit.isEmpty(), null, stk,
-						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
+						hammerHeld, unit.isEmpty(), null, stk,
+//						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
+						LightTexture.pack(0, 0),
 						origin.getX(), origin.getY(), origin.getZ()
 				);
 			}
 		}
+		
+		RenderSystem.setShaderColor(color[0], color[1], color[2], color[3]);
+		shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+		shader.COLOR_MODULATOR.upload();
+		
 		VertexBuffer.unbind();
 		VertexBuffer.unbindVertexArray();
 		shader.clear();
@@ -304,6 +318,8 @@ public abstract class LevelRendererMixin {
 				bes = capable.getTiles().toArray(bes);
 			} catch (Throwable ignored) {
 			}
+			stk.pushPose();
+			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
 			for (BlockEntity tile : bes) {
 				if (tile.getLevel() == null) continue; // idk how this happens, but ok?
 				if (new RegionPos(origin).equals(((FakeClientLevel) tile.getLevel()).region.pos)) {
@@ -311,27 +327,27 @@ public abstract class LevelRendererMixin {
 					if (y < origin.getY() + 16 &&
 							y >= origin.getY()) {
 						AABB renderBox = tile.getRenderBoundingBox();
-						if (tile.getLevel() instanceof ITickerLevel) {
-							int upb = ((ITickerLevel) tile.getLevel()).getUPB();
+						if (tile.getLevel() instanceof ITickerLevel tkLvl) {
+							int upb = tkLvl.getUPB();
 							float scl = 1f / upb;
 							renderBox = new AABB(
-									renderBox.minX * scl,
-									renderBox.minY * scl,
-									renderBox.minZ * scl,
-									renderBox.maxX * scl,
-									renderBox.maxY * scl,
-									renderBox.maxZ * scl
+									renderBox.minX * scl + tkLvl.getRegion().pos.toBlockPos().getX(),
+									renderBox.minY * scl + tkLvl.getRegion().pos.toBlockPos().getY(),
+									renderBox.minZ * scl + tkLvl.getRegion().pos.toBlockPos().getZ(),
+									renderBox.maxX * scl + tkLvl.getRegion().pos.toBlockPos().getX(),
+									renderBox.maxY * scl + tkLvl.getRegion().pos.toBlockPos().getY(),
+									renderBox.maxZ * scl + tkLvl.getRegion().pos.toBlockPos().getZ()
 							);
 						}
 						if (frustum.isVisible(renderBox)) {
-//						{
-//							stk.pushPose();
-//							renderLineBox(
-//									stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
-//								renderBox, 1, 1, 1, 1
-//							);
-//							stk.popPose();
-//						}
+//							{
+//								stk.pushPose();
+//								renderLineBox(
+//										stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+//										renderBox, 1, 1, 1, 1
+//								);
+//								stk.popPose();
+//							}
 							TileRendererHelper.setupStack(stk, tile, origin);
 							blockEntityRenderDispatcher.render(
 									tile, pct,
@@ -342,6 +358,7 @@ public abstract class LevelRendererMixin {
 					}
 				}
 			}
+			stk.popPose();
 		}
 		stk.popPose();
 		

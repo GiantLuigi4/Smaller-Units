@@ -74,7 +74,7 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	}
 	
 	@Override
-	public int runUpdates(int max, boolean sky, boolean block) {
+	public int runUpdates(int max, boolean block, boolean sky) {
 		if (!block) return 0;
 		if (positionsToUpdate.isEmpty()) return 0;
 		

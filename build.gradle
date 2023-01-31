@@ -156,6 +156,18 @@ dependencies {
     System.out.println(": Compilied against")
     api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
     api fg.deobf("curse.maven:pehkui-319596:3808012")
+    api fg.deobf("curse.maven:alternate_current-548115:3789218")
+
+    /* libraries */
+    String curios = "curse.maven:curios-309927:3841948"
+    String ortusLib = "curse.maven:ortuslib-616457:3768197"
+    String patchouli = "curse.maven:patchouli-306770:3809545"
+    String flywheel = "curse.maven:flywheel-486392:3737402"
+    String tkLib = "curse.maven:tklib-566563:3650390"
+    String cyclopsCore = "curse.maven:cyc_core-232758:3832119"
+    String clothConfig = "curse.maven:cloth_config-348521:3782776"
+    String autoRegLib = "curse.maven:autoreglib-250363:3642382"
+    String selene = "curse.maven:selene-499980:3802427"
 
     System.out.println(": Flatdirs")
     if (new File("libs").exists()) {
@@ -256,8 +268,6 @@ dependencies {
         api fg.deobf("curse.maven:krypton-549394:3819215")
 
         api fg.deobf("curse.maven:ferrite-429235:3767288")
-
-        api fg.deobf("curse.maven:alternate_current-548115:3789218")
     }
 
     /* Invasive */
