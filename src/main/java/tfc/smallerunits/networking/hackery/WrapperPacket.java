@@ -4,6 +4,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.util.thread.BlockableEventLoop;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 import sun.misc.Unsafe;
@@ -115,6 +117,28 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		// TODO: I don't know why this happens
 		if (wrapped == null) return;
 		
+		Player player = ctx.getSender();
+		
+		BlockableEventLoop<?> pExecutor = null;
+		if (player != null) {
+			if (player.getServer() != null) {
+				pExecutor = player.getServer();
+			} else if (player.level.isClientSide) {
+				pExecutor = (BlockableEventLoop<?>) IHateTheDistCleaner.getMinecraft();
+			}
+		} else {
+			pExecutor = (BlockableEventLoop<?>) IHateTheDistCleaner.getMinecraft();
+		}
+		if (!pExecutor.isSameThread()) {
+			pExecutor.executeIfPossible(() -> {
+				doHandle(ctx);
+			});
+		} else {
+			doHandle(ctx);
+		}
+	}
+	
+	protected void doHandle(NetworkEvent.Context ctx) {
 		NetworkingHacks.increaseBlockPosPrecision.set(true);
 		NetworkContext context = new NetworkContext(ctx.getNetworkManager(), ((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).getPlayer(), ((Packet) this.wrapped));
 		
@@ -168,7 +192,6 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		NetworkingHacks.increaseBlockPosPrecision.remove();
 		NetworkingHacks.unitPos.remove();
 		NetworkingHacks.currentContext.remove();
-//		System.out.println();
 	}
 	
 	@Override

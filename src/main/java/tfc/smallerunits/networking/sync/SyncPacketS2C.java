@@ -111,7 +111,7 @@ public class SyncPacketS2C extends Packet {
 					tag.putString("id", id);
 				BlockPos up = new BlockPos(data.getInt("x"), data.getInt("y"), data.getInt("z"));
 				BlockEntity be = BlockEntity.loadStatic(up, lvl.getBlockState(up), tag);
-				if (be == null) return;
+				if (be == null) continue;
 				lvl.setBlockEntity(be);
 				be.load(tag); // yes
 				
@@ -133,7 +133,7 @@ public class SyncPacketS2C extends Packet {
 				BlockState state = lvl.getBlockState(blockPos);
 				
 				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(blockPos, state);
-				if (be == null) return;
+				if (be == null) continue;
 				lvl.setBlockEntity(be);
 				
 				BlockPos parentPos = PositionUtils.getParentPos(blockPos, (ITickerLevel) space.getMyLevel());

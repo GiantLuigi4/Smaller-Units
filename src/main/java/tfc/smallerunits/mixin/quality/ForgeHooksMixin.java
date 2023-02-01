@@ -26,11 +26,13 @@ import java.util.ArrayList;
 
 @Mixin(value = ForgeHooks.class, remap = false)
 public abstract class ForgeHooksMixin {
-	@Shadow public static native boolean onPickBlock(HitResult target, Player player, Level level);
+	@Shadow
+	public static native boolean onPickBlock(HitResult target, Player player, Level level);
 	
 	@Unique
 	private static final ArrayList<RaytraceData> datas = new ArrayList<>();
-	@Unique private static HitResult res;
+	@Unique
+	private static HitResult res;
 	
 	@Inject(at = @At("HEAD"), method = "onPickBlock", cancellable = true)
 	private static void prePick(HitResult target, Player player, Level level, CallbackInfoReturnable<Boolean> cir) {

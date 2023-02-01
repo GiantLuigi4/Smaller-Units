@@ -109,8 +109,7 @@ public class IHateTheDistCleaner {
 	public static void resetClient(Player pPlayer, Level lvl, Object engine) {
 		if (pPlayer.level.isClientSide) {
 			if (pPlayer instanceof LocalPlayer) {
-				((LocalPlayer) pPlayer).clientLevel = (ClientLevel) lvl;
-				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel;
+				Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = (ClientLevel) lvl;
 				
 				if (Minecraft.getInstance().level instanceof ParticleEngineHolder engineHolder) {
 					if (engineHolder.myEngine() != null) {
@@ -137,5 +136,9 @@ public class IHateTheDistCleaner {
 			return Minecraft.getInstance().particleEngine;
 		}
 		return null;
+	}
+	
+	public static Object getMinecraft() {
+		return Minecraft.getInstance();
 	}
 }

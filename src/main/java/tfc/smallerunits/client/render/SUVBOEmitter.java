@@ -64,15 +64,6 @@ public class SUVBOEmitter {
 		info.scalePlayerReach(player, space.unitsPerBlock);
 		info.adjust(player, space);
 
-//		AABB scaledBB;
-//		player.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(info.box, info.pos, space.unitsPerBlock));
-//		player.eyeHeight = (float) (info.eyeHeight * (1d / space.unitsPerBlock));
-//		player.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-//		if (player.level instanceof ClientLevel) {
-//			((LocalPlayer) player).clientLevel = (ClientLevel) space.getMyLevel();
-//			Minecraft.getInstance().level = ((LocalPlayer) player).clientLevel;
-//		}
-		
 		Minecraft.getInstance().getProfiler().push("get_blocks");
 		BlockState[] states = unit.getBlocks();
 		Minecraft.getInstance().getProfiler().pop();
