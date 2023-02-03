@@ -171,10 +171,14 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				return Blocks.VOID_AIR.defaultBlockState();
 			
 			ChunkPos ckPos = new ChunkPos(pos);
-			if (lastChunk.get() == null || !lastChunk.get().get().getPos().equals(ckPos))
-				lastChunk.set(new WeakReference<>(this.parent.get().getChunkAt(pos)));
+			WeakReference<LevelChunk> chunkRef = lastChunk.get();
+			LevelChunk ck;
+			if (chunkRef == null || (ck = chunkRef.get()) == null)
+				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
+			else if (!chunkRef.get().getPos().equals(ckPos))
+				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
 			
-			BlockState state = lastChunk.get().get().getBlockState(pos);
+			BlockState state = ck.getBlockState(pos);
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};

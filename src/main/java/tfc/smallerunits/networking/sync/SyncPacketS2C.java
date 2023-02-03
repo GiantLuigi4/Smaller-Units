@@ -113,7 +113,7 @@ public class SyncPacketS2C extends Packet {
 				BlockEntity be = BlockEntity.loadStatic(up, lvl.getBlockState(up), tag);
 				if (be == null) continue;
 				lvl.setBlockEntity(be);
-				be.load(tag); // yes
+				be.load(tag);
 				
 				// TODO: this is like 90% redundant
 				BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();

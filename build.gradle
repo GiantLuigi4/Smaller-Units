@@ -1,5 +1,4 @@
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import java.util.function.Consumer
 
 buildscript {
     repositories {
@@ -147,9 +146,14 @@ configurations {
     api
 }
 
+String forgeVersion = "40.1.69"
+
 dependencies {
+    Mod.mods.clear()
+    Mod.modsList.clear()
+
 //    minecraft 'net.minecraftforge:forge:1.18.1-39.1.19'
-    minecraft 'net.minecraftforge:forge:1.18.2-40.1.69'
+    minecraft 'net.minecraftforge:forge:1.18.2-' + forgeVersion
 //    minecraft 'net.minecraftforge:forge:1.18.2-40.1.60'
 
     System.out.println("CF mods")
@@ -187,88 +191,50 @@ dependencies {
     }
 
     System.out.println(": Testing with")
-    if (true) {
-        System.out.println("| Debug")
-        api fg.deobf("curse.maven:spark-361579:3670050")
-    }
+    addMod "curse.maven:spark-361579:3670050", "Debug"
 
-    if (true) {
-        System.out.println("| Tweaks")
-        api fg.deobf("curse.maven:betterlilies-626812:3808620")
-    }
+    addMod "curse.maven:betterlilies-626812:3808620", "Tweaks"
 
-    if (true) {
-        System.out.println("| Magic")
-        api fg.deobf("curse.maven:malum-484064:3838894")
-        api fg.deobf("curse.maven:ortuslib-616457:3768197")
-    }
+    addMod "curse.maven:malum-484064:3838894", "Magic"
+    addLib curios
+    addLib ortusLib
 
-    if (true) {
-        System.out.println("| Misc")
-//        api fg.deobf("curse.maven:quark-243121:3840125")
+//    addMod "curse.maven:quark-243121:3840125", "Misc"
+//    addLib autoRegLib
+    addMod "curse.maven:supplementaries-412082:3800501", "Misc"
+    addLib selene
+//    addMod "curse.maven:immweather-592449:3800547", "Misc"
+    addMod "curse.maven:twilight_forest-227639:3873593", "Misc"
+    addLib curios
+//    addMod "curse.maven:dynamic_trees-252818:3831578", "Misc"
+    addMod "curse.maven:ttc-467136:3817745", "Misc"
+    addMod "curse.maven:framedblocks-441647:3805861", "Misc"
+//    addMod "curse.maven:vfx_gen:521724:3885747", "Misc"
 
-        api fg.deobf("curse.maven:supplementaries-412082:3800501")
-//        api fg.deobf("curse.maven:immweather-592449:3800547")
+    addMod "curse.maven:botania-225643:3789677", "Tech"
+    addLib curios
+    addLib patchouli
+    addMod "curse.maven:create-328085:3737418", "Tech"
+    addLib flywheel
+    addMod "curse.maven:scm-248619:3670826", "Tech"
+    addLib tkLib
 
-        api fg.deobf("curse.maven:twilight_forest-227639:3873593")
-//        api fg.deobf("curse.maven:dynamic_trees-252818:3831578")
+    addMod "curse.maven:storage_drawers-223852:3807626", "Storage"
 
-        api fg.deobf("curse.maven:ttc-467136:3817745")
+    addMod "curse.maven:iron_chests_restocked-498794:3837131", "Storage"
+    addMod "curse.maven:iron_chests-228756:3795374", "Storage"
 
-        api fg.deobf("curse.maven:framedblocks-441647:3805861")
+    addMod "curse.maven:colossal_chests-237875:3768512", "Storage"
+    addLib cyclopsCore
+    addLib clothConfig
 
-        // TODO: I'm not sure what's wrong with this
-//        api fg.deobf("curse.maven:vfx_gen:521724:3885747")
-    }
+    addMod "curse.maven:refined_storage-243076:3712882", "Storage"
 
-    if (true) {
-        System.out.println("| Libraries")
-        // botania
-        api fg.deobf("curse.maven:patchouli-306770:3809545")
-        // malum, botania, twilight forest
-        api fg.deobf("curse.maven:curios-309927:3841948")
-        // create
-        api fg.deobf("curse.maven:flywheel-486392:3737402")
-        // super circuit maker
-        api fg.deobf("curse.maven:tklib-566563:3650390")
-        // colossal chests
-        api fg.deobf("curse.maven:cyc_core-232758:3832119")
-        api fg.deobf("curse.maven:cloth_config-348521:3782776")
-        // quark
-        api fg.deobf("curse.maven:autoreglib-250363:3642382")
-        // supplementaries
-        api fg.deobf("curse.maven:selene-499980:3802427")
-    }
+//    addMod "curse.maven:rubidium-574856:4024781", "Optimization"
+    addMod "curse.maven:krypton-549394:3819215", "Optimization"
+    addMod "curse.maven:ferrite-429235:3767288", "Optimization"
 
-    if (true) {
-        System.out.println("| Tech")
-        api fg.deobf("curse.maven:botania-225643:3789677")
-
-        api fg.deobf("curse.maven:create-328085:3737418")
-
-        api fg.deobf("curse.maven:scm-248619:3670826")
-    }
-
-    if (true) {
-        System.out.println("| Storage")
-        api fg.deobf("curse.maven:storage_drawers-223852:3807626")
-
-        api fg.deobf("curse.maven:iron_chests_restocked-498794:3837131")
-        api fg.deobf("curse.maven:iron_chests-228756:3795374")
-
-        api fg.deobf("curse.maven:colossal_chests-237875:3768512")
-
-        api fg.deobf("curse.maven:refined_storage-243076:3712882")
-    }
-
-    if (true) {
-        System.out.println("| Optimization")
-
-//        api fg.deobf("curse.maven:rubidium-574856:4024781")
-        api fg.deobf("curse.maven:krypton-549394:3819215")
-
-        api fg.deobf("curse.maven:ferrite-429235:3767288")
-    }
+    Mod.apply((name) -> { api fg.deobf(name) })
 
     /* Invasive */
 //    api fg.deobf("curse.maven:dist_horizons-508933:3863541")
@@ -304,10 +270,10 @@ jar.finalizedBy('reobfJar')
 // everytime I change ATs, I need to reswap the game jar for the recomp jar
 System.out.println("Swap for recomp jar")
 String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
-File fl = new File("/1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2")
+File fl = new File((String) ("/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2"))
 if (fl.exists()) {
-    File fl1 = new File(dir + "/1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2.jar")
-    File fl2 = new File(dir + "/1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-40.1.19_mapped_parchment_1.18.1-2022.03.06-1.18.2-recomp.jar")
+    File fl1 = new File((String) (dir + "/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2.jar"))
+    File fl2 = new File((String) (dir + "/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2-recomp.jar"))
     if (fl2.exists()) {
         if (fl1.length() != fl2.length()) {
             if (fl1.exists())
@@ -323,4 +289,86 @@ if (fl.exists()) {
             inputStream.close()
         }
     }
+}
+System.out.println("Swapped")
+
+
+/* mod organization util */
+class Pair<T, V> {
+    T t
+    V v
+
+    Pair(T t, V v) {
+        this.t = t
+        this.v = v
+    }
+
+    static <T, V> Pair<T, V> of(T t, V v) {
+        return new Pair<T, V>(t, v)
+    }
+}
+
+class Mod {
+    String name
+    boolean isLibrary
+
+    static HashMap<String, ArrayList<Mod>> mods = new ArrayList<>();
+    static ArrayList<Pair<String, ArrayList<Mod>>> modsList = new ArrayList<>();
+    static ArrayList<Mod> libraries = new ArrayList<>()
+
+    Mod(String name, boolean isLibrary) {
+        this.name = name
+        this.isLibrary = isLibrary
+    }
+
+    boolean equals(o) {
+        if (this.is(o)) return true
+        if (getClass() != o.class) return false
+
+        Mod mod = (Mod) o
+
+        if (isLibrary != mod.isLibrary) return false
+        if (name != mod.name) return false
+
+        return true
+    }
+
+    int hashCode() {
+        int result
+        result = (name != null ? name.hashCode() : 0)
+        result = 31 * result + (isLibrary ? 1 : 0)
+        return result
+    }
+
+    static void apply(Consumer<String> moduleAdder) {
+        for (Pair<String, ArrayList<Mod>> s : modsList) {
+            System.out.println((String) ("| " + s.t))
+            for (Mod m : s.v) {
+                System.out.println((String) ("|-| " + m.name))
+                moduleAdder.accept(m.name)
+            }
+        }
+        System.out.println(": Libraries")
+        for (Mod m : libraries) {
+            System.out.println((String) ("|-| " + m.name))
+            moduleAdder.accept(m.name)
+        }
+    }
+}
+
+static void addMod(String name, String section) {
+    ArrayList<Mod> mods
+    if (section == "Libraries") {
+        mods = Mod.libraries
+    } else if (!Mod.mods.containsKey(section)) {
+        Mod.mods.put(section, mods = new ArrayList<>())
+        Mod.modsList.add(Pair.of(section, mods))
+    } else mods = Mod.mods.get(section)
+    Mod md = new Mod(name, section == "Libraries")
+    if (!mods.contains(md)) mods.add(md)
+}
+
+
+static void addLib(String name) {
+    addMod name, "Libraries"
 }

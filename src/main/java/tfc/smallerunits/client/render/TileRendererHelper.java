@@ -62,15 +62,10 @@ public class TileRendererHelper {
 		lastScale = -1;
 	}
 	
+	private static BufferBuilder theBuilder = new BufferBuilder(128);
+	
 	//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 	public static void drawUnit(Frustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-		// TODO: this needs optimization and checking
-		// could probably convert this to VBOs
-
-//		if (buffers[upb - 1] != null) {
-//			buffers[upb - 1].close();
-//			buffers[upb - 1] = null;
-//		}
 //		if (true) return;
 		
 		float r = 1;
@@ -91,16 +86,19 @@ public class TileRendererHelper {
 		
 		if (consumer == null) {
 			if (buffers[upb - 1] != null) {
+				if (lastScale != upb) {
+					((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
+					buffers[upb - 1].bind();
+					DefaultVertexFormat.POSITION_COLOR.setupBufferState();
+					GameRenderer.getPositionColorShader().apply();
+					lastScale = upb;
+				}
+				
 				stk.pushPose();
 				
 				stk.translate(pos.getX() - ox, pos.getY() - oy, pos.getZ() - oz);
-
-//				ShaderInstance instance = RenderSystem.getShader();
-
-//				RenderType.solid().setupRenderState();
-//				DefaultVertexFormat.POSITION_COLOR_LIGHTMAP.setupBufferState();
-				ShaderInstance instance = GameRenderer.getPositionColorLightmapShader();
-//				instance.apply();
+				
+				ShaderInstance instance = RenderSystem.getShader();
 				if (lastType != type) {
 					if (instance.COLOR_MODULATOR != null) {
 						RenderSystem.setShaderColor(r, g, b, 1);
@@ -113,28 +111,16 @@ public class TileRendererHelper {
 					instance.MODEL_VIEW_MATRIX.set(stk.last().pose());
 					instance.MODEL_VIEW_MATRIX.upload();
 				}
-//				buffers[upb - 1]._drawWithShader(stk.last().pose(), RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-				
-				if (lastScale != upb) {
-					((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
-					buffers[upb - 1].bind();
-					DefaultVertexFormat.POSITION_COLOR_LIGHTMAP.setupBufferState();
-					lastScale = upb;
-				}
-//				buffers[upb - 1].drawChunkLayer();
 				buffers[upb - 1].draw();
-
-//				((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
-//				buffers[upb - 1].bind();
-//				DefaultVertexFormat.POSITION_COLOR_LIGHTMAP.setupBufferState();
-//				buffers[upb - 1].draw();
-//				DefaultVertexFormat.POSITION_COLOR_LIGHTMAP.clearBufferState();
 				
 				stk.popPose();
 				
+//				if (buffers[upb - 1] != null) {
+//					buffers[upb - 1].close();
+//					buffers[upb - 1] = null;
+//				}
 				return;
 			}
-			
 		}
 		
 		float scl = 1f / upb;
@@ -152,8 +138,8 @@ public class TileRendererHelper {
 			g = 1;
 			b = 1;
 			
-			consumer = builder = new BufferBuilder(128);
-			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_LIGHTMAP);
+			consumer = builder = theBuilder;
+			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 		}
 		
 		light = LightTexture.pack(15, 15);
@@ -326,21 +312,23 @@ public class TileRendererHelper {
 		BlockPos bp = pos.toBlockPos();
 		
 		float scl = 1f / (((FakeClientLevel) valueLevel).getUPB());
-		PoseStack mdlViewStk = RenderSystem.getModelViewStack();
-		mdlViewStk.pushPose();
+//		PoseStack mdlViewStk = RenderSystem.getModelViewStack();
+//		mdlViewStk.pushPose();
 		
-		mdlViewStk.last().pose().multiply(pPoseStack.last().pose());
-		mdlViewStk.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
-		mdlViewStk.translate(bp.getX(), bp.getY(), bp.getZ());
-		mdlViewStk.scale(scl, scl, scl);
-		mdlViewStk.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
+		PoseStack stack = new PoseStack();
+		stack.last().pose().multiply(pPoseStack.last().pose());
+
+		stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
+		stack.translate(bp.getX(), bp.getY(), bp.getZ());
+		stack.scale(scl, scl, scl);
+		stack.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
 		
 		// TODO: use forge method or smth
 		((FakeClientLevel) valueLevel).getParticleEngine().render(
-				new PoseStack(), renderBuffers.bufferSource(),
+				stack, renderBuffers.bufferSource(),
 				pLightTexture, pCamera, pPartialTick
 		);
-		mdlViewStk.popPose();
+//		mdlViewStk.popPose();
 	}
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {

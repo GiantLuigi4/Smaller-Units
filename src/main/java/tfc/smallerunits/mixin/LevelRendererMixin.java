@@ -18,6 +18,7 @@ import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -251,14 +252,10 @@ public abstract class LevelRendererMixin {
 		stk.pushPose();
 		Vec3 cam = Minecraft.getInstance().getEntityRenderDispatcher().camera.getPosition();
 		stk.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
-
-//		VertexConsumer consumer = null;
-//		MultiBufferSource.BufferSource source = Minecraft.getInstance().renderBuffers().bufferSource();
-//		consumer = source.getBuffer(RenderType.solid());
 		
 		/* draw indicators */
 		RenderType.solid().setupRenderState();
-		ShaderInstance shader = GameRenderer.getPositionColorLightmapShader();
+		ShaderInstance shader = GameRenderer.getPositionColorShader();
 		shader.apply();
 		RenderSystem.setShader(() -> shader);
 		BufferUploader.reset();
