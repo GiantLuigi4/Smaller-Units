@@ -57,11 +57,6 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	LevelChunkSection section;
 	
-	public final int getIndx(int x, int y, int z) {
-		// truthfully, this is x, z, y order, but it really does not matter at all
-		return x + (((y * 16) + z) * 16);
-	}
-	
 	public boolean isLoaded() {
 		return !section.hasOnlyAir();
 	}
@@ -207,7 +202,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, this); // this is returning the wrong thing
 		LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 		UnitSpace space = null;
-		int indx = getIndx(j, k, l);
 		BlockState oldState = section.getBlockState(j, k, l);
 		if (ac instanceof FastCapabilityHandler capabilityHandler) {
 			space = capabilityHandler.getSUCapability().getUnit(parentPos);
@@ -260,7 +254,6 @@ public class BasicVerticalChunk extends LevelChunk {
 			return null;
 		} else {
 			pPos = pPos.above(yPos * 16);
-			int indx = getIndx(j, k, l);
 			BlockState blockstate = section.setBlockState(j, k, l, pState);
 			if (blockstate == pState) {
 				return null;
@@ -358,7 +351,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		int j = pos.getX() & 15;
 		int k = pos.getY();
 		int l = pos.getZ() & 15;
-		int indx = getIndx(j, k, l);
 		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
 		
 		SectionPos pPosAsSectionPos = SectionPos.of(parentPos);

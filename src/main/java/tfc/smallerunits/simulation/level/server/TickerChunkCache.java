@@ -56,7 +56,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		lightEngine = new NotThreadedSULightManager(this, this.chunkMap, true);
 	}
 	
-	private final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();
+	protected final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();
 	
 	@Override
 	public boolean hasChunk(int pX, int pZ) {

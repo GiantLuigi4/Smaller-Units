@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -570,12 +571,17 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
 		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
+		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 		for (int x = myPosInTheLevel.getX(); x < offset.getX(); x++) {
 			for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
+				int pX = SectionPos.blockToSectionCoord(x);
+				int pZ = SectionPos.blockToSectionCoord(z);
+				BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (vc == null) continue;
+				
 				for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
-					BlockPos pz = new BlockPos(x, y, z);
-					BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(pz);
-					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null, cache);
+					mutableBlockPos.set(x, y, z);
+					vc.setBlockFast(mutableBlockPos, null, cache);
 				}
 			}
 		}
@@ -938,8 +944,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		
 		randomTickCount = Integer.MIN_VALUE;
 		
-		if (!getServer().isReady()) return;
 		if (!isLoaded) return;
+		if (!getServer().isReady()) return;
 		
 		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
 		
@@ -952,11 +958,14 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		entitiesRemoved.clear();
 		
-		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
+		getLightEngine().runUpdates(10000, true, false);
+		for (Runnable runnable : completeOnTick) runnable.run();
+		completeOnTick.clear();
+		
+		// TODO: optimize this
+		for (ChunkHolder holder : ((TickerChunkCache) chunkSource).holders) {
 			List<ServerPlayer> players = null;
-			if (column == null) continue;
-			for (BasicVerticalChunk basicVerticalChunk : column) {
-				if (basicVerticalChunk == null) continue;
+			if (holder.getTickingChunk() instanceof BasicVerticalChunk basicVerticalChunk) {
 				if (players == null) {
 					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
 					for (ServerPlayer player : players) {
@@ -968,8 +977,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					}
 				}
 				
-				NetworkingHacks.unitPos.remove();
-				
 				for (BlockPos pos : basicVerticalChunk.besRemoved) {
 					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
 					if (be != null && !be.isRemoved())
@@ -978,10 +985,32 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				basicVerticalChunk.beChanges.clear();
 			}
 		}
+//		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
+//			List<ServerPlayer> players = null;
+//			if (column == null) continue;
+//			for (BasicVerticalChunk basicVerticalChunk : column) {
+//				if (basicVerticalChunk == null) continue;
+//				if (players == null) {
+//					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
+//					for (ServerPlayer player : players) {
+//						// TODO: do this properly
+//						try {
+//							getChunkSource().chunkMap.move(player);
+//						} catch (Throwable ignored) {
+//						}
+//					}
+//				}
+//
+//				for (BlockPos pos : basicVerticalChunk.besRemoved) {
+//					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
+//					if (be != null && !be.isRemoved())
+//						be.setRemoved();
+//				}
+//				basicVerticalChunk.beChanges.clear();
+//			}
+//		}
 		
-		getLightEngine().runUpdates(10000, true, false);
-		for (Runnable runnable : completeOnTick) runnable.run();
-		completeOnTick.clear();
+		NetworkingHacks.unitPos.remove();
 	}
 	
 	@Override

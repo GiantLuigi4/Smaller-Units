@@ -34,7 +34,7 @@ public class Region {
 	public Region(RegionPos pos) {
 		this.pos = pos;
 		// TODO: config
-		this.levels = new Level[255];
+		this.levels = new Level[256];
 	}
 	
 	public int subtractRef(RegionPos regionPos) {

@@ -72,11 +72,14 @@ public class UnitShape extends VoxelShape {
 		double oMinZ = pCollisionBox.min(ySwivel);
 		double oMinY = pCollisionBox.min(zSwivel);
 		if (oMaxY > tMinY && oMinY < tMaxY && oMaxZ > tMinZ && oMinZ < tMaxZ) {
-			if (offsetX > 0.0D && oMaxX <= tMinX) {
+			// due to the fact that I'm scaling the bounding box, I end up losing some precision
+			// because of this, I have to  use a more lenient check
+			if (offsetX > 0.0D && oMaxX <= (tMinX + 0.000001)) {
 				double deltaX = tMinX - oMaxX;
 				
 				if (deltaX < offsetX) return deltaX;
-			} else if (offsetX < 0.0D && oMinX >= tMaxX) {
+//			} else if (offsetX < 0.0D && oMinX >= (tMaxX - 0.000001)) {
+			} else if (offsetX < 0.0D && oMinX >= (tMaxX - 0.000001)) {
 				double deltaX = tMaxX - oMinX;
 				
 				if (deltaX > offsetX) return deltaX;
@@ -239,14 +242,7 @@ public class UnitShape extends VoxelShape {
 		
 		double upbDouble = space.unitsPerBlock;
 		// TODO: make this not rely on block pos, maybe?
-		collectShape((pos) -> {
-			int x = pos.getX();
-			int y = pos.getY();
-			int z = pos.getZ();
-			AABB box = new AABB(
-					x / upbDouble, y / upbDouble, z / upbDouble,
-					(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-			).move(offset).move(pPos);
+		collectShape((box) -> {
 			return box.contains(pStartVec) || box.clip(vec31, pEndVec).isPresent();
 		}, (pos, state) -> {
 			int x = pos.getX();
@@ -266,7 +262,7 @@ public class UnitShape extends VoxelShape {
 				);
 				addBox(b);
 			}
-		}, space);
+		}, space, pPos);
 		
 		if (this.isEmpty()) {
 			return computeEdgeResult(pStartVec, pEndVec, pPos);
@@ -313,27 +309,39 @@ public class UnitShape extends VoxelShape {
 		return computeEdgeResult(pStartVec, pEndVec, pPos);
 	}
 	
-	public void collectShape(Function<BlockPos, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space) {
+	public void collectShape(Function<AABB, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space, BlockPos pPos) {
 		int upbInt = space.unitsPerBlock;
+		double upbDouble = upbInt;
 		
 		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-		BlockPos origin = space.getOffsetPos(new BlockPos(0,0,0));
+		BlockPos origin = space.getOffsetPos(new BlockPos(0, 0, 0));
 		for (int x = 0; x < upbInt; x++) {
 			for (int z = 0; z < upbInt; z++) {
-				int pX = SectionPos.blockToSectionCoord(x + origin.getX());
-				int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
-				ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
-				if (chunk == null) continue;
-				
-				for (int y = 0; y < upbInt; y++) {
-					mutableBlockPos.set(x, y, z);
+				AABB box = new AABB(
+						x / upbDouble, 0, z / upbDouble,
+						(x + 1) / upbDouble, upbInt / upbDouble, (z + 1) / upbDouble
+				).move(offset).move(pPos);
+//
+				if (simpleChecker.apply(box)) {
+					int pX = SectionPos.blockToSectionCoord(x + origin.getX());
+					int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
+					ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
 					
-					if (simpleChecker.apply(mutableBlockPos)) {
-						mutableBlockPos.set((x + origin.getX()) & 15, y + origin.getY(), (z + origin.getZ()) & 15);
-						BlockState state = chunk.getBlockState(mutableBlockPos);
-						if (state.isAir()) continue;
+					if (chunk == null) continue;
+					for (int y = 0; y < upbInt; y++) {
 						mutableBlockPos.set(x, y, z);
-						boxFiller.accept(mutableBlockPos, state);
+						
+						box = new AABB(
+								x / upbDouble, y / upbDouble, z / upbDouble,
+								(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
+						).move(offset).move(pPos);
+						if (simpleChecker.apply(box)) {
+							mutableBlockPos.set((x + origin.getX()) & 15, y + origin.getY(), (z + origin.getZ()) & 15);
+							BlockState state = chunk.getBlockState(mutableBlockPos);
+							if (state.isAir()) continue;
+							mutableBlockPos.set(x, y, z);
+							boxFiller.accept(mutableBlockPos, state);
+						}
 					}
 				}
 			}
@@ -382,7 +390,6 @@ public class UnitShape extends VoxelShape {
 		BlockPos pos = space.pos;
 		if (swivelCheck(axiscycle, pCollisionBox, new AABB(pos))) {
 			Direction.Axis ySwivel = axiscycle.cycle(Direction.Axis.X);
-			ySwivel.choose(0, 1, 2);
 			// x->z
 			// y->x
 			// z->y

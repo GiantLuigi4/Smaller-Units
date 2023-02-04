@@ -733,12 +733,17 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	@Override
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
 		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
+		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 		for (int x = myPosInTheLevel.getX(); x < offset.getX(); x++) {
-			for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
-				for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
-					BlockPos pz = new BlockPos(x, y, z);
-					BasicVerticalChunk vc = (BasicVerticalChunk) getChunkAt(pz);
-					vc.setBlockFast(new BlockPos(x, pz.getY(), z), null, cache);
+			for (int z = myPosInTheLevel.getZ(); z < offset.getZ(); z++) {
+				int pX = SectionPos.blockToSectionCoord(x);
+				int pZ = SectionPos.blockToSectionCoord(z);
+				BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pX, pZ, ChunkStatus.FULL, false);
+				if (vc == null) continue;
+				
+				for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
+					mutableBlockPos.set(x, y, z);
+					vc.setBlockFast(mutableBlockPos, null, cache);
 				}
 			}
 		}
