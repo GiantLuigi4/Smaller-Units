@@ -3,8 +3,12 @@ package tfc.smallerunits.simulation.level.server;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.Util;
 import net.minecraft.core.*;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -191,6 +195,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	int randomTickCount = Integer.MIN_VALUE;
 	
 	@Override
+	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
+		this.playSound(pPlayer, pEntity.getX(), pEntity.getY(), pEntity.getZ(), pEvent, pCategory, pVolume, pPitch);
+	}
+	
+	@Override
 	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
@@ -208,26 +217,90 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (scl > 1) scl = 1 / scl;
 		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.get().playSound(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch);
+			Level lvl = parent.get();
+			if (lvl == null) return;
+			for (Player player : lvl.players()) {
+				if (player == pPlayer) continue;
+				
+				double fScl = finalScl;
+				fScl *= 1 / ResizingUtils.getSize(player);
+				sendSoundEvent(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * fScl), pPitch);
+			}
 		});
+	}
+	
+	public void sendSoundEvent(@javax.annotation.Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
+		net.minecraftforge.event.entity.PlaySoundAtEntityEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
+		if (event.isCanceled() || event.getSound() == null) return;
+		pSound = event.getSound();
+		pCategory = event.getCategory();
+		pVolume = event.getVolume();
+		broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch));
+	}
+	
+	public void broadcastTo(@javax.annotation.Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {
+		Level lvl = parent.get();
+		if (lvl == null) return;
+		for (int i = 0; i < lvl.players().size(); ++i) {
+			ServerPlayer serverplayer = (ServerPlayer) lvl.players().get(i);
+			if (serverplayer != pExcept && serverplayer.level.dimension() == pDimension) {
+				double d0 = pX - serverplayer.getX();
+				double d1 = pY - serverplayer.getY();
+				double d2 = pZ - serverplayer.getZ();
+				if (d0 * d0 + d1 * d1 + d2 * d2 < pRadius * pRadius) {
+					serverplayer.connection.send(pPacket);
+				}
+			}
+		}
+	}
+	
+	public <T extends ParticleOptions> int sendParticles(T pType, double pPosX, double pPosY, double pPosZ, int pParticleCount, double pXOffset, double pYOffset, double pZOffset, double pSpeed) {
+		ClientboundLevelParticlesPacket clientboundlevelparticlespacket = new ClientboundLevelParticlesPacket(pType, false, pPosX, pPosY, pPosZ, (float)pXOffset, (float)pYOffset, (float)pZOffset, (float)pSpeed, pParticleCount);
+		int i = 0;
+		
+		Level lvl = parent.get();
+		if (lvl == null) return 0;
+		
+		for(int j = 0; j < lvl.players().size(); ++j) {
+			ServerPlayer serverplayer = (ServerPlayer) lvl.players().get(j);
+			if (this.sendParticles(serverplayer, false, pPosX, pPosY, pPosZ, clientboundlevelparticlespacket)) {
+				++i;
+			}
+		}
+		
+		return i;
+	}
+	
+	@Override
+	public boolean sendParticles(ServerPlayer pPlayer, boolean pLongDistance, double pPosX, double pPosY, double pPosZ, Packet<?> pPacket) {
+		Level lvl = parent.get();
+		if (lvl == null) return false;
+		if (pPlayer.getLevel() == lvl || pPlayer.level == this) {
+			BlockPos blockpos = pPlayer.blockPosition();
+			
+			double scl = 1f / upb;
+			BlockPos pos = getRegion().pos.toBlockPos();
+			pPosX *= scl;
+			pPosY *= scl;
+			pPosZ *= scl;
+			pPosX += pos.getX();
+			pPosY += pos.getY();
+			pPosZ += pos.getZ();
+			
+			if (blockpos.closerToCenterThan(new Vec3(pPosX, pPosY, pPosZ), pLongDistance ? (512.0D * scl) : (32.0D * scl))) {
+				pPlayer.connection.send(pPacket);
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
 	}
 	
 	@Override
 	public void SU$removeEntity(Entity pEntity) {
 		if (!entitiesRemoved.contains(pEntity)) entitiesRemoved.add(pEntity);
-	}
-	
-	@Override
-	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
-//		super.playSound(pPlayer, pEntity, pEvent, pCategory, pVolume, pPitch);
-		double scl = 1f / upb;
-		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
-			scl *= 1 / ResizingUtils.getSize(pPlayer);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.get().playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
-		});
 	}
 	
 	@Override
@@ -355,9 +428,9 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 //		}
 //		if (firstOpen != -1) pEntity.setId(firstOpen + 1);
 //		else pEntity.setId(0);
-		pEntity.setId(nextId++);
+//		pEntity.setId(nextId++);
 		
-		entities.add(pEntity);
+//		entities.add(pEntity);
 		
 		return super.addFreshEntity(pEntity);
 	}
@@ -645,6 +718,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+		// TODO: does this even exist on server?
 //		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
@@ -878,6 +952,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public FluidState getFluidState(BlockPos pPos) {
+//		return Blocks.AIR.defaultBlockState().getFluidState();
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
 		if (chunk == null) return Fluids.EMPTY.defaultFluidState();
 		return chunk.getFluidState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
@@ -958,10 +1033,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		entitiesRemoved.clear();
 		
-		getLightEngine().runUpdates(10000, true, false);
-		for (Runnable runnable : completeOnTick) runnable.run();
-		completeOnTick.clear();
-		
 		// TODO: optimize this
 		for (ChunkHolder holder : ((TickerChunkCache) chunkSource).holders) {
 			List<ServerPlayer> players = null;
@@ -971,7 +1042,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					for (ServerPlayer player : players) {
 						// TODO: do this properly
 						try {
-							getChunkSource().chunkMap.move(player);
+//							PositionalInfo info = new PositionalInfo(player);
+//							info.adjust(player, this, this.getUPB(), region.pos);
+//							getChunkSource().chunkMap.move(player);
+//							info.reset(player);
 						} catch (Throwable ignored) {
 						}
 					}
@@ -1011,6 +1085,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 //		}
 		
 		NetworkingHacks.unitPos.remove();
+		
+		getLightEngine().runUpdates(10000, true, false);
+		for (Runnable runnable : completeOnTick) runnable.run();
+		completeOnTick.clear();
 	}
 	
 	@Override

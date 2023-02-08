@@ -6,10 +6,7 @@ import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.RenderBuffers;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -21,6 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
@@ -44,6 +42,13 @@ public class TileRendererHelper {
 					tkLvl.getRegion().pos.toBlockPos().getZ()
 			);
 			stk.scale(scl, scl, scl);
+		}
+		
+		if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && !FMLEnvironment.production) {
+			LevelRenderer.renderLineBox(
+					stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+					tile.getRenderBoundingBox(), 1, 1, 1, 1
+			);
 		}
 		stk.translate(
 				tile.getBlockPos().getX(),
@@ -114,7 +119,7 @@ public class TileRendererHelper {
 				buffers[upb - 1].draw();
 				
 				stk.popPose();
-				
+
 //				if (buffers[upb - 1] != null) {
 //					buffers[upb - 1].close();
 //					buffers[upb - 1] = null;
@@ -317,7 +322,7 @@ public class TileRendererHelper {
 		
 		PoseStack stack = new PoseStack();
 		stack.last().pose().multiply(pPoseStack.last().pose());
-
+		
 		stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
 		stack.translate(bp.getX(), bp.getY(), bp.getZ());
 		stack.scale(scl, scl, scl);

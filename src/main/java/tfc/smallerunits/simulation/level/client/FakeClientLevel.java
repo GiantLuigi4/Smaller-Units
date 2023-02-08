@@ -100,11 +100,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	UnitParticleEngine particleEngine = new UnitParticleEngine(this, new TextureManager(Minecraft.getInstance().getResourceManager()));
 	
 	@Override
-	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
-		super.playSound(pPlayer, pX, pY, pZ, pSound, pCategory, pVolume, pPitch);
-	}
-	
-	@Override
 	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
 //		super.playSound(pPlayer, pEntity, pEvent, pCategory, pVolume, pPitch);
 		double scl = 1f / upb;
@@ -118,8 +113,26 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	}
 	
 	@Override
-	public void playLocalSound(BlockPos pPos, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
-		super.playLocalSound(pPos, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
+		double scl = 1f / upb;
+		BlockPos pos = getRegion().pos.toBlockPos();
+		pX *= scl;
+		pY *= scl;
+		pZ *= scl;
+		pX += pos.getX();
+		pY += pos.getY();
+		pZ += pos.getZ();
+		double finalPX = pX;
+		double finalPY = pY;
+		double finalPZ = pZ;
+		if (ResizingUtils.isResizingModPresent())
+			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (scl > 1) scl = 1 / scl;
+		double finalScl = scl;
+		completeOnTick.add(() -> {
+			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+		});
 	}
 	
 	public FakeClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
@@ -159,29 +172,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		};
 		
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
-	}
-	
-	@Override
-	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
-//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
-		double scl = 1f / upb;
-		BlockPos pos = getRegion().pos.toBlockPos();
-		pX *= scl;
-		pY *= scl;
-		pZ *= scl;
-		pX += pos.getX();
-		pY += pos.getY();
-		pZ += pos.getZ();
-		double finalPX = pX;
-		double finalPY = pY;
-		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
-		});
 	}
 	
 	// forge is stupid and does not account for there being more than 1 world at once
@@ -389,6 +379,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		BlockHitResult closest = null;
 		double d = Double.POSITIVE_INFINITY;
 		
+		Level parent = this.parent.get();
+		
 		int minX = (int) Math.floor(Math.min(start.x, end.x)) - 1;
 		int minY = (int) Math.floor(Math.min(start.y, end.y)) - 1;
 		int minZ = (int) Math.floor(Math.min(start.z, end.z)) - 1;
@@ -414,34 +406,38 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 								int pZ = SectionPos.blockToSectionCoord(z1);
 								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
 								if (chunk == null) {
-									for (int y0 = 0; y0 < 16; y0++) {
-										int y1 = y + y0;
-										box = new AABB(
-												x1, y1, z1,
-												x1 + 1, y1 + 1, z1 + 1
-										);
-										if (simpleChecker.apply(box)) {
-											BlockPos pos = new BlockPos(x1, y1, z1);
-											BlockPos pos1 = PositionUtils.getParentPos(pos, this);
-											BlockState state = lookup.getState(pos1);
-											if (state.isAir()) continue;
-											BlockHitResult result = AABB.clip(
-													Collections.singleton(new AABB(0, 0, 0, 1, 1, 1)),
-													start, end,
-													pos
+									if (parent != null) {
+										for (int y0 = 0; y0 < 16; y0++) {
+											int y1 = y + y0;
+											box = new AABB(
+													x1, y1, z1,
+													x1 + 1, y1 + 1, z1 + 1
 											);
-											if (result != null) {
-												double dd = result.getLocation().distanceTo(start);
-												if (dd < d) {
-													d = dd;
-													closest = result;
+											if (simpleChecker.apply(box)) {
+												BlockPos pos = new BlockPos(x1, y1, z1);
+												BlockPos pos1 = PositionUtils.getParentPos(pos, this);
+//												BlockState state = lookup.getState(pos1);
+												
+												BlockState state = parent.getBlockState(pos1);
+												if (state.isAir()) continue;
+												// TODO: do this better
+												BlockHitResult result = AABB.clip(
+														Collections.singleton(new AABB(0, 0, 0, 1, 1, 1)),
+														start, end,
+														pos
+												);
+												if (result != null) {
+													double dd = result.getLocation().distanceTo(start);
+													if (dd < d) {
+														d = dd;
+														closest = result;
+													}
 												}
 											}
 										}
 									}
 									continue;
 								}
-								// TODO: parent world trace in empty chunks
 								
 								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;

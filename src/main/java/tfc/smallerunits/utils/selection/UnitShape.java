@@ -13,8 +13,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -23,12 +23,12 @@ import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.mixin.optimization.VoxelShapeAccessor;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -36,7 +36,7 @@ import java.util.function.Function;
 
 // best of 1.18 and 1.12, neat
 public class UnitShape extends VoxelShape {
-	public final boolean collision;
+	public final boolean visual;
 	protected final ArrayList<UnitBox> boxesTrace = new ArrayList<>();
 	protected final ArrayList<UnitBox> boxesCollide = new ArrayList<>();
 	
@@ -46,11 +46,11 @@ public class UnitShape extends VoxelShape {
 	
 	public CollisionContext collisionContext;
 	
-	public UnitShape(UnitSpace space, boolean collision, CollisionContext pContext) {
+	public UnitShape(UnitSpace space, boolean visual, CollisionContext pContext) {
 		super(new UnitDiscreteShape(0, 0, 0));
 		((UnitDiscreteShape) ((VoxelShapeAccessor) this).getShape()).sp = this;
 		this.space = space;
-		this.collision = true;
+		this.visual = visual;
 		this.collisionContext = pContext;
 	}
 	
@@ -90,7 +90,6 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public void forAllEdges(Shapes.DoubleLineConsumer pAction) {
-		// oh, well that wasn't that bad
 		for (AABB box : boxesTrace) {
 			pAction.consume(box.minX, box.minY, box.minZ, box.maxX, box.minY, box.minZ);
 			pAction.consume(box.minX, box.minY, box.minZ, box.minX, box.maxY, box.minZ);
@@ -108,7 +107,6 @@ public class UnitShape extends VoxelShape {
 			pAction.consume(box.maxX, box.maxY, box.minZ, box.maxX, box.minY, box.minZ);
 			pAction.consume(box.minX, box.maxY, box.minZ, box.maxX, box.maxY, box.minZ);
 		}
-		return;
 	}
 	
 	@Override
@@ -248,7 +246,9 @@ public class UnitShape extends VoxelShape {
 			int x = pos.getX();
 			int y = pos.getY();
 			int z = pos.getZ();
-			VoxelShape sp = state.getShape(space.getMyLevel(), space.getOffsetPos(pos));
+			VoxelShape sp;
+			if (visual) sp = state.getVisualShape(space.getMyLevel(), space.getOffsetPos(pos), collisionContext);
+			else sp = state.getShape(space.getMyLevel(), space.getOffsetPos(pos), collisionContext);
 			for (AABB toAabb : sp.toAabbs()) {
 				toAabb = toAabb.move(x, y, z).move(offset);
 				UnitBox b = (UnitBox) new UnitBox(
@@ -315,20 +315,39 @@ public class UnitShape extends VoxelShape {
 		
 		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 		BlockPos origin = space.getOffsetPos(new BlockPos(0, 0, 0));
+		// TODO: use a more efficient loop
 		for (int x = 0; x < upbInt; x++) {
 			for (int z = 0; z < upbInt; z++) {
 				AABB box = new AABB(
 						x / upbDouble, 0, z / upbDouble,
 						(x + 1) / upbDouble, upbInt / upbDouble, (z + 1) / upbDouble
 				).move(offset).move(pPos);
-//
+
 				if (simpleChecker.apply(box)) {
 					int pX = SectionPos.blockToSectionCoord(x + origin.getX());
 					int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
-					ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+					BasicVerticalChunk chunk = (BasicVerticalChunk) space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+					if (chunk == null) {
+						if (z == (z >> 4) << 4) {
+							z += 15;
+						} else {
+							z = ((z >> 4) << 4) + 15;
+						}
+						continue;
+					}
 					
-					if (chunk == null) continue;
 					for (int y = 0; y < upbInt; y++) {
+						int sectionIndex = chunk.getSectionIndex(y + origin.getY());
+						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
+						if (section == null || section.hasOnlyAir()) {
+							if (y == (y >> 4) << 4) {
+								y += 15;
+							} else {
+								y = ((y >> 4) << 4) + 15;
+							}
+							continue;
+						}
+						
 						mutableBlockPos.set(x, y, z);
 						
 						box = new AABB(
@@ -350,7 +369,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape optimize() {
-		UnitShape copy = new UnitShape(space, collision, collisionContext);
+		UnitShape copy = new UnitShape(space, visual, collisionContext);
 		for (AABB box : boxesTrace) copy.addBox((UnitBox) box);
 		return this;
 	}
@@ -373,19 +392,9 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	protected double collideX$(AxisCycle pMovementAxis, AABB pCollisionBox, double pDesiredOffset) {
-		if (!collision)
-			return pDesiredOffset;
-		
 		if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
 		
 		AxisCycle axiscycle = pMovementAxis.inverse();
-
-//		if (swivelCheck(axiscycle, pCollisionBox, this.totalBB)) {
-//			for (AABB box : boxes) {
-//				pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, box, pDesiredOffset);
-//				if (Math.abs(pDesiredOffset) < 1.0E-7D) return 0.0D;
-//			}
-//		}
 		
 		BlockPos pos = space.pos;
 		if (swivelCheck(axiscycle, pCollisionBox, new AABB(pos))) {
@@ -401,16 +410,12 @@ public class UnitShape extends VoxelShape {
 			);
 			pDesiredOffset *= space.unitsPerBlock;
 			AABB motionBox = pCollisionBox;
+			double signNum = Math.signum(pDesiredOffset);
 			switch (ySwivel) {
-				case X -> motionBox = motionBox.expandTowards(pDesiredOffset, 0, 0);
-				case Y -> motionBox = motionBox.expandTowards(0, pDesiredOffset, 0);
-				case Z -> motionBox = motionBox.expandTowards(0, 0, pDesiredOffset);
+				case X -> motionBox = motionBox.expandTowards(pDesiredOffset, 0, 0).contract(-signNum * pCollisionBox.getXsize(), 0, 0);
+				case Y -> motionBox = motionBox.expandTowards(0, pDesiredOffset, 0).contract(0, -signNum * pCollisionBox.getYsize(), 0);
+				case Z -> motionBox = motionBox.expandTowards(0, 0, pDesiredOffset).contract(0, 0, -signNum * pCollisionBox.getZsize());
 			}
-//			motionBox = HitboxScaling.getOffsetAndScaledBox(
-//					motionBox,
-//					pCollisionBox.getCenter().multiply(1, 0, 1).add(0, pCollisionBox.minY, 0),
-//					space.unitsPerBlock
-//			);
 			// TODO: got an issue with tall block collision (fences, walls, etc)
 			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 			mutableBlockPos.set(0, 0, 0);
@@ -431,14 +436,30 @@ public class UnitShape extends VoxelShape {
 			
 			for (int x = minX; x <= maxX; x++) {
 				for (int z = minZ; z <= maxZ; z++) {
+					{
+						AABB box = new AABB(
+								x, minY, z,
+								(x + 1), maxY, (z + 1)
+						);
+						if (!box.intersects(motionBox)) {
+							continue;
+						}
+					}
+					
 					int pX = SectionPos.blockToSectionCoord(x);
 					int pZ = SectionPos.blockToSectionCoord(z);
-					ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+					BasicVerticalChunk chunk = (BasicVerticalChunk) space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
 					if (chunk == null) continue;
 					
 					for (int y = minY; y <= maxY; y++) {
+						int sectionIndex = chunk.getSectionIndex(y);
+						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
+						if (section == null || section.hasOnlyAir()) {
+							continue;
+						}
+						
 						mutableBlockPos.set(x, y, z);
-						BlockState state = chunk.getBlockState(mutableBlockPos);
+						BlockState state = chunk.getBlockStateSmallOnly(mutableBlockPos);
 						if (!state.isAir() && !(state.getBlock() instanceof UnitEdge)) {
 							VoxelShape shape = state.getCollisionShape(space.getMyLevel(), mutableBlockPos, collisionContext);
 							if (shape.isEmpty())
@@ -463,7 +484,7 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape move(double pXOffset, double pYOffset, double pZOffset) {
-		UnitShape copy = new UnitShape(space, collision, collisionContext);
+		UnitShape copy = new UnitShape(space, visual, collisionContext);
 		copy.offset = offset.add(pXOffset, pYOffset, pZOffset);
 		for (AABB box : boxesTrace) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
 		return copy;
@@ -495,7 +516,6 @@ public class UnitShape extends VoxelShape {
 		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 		mutableBlockPos.set(0, 0, 0);
 		
-		HashMap<BlockPos, VoxelShape> positionsChecked = new HashMap<>();
 		for (AABB toAabb : pShape2.toAabbs()) {
 			for (AABB box : boxesTrace) {
 				if (box.intersects(toAabb)) {
@@ -518,58 +538,74 @@ public class UnitShape extends VoxelShape {
 			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
 			int maxZ = (int) Math.ceil(scaledBox.maxZ + 1);
 			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
-
-//			toAabb = toAabb.move(
-//					-offset.x / (double) space.unitsPerBlock,
-//					-offset.y / (double) space.unitsPerBlock,
-//					-offset.z / (double) space.unitsPerBlock
-//			);
 			
 			for (int x = minX; x <= maxX; x++) {
 				for (int z = minZ; z <= maxZ; z++) {
+					{
+						AABB box = new AABB(
+								x, minY, z,
+								(x + 1), maxY, (z + 1)
+						);
+						if (!box.intersects(scaledBox)) {
+							continue;
+						}
+					}
+					
 					int pX = SectionPos.blockToSectionCoord(x);
 					int pZ = SectionPos.blockToSectionCoord(z);
-					ChunkAccess chunk = space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
-					if (chunk == null) continue;
+					BasicVerticalChunk chunk = (BasicVerticalChunk) space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
+					if (chunk == null) {
+						if (z == (z >> 4) << 4) {
+							z += 15;
+						} else {
+							z = ((z >> 4) << 4) + 15;
+						}
+						continue;
+					}
 					
 					for (int y = minY; y <= maxY; y++) {
-						mutableBlockPos.set(x, y, z);
-						AABB box = new AABB(
-								mutableBlockPos
-						).inflate(1);
-//						box = new AABB(
-//								box.minX / (double) space.unitsPerBlock,
-//								box.minY / (double) space.unitsPerBlock,
-//								box.minZ / (double) space.unitsPerBlock,
-//								box.maxX / (double) space.unitsPerBlock,
-//								box.maxY / (double) space.unitsPerBlock,
-//								box.maxZ / (double) space.unitsPerBlock
-//						).inflate(1);
-						if (!scaledBox.intersects(box)) continue;
+						int sectionIndex = chunk.getSectionIndex(y);
+						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
+						if (section == null || section.hasOnlyAir()) {
+							if (y == (y >> 4) << 4) {
+								y += 15;
+							} else {
+								y = ((y >> 4) << 4) + 15;
+							}
+							continue;
+						}
 						
+//						AABB box = new AABB(
+//								mutableBlockPos
+//						).inflate(1);
+//						if (!scaledBox.intersects(box))
+//							continue;
+						
+						mutableBlockPos.set(x, y, z);
+						BlockState state = chunk.getBlockStateSmallOnly(mutableBlockPos);
 						VoxelShape shape;
-						BlockPos immut = mutableBlockPos.immutable();
-						if (!positionsChecked.containsKey(immut)) {
-							BlockState state = chunk.getBlockState(immut);
-							if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
-								shape = state.getCollisionShape(space.getMyLevel(), immut, collisionContext);
-							else
-								shape = Shapes.empty();
-						} else
-							shape = positionsChecked.get(immut);
-						positionsChecked.put(immut, shape);
+						if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
+							shape = state.getCollisionShape(space.getMyLevel(), mutableBlockPos, collisionContext);
+						else
+							shape = Shapes.empty();
 						if (shape.isEmpty()) continue;
+						
+						// TODO: is there a scenario where the cache helps?
+//						BlockPos immut = mutableBlockPos.immutable();
+//						VoxelShape shape = positionsChecked.get(immut);
+//						if (shape == null) {
+//							BlockState state = chunk.getBlockStateSmallOnly(immut);
+//							if (!state.isAir() && !(state.getBlock() instanceof UnitEdge))
+//								shape = state.getCollisionShape(space.getMyLevel(), immut, collisionContext);
+//							else
+//								shape = Shapes.empty();
+//						} else
+//							shape = positionsChecked.get(immut);
+//						positionsChecked.put(immut, shape);
+//						if (shape.isEmpty()) continue;
 						
 						for (AABB toAabb1 : shape.toAabbs()) {
 							toAabb1 = toAabb1.move(x, y, z);
-//							toAabb1 = new AABB(
-//									toAabb1.minX / (double) space.unitsPerBlock,
-//									toAabb1.minY / (double) space.unitsPerBlock,
-//									toAabb1.minZ / (double) space.unitsPerBlock,
-//									toAabb1.maxX / (double) space.unitsPerBlock,
-//									toAabb1.maxY / (double) space.unitsPerBlock,
-//									toAabb1.maxZ / (double) space.unitsPerBlock
-//							);
 							if (scaledBox.intersects(toAabb1)) {
 								return true;
 							}

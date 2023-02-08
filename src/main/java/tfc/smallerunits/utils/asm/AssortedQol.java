@@ -66,9 +66,24 @@ public class AssortedQol {
 			Level level = Minecraft.getInstance().level;
 			ISUCapability capability = SUCapabilityManager.getCapability(level, new ChunkPos(result.getBlockPos()));
 			UnitSpace space = capability.getUnit(result.getBlockPos());
-			BlockState state = space.getBlock(result.geetBlockPos().getX(), result.geetBlockPos().getY(), result.geetBlockPos().getZ());
+			
+//			Vec3 start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
+//			Vec3 end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(Minecraft.getInstance().cameraEntity.getViewVector(0).scale(20)); // TODO: figure out what exactly this should be
+//			start = new Vec3(
+//					HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), start.x),
+//					HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), start.y),
+//					HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), start.z)
+//			);
+//			end = new Vec3(
+//					HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), end.x),
+//					HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), end.y),
+//					HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), end.z)
+//			);
+//			BlockHitResult result1 = space.getMyLevel().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, Minecraft.getInstance().player));
 			
 			BlockPos blockpos = space.getOffsetPos(result.geetBlockPos());
+//			BlockPos blockpos = result1.getBlockPos();
+			BlockState state = space.getMyLevel().getBlockState(blockpos);
 			List<String> list = strings;
 			
 			list.add(ChatFormatting.UNDERLINE + "Targeted Small Block: " + blockpos.getX() + ", " + blockpos.getY() + ", " + blockpos.getZ());
@@ -99,9 +114,6 @@ public class AssortedQol {
 			for (Object o : state.getTags().toArray()) {
 				list.add("#" + ((TagKey<Block>) o).location());
 			}
-//			blockstate.getTags().map((p_205379_) -> {
-//				return "#" + p_205379_.location();
-//			}).forEach(list::add);
 		}
 	}
 }

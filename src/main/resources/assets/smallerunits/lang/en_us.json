@@ -8,5 +8,6 @@
   "smallerunits.advancements.root.description": "Make a hammer of resizing",
   "smallerunits.advancements.rude.name": "Well that's just rude!",
   "smallerunits.advancements.rude.description": "Forcefully set a player's size using a hammer of resizing",
-  "smallerunits.tooltip.scale": "Scale: 1/%s"
+  "smallerunits.tooltip.scale": "Scale: 1/%s",
+  "smallerunits.built.too_small": "The fabric of reality has been distorted far enough in this area, going any further would break it. (scale limit is 1/%s)"
 }

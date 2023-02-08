@@ -22,6 +22,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.Registry;
+import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
@@ -91,6 +92,14 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (p_187657_ == yPos) return section;
 		int yO = chunkRelative(p_187657_, upb) + p_187657_;
 		return verticalLookup.applyAbs(p_187657_).getSection(yO);
+	}
+	
+	public LevelChunkSection getSectionNullable(int sectionIndex) {
+		if (sectionIndex == yPos) return section;
+		int yO = chunkRelative(sectionIndex, upb) + sectionIndex;
+		LevelChunk chunk = verticalLookup.applyAbsNoLoad(sectionIndex);
+		if (chunk == null) return null;
+		return chunk.getSection(yO);
 	}
 	
 	@Override
@@ -191,6 +200,12 @@ public class BasicVerticalChunk extends LevelChunk {
 		return verticalLookup.applyAbs(0).createTicker(pBlockEntity, pTicker);
 	}
 	
+//	@Override
+//	public <T extends BlockEntity> void updateBlockEntityTicker(T pBlockEntity) {
+//		if (yPos == 0) super.updateBlockEntityTicker(pBlockEntity);
+//		else verticalLookup.applyAbs(0).updateBlockEntityTicker(pBlockEntity);
+//	}
+	
 	// TODO: optimize?
 	public BlockState setBlockState$(BlockPos pPos, BlockState pState, boolean pIsMoving) {
 		if (level.isClientSide) return setBlockState$$(pPos, pState, pIsMoving);
@@ -234,7 +249,7 @@ public class BasicVerticalChunk extends LevelChunk {
 					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
 					BlockState state = ac.getBlockState(parentPos);
 					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-					capabilityHandler.getSUCapability().removeUnit(pPos);
+					capabilityHandler.getSUCapability().removeUnit(parentPos);
 					if (descriptor != null)
 						NetworkingHacks.setPos(descriptor);
 				}
@@ -312,9 +327,25 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		boolean lookupPass = false;
+		
 		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
 		BlockState parentState = lookup.getState(parentPos);
-		if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) lookupPass = true;
+		if (parentState.isAir()) lookupPass = true;
+		
+		boolean transparent = true;
+		Level lvl = ((ITickerLevel) level).getParent();
+		if (parentState.isCollisionShapeFullBlock(lvl, parentPos))
+			transparent = false;
+		if (parentState.getBlock() instanceof UnitSpaceBlock) {
+			ISUCapability capability = SUCapabilityManager.getCapability(lvl.getChunkAt(parentPos));
+			UnitSpace space = capability.getUnit(parentPos);
+			if (space != null) {
+				lookupPass = space.unitsPerBlock == upb;
+			} else {
+				lookupPass = false;
+			}
+		}
+		
 		if (lookupPass) {
 			int yO = Math1D.getChunkOffset(pos.getY(), 16);
 			if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
@@ -327,7 +358,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		} else {
 //			System.out.println(GeneralUtils.getParentPos(pos, this));
 //			return edgeBlock.defaultBlockState();
-			return Registry.UNIT_EDGE.get().defaultBlockState();
+			return Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
 		}
 	}
 	
@@ -344,7 +375,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
-		return getBlockState(pos).getFluidState();
+		return getBlockStateSmallOnly(pos).getFluidState();
 	}
 	
 	private void setBlockFast$(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
@@ -406,7 +437,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		}
 		setBlockFast$(new BlockPos(pos), state, chunkCache);
 	}
-	
 	ArrayList<ServerPlayer> oldPlayersTracking = new ArrayList<>();
 	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
 	

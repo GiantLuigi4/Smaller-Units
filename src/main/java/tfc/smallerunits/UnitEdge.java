@@ -9,9 +9,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.data.storage.Region;
@@ -19,8 +23,24 @@ import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 public class UnitEdge extends Block {
+	public static final Property<Boolean> TRANSPARENT = BooleanProperty.create("transparent");
+	
 	public UnitEdge() {
 		super(Properties.copy(Blocks.BARRIER).destroyTime(0.1f));
+	}
+	
+	@Override
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> pBuilder) {
+		super.createBlockStateDefinition(pBuilder.add(TRANSPARENT));
+	}
+	
+	@Override
+	public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
+		if (pState.getValue(TRANSPARENT)) {
+			// TODO: look at parent world's block state and upscale the shape and offset it, I think? maybe?
+			return Shapes.empty();
+		}
+		return super.getShape(pState, pLevel, pPos, pContext);
 	}
 	
 	@Override

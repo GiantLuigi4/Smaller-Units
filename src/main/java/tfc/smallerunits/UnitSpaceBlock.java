@@ -93,9 +93,34 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
 			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
 			UnitSpace space = capability.getUnit(pPos);
-			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
+			if (space == null || space.myLevel == null)
+				return super.getShape(pState, pLevel, pPos, pContext);
 			
 			UnitShape shape = new UnitShape(space, false, pContext);
+			shape.setupNeigbors(pLevel, pPos);
+			
+			return shape;
+		}
+		return Shapes.empty();
+	}
+	
+	@Override
+	public VoxelShape getVisualShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
+		// nothing can really be done if it's not a full level implementation
+//		if (!(pLevel instanceof Level)) return super.getShape(pState, pLevel, pPos, pContext);
+		if (!(pLevel instanceof Level)) return Shapes.empty();
+		if (pContext instanceof EntityCollisionContext) {
+			Entity entity = ((EntityCollisionContext) pContext).getEntity();
+//			if (entity == null) return super.getShape(pState, pLevel, pPos, pContext);
+			if (entity == null) return Shapes.empty();
+			
+			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
+			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
+			UnitSpace space = capability.getUnit(pPos);
+			if (space == null || space.myLevel == null)
+				return super.getShape(pState, pLevel, pPos, pContext);
+			
+			UnitShape shape = new UnitShape(space, true, pContext);
 			shape.setupNeigbors(pLevel, pPos);
 			
 			return shape;
@@ -113,7 +138,8 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
 			ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
 			UnitSpace space = capability.getUnit(pPos);
-			if (space == null || space.myLevel == null) return super.getShape(pState, pLevel, pPos, pContext);
+			if (space == null || space.myLevel == null)
+				return super.getShape(pState, pLevel, pPos, pContext);
 			
 			UnitShape shape = new UnitShape(space, true, pContext);
 			return shape;

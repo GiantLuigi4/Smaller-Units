@@ -140,4 +140,9 @@ public class UnitChunkMap extends ChunkMap {
 	public CompoundTag read(ChunkPos pChunkPos) throws IOException {
 		return null;
 	}
+	
+	@Override
+	public void move(ServerPlayer pPlayer) {
+		super.move(pPlayer);
+	}
 }

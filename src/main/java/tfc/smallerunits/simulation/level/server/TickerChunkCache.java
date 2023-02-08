@@ -250,6 +250,12 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		return ck[yPos];
 	}
 	
+	@Nullable
+	@Override
+	public LevelChunk getChunkNow(int pChunkX, int pChunkZ) {
+		return (LevelChunk) getChunk(pChunkX, pChunkZ, ChunkStatus.FULL, false);
+	}
+	
 	@Override
 	public EmptyLevelChunk getEmpty() {
 		return empty;
