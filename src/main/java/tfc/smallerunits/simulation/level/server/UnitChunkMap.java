@@ -143,6 +143,17 @@ public class UnitChunkMap extends ChunkMap {
 	
 	@Override
 	public void move(ServerPlayer pPlayer) {
-		super.move(pPlayer);
+		for(ChunkMap.TrackedEntity chunkmap$trackedentity : this.entityMap.values()) {
+			if (chunkmap$trackedentity.entity == pPlayer) {
+				chunkmap$trackedentity.updatePlayers(lvl.players());
+			} else {
+				chunkmap$trackedentity.updatePlayer(pPlayer);
+			}
+		}
+	}
+	
+	@Override
+	public void tick() {
+		super.tick();
 	}
 }

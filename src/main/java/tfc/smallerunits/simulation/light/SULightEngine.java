@@ -111,7 +111,7 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 			
 			countDone++;
 		}
-		positionsToUpdate.clear();
+//		positionsToUpdate.clear();
 		return countDone;
 	}
 	

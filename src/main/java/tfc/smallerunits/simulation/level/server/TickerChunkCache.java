@@ -116,6 +116,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		}
 		
 		super.tick(pHasTimeLeft, false);
+		((UnitChunkMap)chunkMap).tick();
 		
 		synchronized (holders) {
 			for (ChunkHolder holder : holders) {

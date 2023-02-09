@@ -65,6 +65,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	public BlockState getBlockState$(BlockPos pos) {
 		// locals would be redundant, this is an internal method
 		// this method assumes that pos.y will always be in bounds of the specific BasicVerticalChunk
+		if (section.hasOnlyAir()) return Blocks.AIR.defaultBlockState(); // simple optimization, can do a fair amount
 		return section.getBlockState(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
 	}
 	
@@ -119,57 +120,40 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public int getMinBuildHeight() {
-//		return 0;
 		if (yPos == 0) return 0;
 		return (yPos - 1) * 16;
-//		return 0;
-//		return -16;
 	}
 	
 	@Override
 	public int getMaxBuildHeight() {
-//		return level.getMaxBuildHeight();
 		return (yPos + 1) * 16;
-//		return 16;
-//		return 32;
 	}
 	
 	@Override
 	public int getSectionIndex(int pY) {
-		return this.getSectionIndexFromSectionY(SectionPos.blockToSectionCoord(pY));
+//		return this.getSectionIndexFromSectionY(SectionPos.blockToSectionCoord(pY));
+		return pY >> 4;
 	}
 	
 	@Override
 	public int getSectionIndexFromSectionY(int pSectionIndex) {
-//		int ms = this.getMinSection();
-//		int v = pSectionIndex + ms;
-//		return v;
-		
 		return level.getSectionIndexFromSectionY(pSectionIndex);
-//		return pSectionIndex + yPos;
+//		return pSectionIndex >> 4;
 	}
 	
 	@Override
 	public int getSectionYFromSectionIndex(int pSectionIndex) {
-		return super.getSectionYFromSectionIndex(pSectionIndex);
+//		return super.getSectionYFromSectionIndex(pSectionIndex);
+		return pSectionIndex << 4;
 	}
 	
 	@Nullable
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
-			int yO = Math1D.getChunkOffset(pos.getY(), 16);
+		int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
-//			if (yPos + yO < 0) {
-//				// TODO: fix
-//				BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-//				if (chunk == null) return Blocks.VOID_AIR.defaultBlockState();
-//				if (chunk.holder != null)
-//					chunk.holder.setBlockDirty(pos.offset(0, upb * 16, 0));
-//				return chunk.setBlockState(new BlockPos(pos.getX(), pos.getY() + upb * 16, pos.getZ()), pState, pIsMoving);
-//			}
-
-//			if (yPos + yO < 0)
-//				return Blocks.VOID_AIR.defaultBlockState();
+			// TODO: non-grid aligned world wrapping?
+			
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
 			if (chunk == null) {
 				return Blocks.VOID_AIR.defaultBlockState();
@@ -185,7 +169,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public BlockEntity getBlockEntity(BlockPos pPos, LevelChunk.EntityCreationType pCreationType) {
-		return super.getBlockEntity(pPos, pCreationType); // TODO: debug???
+		return super.getBlockEntity(pPos, pCreationType); // TODO: may want to tweak this
 	}
 	
 	@Override
@@ -322,8 +306,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		}
 	}
 
-//	Block edgeBlock = Registry.UNIT_EDGE.get();
-	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		boolean lookupPass = false;
@@ -356,8 +338,6 @@ public class BasicVerticalChunk extends LevelChunk {
 			}
 			return getBlockState$(pos);
 		} else {
-//			System.out.println(GeneralUtils.getParentPos(pos, this));
-//			return edgeBlock.defaultBlockState();
 			return Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
 		}
 	}
@@ -441,7 +421,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
 	
 	public void randomTick() {
-		if (getSections()[0].hasOnlyAir())
+		if (section.hasOnlyAir())
 			return;
 		
 		for (int k = 0; k < ((ITickerLevel) level).randomTickCount(); ++k) {

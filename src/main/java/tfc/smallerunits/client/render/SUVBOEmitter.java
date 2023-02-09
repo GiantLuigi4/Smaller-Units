@@ -119,6 +119,7 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
+//					if (block == null) continue;
 					if (block.equals(Blocks.AIR.defaultBlockState())) continue;
 					if (!block.getFluidState().isEmpty()) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {

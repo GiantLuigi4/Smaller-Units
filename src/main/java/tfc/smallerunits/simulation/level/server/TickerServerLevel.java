@@ -65,6 +65,7 @@ import tfc.smallerunits.simulation.level.EntityManager;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
+import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
@@ -1042,10 +1043,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					for (ServerPlayer player : players) {
 						// TODO: do this properly
 						try {
-//							PositionalInfo info = new PositionalInfo(player);
-//							info.adjust(player, this, this.getUPB(), region.pos);
-//							getChunkSource().chunkMap.move(player);
-//							info.reset(player);
+							PositionalInfo info = new PositionalInfo(player);
+							info.adjust(player, this, this.getUPB(), region.pos);
+							getChunkSource().chunkMap.move(player);
+							info.reset(player);
 						} catch (Throwable ignored) {
 						}
 					}

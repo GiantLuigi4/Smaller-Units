@@ -14,6 +14,7 @@ import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
+import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
@@ -84,7 +85,7 @@ public class PositionalInfo {
 		AABB scaledBB;
 		pEntity.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, upb, regionPos));
 		pEntity.eyeHeight = (float) (this.eyeHeight * upb);
-		pEntity.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
+		((EntityAccessor) pEntity).setPosRawNoUpdate(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 		if (pEntity instanceof Player player)
 			setupClient(player, level, updateParticleEngine);
 		// TODO: fix this
@@ -120,7 +121,7 @@ public class PositionalInfo {
 			}
 		}
 		pEntity.setBoundingBox(box);
-		pEntity.setPosRaw(pos.x, pos.y, pos.z);
+		((EntityAccessor) pEntity).setPosRawNoUpdate(pos.x, pos.y, pos.z);
 		pEntity.xOld = oldPos.x;
 		pEntity.yOld = oldPos.y;
 		pEntity.zOld = oldPos.z;

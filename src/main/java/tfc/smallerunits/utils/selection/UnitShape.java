@@ -618,6 +618,8 @@ public class UnitShape extends VoxelShape {
 	}
 	
 	protected BlockHitResult computeEdgeResult(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
+		if (visual) return null;
+		
 		double upbDouble = space.unitsPerBlock;
 		
 		double dbest = Double.POSITIVE_INFINITY;
