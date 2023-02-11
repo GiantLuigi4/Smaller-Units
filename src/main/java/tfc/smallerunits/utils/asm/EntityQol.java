@@ -75,6 +75,7 @@ public class EntityQol {
 	}
 	
 	public static boolean runSUFluidCheck(Entity entity, TagKey<Fluid> fluids, double something, Level level, RegionPos regionPos, Object2DoubleMap<TagKey<Fluid>> fluidHeight) {
+		if (true) return false;
 		AABB aabb = HitboxScaling.getOffsetAndScaledBox(entity.getBoundingBox().deflate(0.001D), entity.getPosition(0), ((ITickerLevel) level).getUPB(), regionPos);
 		
 		int minX = Mth.floor(aabb.minX);

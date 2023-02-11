@@ -198,7 +198,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		int k = pPos.getY();
 		int l = pPos.getZ() & 15;
 		
-		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, this); // this is returning the wrong thing
+		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, this);
 		LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 		UnitSpace space = null;
 		BlockState oldState = section.getBlockState(j, k, l);
@@ -418,6 +418,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		setBlockFast$(new BlockPos(pos), state, chunkCache);
 	}
 	ArrayList<ServerPlayer> oldPlayersTracking = new ArrayList<>();
+	
 	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
 	
 	public void randomTick() {

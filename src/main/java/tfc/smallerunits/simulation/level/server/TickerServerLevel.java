@@ -39,6 +39,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.phys.AABB;
@@ -49,15 +50,18 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
+import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -77,10 +81,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BiFunction;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.*;
 
 @SuppressWarnings("removal")
 public class TickerServerLevel extends ServerLevel implements ITickerLevel {
@@ -256,13 +257,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	public <T extends ParticleOptions> int sendParticles(T pType, double pPosX, double pPosY, double pPosZ, int pParticleCount, double pXOffset, double pYOffset, double pZOffset, double pSpeed) {
-		ClientboundLevelParticlesPacket clientboundlevelparticlespacket = new ClientboundLevelParticlesPacket(pType, false, pPosX, pPosY, pPosZ, (float)pXOffset, (float)pYOffset, (float)pZOffset, (float)pSpeed, pParticleCount);
+		ClientboundLevelParticlesPacket clientboundlevelparticlespacket = new ClientboundLevelParticlesPacket(pType, false, pPosX, pPosY, pPosZ, (float) pXOffset, (float) pYOffset, (float) pZOffset, (float) pSpeed, pParticleCount);
 		int i = 0;
 		
 		Level lvl = parent.get();
 		if (lvl == null) return 0;
 		
-		for(int j = 0; j < lvl.players().size(); ++j) {
+		for (int j = 0; j < lvl.players().size(); ++j) {
 			ServerPlayer serverplayer = (ServerPlayer) lvl.players().get(j);
 			if (this.sendParticles(serverplayer, false, pPosX, pPosY, pPosZ, clientboundlevelparticlespacket)) {
 				++i;
@@ -430,10 +431,64 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 //		if (firstOpen != -1) pEntity.setId(firstOpen + 1);
 //		else pEntity.setId(0);
 //		pEntity.setId(nextId++);
-		
+
 //		entities.add(pEntity);
 		
-		return super.addFreshEntity(pEntity);
+		Level lvl = parent.get();
+		if (lvl == null) return false;
+		
+		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+		NetworkingHacks.setPos(null);
+		
+		Entity entity = pEntity.changeDimension((ServerLevel) lvl, new ITeleporter() {
+			@Override
+			public Entity placeEntity(Entity entity, ServerLevel currentWorld, ServerLevel destWorld, float yaw, Function<Boolean, Entity> repositionEntity) {
+				PortalInfo portalinfo = getPortalInfo(entity, destWorld, null);
+				
+				currentWorld.getProfiler().popPush("reloading");
+				Entity newEntity = entity.getType().create(destWorld);
+				if (newEntity != null) {
+					ResizingUtils.resizeForUnit(entity, 1f / upb);
+					
+					newEntity.restoreFrom(entity);
+					newEntity.moveTo(portalinfo.pos.x, portalinfo.pos.y, portalinfo.pos.z, portalinfo.yRot, newEntity.getXRot());
+					newEntity.setDeltaMovement(portalinfo.speed);
+					destWorld.addFreshEntity(newEntity);
+				}
+				
+				return newEntity;
+			}
+			
+			@Nullable
+			@Override
+			public PortalInfo getPortalInfo(Entity entity, ServerLevel destWorld, Function<ServerLevel, PortalInfo> defaultPortalInfo) {
+				Vec3 pos = entity.getPosition(1);
+				BlockPos bp = region.pos.toBlockPos();
+				pos = pos.scale(1d / upb);
+				pos = pos.add(bp.getX(), bp.getY(), bp.getZ());
+				return new PortalInfo(
+						pos,
+						entity.getDeltaMovement(),
+						entity.getYRot(),
+						entity.getXRot()
+				);
+			}
+			
+			@Override
+			public boolean isVanilla() {
+				return false;
+			}
+			
+			@Override
+			public boolean playTeleportSound(ServerPlayer player, ServerLevel sourceWorld, ServerLevel destWorld) {
+				return false;
+			}
+		});
+		
+		NetworkingHacks.setPos(descriptor);
+		
+		return entity != null;
+//		return super.addFreshEntity(pEntity);
 	}
 	
 	public boolean hasChunksAt(int pFromX, int pFromZ, int pToX, int pToZ) {
@@ -452,6 +507,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
+		if (p_8865_ == null) {
+			Loggers.WORLD_LOGGER.warn("Removing a null entity, this should not happen");
+			return;
+			// TODO: log stacktrace
+		}
 		if (entities.contains(p_8865_)) entities.remove(p_8865_);
 		if (!entitiesRemoved.contains(p_8865_)) entitiesRemoved.add(p_8865_);
 		super.removeEntityComplete(p_8865_, keepData);
@@ -679,7 +739,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public void blockEntityChanged(BlockPos pPos) {
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
-		vc.beChanges.add(vc.getBlockEntity(pPos));
+		BlockEntity be = vc.getBlockEntity(pPos);
+		if (be == null) return;
+		vc.beChanges.add(be);
+		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, vc);
+		LevelChunk ac = getParent().getChunkAt(parentPos);
+		ac.setUnsaved(true);
 	}
 	
 	@Override
@@ -1090,6 +1155,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		getLightEngine().runUpdates(10000, true, false);
 		for (Runnable runnable : completeOnTick) runnable.run();
 		completeOnTick.clear();
+		
+		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks)
+			for (Entity entity : entitiesGrabbedByBlock)
+				((EntityAccessor) entity).setMotionScalar(1);
 	}
 	
 	@Override
@@ -1102,6 +1171,45 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public int getHeight(Heightmap.Types pHeightmapType, int pX, int pZ) {
 		return getMaxBuildHeight(); // TODO: do this properly
-//		return 0;
+	}
+	
+	ArrayList<List<Entity>> entitiesGrabbedByBlocks = new ArrayList<>();
+	
+	@Override
+	public <T extends Entity> List<? extends T> getEntities(EntityTypeTest<Entity, T> p_143281_, Predicate<? super T> p_143282_) {
+		// TODO
+		return super.getEntities(p_143281_, p_143282_);
+	}
+	
+	@Override
+	public List<Entity> getEntities(@Nullable Entity pEntity, AABB pBoundingBox, Predicate<? super Entity> pPredicate) {
+		// for simplicity
+		return getEntities(EntityTypeTest.forClass(Entity.class), pBoundingBox, pPredicate);
+	}
+	
+	@Override
+	public <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> pEntityTypeTest, AABB aabb, Predicate<? super T> pPredicate) {
+		Level owner = parent.get();
+		if (owner != null) {
+			List<T> entities = super.getEntities(pEntityTypeTest, aabb, pPredicate);
+			
+			double upb = this.upb;
+			AABB aabb1 = new AABB(0, 0, 0, aabb.getXsize() / upb, aabb.getZsize() / upb, aabb.getZsize() / upb);
+			AABB bb = aabb1.move(
+					aabb.minX / upb,
+					aabb.minY / upb,
+					aabb.minZ / upb
+			).move(region.pos.toBlockPos().getX(), region.pos.toBlockPos().getY(), region.pos.toBlockPos().getZ());
+			List<T> parentEntities = owner.getEntities(pEntityTypeTest, bb, pPredicate);
+			
+			entitiesGrabbedByBlocks.add((List<Entity>) parentEntities);
+			for (T parentEntity : parentEntities)
+				((EntityAccessor) parentEntity).setMotionScalar((float) (1 / upb));
+			
+			entities.addAll(parentEntities);
+			return entities;
+		}
+		
+		return super.getEntities(pEntityTypeTest, aabb, pPredicate);
 	}
 }

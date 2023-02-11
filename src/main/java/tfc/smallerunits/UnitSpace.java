@@ -237,6 +237,17 @@ public class UnitSpace {
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
 				for (int y = 0; y < unitsPerBlock; y++) {
+					int sectionIndex = vc.getSectionIndex(y + myPosInTheLevel.getY());
+					LevelChunkSection section = vc.getSectionNullable(sectionIndex);
+//					if (section == null || section.hasOnlyAir()) {
+//						if (y == (y >> 4) << 4) {
+//							y += 15;
+//						} else {
+//							y = ((y >> 4) << 4) + 15;
+//						}
+//						continue;
+//					}
+					
 					blockPos.set(x + myPosInTheLevel.getX(), y + myPosInTheLevel.getY(), z + myPosInTheLevel.getZ());
 					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = vc.getBlockStateSmallOnly(blockPos);
 					addState(state);
