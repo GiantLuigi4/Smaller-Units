@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -21,7 +22,9 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
@@ -41,6 +44,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitHitResult;
@@ -428,9 +432,32 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			
 			Vec3 center = scaledBox.getCenter();
 			
-			for (int x = minX; x <= maxX; x++) {
-				for (int y = minY; y <= maxY; y++) {
-					for (int z = minZ; z <= maxZ; z++) {
+			for (int x = minX; x < maxX; x++) {
+				for (int z = minZ; z < maxZ; z++) {
+					int pX = SectionPos.blockToSectionCoord(x);
+					int pZ = SectionPos.blockToSectionCoord(z);
+					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, true);
+					if (chunk == null) {
+						if (z == (z >> 4) << 4) {
+							z += 15;
+						} else {
+							z = ((z >> 4) << 4) + 15;
+						}
+						continue;
+					}
+					
+					for (int y = minY; y <= maxY; y++) {
+						int sectionIndex = chunk.getSectionIndex(y);
+						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
+						if (section == null || section.hasOnlyAir()) {
+							if (y == (y >> 4) << 4) {
+								y += 15;
+							} else {
+								y = ((y >> 4) << 4) + 15;
+							}
+							continue;
+						}
+						
 						if (center.x > x + 1) continue;
 						if (scaledBox.minY > y + 1) continue;
 						if (center.z > z + 1) continue;
@@ -440,7 +467,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 						
 						mutableBlockPos.set(x, y, z);
 						
-						BlockState state1 = smallWorld.getBlockState(mutableBlockPos);
+						BlockState state1 = chnk.getBlockState(mutableBlockPos);
 						if (state1.isLadder(smallWorld, mutableBlockPos.immutable(), entity)) {
 							if (onScaffold) {
 								if (entity.jumping) {

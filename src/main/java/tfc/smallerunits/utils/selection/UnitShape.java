@@ -309,20 +309,24 @@ public class UnitShape extends VoxelShape {
 		return computeEdgeResult(pStartVec, pEndVec, pPos);
 	}
 	
-	public void collectShape(Function<AABB, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space, BlockPos pPos) {
+	// TODO: this has some precision issues
+	public void collectShape(Function<MutableAABB, Boolean> simpleChecker, BiConsumer<BlockPos, BlockState> boxFiller, UnitSpace space, BlockPos pPos) {
 		int upbInt = space.unitsPerBlock;
 		double upbDouble = upbInt;
 		
 		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 		BlockPos origin = space.getOffsetPos(new BlockPos(0, 0, 0));
 		// TODO: use a more efficient loop
+		MutableAABB box = new MutableAABB(0, 0, 0, 1, 1, 1);
+		
+		BlockPos.MutableBlockPos bbOffset = new BlockPos.MutableBlockPos(offset.x + pPos.getX(), offset.y + pPos.getY(), offset.z + pPos.getZ());
 		for (int x = 0; x < upbInt; x++) {
 			for (int z = 0; z < upbInt; z++) {
-				AABB box = new AABB(
-						x / upbDouble, 0, z / upbDouble,
-						(x + 1) / upbDouble, upbInt / upbDouble, (z + 1) / upbDouble
-				).move(offset).move(pPos);
-
+				box.set(
+						x / upbDouble + bbOffset.getX(), bbOffset.getY(), z / upbDouble + bbOffset.getZ(),
+						(x + 1) / upbDouble + bbOffset.getX(), upbInt / upbDouble + bbOffset.getY(), (z + 1) / upbDouble + bbOffset.getZ()
+				);
+				
 				if (simpleChecker.apply(box)) {
 					int pX = SectionPos.blockToSectionCoord(x + origin.getX());
 					int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
@@ -350,10 +354,10 @@ public class UnitShape extends VoxelShape {
 						
 						mutableBlockPos.set(x, y, z);
 						
-						box = new AABB(
-								x / upbDouble, y / upbDouble, z / upbDouble,
-								(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-						).move(offset).move(pPos);
+						box.set(
+								x / upbDouble + bbOffset.getX(), y / upbDouble + bbOffset.getY(), z / upbDouble + bbOffset.getZ(),
+								(x + 1) / upbDouble + bbOffset.getX(), (y + 1) / upbDouble + bbOffset.getY(), (z + 1) / upbDouble + bbOffset.getZ()
+						);
 						if (simpleChecker.apply(box)) {
 							mutableBlockPos.set((x + origin.getX()) & 15, y + origin.getY(), (z + origin.getZ()) & 15);
 							BlockState state = chunk.getBlockState(mutableBlockPos);
@@ -434,10 +438,12 @@ public class UnitShape extends VoxelShape {
 			int maxZ = (int) Math.ceil(motionBox.maxZ + 1);
 			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
 			
+			MutableAABB box = new MutableAABB(0, 0, 0, 1, 1, 1);
+			
 			for (int x = minX; x <= maxX; x++) {
 				for (int z = minZ; z <= maxZ; z++) {
 					{
-						AABB box = new AABB(
+						box.set(
 								x, minY, z,
 								(x + 1), maxY, (z + 1)
 						);
@@ -466,9 +472,9 @@ public class UnitShape extends VoxelShape {
 								continue;
 							
 							for (AABB toAabb : shape.toAabbs()) {
-								toAabb = toAabb.move(x, y, z);
-								if (swivelCheck(axiscycle, pCollisionBox, toAabb)) {
-									pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, toAabb, pDesiredOffset);
+								box.set(toAabb).move(x, y, z);
+								if (swivelCheck(axiscycle, pCollisionBox, box)) {
+									pDesiredOffset = swivelOffset(axiscycle, pCollisionBox, box, pDesiredOffset);
 									if (Math.abs(pDesiredOffset / space.unitsPerBlock) < 1.0E-7D) return 0.0D;
 								}
 							}
@@ -539,10 +545,12 @@ public class UnitShape extends VoxelShape {
 			int maxZ = (int) Math.ceil(scaledBox.maxZ + 1);
 			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
 			
+			MutableAABB box = new MutableAABB(0, 0, 0, 1, 1, 1);
+			
 			for (int x = minX; x <= maxX; x++) {
 				for (int z = minZ; z <= maxZ; z++) {
 					{
-						AABB box = new AABB(
+						box.set(
 								x, minY, z,
 								(x + 1), maxY, (z + 1)
 						);
@@ -574,7 +582,7 @@ public class UnitShape extends VoxelShape {
 							}
 							continue;
 						}
-						
+
 //						AABB box = new AABB(
 //								mutableBlockPos
 //						).inflate(1);
@@ -605,8 +613,8 @@ public class UnitShape extends VoxelShape {
 //						if (shape.isEmpty()) continue;
 						
 						for (AABB toAabb1 : shape.toAabbs()) {
-							toAabb1 = toAabb1.move(x, y, z);
-							if (scaledBox.intersects(toAabb1)) {
+							box.set(toAabb1).move(x, y, z);
+							if (scaledBox.intersects(box)) {
 								return true;
 							}
 						}
@@ -628,6 +636,11 @@ public class UnitShape extends VoxelShape {
 		double d0 = pEndVec.x - pStartVec.x;
 		double d1 = pEndVec.y - pStartVec.y;
 		double d2 = pEndVec.z - pStartVec.z;
+		
+		Vec3 totalOffset = new Vec3(pPos.getX() + offset.x, pPos.getY() + offset.y, pPos.getZ() + offset.z);
+		
+		MutableAABB box = new MutableAABB(0, 0, 0, 1, 1, 1);
+		MutableAABB offsetBox = new MutableAABB(0, 0, 0, 1, 1, 1);
 		// neighbor blocks
 		for (Direction value : Direction.values()) {
 			VoxelShape shape1 = neighbors[value.ordinal()];
@@ -657,12 +670,13 @@ public class UnitShape extends VoxelShape {
 						z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
 						zSize = 0.001;
 					}
-					AABB box = new AABB(
+					box.set(
 							x / upbDouble, y / upbDouble, z / upbDouble,
 							(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
 					);
+					offsetBox.set(box).move(totalOffset);
 					// less expensive than voxel shape computations
-					if (box.move(pPos).move(offset).contains(pStartVec) || box.move(pPos).move(offset).clip(pStartVec, pEndVec).isPresent()) {
+					if (offsetBox.contains(pStartVec) || offsetBox.clip(pStartVec, pEndVec).isPresent()) {
 						if (value.getStepX() == 1) x += 1;
 						else if (value.getStepY() == 1) y += 1;
 						else if (value.getStepZ() == 1) z += 1;
@@ -675,7 +689,7 @@ public class UnitShape extends VoxelShape {
 									toAabb.maxX, toAabb.maxY, toAabb.maxZ,
 									pos
 							);
-							Direction direction = AABB.getDirection(box1.move(pPos).move(offset), pStartVec, percent, (Direction) null, d0, d1, d2);
+							Direction direction = AABB.getDirection(box1.move(totalOffset), pStartVec, percent, (Direction) null, d0, d1, d2);
 							double percentile = percent[0];
 							percent[0] = 1;
 							if (direction == null) continue;

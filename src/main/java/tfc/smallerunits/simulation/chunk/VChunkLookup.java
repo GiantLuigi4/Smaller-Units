@@ -47,7 +47,7 @@ public class VChunkLookup {
 			return null;
 		}
 		BasicVerticalChunk vc = chunks[i];
-		if (vc == null) vc = chunks[i] = tickerChunkCache.createChunk(i, ckPos); // TODO: this shouldn't create
+//		if (vc == null) vc = chunks[i] = tickerChunkCache.getChunk(i, ckPos); // TODO: this shouldn't create
 		return vc;
 	}
 }

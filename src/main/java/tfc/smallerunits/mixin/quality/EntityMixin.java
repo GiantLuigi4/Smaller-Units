@@ -73,6 +73,7 @@ public abstract class EntityMixin {
 	
 	@Unique
 	private void SU$runPerWorld(BiConsumer<Level, RegionPos> action) {
+		if (!(level instanceof RegionalAttachments)) return;
 		if (touchingUnloadedChunk()) return;
 		Vec3 position = getPosition(0);
 		RegionPos regionPos = new RegionPos(new BlockPos(position));
@@ -88,6 +89,7 @@ public abstract class EntityMixin {
 	
 	@Unique
 	private void SU$runPerWorldInterruptable(BiFunction<Level, RegionPos, Boolean> action) {
+		if (!(level instanceof RegionalAttachments)) return;
 		if (touchingUnloadedChunk()) return;
 		Vec3 position = getPosition(0);
 		RegionPos regionPos = new RegionPos(new BlockPos(position));

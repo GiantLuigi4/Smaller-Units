@@ -8,10 +8,10 @@ import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.ModelDataManager;
@@ -63,7 +63,7 @@ public class SUVBOEmitter {
 		PositionalInfo info = new PositionalInfo(player, false);
 		info.scalePlayerReach(player, space.unitsPerBlock);
 		info.adjust(player, space);
-
+		
 		Minecraft.getInstance().getProfiler().push("get_blocks");
 		BlockState[] states = unit.getBlocks();
 		Minecraft.getInstance().getProfiler().pop();
@@ -120,9 +120,10 @@ public class SUVBOEmitter {
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
 //					if (block == null) continue;
-					if (block.equals(Blocks.AIR.defaultBlockState())) continue;
-					if (!block.getFluidState().isEmpty()) {
-						if (ItemBlockRenderTypes.canRenderInLayer(block.getFluidState(), chunkBufferLayer)) {
+					if (block.isAir()) continue;
+					FluidState fluid = block.getFluidState();
+					if (!fluid.isEmpty()) {
+						if (ItemBlockRenderTypes.canRenderInLayer(fluid, chunkBufferLayer)) {
 							if (vertexBuilder == null) {
 								if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 								vertexBuilder = new TranslatingVertexBuilder(1f / upb, consumer);
@@ -134,9 +135,8 @@ public class SUVBOEmitter {
 									((int) Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
 							dispatcher.renderLiquid(
-									offsetPos,
-									wld, vertexBuilder, block,
-									block.getFluidState()
+									offsetPos, wld, vertexBuilder,
+									block, fluid
 							);
 						}
 					}
@@ -152,10 +152,8 @@ public class SUVBOEmitter {
 							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), offsetPos);
 							if (data == null) data = EmptyModelData.INSTANCE;
 							dispatcher.renderBatched(
-									block, offsetPos,
-									wld, stk, consumer,
-									true, new Random(offsetPos.asLong()),
-									data
+									block, offsetPos, wld, stk, consumer,
+									true, new Random(offsetPos.asLong()), data
 							);
 
 //							stk.translate(-x, -y, -z);

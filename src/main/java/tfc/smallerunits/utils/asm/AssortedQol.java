@@ -58,7 +58,7 @@ public class AssortedQol {
 		if (block instanceof UnitHitResult result) {
 			if (strings.get(strings.size() - 1).equals("smallerunits:unit_space")) {
 				strings.remove(strings.size() - 1);
-				strings.remove(strings.size() - 1);
+//				strings.remove(strings.size() - 1);
 			} else {
 				strings.add("");
 			}
@@ -66,7 +66,7 @@ public class AssortedQol {
 			Level level = Minecraft.getInstance().level;
 			ISUCapability capability = SUCapabilityManager.getCapability(level, new ChunkPos(result.getBlockPos()));
 			UnitSpace space = capability.getUnit(result.getBlockPos());
-			
+
 //			Vec3 start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
 //			Vec3 end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(Minecraft.getInstance().cameraEntity.getViewVector(0).scale(20)); // TODO: figure out what exactly this should be
 //			start = new Vec3(
@@ -85,8 +85,11 @@ public class AssortedQol {
 //			BlockPos blockpos = result1.getBlockPos();
 			BlockState state = space.getMyLevel().getBlockState(blockpos);
 			List<String> list = strings;
-			
-			list.add(ChatFormatting.UNDERLINE + "Targeted Small Block: " + blockpos.getX() + ", " + blockpos.getY() + ", " + blockpos.getZ());
+
+//			list.add(ChatFormatting.UNDERLINE + "Block: " + result.getBlockPos().getX() + ", " + result.getBlockPos().getY() + ", " + result.getBlockPos().getZ());
+			list.add(ChatFormatting.ITALIC + "Targeted Small Block: " + blockpos.getX() + ", " + blockpos.getY() + ", " + blockpos.getZ());
+			list.add(ChatFormatting.ITALIC + "World: " + level.dimension().location() + "|" + space.regionPos.x + "|" + space.regionPos.y + "|" + space.regionPos.z + "|");
+			list.add(ChatFormatting.ITALIC + "Scale: 1/" + space.unitsPerBlock);
 			list.add(String.valueOf((Object) Registry.BLOCK.getKey(state.getBlock())));
 			
 			for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {

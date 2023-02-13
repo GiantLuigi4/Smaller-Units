@@ -169,6 +169,15 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 	}
 	
 	@Override
+	public BasicVerticalChunk getChunk(int yPos, ChunkPos ckPos) {
+		int pChunkX = ckPos.x;
+		int pChunkZ = ckPos.z;
+		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
+		if (ck == null) return null;
+		return ck[yPos];
+	}
+	
+	@Override
 	public EmptyLevelChunk getEmpty() {
 		return empty;
 	}

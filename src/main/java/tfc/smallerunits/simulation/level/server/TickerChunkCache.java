@@ -108,8 +108,8 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		int tickCount = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
 		synchronized (allChunks) {
 			// TODO: new chunks set
-			ObjectOpenHashBigSet<LevelChunk> copy = new ObjectOpenHashBigSet(allChunks);
-			for (LevelChunk allChunk : copy) {
+//			ObjectOpenHashBigSet<LevelChunk> copy = new ObjectOpenHashBigSet(allChunks);
+			for (LevelChunk allChunk : allChunks) {
 				level.tickChunk(allChunk, tickCount);
 				((BasicVerticalChunk) allChunk).randomTick();
 			}
@@ -226,6 +226,9 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		vc.holder.blockChanged(new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15));
 	}
 	
+	ChunkHolder.LevelChangeListener noListener = (a, b, c, d) -> {
+	};
+	
 	@Override
 	public BasicVerticalChunk createChunk(int yPos, ChunkPos ckPos) {
 		int pChunkX = ckPos.x;
@@ -242,12 +245,20 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		synchronized (allChunks) {
 			allChunks.add(ck[yPos]);
 		}
-		UnitChunkHolder holder = new UnitChunkHolder(ck[yPos].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
-		}, chunkMap, ck[yPos], yPos);
+		UnitChunkHolder holder = new UnitChunkHolder(ck[yPos].getPos(), 0, level, level.getLightEngine(), noListener, chunkMap, ck[yPos], yPos);
 		synchronized (holders) {
 			holders.add(holder);
 		}
 		ck[yPos].holder = holder;
+		return ck[yPos];
+	}
+	
+	@Override
+	public BasicVerticalChunk getChunk(int yPos, ChunkPos ckPos) {
+		int pChunkX = ckPos.x;
+		int pChunkZ = ckPos.z;
+		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
+		if (ck == null) return null;
 		return ck[yPos];
 	}
 	

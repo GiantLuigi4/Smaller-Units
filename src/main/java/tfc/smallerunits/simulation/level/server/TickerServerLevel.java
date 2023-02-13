@@ -35,6 +35,7 @@ import net.minecraft.world.level.chunk.storage.EntityStorage;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
+import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
@@ -77,10 +78,7 @@ import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.*;
 
 @SuppressWarnings("removal")
@@ -648,18 +646,27 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			}
 			tag.put("fluids", blockTicks);
 		}
+		if (!tag.isEmpty()) {
+			for (String allKey : tag.getAllKeys()) {
+				if (!tag.getCompound(allKey).isEmpty()) {
+					return tag;
+				}
+			}
+			return new CompoundTag();
+		}
 //		((SUTickList) blockTicks).clearBox(box);
 //		((SUTickList) fluidTicks).clearBox(box);
 		return tag;
 	}
 	
 	public void loadTicks(CompoundTag tag) {
+		if (tag.isEmpty()) return;
 		Registry<Block> blockRegistry = parent.get().registryAccess().registryOrThrow(Registry.BLOCK_REGISTRY);
 		Registry<Fluid> fluidRegistry = parent.get().registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
 		CompoundTag blocks = tag.getCompound("blocks");
 		for (String allKey : blocks.getAllKeys()) {
 			CompoundTag tick = blocks.getCompound(allKey);
-			long time = tick.getLong("ttime" + getGameTime());
+			long time = tick.getLong("ttime") + getGameTime();
 			ResourceLocation regName = new ResourceLocation(tick.getString("ttype"));
 			Block type = blockRegistry.get(regName);
 			int priority = tick.getByte("tpriority");
@@ -676,7 +683,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		CompoundTag fluids = tag.getCompound("blocks");
 		for (String allKey : fluids.getAllKeys()) {
 			CompoundTag tick = fluids.getCompound(allKey);
-			long time = tick.getLong("ttime" + getGameTime());
+			long time = tick.getLong("ttime") + getGameTime();
 			ResourceLocation regName = new ResourceLocation(tick.getString("ttype"));
 			Fluid type = fluidRegistry.get(regName);
 			int priority = tick.getByte("tpriority");
@@ -1059,6 +1066,26 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.blockEvents.addAll(this.blockEventsToReschedule);
 	}
 	
+	protected void postGameEventInRadius(@javax.annotation.Nullable Entity pEntity, GameEvent pGameEvent, BlockPos pPos, int pNotificationRadius) {
+		int i = SectionPos.blockToSectionCoord(pPos.getX() - pNotificationRadius);
+		int j = SectionPos.blockToSectionCoord(pPos.getZ() - pNotificationRadius);
+		int k = SectionPos.blockToSectionCoord(pPos.getX() + pNotificationRadius);
+		int l = SectionPos.blockToSectionCoord(pPos.getZ() + pNotificationRadius);
+		int i1 = SectionPos.blockToSectionCoord(pPos.getY() - pNotificationRadius);
+		int j1 = SectionPos.blockToSectionCoord(pPos.getY() + pNotificationRadius);
+		
+		for(int k1 = i; k1 <= k; ++k1) {
+			for(int l1 = j; l1 <= l; ++l1) {
+				ChunkAccess chunkaccess = this.getChunkSource().getChunkNow(k1, l1);
+				if (chunkaccess != null) {
+					for(int i2 = i1; i2 <= j1; ++i2) {
+						chunkaccess.getEventDispatcher(i2).post(pGameEvent, pEntity, pPos);
+					}
+				}
+			}
+		}
+	}
+	
 	@Override
 	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
 		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
@@ -1100,6 +1127,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		entitiesRemoved.clear();
 		
 		// TODO: optimize this
+		HashMap<ServerPlayer, PositionalInfo> infoMap = new HashMap<>();
 		for (ChunkHolder holder : ((TickerChunkCache) chunkSource).holders) {
 			List<ServerPlayer> players = null;
 			if (holder.getTickingChunk() instanceof BasicVerticalChunk basicVerticalChunk) {
@@ -1108,10 +1136,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					for (ServerPlayer player : players) {
 						// TODO: do this properly
 						try {
-							PositionalInfo info = new PositionalInfo(player);
-							info.adjust(player, this, this.getUPB(), region.pos);
+							PositionalInfo info = infoMap.get(player);
+							if (info == null) {
+								info = new PositionalInfo(player);
+								infoMap.put(player, info);
+								info.adjust(player, this, this.getUPB(), region.pos);
+							}
 							getChunkSource().chunkMap.move(player);
-							info.reset(player);
 						} catch (Throwable ignored) {
 						}
 					}
@@ -1124,6 +1155,9 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				}
 				basicVerticalChunk.beChanges.clear();
 			}
+		}
+		for (Map.Entry<ServerPlayer, PositionalInfo> serverPlayerPositionalInfoEntry : infoMap.entrySet()) {
+			serverPlayerPositionalInfoEntry.getValue().reset(serverPlayerPositionalInfoEntry.getKey());
 		}
 //		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
 //			List<ServerPlayer> players = null;
@@ -1159,6 +1193,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks)
 			for (Entity entity : entitiesGrabbedByBlock)
 				((EntityAccessor) entity).setMotionScalar(1);
+		entitiesGrabbedByBlocks.clear();
 	}
 	
 	@Override

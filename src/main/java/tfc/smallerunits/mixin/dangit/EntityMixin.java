@@ -68,14 +68,11 @@ public abstract class EntityMixin implements EntityAccessor {
 				}
 			}
 
-//			this.levelCallback.onMove();
 			GameEventListenerRegistrar gameeventlistenerregistrar = this.getGameEventListenerRegistrar();
 			if (gameeventlistenerregistrar != null) {
 				gameeventlistenerregistrar.onListenerMove(this.level);
 			}
 		}
-		if (this.isAddedToWorld() && !this.level.isClientSide && !this.isRemoved())
-			this.level.getChunk((int) Math.floor(pX) >> 4, (int) Math.floor(pZ) >> 4); // Forge - ensure target chunk is loaded.
 	}
 	
 	@Override

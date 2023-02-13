@@ -8,6 +8,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 
 public interface ITickerChunkCache {
 	BasicVerticalChunk createChunk(int i, ChunkPos ckPos);
+	BasicVerticalChunk getChunk(int i, ChunkPos ckPos);
 	
 	ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad);
 	
