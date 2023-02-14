@@ -1235,6 +1235,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					aabb.minY / upb,
 					aabb.minZ / upb
 			).move(region.pos.toBlockPos().getX(), region.pos.toBlockPos().getY(), region.pos.toBlockPos().getZ());
+			// TODO: this is bugged for some reason
 			List<T> parentEntities = owner.getEntities(pEntityTypeTest, bb, pPredicate);
 			
 			entitiesGrabbedByBlocks.add((List<Entity>) parentEntities);

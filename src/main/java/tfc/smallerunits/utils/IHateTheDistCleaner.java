@@ -94,16 +94,19 @@ public class IHateTheDistCleaner {
 	}
 	
 	public static Object adjustClient(Player pPlayer, Level spaceLevel, boolean updateParticleEngine) {
-		ParticleEngine engine = null;
-		Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = (ClientLevel) spaceLevel;
-		
-		if (updateParticleEngine) {
-			engine = Minecraft.getInstance().particleEngine;
-			UnitParticleEngine upe = ((FakeClientLevel) spaceLevel).getParticleEngine();
-			if (upe != null)
-				Minecraft.getInstance().particleEngine = upe;
+		if (pPlayer == Minecraft.getInstance().player) {
+			ParticleEngine engine = null;
+			Minecraft.getInstance().level = ((LocalPlayer) pPlayer).clientLevel = (ClientLevel) spaceLevel;
+			
+			if (updateParticleEngine) {
+				engine = Minecraft.getInstance().particleEngine;
+				UnitParticleEngine upe = ((FakeClientLevel) spaceLevel).getParticleEngine();
+				if (upe != null)
+					Minecraft.getInstance().particleEngine = upe;
+			}
+			return engine;
 		}
-		return engine;
+		return null;
 	}
 	
 	public static void resetClient(Player pPlayer, Level lvl, Object engine) {

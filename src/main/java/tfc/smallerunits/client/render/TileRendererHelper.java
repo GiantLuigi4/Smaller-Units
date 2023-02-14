@@ -7,6 +7,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -18,6 +19,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.client.access.VertexBufferAccessor;
@@ -106,8 +108,7 @@ public class TileRendererHelper {
 				ShaderInstance instance = RenderSystem.getShader();
 				if (lastType != type) {
 					if (instance.COLOR_MODULATOR != null) {
-						RenderSystem.setShaderColor(r, g, b, 1);
-						instance.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+						instance.COLOR_MODULATOR.set(r, g, b, 1);
 						instance.COLOR_MODULATOR.upload();
 					}
 					lastType = type;
@@ -350,6 +351,49 @@ public class TileRendererHelper {
 				pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
 				minecraft.getBlockRenderer().renderBreakingTexture(state, pos, level, pPoseStack, vertexconsumer1);
 				pPoseStack.popPose();
+			}
+		}
+	}
+	
+	public static void renderBE(BlockEntity tile, BlockPos origin, Frustum frustum, PoseStack stk, BlockEntityRenderDispatcher blockEntityRenderDispatcher, float pct) {
+		if (tile.getLevel() == null) return; // idk how this happens, but ok?
+		if (new RegionPos(origin).equals(((FakeClientLevel) tile.getLevel()).region.pos)) {
+			int y = tile.getBlockPos().getY() / ((FakeClientLevel) tile.getLevel()).upb;
+			BlockPos regionOrigin = new BlockPos(0, 0, 0);
+			if (tile.getLevel() instanceof ITickerLevel tkLvl) regionOrigin = tkLvl.getRegion().pos.toBlockPos();
+			y += regionOrigin.getY();
+			
+			if (y < origin.getY() + 16 &&
+					y >= origin.getY()) {
+				AABB renderBox = tile.getRenderBoundingBox();
+				if (tile.getLevel() instanceof ITickerLevel tkLvl) {
+					int upb = tkLvl.getUPB();
+					float scl = 1f / upb;
+					renderBox = new AABB(
+							renderBox.minX * scl + regionOrigin.getX(),
+							renderBox.minY * scl + regionOrigin.getY(),
+							renderBox.minZ * scl + regionOrigin.getZ(),
+							renderBox.maxX * scl + regionOrigin.getX(),
+							renderBox.maxY * scl + regionOrigin.getY(),
+							renderBox.maxZ * scl + regionOrigin.getZ()
+					);
+				}
+//				if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && !FMLEnvironment.production) {
+//					stk.pushPose();
+//					LevelRenderer.renderLineBox(
+//							stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+//							renderBox, 1, 1, 1, 1
+//					);
+//					stk.popPose();
+//				}
+				if (frustum.isVisible(renderBox)) {
+					TileRendererHelper.setupStack(stk, tile, origin);
+					blockEntityRenderDispatcher.render(
+							tile, pct,
+							stk, Minecraft.getInstance().renderBuffers().bufferSource()
+					);
+					stk.popPose();
+				}
 			}
 		}
 	}

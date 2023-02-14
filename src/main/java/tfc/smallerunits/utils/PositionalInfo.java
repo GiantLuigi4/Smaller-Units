@@ -1,7 +1,5 @@
 package tfc.smallerunits.utils;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -13,7 +11,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
-import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
@@ -38,9 +35,6 @@ public class PositionalInfo {
 	}
 	
 	public PositionalInfo(Entity pEntity, boolean cacheParticleEngine) {
-		if (!RenderSystem.isOnRenderThread() && !RenderSystem.isOnGameThread()) {
-			System.out.println("h");
-		}
 		pos = new Vec3(pEntity.getX(), pEntity.getY(), pEntity.getZ());
 		lvl = pEntity.level;
 		box = pEntity.getBoundingBox();
@@ -51,10 +45,6 @@ public class PositionalInfo {
 			if (pEntity.getLevel().isClientSide) {
 				if (pEntity instanceof Player player) {
 					particleEngine = IHateTheDistCleaner.getParticleEngine(player);
-					
-					if (particleEngine instanceof UnitParticleEngine || particleEngine == null || player.level instanceof ITickerLevel || Minecraft.getInstance().level instanceof ITickerLevel) {
-						System.out.println("stop");
-					}
 				}
 			}
 		}
@@ -111,13 +101,6 @@ public class PositionalInfo {
 		if (pEntity.getLevel().isClientSide) {
 			if (pEntity instanceof Player player) {
 				resetClient(player);
-				if (particleEngine != null)
-					if (Minecraft.getInstance().particleEngine instanceof UnitParticleEngine || particleEngine == null) {
-						System.out.println("why");
-					}
-				if (player.level instanceof ITickerLevel || Minecraft.getInstance().level instanceof ITickerLevel) {
-					System.out.println("why");
-				}
 			}
 		}
 		pEntity.setBoundingBox(box);
@@ -135,13 +118,6 @@ public class PositionalInfo {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
 				IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
-				
-				if (player.level instanceof ITickerLevel || Minecraft.getInstance().level instanceof ITickerLevel) {
-					System.out.println("WHY");
-				}
-				if (Minecraft.getInstance().particleEngine == null) {
-					System.out.println("STOP");
-				}
 			}
 		}
 	}
@@ -150,16 +126,6 @@ public class PositionalInfo {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
 				Object o = IHateTheDistCleaner.adjustClient(player, spaceLevel, particleEngine != null);
-				
-				if (Minecraft.getInstance().particleEngine == null) {
-					System.out.println("STOP");
-				}
-//				if (updateParticleEngine && RenderSystem.isOnGameThread()) particleEngine = o;
-//
-//				// TODO: fix
-//				if (particleEngine instanceof UnitParticleEngine) {
-//					System.out.println("harold");
-//				}
 			}
 		}
 	}

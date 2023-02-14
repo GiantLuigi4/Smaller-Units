@@ -274,6 +274,8 @@ public class UnitSpace {
 	
 	public void clear() {
 		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		BlockPos.MutableBlockPos posMod = new BlockPos.MutableBlockPos();
 		for (int x = 0; x < unitsPerBlock; x++) {
 			for (int z = 0; z < unitsPerBlock; z++) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
@@ -283,9 +285,10 @@ public class UnitSpace {
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
 				for (int y = 0; y < unitsPerBlock; y++) {
-					BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
-					vc.setBlockFast(new BlockPos(pz.getX() & 15, pz.getY(), pz.getZ() & 15), Blocks.AIR.defaultBlockState(), cache);
-					vc.removeBlockEntity(new BlockPos(pz.getX(), pz.getY(), pz.getZ()));
+					pos.set(myPosInTheLevel.getX() + x, myPosInTheLevel.getY() + y, myPosInTheLevel.getZ() + z);
+					posMod.set(pos.getX() & 15, pos.getY(), pos.getZ() & 15);
+					vc.setBlockFast(posMod, Blocks.AIR.defaultBlockState(), cache);
+					vc.removeBlockEntity(pos);
 				}
 			}
 		}

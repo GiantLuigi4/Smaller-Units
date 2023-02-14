@@ -222,7 +222,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
 			// TODO: non-grid aligned world stitching?
 			
-			BasicVerticalChunk chunk = verticalLookup.applyAbs(yO);
+			BasicVerticalChunk chunk = verticalLookup.apply(yO);
 			if (chunk == null)
 				return;
 			chunk.addBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pBlockEntity);
@@ -332,7 +332,6 @@ public class BasicVerticalChunk extends LevelChunk {
 						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
 						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
-//							space.unitsPerBlock = ((ITickerWorld) level).getUPB();
 						space.setUpb(((ITickerLevel) level).getUPB());
 						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
 					}
@@ -490,25 +489,22 @@ public class BasicVerticalChunk extends LevelChunk {
 			chunkCache.put(pPosAsSectionPos, ac);
 		}
 		
-		ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
-		UnitSpace space = capability.getOrMakeUnit(parentPos);
-		space.removeState(section.getBlockState(j, k, l));
-		space.addState(state);
-		
-		section.setBlockState(j, k, l, state);
-		
-		level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
-
-//		if (level.isClientSide) {
-//			if (state.hasBlockEntity()) {
-//				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(new BlockPos(j, k, l).offset(this.chunkPos.getWorldPosition().getX(), this.yPos * 16, this.chunkPos.getWorldPosition().getZ()), state);
-//				if (be == null) return;
-//				setBlockEntity(be);
-//
-////				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-//				((SUCapableChunk) ac).addTile(be);
-//			}
-//		}
+		if (!state.isAir()) {
+			ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
+			UnitSpace space = capability.getOrMakeUnit(parentPos);
+			space.removeState(section.getBlockState(j, k, l));
+			space.addState(state);
+			
+			section.setBlockState(j, k, l, state);
+			
+			level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
+		} else {
+			ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
+			UnitSpace space = capability.getUnit(parentPos);
+			space.removeState(section.getBlockState(j, k, l));
+			
+			section.setBlockState(j, k, l, state);
+		}
 	}
 	
 	public void setBlockFast(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
@@ -516,22 +512,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (yO != 0) {
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
 			chunk.setBlockFast$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), state, chunkCache);
-//			if (level.isClientSide) {
-//				if (state.hasBlockEntity()) {
-//					BlockEntity be;
-////					setBlockEntity(be = ((EntityBlock) state.getBlock()).newBlockEntity(pos, state));
-//					setBlockEntity(be = ((EntityBlock) state.getBlock()).newBlockEntity(pos.offset(this.chunkPos.getWorldPosition().getX(), this.yPos * 16, this.chunkPos.getWorldPosition().getZ()), state));
-//
-//					BlockPos rp = ((TickerServerWorld) level).region.pos.toBlockPos();
-//					int xo = (pos.getX() / ((TickerServerWorld) level).getUnitsPerBlock());
-//					int yo = (pos.getY() / ((TickerServerWorld) level).getUnitsPerBlock());
-//					int zo = (pos.getZ() / ((TickerServerWorld) level).getUnitsPerBlock());
-//					BlockPos parentPos = rp.offset(xo, yo, zo);
-//					ChunkAccess ac = ((TickerServerWorld) level).parent.getChunkAt(parentPos);
-//					ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-//					((SUCapableChunk) ac).addTile(be);
-//				}
-//			}
 			return;
 		}
 		setBlockFast$(new BlockPos(pos), state, chunkCache);

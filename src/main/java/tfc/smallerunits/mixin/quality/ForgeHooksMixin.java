@@ -1,6 +1,5 @@
 package tfc.smallerunits.mixin.quality;
 
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -61,7 +60,7 @@ public abstract class ForgeHooksMixin {
 			if (space == null) return finishedAny;
 			info.scalePlayerReach(player, space.unitsPerBlock);
 			info.adjust(player, space);
-			level = (ClientLevel) player.level;
+			level = player.level;
 //			NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(new RegionPos(((UnitHitResult) hitResult).geetBlockPos()), space.unitsPerBlock));
 			NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(space.regionPos, space.unitsPerBlock));
 			RaytraceData data = new RaytraceData(hitResult, info);

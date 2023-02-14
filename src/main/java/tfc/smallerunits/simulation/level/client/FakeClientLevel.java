@@ -518,16 +518,16 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		int xo = ((pBlockPos.getX()) / upb);
 		int yo = ((pBlockPos.getY()) / upb);
 		int zo = ((pBlockPos.getZ()) / upb);
-		BlockPos parentPos = rp.offset(xo, yo, zo);
-		ChunkAccess ac;
-		ac = parent.get().getChunkAt(parentPos);
-		
-		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
-		UnitSpace space = cap.getUnit(parentPos);
-		if (space == null) {
-			space = cap.getOrMakeUnit(parentPos);
-			space.setUpb(upb);
-		}
+//		BlockPos parentPos = rp.offset(xo, yo, zo);
+//		ChunkAccess ac;
+//		ac = parent.get().getChunkAt(parentPos);
+//
+//		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+//		UnitSpace space = cap.getUnit(parentPos);
+//		if (space == null) {
+//			space = cap.getOrMakeUnit(parentPos);
+//			space.setUpb(upb);
+//		}
 	}
 	
 	@Override
