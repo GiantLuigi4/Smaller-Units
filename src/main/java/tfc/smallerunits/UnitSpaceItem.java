@@ -19,6 +19,7 @@ import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.utils.config.ServerConfig;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -50,9 +51,9 @@ public class UnitSpaceItem extends Item {
 					CompoundTag tag = pContext.getItemInHand().getTag();
 					assert tag != null;
 					if (tag.contains("upb", Tag.TAG_INT))
-						space.setUpb(Math.min(128, Math.max(1, tag.getInt("upb"))));
-					else space.setUpb(4);
-				} else space.setUpb(4);
+						space.setUpb(Math.min(ServerConfig.SizeOptions.maxScale, Math.max(ServerConfig.SizeOptions.minScale, tag.getInt("upb"))));
+					else space.setUpb(ServerConfig.SizeOptions.defaultScale);
+				} else space.setUpb(ServerConfig.SizeOptions.defaultScale);
 				pContext.getLevel().setBlockAndUpdate(pos, Registry.UNIT_SPACE.get().defaultBlockState());
 				chunk.setUnsaved(true);
 				if (chunk.getLevel() instanceof ServerLevel)

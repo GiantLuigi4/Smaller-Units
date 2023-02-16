@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.TileResizingItem;
 import tfc.smallerunits.UnitSpaceItem;
+import tfc.smallerunits.utils.config.ServerConfig;
 
 public class RecipeUtils {
 	public static NonNullList<ItemStack> getRemainingItems(CraftingContainer inv) {
@@ -59,7 +60,7 @@ public class RecipeUtils {
 		if (unitIfPresent == null) {
 			unitIfPresent = new ItemStack(Registry.UNIT_SPACE_ITEM.get());
 			CompoundTag nbt = unitIfPresent.getOrCreateTag();
-			nbt.putInt("upb", 3);
+			nbt.putInt("upb", ServerConfig.SizeOptions.defaultScale - 1);
 		}
 		return Pair.of(unitIfPresent, hammer);
 	}

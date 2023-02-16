@@ -96,6 +96,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	}
 	
 	private final ObjectOpenHashBigSet<LevelChunk> allChunks = new ObjectOpenHashBigSet<>();
+	private final ObjectOpenHashBigSet<LevelChunk> newChunks = new ObjectOpenHashBigSet<>();
 	
 	@Override
 	public void removeEntity(Entity pEntity) {
@@ -106,9 +107,16 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
 		int tickCount = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
+		synchronized (newChunks) {
+			try {
+				ObjectOpenHashBigSet<LevelChunk> copy = new ObjectOpenHashBigSet<>(newChunks);
+				newChunks.clear();
+				allChunks.addAll(copy);
+			} catch (Throwable ignored) {
+			}
+		}
 		synchronized (allChunks) {
 			// TODO: new chunks set
-//			ObjectOpenHashBigSet<LevelChunk> copy = new ObjectOpenHashBigSet(allChunks);
 			for (LevelChunk allChunk : allChunks) {
 				level.tickChunk(allChunk, tickCount);
 				((BasicVerticalChunk) allChunk).randomTick();
@@ -242,8 +250,8 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
-		synchronized (allChunks) {
-			allChunks.add(ck[yPos]);
+		synchronized (newChunks) {
+			newChunks.add(ck[yPos]);
 		}
 		UnitChunkHolder holder = new UnitChunkHolder(ck[yPos].getPos(), 0, level, level.getLightEngine(), noListener, chunkMap, ck[yPos], yPos);
 		synchronized (holders) {

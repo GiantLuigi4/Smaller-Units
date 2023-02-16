@@ -93,6 +93,9 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 					if (updating.getX() < 0) continue;
 					if (updating.getY() < 0) continue;
 					if (updating.getZ() < 0) continue;
+					if (updating.getX() >= level.getUPB() * 32 * 16) continue;
+					if (updating.getY() >= level.getUPB() * 32 * 16) continue;
+					if (updating.getZ() >= level.getUPB() * 32 * 16) continue;
 					int lv = calcLightValue(updating);
 					if (lv > getLightValue(updating) && lv != 0) {
 						toAdd.add(updating);
@@ -100,7 +103,9 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 					}
 				}
 				
-				if (countDone >= max) break;
+				if (countDone >= max) {
+					break;
+				}
 			}
 			if (toRemove.size() == positionsToUpdate.size()) {
 				positionsToUpdate = toAdd;
@@ -168,6 +173,13 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	}
 	
 	public LightSection getSection(BlockPos pos) {
+		if (pos.getX() < 0) return null;
+		if (pos.getY() < 0) return null;
+		if (pos.getZ() < 0) return null;
+		if (pos.getX() >= level.getUPB() * 32 * 16) return null;
+		if (pos.getY() >= level.getUPB() * 32 * 16) return null;
+		if (pos.getZ() >= level.getUPB() * 32 * 16) return null;
+		
 		SectionPos sectionPos = SectionPos.of(pos);
 		if (lastSection == null || !lastSection.equals(sectionPos)) {
 			LightSection section = lightSectionHashMap.getOrDefault(sectionPos, null);

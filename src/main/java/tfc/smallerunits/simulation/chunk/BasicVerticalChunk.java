@@ -404,7 +404,7 @@ public class BasicVerticalChunk extends LevelChunk {
 					
 					if (pState.hasBlockEntity()) {
 						BlockPos realPos = pPos.offset(chunkPos.getWorldPosition());
-						BlockEntity blockentity = this.getBlockEntity(realPos, LevelChunk.EntityCreationType.CHECK);
+						BlockEntity blockentity = this.getBlockEntity(new BlockPos(pPos.getX(), pPos.getY() & 15, pPos.getZ()), LevelChunk.EntityCreationType.CHECK);
 						if (blockentity == null) {
 							blockentity = ((EntityBlock) block).newBlockEntity(realPos, pState);
 							if (blockentity != null) {

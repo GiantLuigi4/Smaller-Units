@@ -432,8 +432,8 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			
 			Vec3 center = scaledBox.getCenter();
 			
-			for (int x = minX; x < maxX; x++) {
-				for (int z = minZ; z < maxZ; z++) {
+			for (int x = minX; x <= maxX; x++) {
+				for (int z = minZ; z <= maxZ; z++) {
 					int pX = SectionPos.blockToSectionCoord(x);
 					int pZ = SectionPos.blockToSectionCoord(z);
 					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, true);
@@ -467,7 +467,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 						
 						mutableBlockPos.set(x, y, z);
 						
-						BlockState state1 = chnk.getBlockState(mutableBlockPos);
+						BlockState state1 = chunk.getBlockState(mutableBlockPos);
 						if (state1.isLadder(smallWorld, mutableBlockPos.immutable(), entity)) {
 							if (onScaffold) {
 								if (entity.jumping) {

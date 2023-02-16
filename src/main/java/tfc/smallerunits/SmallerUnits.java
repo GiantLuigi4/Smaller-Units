@@ -30,6 +30,7 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
+import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
 
 // The value here should match an entry in the META-INF/mods.toml file
@@ -57,6 +58,8 @@ public class SmallerUnits {
 		
 		forgeBus.addListener(SmallerUnits::onChunkLoaded);
 		forgeBus.addListener(SmallerUnits::onChunkUnloaded);
+		
+		ServerConfig.init();
 		
 		InfoRegistry.register("su:world_redir", () -> {
 			if (NetworkingHacks.unitPos.get() == null) return null;

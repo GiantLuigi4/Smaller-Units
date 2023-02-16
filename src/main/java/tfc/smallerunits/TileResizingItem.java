@@ -11,6 +11,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
+import static tfc.smallerunits.utils.config.ServerConfig.GameplayOptions;
+
 public class TileResizingItem extends Item {
 	private final int scale;
 	
@@ -35,24 +37,28 @@ public class TileResizingItem extends Item {
 	
 	@Override
 	public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-//		if (SmallerUnitsConfig.COMMON.allowResizeOther.get()) {
-		if (ResizingUtils.isResizingModPresent()) {
-			if (target instanceof Player && attacker instanceof ServerPlayer) {
-				((ServerPlayer) attacker).getAdvancements().award(((ServerPlayer) attacker).getLevel().getServer().getAdvancements().getAdvancement(new ResourceLocation("smallerunits:rude")), "strike_player");
+		if (GameplayOptions.resizeOther) {
+			if (ResizingUtils.isResizingModPresent()) {
+				if (target instanceof Player && attacker instanceof ServerPlayer) {
+					((ServerPlayer) attacker).getAdvancements().award(((ServerPlayer) attacker).getLevel().getServer().getAdvancements().getAdvancement(new ResourceLocation("smallerunits:rude")), "strike_player");
+				}
 			}
+			ResizingUtils.resize(target, getScale());
 		}
-		ResizingUtils.resize(target, getScale());
-//		}
-		return true;
+		return GameplayOptions.hurtOther;
 	}
 	
 	@Override
 	public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
-//		if (SmallerUnitsConfig.COMMON.allowResizeSelf.get()) {
-		if (playerIn.isCrouching()) {
-			ResizingUtils.resize(playerIn, getScale());
+		if (GameplayOptions.resizeSelf) {
+			if (playerIn.isCrouching()) {
+				ResizingUtils.resize(playerIn, getScale());
+			}
+//			System.out.println(GameplayOptions.EntityScaleOptions.downscaleRate);
+//			System.out.println(GameplayOptions.EntityScaleOptions.upscaleRate);
+//			System.out.println(GameplayOptions.EntityScaleOptions.minSize);
+//			System.out.println(GameplayOptions.EntityScaleOptions.maxSize);
 		}
-//		}
 		return super.use(worldIn, playerIn, handIn);
 	}
 }

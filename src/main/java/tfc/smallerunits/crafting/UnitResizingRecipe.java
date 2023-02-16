@@ -9,6 +9,7 @@ import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import tfc.smallerunits.TileResizingItem;
+import tfc.smallerunits.utils.config.ServerConfig;
 
 public class UnitResizingRecipe extends CustomRecipe {
 	public UnitResizingRecipe(ResourceLocation idIn) {
@@ -43,9 +44,9 @@ public class UnitResizingRecipe extends CustomRecipe {
 		ItemStack stack2 = pair.getSecond();
 		if (stack2 == null || stack2.isEmpty()) return false;
 		int upb = stack1.getOrCreateTag().getInt("upb");
-		if (upb <= 2 && ((TileResizingItem) stack2.getItem()).getScale() < 0)
+		if (upb <= ServerConfig.SizeOptions.minScale && ((TileResizingItem) stack2.getItem()).getScale() < 0)
 			return false;
-		return upb < 16 || ((TileResizingItem) stack2.getItem()).getScale() <= 0;
+		return upb < ServerConfig.SizeOptions.maxScale || ((TileResizingItem) stack2.getItem()).getScale() <= 0;
 	}
 	
 	@Override

@@ -7,6 +7,8 @@ import virtuoel.pehkui.api.ScaleTypes;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static tfc.smallerunits.utils.config.ServerConfig.GameplayOptions.EntityScaleOptions;
+
 // TODO: decide if I should support gullivern/shrink/threecore
 public class ResizingUtils {
 	private static final UUID uuidHeight = UUID.fromString("5440b01a-974f-4495-bb9a-c7c87424bca4");
@@ -18,10 +20,10 @@ public class ResizingUtils {
 		float newSize = getSize(entity);
 		
 		if (amt > 0) {
-			if (1f / getSize(entity) <= 4)
-				newSize = Math.max(getSize(entity) - (amt / 8f), 1f / 8);
-		} else if (getSize(entity) <= 2)
-			newSize = Math.min(getSize(entity) - (amt / 2f), 2);
+			if (getSize(entity) >= EntityScaleOptions.minSize)
+				newSize = (float) Math.max(getSize(entity) - (amt * EntityScaleOptions.downscaleRate), EntityScaleOptions.minSize);
+		} else if (getSize(entity) <= EntityScaleOptions.maxSize)
+			newSize = (float) Math.min(getSize(entity) - (amt / EntityScaleOptions.upscaleRate), EntityScaleOptions.maxSize);
 		
 		if (ModList.get().isLoaded("pehkui")) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setTargetScale(newSize);
