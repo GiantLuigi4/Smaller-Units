@@ -20,6 +20,7 @@ import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.biome.Biome;
@@ -432,6 +433,9 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 
 //		entities.add(pEntity);
 		
+		if (pEntity instanceof FallingBlockEntity)
+			return super.addFreshEntity(pEntity);
+		
 		Level lvl = parent.get();
 		if (lvl == null) return false;
 		
@@ -486,7 +490,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		NetworkingHacks.setPos(descriptor);
 		
 		return entity != null;
-//		return super.addFreshEntity(pEntity);
 	}
 	
 	public boolean hasChunksAt(int pFromX, int pFromZ, int pToX, int pToZ) {
@@ -1074,11 +1077,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		int i1 = SectionPos.blockToSectionCoord(pPos.getY() - pNotificationRadius);
 		int j1 = SectionPos.blockToSectionCoord(pPos.getY() + pNotificationRadius);
 		
-		for(int k1 = i; k1 <= k; ++k1) {
-			for(int l1 = j; l1 <= l; ++l1) {
+		for (int k1 = i; k1 <= k; ++k1) {
+			for (int l1 = j; l1 <= l; ++l1) {
 				ChunkAccess chunkaccess = this.getChunkSource().getChunkNow(k1, l1);
 				if (chunkaccess != null) {
-					for(int i2 = i1; i2 <= j1; ++i2) {
+					for (int i2 = i1; i2 <= j1; ++i2) {
 						chunkaccess.getEventDispatcher(i2).post(pGameEvent, pEntity, pPos);
 					}
 				}

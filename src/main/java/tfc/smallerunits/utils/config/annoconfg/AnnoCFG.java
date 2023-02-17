@@ -141,6 +141,8 @@ public class AnnoCFG {
 											String[] split = txt.split(",");
 											int[] ints = new int[3];
 											for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
+											if (ints[0] > ints[1]) return false;
+											if (ints[1] > ints[2]) return false;
 										} catch (Throwable ignored) {
 											return false;
 										}

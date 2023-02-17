@@ -2,6 +2,7 @@ package tfc.smallerunits.simulation.level;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.entity.*;
 
@@ -26,7 +27,7 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 			
 			@Override
 			public void onDestroyed(T pEntity) {
-				wld.SU$removeEntity(pEntity.getUUID());
+				wld.SU$removeEntity((Entity) pEntity);
 				p_157504_.onDestroyed(pEntity);
 			}
 			
