@@ -33,7 +33,8 @@ public interface BlockEntityRendererDispatcherMixin<T extends BlockEntity> {
 			if (sz < 1) sz = 1;
 			divisor /= sz;
 			if (divisor < 1) divisor = 1;
-			double dist = (double) this.getViewDistance() / divisor;
+			// TODO: some form of player relative scaling?
+			double dist = (double) this.getViewDistance() / Math.sqrt(divisor);
 			return new Vec3(px, py, pz).closerThan(pCameraPos, dist);
 		}
 		return Vec3.atCenterOf(pBlockEntity.getBlockPos()).closerThan(pCameraPos, this.getViewDistance());

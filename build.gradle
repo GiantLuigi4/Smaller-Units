@@ -20,10 +20,10 @@ apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
 group = 'tfc'
-version = '1.0-SNAPSHOT'
+version = '2.1'
 
 java {
-    archivesBaseName = 'smallerunits'
+    archivesBaseName = 'smallerunits-1.18.2'
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 

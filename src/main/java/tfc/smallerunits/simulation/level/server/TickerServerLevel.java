@@ -187,6 +187,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
+//		((ServerLevel) parent).getDataStorage()
 		isLoaded = true;
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
