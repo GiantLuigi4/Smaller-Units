@@ -19,6 +19,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.Registry;
@@ -473,6 +474,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
+		if (section.hasOnlyAir()) return Fluids.EMPTY.defaultFluidState(); // simple optimization, can do a fair amount
 		return getBlockStateSmallOnly(pos).getFluidState();
 	}
 	

@@ -8,6 +8,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.RailBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -76,6 +77,8 @@ public class EntityQol {
 	
 	public static boolean runSUFluidCheck(Entity entity, TagKey<Fluid> fluids, double something, Level level, RegionPos regionPos, Object2DoubleMap<TagKey<Fluid>> fluidHeight) {
 		AABB aabb = HitboxScaling.getOffsetAndScaledBox(entity.getBoundingBox().deflate(0.001D), entity.getPosition(0), ((ITickerLevel) level).getUPB(), regionPos);
+		
+		// TODO: limit check area to only the active world
 		
 		int minX = Mth.floor(aabb.minX);
 		int maxX = Mth.ceil(aabb.maxX);

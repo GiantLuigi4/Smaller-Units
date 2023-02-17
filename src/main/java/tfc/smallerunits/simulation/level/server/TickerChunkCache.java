@@ -2,10 +2,7 @@ package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashBigSet;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
-import net.minecraft.core.SectionPos;
+import net.minecraft.core.*;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
 import net.minecraft.server.level.ChunkHolder;
@@ -37,6 +34,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.simulation.light.NotThreadedSULightManager;
 
+import java.lang.ref.WeakReference;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -152,9 +150,11 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		return ((TickerServerLevel) level).lookup;
 	}
 	
+	WeakReference<Level>[] neighbors = new WeakReference[Direction.values().length];
+	
 	public ChunkAccess getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
 		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY >= (upb * 32)) {
-			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad);
+			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad, neighbors);
 			if (neighborChunk != null) return neighborChunk;
 			if (!pLoad) return null;
 			

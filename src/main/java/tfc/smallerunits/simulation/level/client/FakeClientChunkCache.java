@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.BigList;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.ChunkPos;
@@ -24,6 +25,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.light.SULightManager;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
+import java.lang.ref.WeakReference;
 import java.util.function.BooleanSupplier;
 
 public class FakeClientChunkCache extends ClientChunkCache implements ITickerChunkCache {
@@ -81,10 +83,12 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 	
 	int isRecurring = 0;
 	
+	WeakReference<Level>[] neighbors = new WeakReference[Direction.values().length];
+	
 	public LevelChunk getChunk(int pChunkX, int pChunkY, int pChunkZ, ChunkStatus pRequiredStatus, boolean pLoad) {
 		if (upb == 0) return empty;
 		if (pChunkX >= (upb * 32) || pChunkZ >= (upb * 32) || pChunkZ < 0 || pChunkX < 0 || pChunkY < 0 || pChunkY >= (upb * 32)) {
-			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad);
+			LevelChunk neighborChunk = WorldStitcher.getChunk(pChunkX, pChunkY, pChunkZ, (ITickerLevel) level, this, upb, pRequiredStatus, pLoad, neighbors);
 			if (neighborChunk != null) return neighborChunk;
 			if (!pLoad) return null;
 			

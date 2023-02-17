@@ -71,7 +71,6 @@ import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
-import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -650,8 +649,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void tickTime() {
-		ThreadLocals.posLocal.enableForThread();
-		
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
