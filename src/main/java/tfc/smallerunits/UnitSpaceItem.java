@@ -19,6 +19,7 @@ import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.config.ServerConfig;
 
 import java.util.List;
@@ -40,6 +41,8 @@ public class UnitSpaceItem extends Item {
 	
 	@Override
 	public InteractionResult useOn(UseOnContext pContext) {
+		if (pContext.getLevel() instanceof ITickerLevel) return InteractionResult.FAIL;
+		
 		BlockPlaceContext ctx = new BlockPlaceContext(pContext);
 		BlockPos pos = ctx.getClickedPos();
 		LevelChunk chunk = pContext.getLevel().getChunkAt(pos);

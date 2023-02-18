@@ -25,6 +25,7 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.HashMap;
@@ -50,7 +51,7 @@ public class UnitSpace {
 		this.level = level;
 
 		unitsPerBlock = 1;
-		setUpb(16);
+		setUpb(ServerConfig.SizeOptions.defaultScale);
 		isNatural = false;
 		
 		regionPos = new RegionPos(pos);
@@ -63,18 +64,9 @@ public class UnitSpace {
 	public void setUpb(int upb) {
 		this.unitsPerBlock = upb;
 		myPosInTheLevel = new BlockPos(
-//				Math1D.chunkMod(pos.getX(), 512),
-//				Math1D.chunkMod(pos.getY(), 512),
-//				Math1D.chunkMod(pos.getZ(), 512)
-//				Math1D.chunkMod(pos.getX(), 512) * upb,
-//				Math1D.chunkMod(pos.getY(), 512) * upb,
-//				Math1D.chunkMod(pos.getZ(), 512) * upb
 				Math1D.regionMod(pos.getX()) * upb,
 				Math1D.regionMod(pos.getY()) * upb,
 				Math1D.regionMod(pos.getZ()) * upb
-//				Math.abs(pos.getX() % 512) * upb,
-//				Math.abs(pos.getY() % 512) * upb,
-//				Math.abs(pos.getZ() % 512) * upb
 		);
 		myLevel = null;
 		tick();

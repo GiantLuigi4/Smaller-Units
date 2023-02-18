@@ -20,7 +20,7 @@ apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
 group = 'tfc'
-version = '2.1'
+version = '2.0-HF1'
 
 java {
     archivesBaseName = 'smallerunits-1.18.2'
@@ -234,12 +234,13 @@ dependencies {
     addMod "curse.maven:krypton-549394:3819215", "Optimization"
     addMod "curse.maven:ferrite-429235:3767288", "Optimization"
 
-    Mod.apply((name) -> { api fg.deobf(name) })
-
     /* Invasive */
+//    addMod "curse.maven:vivecraft-667903:3984471", "Invasive"
 //    api fg.deobf("curse.maven:dist_horizons-508933:3863541")
 //    api fg.deobf("curse.maven:nocubes-309664:3682612")
 //    api fg.deobf("curse.maven:shimmer-627824:3884288")
+
+    Mod.apply((name) -> { api fg.deobf(name) })
 
     System.out.println("Mixin")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'

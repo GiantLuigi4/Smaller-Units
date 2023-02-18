@@ -474,8 +474,15 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	@Override
 	public FluidState getFluidState(BlockPos pos) {
-		if (section.hasOnlyAir()) return Fluids.EMPTY.defaultFluidState(); // simple optimization, can do a fair amount
-		return getBlockStateSmallOnly(pos).getFluidState();
+		int yO = Math1D.getChunkOffset(pos.getY(), 16);
+		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
+			BasicVerticalChunk chunk = verticalLookup.applyAbsNoLoad(yPos + yO);
+			if (chunk == null || !chunk.isLoaded())
+				return Fluids.EMPTY.defaultFluidState();
+			return chunk.getBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15)).getFluidState();
+		}
+		if (section.hasOnlyAir()) return Fluids.EMPTY.defaultFluidState();
+		return getBlockState$(pos).getFluidState();
 	}
 	
 	private void setBlockFast$(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
