@@ -56,4 +56,8 @@ public interface ITickerLevel {
 	void markRenderDirty(BlockPos pLevelPos);
 	
 	int randomTickCount();
+	
+	void addInteractingEntity(Entity e);
+	
+	void removeInteractingEntity(Entity e);
 }

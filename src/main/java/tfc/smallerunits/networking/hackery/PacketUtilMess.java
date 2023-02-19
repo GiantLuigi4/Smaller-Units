@@ -8,6 +8,7 @@ import net.minecraft.world.phys.AABB;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
@@ -65,6 +66,10 @@ public class PacketUtilMess {
 				player.xOld = player.xo = player.position().x;
 				player.yOld = player.yo = player.position().y;
 				player.zOld = player.zo = player.position().z;
+				
+				ITickerLevel tkLvl = (ITickerLevel) player.level;
+				tkLvl.addInteractingEntity(player);
+				
 				pkts.put(packet, info);
 			}
 		}
@@ -82,8 +87,8 @@ public class PacketUtilMess {
 //			}
 //			player.level = lvl;
 			// TODO: set listener level
-			((PacketListenerAccessor) listener).setWorld(lvl.lvl);
 			lvl.reset(player);
+			((PacketListenerAccessor) listener).setWorld(lvl.lvl);
 			NetworkingHacks.unitPos.remove();
 			synchronizationLock = false;
 		}

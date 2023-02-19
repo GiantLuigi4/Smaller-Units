@@ -15,6 +15,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -39,6 +41,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
@@ -57,6 +60,7 @@ import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
 import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
+import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
@@ -76,6 +80,7 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class FakeClientLevel extends ClientLevel implements ITickerLevel, ParticleEngineHolder {
@@ -92,6 +97,17 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void setParticleEngine(ParticleEngine engine) {
+	}
+	
+	List<Entity> interactingEntities = new ArrayList<>();
+	ArrayList<List<Entity>> entitiesGrabbedByBlocks = new ArrayList<>();
+	
+	public void addInteractingEntity(Entity e) {
+		interactingEntities.add(e);
+	}
+	
+	public void removeInteractingEntity(Entity e) {
+		interactingEntities.remove(e);
 	}
 	
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
@@ -673,6 +689,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		getLightEngine().runUpdates(10000, true, false);
 		for (Runnable runnable : completeOnTick) runnable.run();
 		completeOnTick.clear();
+		
+		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks)
+			for (Entity entity : entitiesGrabbedByBlock)
+				((EntityAccessor) entity).setMotionScalar(1);
+		entitiesGrabbedByBlocks.clear();
 	}
 	
 	@Override
@@ -913,5 +934,65 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	public int getHeight(Heightmap.Types pHeightmapType, int pX, int pZ) {
 		return getMaxBuildHeight(); // TODO: do this properly
 //		return 0;
+	}
+	
+	@Override
+	public List<Entity> getEntities(@Nullable Entity pEntity, AABB pBoundingBox, Predicate<? super Entity> pPredicate) {
+		// for simplicity
+		return getEntities(EntityTypeTest.forClass(Entity.class), pBoundingBox, pPredicate);
+	}
+	
+	@Override
+	public <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> pEntityTypeTest, AABB aabb, Predicate<? super T> pPredicate) {
+		Level owner = parent.get();
+		if (owner != null) {
+			List<T> entities = super.getEntities(pEntityTypeTest, aabb, pPredicate);
+			
+			double upb = this.upb;
+			AABB aabb1 = new AABB(0, 0, 0, aabb.getXsize() / upb, aabb.getZsize() / upb, aabb.getZsize() / upb);
+			AABB bb = aabb1.move(
+					aabb.minX / upb,
+					aabb.minY / upb,
+					aabb.minZ / upb
+			).move(region.pos.toBlockPos().getX(), region.pos.toBlockPos().getY(), region.pos.toBlockPos().getZ());
+			// TODO: this is bugged for some reason
+			List<T> parentEntities = owner.getEntities(pEntityTypeTest, bb, pPredicate);
+			// scuffed solution to a ridiculous problem
+			try {
+				for (ServerPlayer player : ((ServerLevel) owner).getPlayers((Predicate<? super ServerPlayer>) pPredicate)) {
+					T t = pEntityTypeTest.tryCast(player);
+					if (t != null) {
+						if (t.getBoundingBox().intersects(bb)) {
+							if (!parentEntities.contains(t)) {
+								parentEntities.add(t);
+							}
+						}
+					}
+				}
+			} catch (Throwable ignored) {
+			}
+			
+			for (Entity interactingEntity : interactingEntities) {
+				if (interactingEntity.getBoundingBox().intersects(aabb)) {
+					T ent = pEntityTypeTest.tryCast(interactingEntity);
+					if (ent != null) {
+						if (pPredicate.test(ent)) {
+							if (!parentEntities.contains(ent)) {
+								parentEntities.add(ent);
+							}
+						}
+					}
+				}
+			}
+			
+			entitiesGrabbedByBlocks.add((List<Entity>) parentEntities);
+			for (T parentEntity : parentEntities)
+				((EntityAccessor) parentEntity).setMotionScalar((float) (1 / upb));
+			
+			entities.addAll(parentEntities);
+			return entities;
+		}
+		
+		return super.getEntities(pEntityTypeTest, aabb, pPredicate);
 	}
 }

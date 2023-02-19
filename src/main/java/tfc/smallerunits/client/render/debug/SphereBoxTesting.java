@@ -7,31 +7,34 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.vivecraft.api.VRData;
-import org.vivecraft.gameplay.VRPlayer;
 import tfc.smallerunits.utils.selection.MutableVec3;
 import tfc.smallerunits.utils.spherebox.Box;
 import tfc.smallerunits.utils.spherebox.SphereBox;
 import tfc.smallerunits.utils.spherebox.VecMath;
+import tfc.smallerunits.utils.vr.player.SUVRPlayer;
+import tfc.smallerunits.utils.vr.player.VRController;
+import tfc.smallerunits.utils.vr.player.VRPlayerManager;
 
 import java.util.ArrayList;
 
 public class SphereBoxTesting {
 	public static void render(PoseStack pPoseStack, float pPartialTick, RenderBuffers renderBuffers, long gameTime, Matrix4f pProjectionMatrix) {
+//		SUVRPlayer player = VRPlayerManager.getPlayer(Minecraft.getInstance().player);
+		SUVRPlayer player = VRPlayerManager.getPlayer(Minecraft.getInstance().getSingleplayerServer().getPlayerList().getPlayers().get(0));
+		if (player == null) return;
+		VRController pose = player.getHand(InteractionHand.OFF_HAND);
+		
 		VertexConsumer consumer = renderBuffers.bufferSource().getBuffer(RenderType.LINES);
 		
-		VRData data = VRPlayer.get().vrdata_world_render;
-		VRData.VRDevicePose pose = data.getController(1);
-		
-		org.vivecraft.utils.math.Quaternion quaternion = new org.vivecraft.utils.math.Quaternion(pose.getMatrix());
-		Quaternion quat = new Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+		Quaternion quat = pose.getQuaternion();
 		quat.conj();
 		
 		ArrayList<Vec3> points = new ArrayList<>();
 		float sz = 0.05f;
-		float len = 8;
+		float len = 6;
 		points.add(new Vec3(-sz, -sz, 0));
 		points.add(new Vec3(sz, -sz, 0));
 		points.add(new Vec3(-sz, sz, 0));
@@ -45,19 +48,7 @@ public class SphereBoxTesting {
 		Vector4f worker = new Vector4f();
 		for (int i = 0; i < vecs.length; i++) {
 			VecMath.rotate(points.get(i), quat, worker);
-			vecs[i] = new Vec3(worker.x() * data.worldScale, worker.y() * data.worldScale, worker.z() * data.worldScale);
-//			vecs[i] = new Vec3(
-//					worker.x() + pose.getPosition().x,
-//					worker.y() + pose.getPosition().y,
-//					worker.z() + pose.getPosition().z
-//			);
-			
-//			Vec3 point = points.get(i);
-//			org.vivecraft.utils.math.Matrix4f matr = pose.getMatrix();
-//			Vector3 vec = new Vector3();
-//			vec.set((float) point.x, (float) point.y, (float) point.z);
-//			vec = matr.transform(vec);
-//			vecs[i] = new Vec3(vec.x, vec.y, vec.z);
+			vecs[i] = new Vec3(worker.x() * player.worldScale, worker.y() * player.worldScale, worker.z() * player.worldScale);
 		}
 		
 		quat.conj();
@@ -119,18 +110,27 @@ public class SphereBoxTesting {
 				center.z + 0.1
 		), 1, 1, 1, 1);
 		
-		rad = 0.125f;
-		
 		MutableVec3 mutableVec = new MutableVec3(0, 0, 0);
 		MutableVec3 mutableEnd = new MutableVec3(0, 0, 0);
 		Vector3f offsetV = new Vector3f();
-		float divisor = 1f / 16;
-		rad = divisor;
+		int scl = 10;
+		float divisor = 1f / scl;
+		rad = divisor / 4;
 		boolean intersect;
-		for (int x = 0; x < 32; x++) {
-			for (int y = 0; y < 16; y++) {
-				for (int z = 0; z < 16; z++) {
-					mutableVec.set(x * divisor, y * divisor, z * divisor);
+		
+		int minX = (int) (wsBounds.minX * scl) - 1;
+		int maxX = (int) Math.ceil((wsBounds.maxX * scl)) + 1;
+		
+		int minY = (int) (wsBounds.minY * scl) - 1;
+		int maxY = (int) Math.ceil((wsBounds.maxY * scl)) + 1;
+		
+		int minZ = (int) (wsBounds.minZ * scl) - 1;
+		int maxZ = (int) Math.ceil((wsBounds.maxZ * scl)) + 1;
+		
+		for (int x = minX; x < maxX; x++) {
+			for (int y = minY; y < maxY; y++) {
+				for (int z = minZ; z < maxZ; z++) {
+					mutableVec.set((x + 0.5) * divisor, (y + 0.5) * divisor, (z + 0.5) * divisor);
 					
 					offsetV.set((float) center.x, (float) center.y, (float) center.z);
 					offsetV.set(
@@ -142,7 +142,7 @@ public class SphereBoxTesting {
 					offsetV.mul(rad);
 					mutableEnd.set(mutableVec.x + offsetV.x(), mutableVec.y + offsetV.y(), mutableVec.z + offsetV.z());
 					
-					intersect = SphereBox.intersects(bx, mutableVec, rad);
+					intersect = SphereBox.intersects(worker, bx, mutableVec, rad);
 					consumer.vertex(matr, (float) mutableVec.x, (float) mutableVec.y, (float) mutableVec.z).color(intersect ? 0f : 1f, intersect ? 1f : 0f, 0, 1).normal(norm, 1, 0, 0).endVertex();
 					consumer.vertex(matr, (float) mutableEnd.x, (float) mutableEnd.y, (float) mutableEnd.z).color(intersect ? 0f : 1f, intersect ? 1f : 0f, 0, 1).normal(norm, 1, 0, 0).endVertex();
 				}

@@ -42,7 +42,6 @@ import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.client.render.SURenderManager;
 import tfc.smallerunits.client.render.TileRendererHelper;
-import tfc.smallerunits.client.render.debug.SphereBoxTesting;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
@@ -224,7 +223,7 @@ public abstract class LevelRendererMixin {
 				}
 			}
 		}
-		SphereBoxTesting.render(pPoseStack, pPartialTick, renderBuffers, level.getGameTime(), pProjectionMatrix);
+//		SphereBoxTesting.render(pPoseStack, pPartialTick, renderBuffers, level.getGameTime(), pProjectionMatrix);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "checkPoseStack")

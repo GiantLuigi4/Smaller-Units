@@ -144,4 +144,8 @@ public class IHateTheDistCleaner {
 	public static Object getMinecraft() {
 		return Minecraft.getInstance();
 	}
+	
+	public static boolean isClientPlayer(Player player) {
+		return player.getUUID().equals(Minecraft.getInstance().player.getUUID());
+	}
 }

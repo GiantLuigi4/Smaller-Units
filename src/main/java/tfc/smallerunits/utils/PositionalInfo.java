@@ -87,9 +87,16 @@ public class PositionalInfo {
 		pEntity.zOld = HitboxScaling.scaleZ((ITickerLevel) level, pEntity.zOld);
 		
 		pEntity.level = level;
+		
+		ITickerLevel tkLvl = (ITickerLevel) pEntity.level;
+		tkLvl.addInteractingEntity(pEntity);
 	}
 	
 	public void reset(Entity pEntity) {
+		if (pEntity.level instanceof ITickerLevel tkLvl) {
+			tkLvl.removeInteractingEntity(pEntity);
+		}
+		
 		if (isReachSet) {
 			if (pEntity instanceof LivingEntity livingEntity) {
 				AttributeInstance instance = livingEntity.getAttribute(ForgeMod.REACH_DISTANCE.get());

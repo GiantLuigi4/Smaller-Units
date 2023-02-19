@@ -36,6 +36,7 @@ import tfc.smallerunits.utils.scale.PehkuiSupport;
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("smallerunits")
 public class SmallerUnits {
+	private static boolean isVivecraftPresent;
 	private static boolean isOFPresent;
 	
 	public SmallerUnits() {
@@ -82,6 +83,7 @@ public class SmallerUnits {
 			FMLJavaModLoadingContext.get().getModEventBus().addListener(SmallerUnits::onTextureStitch);
 		}
 		
+		isVivecraftPresent = ModList.get().isLoaded("vivecraft");
 		try {
 			Class<?> clazz = Class.forName("net.optifine.Config");
 			if (clazz != null) {
@@ -143,6 +145,10 @@ public class SmallerUnits {
 //		ChannelPipeline pipeline = event.getSource().get().getSender().connection.connection.channel().pipeline();
 //		addListeners(pipeline);
 //	}
+	
+	public static boolean isVivecraftPresent() {
+		return isVivecraftPresent;
+	}
 	
 	public static boolean isIsOFPresent() {
 		return isOFPresent;

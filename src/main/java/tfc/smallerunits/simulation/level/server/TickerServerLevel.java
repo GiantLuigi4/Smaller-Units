@@ -96,6 +96,16 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 	}
 	
+	List<Entity> interactingEntities = new ArrayList<>();
+	
+	public void addInteractingEntity(Entity e) {
+		interactingEntities.add(e);
+	}
+	
+	public void removeInteractingEntity(Entity e) {
+		interactingEntities.remove(e);
+	}
+	
 	public final GroupMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new GroupMap<>(2);
 	
 	@Override
@@ -1231,7 +1241,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			List<T> entities = super.getEntities(pEntityTypeTest, aabb, pPredicate);
 			
 			double upb = this.upb;
-			AABB aabb1 = new AABB(0, 0, 0, aabb.getXsize() / upb, aabb.getZsize() / upb, aabb.getZsize() / upb);
+			AABB aabb1 = new AABB(0, 0, 0, aabb.getXsize() / upb, aabb.getYsize() / upb, aabb.getZsize() / upb);
 			AABB bb = aabb1.move(
 					aabb.minX / upb,
 					aabb.minY / upb,
@@ -1239,10 +1249,39 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			).move(region.pos.toBlockPos().getX(), region.pos.toBlockPos().getY(), region.pos.toBlockPos().getZ());
 			// TODO: this is bugged for some reason
 			List<T> parentEntities = owner.getEntities(pEntityTypeTest, bb, pPredicate);
+			// scuffed solution to a ridiculous problem
+			try {
+				for (ServerPlayer player : ((ServerLevel) owner).getPlayers((Predicate<? super ServerPlayer>) pPredicate)) {
+					T t = pEntityTypeTest.tryCast(player);
+					if (t != null) {
+						if (t.getBoundingBox().intersects(bb)) {
+							if (!parentEntities.contains(t)) {
+								parentEntities.add(t);
+							}
+						}
+					}
+				}
+			} catch (Throwable ignored) {
+			}
 			
-			entitiesGrabbedByBlocks.add((List<Entity>) parentEntities);
-			for (T parentEntity : parentEntities)
-				((EntityAccessor) parentEntity).setMotionScalar((float) (1 / upb));
+			for (Entity interactingEntity : interactingEntities) {
+				if (interactingEntity.getBoundingBox().intersects(aabb)) {
+					T ent = pEntityTypeTest.tryCast(interactingEntity);
+					if (ent != null) {
+						if (pPredicate.test(ent)) {
+							if (!parentEntities.contains(ent)) {
+								parentEntities.add(ent);
+							}
+						}
+					}
+				}
+			}
+			
+			if (!parentEntities.isEmpty()) {
+				entitiesGrabbedByBlocks.add((List<Entity>) parentEntities);
+				for (T parentEntity : parentEntities)
+					((EntityAccessor) parentEntity).setMotionScalar((float) (1 / upb));
+			}
 			
 			entities.addAll(parentEntities);
 			return entities;
