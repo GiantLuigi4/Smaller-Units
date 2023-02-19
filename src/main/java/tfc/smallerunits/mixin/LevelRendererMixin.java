@@ -42,6 +42,7 @@ import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.client.render.SURenderManager;
 import tfc.smallerunits.client.render.TileRendererHelper;
+import tfc.smallerunits.client.render.debug.SphereBoxTesting;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
@@ -59,7 +60,7 @@ import javax.annotation.Nullable;
 public abstract class LevelRendererMixin {
 	@Shadow
 	@Nullable
-	private ClientLevel level;
+	public ClientLevel level;
 	@Unique
 	PoseStack stk;
 	@Shadow
@@ -96,14 +97,14 @@ public abstract class LevelRendererMixin {
 	private RenderBuffers renderBuffers;
 	
 	@Shadow
-	protected abstract void renderEntity(Entity pEntity, double pCamX, double pCamY, double pCamZ, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBufferSource);
+	public abstract void renderEntity(Entity pEntity, double pCamX, double pCamY, double pCamZ, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBufferSource);
 	
 	@Shadow
 	@Nullable
-	private Frustum capturedFrustum;
+	public Frustum capturedFrustum;
 	
 	@Shadow
-	private Frustum cullingFrustum;
+	public Frustum cullingFrustum;
 	
 	@Shadow
 	private static native void renderShape(PoseStack pPoseStack, VertexConsumer pConsumer, VoxelShape pShape, double pX, double pY, double pZ, float pRed, float pGreen, float pBlue, float pAlpha);
@@ -223,6 +224,7 @@ public abstract class LevelRendererMixin {
 				}
 			}
 		}
+		SphereBoxTesting.render(pPoseStack, pPartialTick, renderBuffers, level.getGameTime(), pProjectionMatrix);
 	}
 	
 	@Inject(at = @At("HEAD"), method = "checkPoseStack")

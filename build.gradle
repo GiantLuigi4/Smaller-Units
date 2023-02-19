@@ -161,6 +161,7 @@ dependencies {
     api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
     api fg.deobf("curse.maven:pehkui-319596:3808012")
     api fg.deobf("curse.maven:alternate_current-548115:3789218")
+    api fg.deobf("curse.maven:vivecraft-667903:3984471")
 
     /* libraries */
     String curios = "curse.maven:curios-309927:3841948"

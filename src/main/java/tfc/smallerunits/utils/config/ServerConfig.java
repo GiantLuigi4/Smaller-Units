@@ -47,7 +47,7 @@ public class ServerConfig {
 		})
 		@Translation("config.smaller_units.max_upb")
 		@IntRange(minV = 1, maxV = 128)
-		@Default(valueI = 8)
+		@Default(valueI = 16)
 		public static final int maxScale = "".hashCode();
 	}
 	
