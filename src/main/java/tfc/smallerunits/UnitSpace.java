@@ -3,6 +3,7 @@ package tfc.smallerunits;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -49,7 +50,7 @@ public class UnitSpace {
 	public UnitSpace(BlockPos pos, Level level) {
 		this.pos = pos;
 		this.level = level;
-
+		
 		unitsPerBlock = 1;
 		setUpb(ServerConfig.SizeOptions.defaultScale);
 		isNatural = false;
@@ -92,37 +93,58 @@ public class UnitSpace {
 	
 	private void loadWorld(CompoundTag tag) {
 		if (myLevel == null || tag == null) return;
-		UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
-		loadPallet(pallet);
+		
+		// ensures that chunks are loaded
+		for (int x = 0; x < unitsPerBlock; x += 15) {
+			for (int z = 0; z < unitsPerBlock; z += 15) {
+				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+				if (chunk == null) continue;
+				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
+				
+				for (int y = 0; y < unitsPerBlock; y += 15) {
+					vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4);
+				}
+			}
+		}
+		
+		if (tag.contains("blocks", Tag.TAG_COMPOUND)) {
+			UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
+			loadPallet(pallet);
+		}
+		
 		if (tag.contains("ticks")) {
 			if (myLevel instanceof ITickerLevel) {
 				((ITickerLevel) myLevel).loadTicks(tag.getCompound("ticks"));
 			}
 		}
-		CompoundTag tiles = tag.getCompound("tiles");
-		for (String pos : tiles.getAllKeys()) {
-			String[] strs = pos.split(",");
-			BlockPos pos1 = new BlockPos(
-					Integer.parseInt(strs[0]),
-					Integer.parseInt(strs[1]),
-					Integer.parseInt(strs[2])
-			);
-			// TODO: fix
-			BlockEntity be = null;
-			try {
-				be = BlockEntity.loadStatic(
-						pos1,
-						myLevel.getBlockState(pos1),
-						tiles.getCompound(pos)
+		
+		if (tag.contains("tiles", Tag.TAG_COMPOUND)) {
+			CompoundTag tiles = tag.getCompound("tiles");
+			for (String pos : tiles.getAllKeys()) {
+				String[] strs = pos.split(",");
+				BlockPos pos1 = new BlockPos(
+						Integer.parseInt(strs[0]),
+						Integer.parseInt(strs[1]),
+						Integer.parseInt(strs[2])
 				);
-			} catch (Exception err) {
-				err.printStackTrace();
+				// TODO: fix
+				BlockEntity be = null;
+				try {
+					be = BlockEntity.loadStatic(
+							pos1,
+							myLevel.getBlockState(pos1),
+							tiles.getCompound(pos)
+					);
+				} catch (Exception err) {
+					err.printStackTrace();
+				}
+				if (be == null) continue;
+				myLevel.setBlockEntity(be);
 			}
-			if (be == null) continue;
-			myLevel.setBlockEntity(be);
+			((ITickerLevel) myLevel).setLoaded();
 		}
-		((ITickerLevel) myLevel).setLoaded();
-//		setState(new BlockPos(0, 0, 0), Blocks.STONE);
 		
 		this.tag = null;
 	}
@@ -227,6 +249,8 @@ public class UnitSpace {
 						pos.set(x, y, z);
 						BlockPos pz = getOffsetPos(pos);
 						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
+						vc.getSubChunk(pz.getY() >> 4).setUnsaved(true);
+						
 						addState(states[indx]);
 						if (positionsWithBE != null)
 							if (states[indx].hasBlockEntity())
@@ -304,37 +328,43 @@ public class UnitSpace {
 	}
 	
 	public CompoundTag serialize() {
-		CompoundTag tag = new CompoundTag();
 		if (unitsPerBlock == 0) return null;
 		if (this.myLevel == null) {
-			return this.tag; // TODO: figure out why this happens
+			if (level != null) tick();
+			if (this.myLevel == null) return this.tag; // TODO: figure out if this still happens
 		}
+		CompoundTag tag = new CompoundTag();
+		
 		tag.putInt("x", pos.getX());
 		tag.putInt("y", pos.getY());
 		tag.putInt("z", pos.getZ());
 		tag.putInt("upb", unitsPerBlock);
-		UnitPallet pallet = new UnitPallet(this);
-		tag.put("blocks", pallet.toNBT());
-		if (myLevel instanceof ITickerLevel)
-			tag.put("ticks", ((ITickerLevel) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
-		CompoundTag tiles = new CompoundTag();
-		for (int x = 0; x < unitsPerBlock; x++) {
-			for (int z = 0; z < unitsPerBlock; z++) {
-				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
-				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
-				if (chunk == null) continue;
-				
-				for (int y = 0; y < unitsPerBlock; y++) {
-					BlockEntity be = chunk.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
-					if (be != null) {
-						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
-					}
-				}
-			}
-		}
-		tag.put("tiles", tiles);
 		tag.putBoolean("natural", isNatural);
+
+//		UnitPallet pallet = new UnitPallet(this);
+//		tag.put("blocks", pallet.toNBT());
+		
+//		if (myLevel instanceof ITickerLevel)
+//			tag.put("ticks", ((ITickerLevel) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
+
+//		CompoundTag tiles = new CompoundTag();
+//		for (int x = 0; x < unitsPerBlock; x++) {
+//			for (int z = 0; z < unitsPerBlock; z++) {
+//				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+//				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+//				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
+//				if (chunk == null) continue;
+//
+//				for (int y = 0; y < unitsPerBlock; y++) {
+//					BlockEntity be = chunk.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
+//					if (be != null) {
+//						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
+//					}
+//				}
+//			}
+//		}
+//		tag.put("tiles", tiles);
+		
 		return tag;
 	}
 	

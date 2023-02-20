@@ -5,6 +5,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -60,4 +61,6 @@ public interface ITickerLevel {
 	void addInteractingEntity(Entity e);
 	
 	void removeInteractingEntity(Entity e);
+	
+	void ungrab(Player entitiesOfClass);
 }

@@ -15,6 +15,7 @@ import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.network.NetworkEvent;
+import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
@@ -88,6 +89,12 @@ public class SyncPacketS2C extends Packet {
 			if (space.getMyLevel() == null) return;
 			
 			// TODO: adjust player position and whatnot
+			
+			{
+				BlockState state = chunk.getBlockState(syncPacket.realPos);
+				chunk.setBlockState(syncPacket.realPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+				chunk.getLevel().sendBlockUpdated(syncPacket.realPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+			}
 			
 			space.unitsPerBlock = syncPacket.upb;
 			space.setUpb(space.unitsPerBlock);

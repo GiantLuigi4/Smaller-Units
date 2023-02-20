@@ -32,6 +32,7 @@ import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.access.ChunkAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
@@ -43,6 +44,7 @@ import tfc.smallerunits.utils.threading.ThreadLocals;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import static tfc.smallerunits.simulation.WorldStitcher.chunkRelative;
 
@@ -512,18 +514,26 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (!state.isAir()) {
 			ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
 			UnitSpace space = capability.getOrMakeUnit(parentPos);
-			space.removeState(section.getBlockState(j, k, l));
-			space.addState(state);
-			
-			section.setBlockState(j, k, l, state);
+			if (space != null) {
+				space.removeState(section.getBlockState(j, k, l));
+				space.addState(state);
+				
+				section.setBlockState(j, k, l, state);
+			} else {
+				Loggers.SU_LOGGER.warn("Unit space @" + parentPos + " did not exist");
+			}
 			
 			level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
 		} else {
 			ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
 			UnitSpace space = capability.getUnit(parentPos);
-			space.removeState(section.getBlockState(j, k, l));
-			
-			section.setBlockState(j, k, l, state);
+			if (space != null) {
+				space.removeState(section.getBlockState(j, k, l));
+				
+				section.setBlockState(j, k, l, state);
+			} else {
+				Loggers.SU_LOGGER.warn("Unit space @" + parentPos + " did not exist");
+			}
 		}
 	}
 	
@@ -593,11 +603,15 @@ public class BasicVerticalChunk extends LevelChunk {
 	long modTime = 0;
 	
 	public void updateModificationTime(long gameTime) {
-		this.modTime = gameTime;
+		if (gameTime == -1) modTime = -1;
+		// staggers save time
+//		this.modTime = gameTime + new Random().nextInt(700) + 300;
+		this.modTime = gameTime + new Random().nextInt(300) + 200;
 	}
 	
 	public boolean isSaveTime(long gameTime) {
+		if (modTime == -1) return false;
 		// TODO:
-		return true;
+		return gameTime >= modTime;
 	}
 }

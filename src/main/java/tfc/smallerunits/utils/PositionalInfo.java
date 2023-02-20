@@ -94,6 +94,9 @@ public class PositionalInfo {
 	
 	public void reset(Entity pEntity) {
 		if (pEntity.level instanceof ITickerLevel tkLvl) {
+			if (pEntity instanceof Player player) {
+				tkLvl.ungrab(player);
+			}
 			tkLvl.removeInteractingEntity(pEntity);
 		}
 		

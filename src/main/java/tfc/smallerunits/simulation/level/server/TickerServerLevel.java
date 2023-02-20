@@ -78,6 +78,7 @@ import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -207,6 +208,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
 		
 		saveWorld = new SUSaveWorld(((ServerLevel) parent).getDataStorage().dataFolder, this);
+		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
 	}
 	
 	int randomTickCount = Integer.MIN_VALUE;
@@ -1301,5 +1303,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	public CapabilityDispatcher getCaps() {
 		return getCapabilities();
+	}
+	
+	@Override
+	public void ungrab(Player entitiesOfClass) {
+		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks) {
+			((EntityAccessor) entitiesOfClass).setMotionScalar(1);
+			entitiesGrabbedByBlock.remove(entitiesOfClass);
+		}
 	}
 }

@@ -995,4 +995,12 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		
 		return super.getEntities(pEntityTypeTest, aabb, pPredicate);
 	}
+	
+	@Override
+	public void ungrab(Player entitiesOfClass) {
+		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks) {
+			((EntityAccessor) entitiesOfClass).setMotionScalar(1);
+			entitiesGrabbedByBlock.remove(entitiesOfClass);
+		}
+	}
 }

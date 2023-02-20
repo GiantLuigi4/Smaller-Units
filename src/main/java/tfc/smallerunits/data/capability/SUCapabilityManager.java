@@ -109,7 +109,6 @@ public class SUCapabilityManager {
 				if (unit == null) continue;
 				unit.sendSync(PacketDistributor.PLAYER.with(event::getPlayer));
 			}
-			// TODO: create packet
 		}
 	}
 }

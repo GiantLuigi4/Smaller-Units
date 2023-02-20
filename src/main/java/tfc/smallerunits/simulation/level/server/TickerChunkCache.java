@@ -243,22 +243,23 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		int pChunkZ = ckPos.z;
 		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 		if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
-		ck[yPos] = new BasicVerticalChunk(
+		BasicVerticalChunk bvc = ck[yPos] = new BasicVerticalChunk(
 				level, new ChunkPos(pChunkX, pChunkZ), yPos,
 				new VChunkLookup(
 						this, yPos, ck,
 						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
+		((TickerServerLevel)level).saveWorld.load(bvc, bvc.getPos(), bvc.yPos);
 		synchronized (newChunks) {
-			newChunks.add(ck[yPos]);
+			newChunks.add(bvc);
 		}
-		UnitChunkHolder holder = new UnitChunkHolder(ck[yPos].getPos(), 0, level, level.getLightEngine(), noListener, chunkMap, ck[yPos], yPos);
+		UnitChunkHolder holder = new UnitChunkHolder(bvc.getPos(), 0, level, level.getLightEngine(), noListener, chunkMap, bvc, yPos);
 		synchronized (holders) {
 			holders.add(holder);
 		}
-		ck[yPos].holder = holder;
-		return ck[yPos];
+		bvc.holder = holder;
+		return bvc;
 	}
 	
 	@Override

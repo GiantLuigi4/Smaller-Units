@@ -11,16 +11,18 @@ import org.jetbrains.annotations.Nullable;
 
 public class CapabilityProvider implements ICapabilityProvider, INBTSerializable<CompoundTag> {
 	private final ISUCapability capability;
+	private final LazyOptional<?> optional;
 	
 	public CapabilityProvider(ISUCapability capability) {
 		this.capability = capability;
+		optional = LazyOptional.of(() -> capability);
 	}
 	
 	@NotNull
 	@Override
 	public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
 		//noinspection unchecked
-		return (LazyOptional<T>) LazyOptional.of(() -> capability);
+		return (LazyOptional<T>) optional;
 	}
 	
 	@Override

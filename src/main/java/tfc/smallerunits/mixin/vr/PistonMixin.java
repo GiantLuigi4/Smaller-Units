@@ -50,13 +50,16 @@ public class PistonMixin {
 				this.isSmol = true;
 				this.tkLvl = tkLvl;
 				
+				// 1 real world block+the size limit of a piston push+1
+				int range = 13 + tkLvl.getUPB();
+				
 				AABB box = new AABB(
-						pPistonPos.getX() - 13,
-						pPistonPos.getY() - 13,
-						pPistonPos.getZ() - 13,
-						pPistonPos.getX() + 13,
-						pPistonPos.getY() + 13,
-						pPistonPos.getZ() + 13
+						pPistonPos.getX() - range,
+						pPistonPos.getY() - range,
+						pPistonPos.getZ() - range,
+						pPistonPos.getX() + range,
+						pPistonPos.getY() + range,
+						pPistonPos.getZ() + range
 				);
 				bxs = new ArrayList<>();
 				for (Player entitiesOfClass : pLevel.getEntitiesOfClass(Player.class, box)) {
@@ -66,6 +69,7 @@ public class PistonMixin {
 					if (bx != null) bxs.add(bx);
 					bx = ArmUtils.getArmBox(player, InteractionHand.OFF_HAND);
 					if (bx != null) bxs.add(bx);
+					tkLvl.ungrab(entitiesOfClass);
 				}
 			}
 			// TODO: tweak vanilla pistons
