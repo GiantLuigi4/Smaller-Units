@@ -162,6 +162,7 @@ dependencies {
     api fg.deobf("curse.maven:pehkui-319596:3808012")
     api fg.deobf("curse.maven:alternate_current-548115:3789218")
     api fg.deobf("curse.maven:vivecraft-667903:3984471")
+    compileOnly fg.deobf("curse.maven:vfe-325360:3893747")
 
     /* libraries */
     String curios = "curse.maven:curios-309927:3841948"

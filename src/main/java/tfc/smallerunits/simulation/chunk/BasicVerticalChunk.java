@@ -36,6 +36,7 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
+import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
@@ -417,12 +418,22 @@ public class BasicVerticalChunk extends LevelChunk {
 						}
 					}
 					
-					this.unsaved = true;
 					updated.add(pPos.below(yPos * 16));
+					setUnsaved(true);
 					return blockstate;
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void setUnsaved(boolean pUnsaved) {
+		if (pUnsaved) {
+			if (level instanceof TickerServerLevel) {
+				((TickerServerLevel) level).saveWorld.markForSave(this);
+			}
+		}
+		super.setUnsaved(pUnsaved);
 	}
 	
 	@Override
@@ -577,5 +588,16 @@ public class BasicVerticalChunk extends LevelChunk {
 	// TODO: do this more properly
 	public FluidState getFluidState(int pX, int pY, int pZ) {
 		return getBlockState(new BlockPos(pX, pY, pZ)).getFluidState();
+	}
+	
+	long modTime = 0;
+	
+	public void updateModificationTime(long gameTime) {
+		this.modTime = gameTime;
+	}
+	
+	public boolean isSaveTime(long gameTime) {
+		// TODO:
+		return true;
 	}
 }

@@ -5,6 +5,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.DoubleRange;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.IntRange;
 
 @Config(type = ModConfig.Type.SERVER)
@@ -102,6 +103,29 @@ public class ServerConfig {
 			@Translation("config.smaller_units.downscale_rate")
 			@Default(valueD = 1 / 8d)
 			public static final double downscaleRate = "".hashCode();
+		}
+		
+		@Comment("Options for VR players")
+		@CFGSegment("vr_options")
+		public class VROptions {
+			@Name("PistonBlocking")
+			@Comment("Whether or not VR players should be able to use their arms to block small flying machines")
+			@Translation("config.smaller_units.vr.piston_blocking")
+			@Default(valueBoolean = false)
+			public static final boolean pistonBlocking = getFalse();
+			
+			@Name("VanillaPistonBlocking")
+			@Comment("Whether or not SU should tweak vanilla (1/1 scale pistons) to allow those to be blocked by VR players")
+			@Translation("config.smaller_units.vr.vanilla_piston_blocking")
+			@Default(valueBoolean = false)
+			public static final boolean vanillaPistonBlocking = getFalse();
+			
+			@Name("BlockThreshold")
+			@Comment("How much larger a player needs to be than a piston in order to be able to block it")
+			@Translation("config.smaller_units.vr.block_threshold")
+			@Default(valueD = 10)
+			@DoubleRange(minV = 0, maxV = 1)
+			public static final double blockThreshold = "".hashCode();
 		}
 	}
 	

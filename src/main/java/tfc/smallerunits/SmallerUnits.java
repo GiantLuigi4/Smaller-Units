@@ -37,6 +37,7 @@ import tfc.smallerunits.utils.scale.PehkuiSupport;
 @Mod("smallerunits")
 public class SmallerUnits {
 	private static boolean isVivecraftPresent;
+	private static boolean isVFEPresent;
 	private static boolean isOFPresent;
 	
 	public SmallerUnits() {
@@ -84,6 +85,7 @@ public class SmallerUnits {
 		}
 		
 		isVivecraftPresent = ModList.get().isLoaded("vivecraft");
+		isVFEPresent = ModList.get().isLoaded("vivecraftforgeextensions");
 		try {
 			Class<?> clazz = Class.forName("net.optifine.Config");
 			if (clazz != null) {
@@ -148,6 +150,10 @@ public class SmallerUnits {
 	
 	public static boolean isVivecraftPresent() {
 		return isVivecraftPresent;
+	}
+	
+	public static boolean isVFEPresent() {
+		return isVFEPresent;
 	}
 	
 	public static boolean isIsOFPresent() {

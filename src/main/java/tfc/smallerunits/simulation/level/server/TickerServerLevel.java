@@ -52,6 +52,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.CapabilityDispatcher;
 import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.event.world.WorldEvent;
 import org.jetbrains.annotations.Nullable;
@@ -71,6 +72,7 @@ import tfc.smallerunits.simulation.level.EntityManager;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
+import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
@@ -138,6 +140,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
 	int upb;
 	
+	public final SUSaveWorld saveWorld;
+	
 	public TickerServerLevel(MinecraftServer server, ServerLevelData data, ResourceKey<Level> p_8575_, DimensionType dimType, ChunkProgressListener progressListener, ChunkGenerator generator, boolean p_8579_, long p_8580_, List<CustomSpawner> spawners, boolean p_8582_, Level parent, int upb, Region region) {
 		super(
 				server,
@@ -201,6 +205,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		isLoaded = true;
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
 		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+		
+		saveWorld = new SUSaveWorld(((ServerLevel) parent).getDataStorage().dataFolder, this);
 	}
 	
 	int randomTickCount = Integer.MIN_VALUE;
@@ -761,6 +767,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
 		BlockEntity be = vc.getBlockEntity(pPos);
 		if (be == null) return;
+		((BasicVerticalChunk)getChunkAt(pPos)).getSubChunk(pPos.getY() >> 4).setUnsaved(true);
 		vc.beChanges.add(be);
 		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, vc);
 		LevelChunk ac = getParent().getChunkAt(parentPos);
@@ -1206,6 +1213,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			for (Entity entity : entitiesGrabbedByBlock)
 				((EntityAccessor) entity).setMotionScalar(1);
 		entitiesGrabbedByBlocks.clear();
+		
+		saveWorld.tick();
 	}
 	
 	@Override
@@ -1288,5 +1297,9 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		
 		return super.getEntities(pEntityTypeTest, aabb, pPredicate);
+	}
+	
+	public CapabilityDispatcher getCaps() {
+		return getCapabilities();
 	}
 }

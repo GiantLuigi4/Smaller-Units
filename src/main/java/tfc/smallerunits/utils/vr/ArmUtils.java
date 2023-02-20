@@ -53,6 +53,8 @@ public class ArmUtils {
 	
 	public static void runPistonCheck(ArrayList<Box> bxs, Vector4f vec, ITickerLevel tkLvl, Level level, boolean isSmol, BlockPos pOriginPos, Direction pushDirection, ThreadLocal<BlockPos> bp, CallbackInfoReturnable<Boolean> cir) {
 		if (isSmol) {
+			if (bxs.isEmpty()) return;
+			
 			pOriginPos = bp.get();
 			if (!level.isEmptyBlock(pOriginPos)) {
 				Vec3 vec1 = PositionUtils.getParentVec(pOriginPos.relative(pushDirection), tkLvl);

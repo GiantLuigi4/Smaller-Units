@@ -1,14 +1,17 @@
-package tfc.smallerunits.utils.vr.player;
+package tfc.smallerunits.utils.vr.player.mods;
 
 import net.minecraft.world.entity.player.Player;
 import org.vivecraft.api.CommonNetworkHelper;
 import org.vivecraft.api.ServerVivePlayer;
 import org.vivecraft.api.VRData;
 import org.vivecraft.gameplay.VRPlayer;
+import org.vivecraft.render.PlayerModelController;
 import org.vivecraft.utils.math.Quaternion;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.vr.player.SUVRPlayer;
+import tfc.smallerunits.utils.vr.player.VRController;
 
-class Vivecraft {
+public class Vivecraft {
 	public static SUVRPlayer getPlayerClient() {
 		VRPlayer player = VRPlayer.get();
 		if (player == null) return null;
@@ -25,6 +28,7 @@ class Vivecraft {
 	
 	protected static com.mojang.math.Quaternion getQuatFrom(byte[] bytes) {
 		// had to trial&error this
+		// update: I have now looked at vivecraft's Quaternion class and this entirely makes sense now
 		return new com.mojang.math.Quaternion(
 				readFloat(bytes, 17),
 				readFloat(bytes, 21),
@@ -80,5 +84,13 @@ class Vivecraft {
 	
 	private static com.mojang.math.Quaternion mojQuat(Quaternion quaternion) {
 		return new com.mojang.math.Quaternion(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+	}
+	
+	public static SUVRPlayer getOtherClient(Player player) {
+		PlayerModelController.RotInfo rotInfo = PlayerModelController.getInstance().getRotationsForPlayer(player.getUUID());
+		VRController head = new VRController(rotInfo.Headpos, mojQuat(rotInfo.headQuat));
+		VRController mArm = new VRController(rotInfo.rightArmPos, mojQuat(rotInfo.rightArmQuat));
+		VRController oArm = new VRController(rotInfo.leftArmPos, mojQuat(rotInfo.leftArmQuat));
+		return new SUVRPlayer(rotInfo.worldScale, head, mArm, oArm);
 	}
 }
