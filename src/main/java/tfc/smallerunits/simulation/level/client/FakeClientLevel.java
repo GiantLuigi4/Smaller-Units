@@ -51,7 +51,9 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
@@ -668,6 +670,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this, () -> true));
+		
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
@@ -694,6 +698,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			for (Entity entity : entitiesGrabbedByBlock)
 				((EntityAccessor) entity).setMotionScalar(1);
 		entitiesGrabbedByBlocks.clear();
+	
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this, () -> true));
 	}
 	
 	@Override

@@ -41,6 +41,16 @@ public class SUSaveWorld {
 		if (fl.endsWith("/")) fl = fl.substring(0, fl.length() - 1);
 		this.file = new File(fl + "/smaller_units/" + "r" + rp.x + "_" + rp.y + "_" + rp.z + "/" + level.getUPB());
 		this.level = level;
+		
+		File fl1 = new File(file + ".dat");
+		if (fl1.exists()) {
+			try {
+				CompoundTag tag = NbtIo.readCompressed(fl1);
+				level.getCaps().deserializeNBT(tag.getCompound("capabilities"));
+			} catch (Throwable ignored) {
+				ignored.printStackTrace();
+			}
+		}
 	}
 	
 	protected File getFile(ChunkPos ckPos, int y) {
@@ -81,7 +91,7 @@ public class SUSaveWorld {
 		chunksToSave.clear();
 	}
 	
-	private void saveChunk(BasicVerticalChunk basicVerticalChunk) throws IOException {
+	public void saveChunk(BasicVerticalChunk basicVerticalChunk) throws IOException {
 		try {
 			basicVerticalChunk.updateModificationTime(-1);
 			
@@ -145,6 +155,8 @@ public class SUSaveWorld {
 			tag.putInt("version", 0);
 			
 			NbtIo.writeCompressed(tag, fl);
+			
+			basicVerticalChunk.setUnsaved(false);
 		} catch (Throwable ignored) {
 			ignored.printStackTrace();
 		}
@@ -210,9 +222,11 @@ public class SUSaveWorld {
 				}
 			}
 			
-			if (tag.contains("ticks", Tag.TAG_COMPOUND)) {
-				((ITickerLevel)shell.level).loadTicks(tag.getCompound("ticks"));
-			}
+			if (tag.contains("ticks", Tag.TAG_COMPOUND))
+				((ITickerLevel) shell.level).loadTicks(tag.getCompound("ticks"));
+			
+			if (tag.contains("capabilities", Tag.TAG_COMPOUND))
+				shell.readCapsFromNBT(tag.getCompound("capabilities"));
 			
 			return shell;
 		} catch (Throwable ignored) {

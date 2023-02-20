@@ -23,6 +23,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.crafting.CraftingRegistry;
+import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
@@ -30,6 +31,7 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
 
@@ -116,6 +118,15 @@ public class SmallerUnits {
 	
 	private static void onChunkUnloaded(ChunkEvent.Unload loadEvent) {
 		if (loadEvent.getWorld() instanceof ServerLevel lvl) {
+			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) {
+				ISUCapability capability = SUCapabilityManager.getCapability(lvlChk);
+				for (UnitSpace unit : capability.getUnits()) {
+					for (BasicVerticalChunk chunk : unit.getChunks()) {
+						chunk.maybeUnload();
+					}
+				}
+			}
+			
 			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 				ChunkAccess access = loadEvent.getChunk();
 				int min = access.getMinBuildHeight();

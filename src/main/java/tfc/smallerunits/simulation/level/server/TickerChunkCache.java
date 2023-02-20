@@ -286,4 +286,14 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	public ITickerLevel tickerLevel() {
 		return (ITickerLevel) level;
 	}
+	
+	public void removeChunk(BasicVerticalChunk pChunk) {
+		ChunkPos ckPos = pChunk.getPos();
+		int yPos = pChunk.yPos;
+		int pChunkX = ckPos.x;
+		int pChunkZ = ckPos.z;
+		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
+		if (ck == null) return;
+		ck[yPos] = null;
+	}
 }

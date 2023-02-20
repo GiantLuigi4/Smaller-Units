@@ -31,6 +31,7 @@ import tfc.smallerunits.utils.math.Math1D;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 public class UnitSpace {
 	// TODO: migrate to chunk class
@@ -255,7 +256,6 @@ public class UnitSpace {
 						if (positionsWithBE != null)
 							if (states[indx].hasBlockEntity())
 								positionsWithBE.add(pz);
-//						((BasicCubicChunk) myLevel.getChunkAt(getOffsetPos(new BlockPos(x, y, z)))).setBlockFast(new BlockPos(x, y, z), states[indx]);
 					}
 				}
 			}
@@ -340,30 +340,6 @@ public class UnitSpace {
 		tag.putInt("z", pos.getZ());
 		tag.putInt("upb", unitsPerBlock);
 		tag.putBoolean("natural", isNatural);
-
-//		UnitPallet pallet = new UnitPallet(this);
-//		tag.put("blocks", pallet.toNBT());
-		
-//		if (myLevel instanceof ITickerLevel)
-//			tag.put("ticks", ((ITickerLevel) myLevel).getTicksIn(myPosInTheLevel, myPosInTheLevel.offset(unitsPerBlock, unitsPerBlock, unitsPerBlock)));
-
-//		CompoundTag tiles = new CompoundTag();
-//		for (int x = 0; x < unitsPerBlock; x++) {
-//			for (int z = 0; z < unitsPerBlock; z++) {
-//				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
-//				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-//				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
-//				if (chunk == null) continue;
-//
-//				for (int y = 0; y < unitsPerBlock; y++) {
-//					BlockEntity be = chunk.getBlockEntity(getOffsetPos(new BlockPos(x, y, z)));
-//					if (be != null) {
-//						tiles.put(be.getBlockPos().toShortString().replace(" ", ""), be.saveWithFullMetadata());
-//					}
-//				}
-//			}
-//		}
-//		tag.put("tiles", tiles);
 		
 		return tag;
 	}
@@ -399,5 +375,23 @@ public class UnitSpace {
 	public boolean isEmpty() {
 		// TODO: this doesn't work on client
 		return numBlocks <= 0;
+	}
+	
+	public Set<BasicVerticalChunk> getChunks() {
+		Set<BasicVerticalChunk> chunks = new HashSet<>();
+		for (int x = 0; x < unitsPerBlock; x += 15) {
+			for (int z = 0; z < unitsPerBlock; z += 15) {
+				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
+				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+				if (chunk == null) continue;
+				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
+				
+				for (int y = 0; y < unitsPerBlock; y += 15) {
+					chunks.add(vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4));
+				}
+			}
+		}
+		return chunks;
 	}
 }

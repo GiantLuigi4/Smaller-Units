@@ -60,7 +60,7 @@ public class WorldStitcher {
 					else lvl = neighbors[ord].get();
 				}
 				if (lvl == null) {
-					RegionPos rPos = new RegionPos(regionPos.x, regionPos.y + oY, regionPos.z + oZ);
+					RegionPos rPos = new RegionPos(regionPos.x + oX, regionPos.y + oY, regionPos.z + oZ);
 					Region r = attachments.SU$getRegion(rPos);
 					if (r == null) {
 						if (!pLoad) {

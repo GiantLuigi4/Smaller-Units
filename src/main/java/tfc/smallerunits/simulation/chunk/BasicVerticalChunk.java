@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -89,7 +90,14 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public boolean isTicking(BlockPos pPos) {
 		// TODO:
-		return true;
+		BlockPos origin = new BlockPos(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
+		BlockPos.MutableBlockPos pos = ThreadLocals.posLocal.get();
+		Level parent = ((ITickerLevel) level).getParent();
+		
+		if (parent == null) return false;
+		
+		PositionUtils.getParentPos(pPos, this, pos);
+		return parent.isLoaded(pos);
 	}
 	
 	@Override
@@ -268,7 +276,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			BlockPos parentPos = PositionUtils.getParentPos(pPos, this, ThreadLocals.posLocal.get());
 			ChunkAccess ac;
 			ac = tickerWorld.getParent().getChunkAt(parentPos);
-
+			
 			BlockPos offsetPos = pPos.offset(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
 			
 			ArrayList<BlockEntity> toRemove = new ArrayList<>();
@@ -285,7 +293,8 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 	
 	public void removeBlockEntityTicker(BlockPos pPos) {
-		if (yPos != 0) verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
+		if (yPos != 0)
+			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
 		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
 	}
 	
@@ -305,7 +314,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		return verticalLookup.applyAbs(0).createTicker(pBlockEntity, pTicker);
 //		return super.createTicker(pBlockEntity, pTicker);
 	}
-
+	
 	@Override
 	public <T extends BlockEntity> void updateBlockEntityTicker(T pBlockEntity) {
 		if (yPos == 0) super.updateBlockEntityTicker(pBlockEntity);
@@ -451,12 +460,17 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (parentState.isCollisionShapeFullBlock(lvl, parentPos))
 			transparent = false;
 		if (parentState.getBlock() instanceof UnitSpaceBlock) {
-			ISUCapability capability = SUCapabilityManager.getCapability(lvl.getChunkAt(parentPos));
-			UnitSpace space = capability.getUnit(parentPos);
-			if (space != null) {
-				lookupPass = space.unitsPerBlock == upb;
-			} else {
+			LevelChunk chunk = lvl.getChunkAt(parentPos);
+			if (chunk instanceof EmptyLevelChunk) {
 				lookupPass = false;
+			} else {
+				ISUCapability capability = SUCapabilityManager.getCapability(chunk);
+				UnitSpace space = capability.getUnit(parentPos);
+				if (space != null) {
+					lookupPass = space.unitsPerBlock == upb;
+				} else {
+					lookupPass = false;
+				}
 			}
 		}
 		
@@ -613,5 +627,46 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (modTime == -1) return false;
 		// TODO:
 		return gameTime >= modTime;
+	}
+	
+	public void maybeUnload() {
+		if (!level.isClientSide) {
+			if (!(level instanceof TickerServerLevel))
+				return;
+		} else return;
+		BlockPos origin = new BlockPos(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
+		BlockPos.MutableBlockPos pos = ThreadLocals.posLocal.get();
+		Level parent = ((ITickerLevel) level).getParent();
+		try {
+			if (parent == null) {
+				((TickerServerLevel) level).saveWorld.saveChunk(this);
+				return;
+			}
+			boolean anyLoaded = false;
+			lx:
+			for (int x = 0; x <= 1; x++) {
+				for (int y = 0; y <= 1; y++) {
+					for (int z = 0; z <= 1; z++) {
+						// TODO: check?
+						BlockPos test = origin.offset(x * 15, y * 15, z * 15);
+						PositionUtils.getParentPos(test, this, pos);
+						if (parent.isLoaded(pos)) {
+							anyLoaded = true;
+							break lx;
+						}
+					}
+				}
+			}
+			
+			if (!anyLoaded) {
+				if (isUnsaved()) {
+					((TickerServerLevel) level).saveWorld.saveChunk(this);
+					((TickerServerLevel) level).unload(this);
+				}
+			}
+		} catch (Throwable ignored) {
+			ignored.printStackTrace();
+		}
+		// TODO:
 	}
 }

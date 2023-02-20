@@ -54,7 +54,9 @@ import net.minecraft.world.ticks.TickPriority;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
 import net.minecraftforge.common.util.ITeleporter;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
@@ -209,6 +211,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		
 		saveWorld = new SUSaveWorld(((ServerLevel) parent).getDataStorage().dataFolder, this);
 		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
+	}
+	
+	@Override
+	public void unload(LevelChunk pChunk) {
+		super.unload(pChunk);
+		((TickerChunkCache)this.chunkSource).removeChunk((BasicVerticalChunk) pChunk);
 	}
 	
 	int randomTickCount = Integer.MIN_VALUE;
@@ -1131,6 +1139,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
 		
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this, pHasTimeLeft));
+		
 		randomTickCount = Integer.MIN_VALUE;
 		
 		if (!isLoaded) return;
@@ -1217,6 +1227,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		entitiesGrabbedByBlocks.clear();
 		
 		saveWorld.tick();
+		
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, this, pHasTimeLeft));
 	}
 	
 	@Override
