@@ -188,9 +188,9 @@ public class BasicVerticalChunk extends LevelChunk {
 			BasicVerticalChunk chunk = verticalLookup.applyNoLoad(yPos + yO);
 			if (chunk == null)
 				return null;
-			return chunk.getBlockEntity(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pCreationType);
+			return chunk.getBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pCreationType);
 		}
-		return super.getBlockEntity(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pCreationType);
+		return getBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pCreationType);
 	}
 	
 	@Override
@@ -241,6 +241,27 @@ public class BasicVerticalChunk extends LevelChunk {
 			return;
 		}
 		addBlockEntity$(pos, pBlockEntity);
+	}
+	
+	// TODO: I'd like to not override this actually
+	public BlockEntity getBlockEntity$(BlockPos pPos, LevelChunk.EntityCreationType pCreationType) {
+		BlockEntity blockentity = super.getBlockEntity(pPos, EntityCreationType.CHECK);
+		
+		if (blockentity == null) {
+			if (pCreationType == LevelChunk.EntityCreationType.IMMEDIATE) {
+				blockentity = this.createBlockEntity(pPos);
+				if (blockentity != null) {
+					this.addBlockEntity$(pPos, blockentity);
+				}
+			}
+		}
+		
+		return blockentity;
+	}
+	
+	public BlockEntity createBlockEntity(BlockPos pPos) {
+		BlockState blockstate = this.getBlockState(pPos);
+		return !blockstate.hasBlockEntity() ? null : ((EntityBlock)blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
 	}
 	
 	public void setBlockEntity$(BlockEntity pBlockEntity) {
@@ -395,11 +416,6 @@ public class BasicVerticalChunk extends LevelChunk {
 				this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR).update(j, k, l, pState);
 				this.heightmaps.get(Heightmap.Types.WORLD_SURFACE).update(j, k, l, pState);
-				boolean flag1 = section.hasOnlyAir();
-				// TODO
-				if (flag != flag1) {
-					level.getLightEngine().checkBlock(offsetPos);
-				}
 				
 				boolean flag2 = blockstate.hasBlockEntity();
 				if (!this.level.isClientSide) {
@@ -428,6 +444,9 @@ public class BasicVerticalChunk extends LevelChunk {
 							this.updateBlockEntityTicker(blockentity);
 						}
 					}
+					
+					boolean flag1 = section.hasOnlyAir();
+					if (!flag1) level.getLightEngine().checkBlock(offsetPos);
 					
 					updated.add(pPos.below(yPos * 16));
 					setUnsaved(true);
