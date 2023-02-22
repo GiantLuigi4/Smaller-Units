@@ -165,7 +165,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.upb = upb;
 		this.chunkSource = new TickerChunkCache(
 				this, noAccess,
-				null, getStructureManager(),
+				((ServerLevel) parent).getServer().getFixerUpper(),
+				getStructureManager(),
 				Util.backgroundExecutor(),
 				generator,
 				0, 0,
@@ -216,7 +217,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public void unload(LevelChunk pChunk) {
 		super.unload(pChunk);
-		((TickerChunkCache)this.chunkSource).removeChunk((BasicVerticalChunk) pChunk);
+		((TickerChunkCache) this.chunkSource).removeChunk((BasicVerticalChunk) pChunk);
 	}
 	
 	int randomTickCount = Integer.MIN_VALUE;
@@ -777,7 +778,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
 		BlockEntity be = vc.getBlockEntity(pPos);
 		if (be == null) return;
-		((BasicVerticalChunk)getChunkAt(pPos)).getSubChunk(pPos.getY() >> 4).setUnsaved(true);
+		((BasicVerticalChunk) getChunkAt(pPos)).getSubChunk(pPos.getY() >> 4).setUnsaved(true);
 		vc.beChanges.add(be);
 		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, vc);
 		LevelChunk ac = getParent().getChunkAt(parentPos);

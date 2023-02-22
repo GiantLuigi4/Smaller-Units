@@ -23,6 +23,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 		classLookup.add("tfc.smallerunits.mixin.compat.sodium.SodiumLevelRendererMixin");
 		classLookup.add("tfc.smallerunits.mixin.compat.sodium.RenderSectionManagerMixin");
 		classLookup.add("tfc.smallerunits.mixin.compat.alternate_current.ACLevelAccessMixin");
+		classLookup.add("tfc.smallerunits.mixin.dangit.block_pos.RSNetworkNodeMixin");
 		
 		{
 			ArrayList<String> incompat = new ArrayList<>();

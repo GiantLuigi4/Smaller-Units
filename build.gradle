@@ -221,6 +221,8 @@ dependencies {
     addMod "curse.maven:scm-248619:3670826", "Tech"
     addLib tkLib
 
+    addMod "curse.maven:TOP-245211:3965688", "QOL"
+
     addMod "curse.maven:storage_drawers-223852:3807626", "Storage"
 
     addMod "curse.maven:iron_chests_restocked-498794:3837131", "Storage"
@@ -231,6 +233,7 @@ dependencies {
     addLib clothConfig
 
     addMod "curse.maven:refined_storage-243076:3712882", "Storage"
+    addMod "curse.maven:appeng-223794:4136407", "Storage"
 
 //    addMod "curse.maven:rubidium-574856:4024781", "Optimization"
     addMod "curse.maven:krypton-549394:3819215", "Optimization"

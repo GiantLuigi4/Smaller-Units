@@ -139,7 +139,7 @@ public class SUSaveWorld {
 			
 			{
 				CompoundTag caps = basicVerticalChunk.writeCapsToNBT();
-				if (!caps.isEmpty()) {
+				if (caps != null && !caps.isEmpty()) {
 					tag.put("capabilities", caps);
 				}
 			}
@@ -208,14 +208,22 @@ public class SUSaveWorld {
 								tile.putInt("z", oz + z);
 								
 								BlockPos pz = new BlockPos(ox + x, oy + y, oz + z);
+								BlockPos ps = new BlockPos(new BlockPos(x, y, z));
 								BlockEntity be = null;
 								try {
-									be = BlockEntity.loadStatic(pz, shell.getBlockState(new BlockPos(x, y, z)), tile);
+									CompoundTag creationTag = new CompoundTag();
+									creationTag.putInt("x", tile.getInt("x"));
+									creationTag.putInt("y", tile.getInt("y"));
+									creationTag.putInt("z", tile.getInt("z"));
+									creationTag.putString("id", tile.getString("id"));
+									
+									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), creationTag);
 								} catch (Exception err) {
 									err.printStackTrace();
 								}
 								if (be == null) continue;
-								shell.addBlockEntity$(pz, be);
+								shell.addBlockEntity$(ps, be);
+								be.load(tile);
 							}
 						}
 					}
@@ -239,6 +247,7 @@ public class SUSaveWorld {
 	public void saveLevel() {
 		try {
 			for (Map.Entry<String, SavedData> stringSavedDataEntry : ((DimensionDataStorageAccessor) level.getChunkSource().getDataStorage()).getStorage().entrySet()) {
+				if (stringSavedDataEntry.getValue() == null) continue;
 				if (stringSavedDataEntry.getValue().isDirty()) {
 					File fl1 = new File(file + "/data/" + stringSavedDataEntry.getKey() + ".dat");
 					if (!fl1.exists()) {

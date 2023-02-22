@@ -10,11 +10,12 @@
     "core.PacketUtilsMixin", "core.ServerLevelMixin", "core.access.ChunkAccessMixin",
     "core.access.ServerPacketListenerMixin", "core.gui.common.NetworkContextMixin", "core.gui.common.PehkuiMixin",
     "core.gui.server.AbstractContainerMenuMixin", "core.gui.server.PlayerMixin", "core.gui.server.ServerPlayerMixin",
-    "dangit.DimensionDataStorageMixin", "dangit.EntityMixin", "dangit.FriendlyByteBufMixin", "dangit.MojangWhy",
+    "dangit.DimensionDataStorageMixin", "dangit.EntityMixin", "dangit.MojangWhy",
+    "dangit.block_pos.FriendlyByteBufMixin", "dangit.block_pos.RSNetworkNodeManagerMixin",
     "data.FastCapabilityChunkMixin", "data.regions.ChunkHolderAccessor", "data.regions.ChunkHolderSizeTracker",
     "data.regions.ChunkMapMixin", "data.regions.ServerLevelMixin", "optimization.LevelMixin",
     "optimization.ShapesMixin", "optimization.VoxelShapeAccessor", "quality.EntityMixin", "quality.ForgeHooksMixin",
-    "quality.PlayerMixin", "vr.PistonMixin"
+    "quality.PlayerMixin", "quality.vr.PistonMixin"
   ],
   "client": [
     "LevelRendererMixin",

@@ -117,10 +117,26 @@ public class SyncPacketS2C extends Packet {
 				if (!tag.contains("id"))
 					tag.putString("id", id);
 				BlockPos up = new BlockPos(data.getInt("x"), data.getInt("y"), data.getInt("z"));
-				BlockEntity be = BlockEntity.loadStatic(up, lvl.getBlockState(up), tag);
-				if (be == null) continue;
-				lvl.setBlockEntity(be);
-				be.load(tag);
+				
+				CompoundTag creationTag = new CompoundTag();
+				creationTag.putInt("x", tag.getInt("x"));
+				creationTag.putInt("y", tag.getInt("y"));
+				creationTag.putInt("z", tag.getInt("z"));
+				creationTag.putString("id", tag.getString("id"));
+				
+				BlockEntity be = lvl.getBlockEntity(up);
+				if (be == null) {
+					be = BlockEntity.loadStatic(up, lvl.getBlockState(up), creationTag);
+					if (be == null) continue;
+					lvl.setBlockEntity(be);
+				}
+				
+				// this is jank, I should probably de-jankify it
+				try {
+					be.onDataPacket(null, ClientboundBlockEntityDataPacket.create(be, (e) -> tag));
+				} catch (Throwable ignored) {
+					be.load(tag);
+				}
 				
 				// TODO: this is like 90% redundant
 				BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();

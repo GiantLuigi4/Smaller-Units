@@ -379,6 +379,7 @@ public class UnitSpace {
 	
 	public Set<BasicVerticalChunk> getChunks() {
 		Set<BasicVerticalChunk> chunks = new HashSet<>();
+		if (myLevel == null) return chunks;
 		for (int x = 0; x < unitsPerBlock; x += 15) {
 			for (int z = 0; z < unitsPerBlock; z += 15) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());

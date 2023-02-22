@@ -549,7 +549,10 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void sendBlockUpdated(BlockPos pPos, BlockState pOldState, BlockState pNewState, int pFlags) {
-		// TODO
+		// TODO: check
+		BlockEntity be = getBlockEntity(pPos);
+		if (be != null) modelDataManager.requestModelDataRefresh(be);
+		
 		ArrayList<BlockPos> positionsToRefresh = new ArrayList<>();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		BlockPos rp = region.pos.toBlockPos();

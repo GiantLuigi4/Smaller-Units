@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.vr;
+package tfc.smallerunits.mixin.quality.vr;
 
 import com.mojang.math.Vector4f;
 import net.minecraft.core.BlockPos;

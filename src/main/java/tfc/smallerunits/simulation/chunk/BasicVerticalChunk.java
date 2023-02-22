@@ -45,7 +45,6 @@ import tfc.smallerunits.utils.threading.ThreadLocals;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 
 import static tfc.smallerunits.simulation.WorldStitcher.chunkRelative;
 
@@ -639,7 +638,8 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (gameTime == -1) modTime = -1;
 		// staggers save time
 //		this.modTime = gameTime + new Random().nextInt(700) + 300;
-		this.modTime = gameTime + new Random().nextInt(300) + 200;
+//		this.modTime = gameTime + new Random().nextInt(300) + 200;
+		this.modTime = gameTime + 1;
 	}
 	
 	public boolean isSaveTime(long gameTime) {

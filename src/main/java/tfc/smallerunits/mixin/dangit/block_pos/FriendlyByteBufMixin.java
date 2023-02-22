@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.dangit;
+package tfc.smallerunits.mixin.dangit.block_pos;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;

@@ -53,7 +53,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
 		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 		lightEngine = new NotThreadedSULightManager(this, this.chunkMap, true);
-		this.dataStorage = new SUDimStorage(null, null);
+		this.dataStorage = new SUDimStorage(null, p_184011_);
 	}
 	
 	protected final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();
