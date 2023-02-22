@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.FogType;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -23,6 +24,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 import java.util.List;
@@ -118,5 +120,34 @@ public class AssortedQol {
 				list.add("#" + ((TagKey<Block>) o).location());
 			}
 		}
+	}
+	
+	public static boolean scaleRender(double vd, AABB renderBox, ITickerLevel tickerWorld, BlockPos pPos, Vec3 pCameraPos) {
+		double sd = ResizingUtils.getActualSize(Minecraft.getInstance().player);
+		double divisor = tickerWorld.getUPB();
+		
+		if (sd > (1d / divisor)) sd = 1;
+//			vd /= sd;
+		
+		vd *= divisor;
+		divisor *= sd;
+		
+		if (divisor <= 1.001) {
+			divisor = tickerWorld.getUPB();
+			double sz = Math.max(Math.max(renderBox.getXsize(), renderBox.getYsize()), renderBox.getZsize());
+			if (sz <= 1)
+				return Vec3.atCenterOf(pPos).closerThan(pCameraPos, vd / Math.cbrt(divisor));
+			else
+				return Vec3.atCenterOf(pPos).closerThan(pCameraPos, vd);
+		}
+		
+		double sz = renderBox.getSize();
+		
+		if (sz < 1) sz = 1;
+		divisor /= sz;
+		if (divisor < 1) divisor = 1;
+		
+		// TODO: check for a better scaling algo?
+		return Vec3.atCenterOf(pPos).closerThan(pCameraPos, vd / Math.sqrt(divisor));
 	}
 }

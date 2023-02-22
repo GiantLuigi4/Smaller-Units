@@ -17,8 +17,8 @@ public abstract class PlayerMixin {
 	public abstract void increaseScore(int pScore);
 	
 	@Inject(at = @At("TAIL"), method = "getDigSpeed", remap = false, cancellable = true)
-	// odd, not sure why this doesn't have mappings
 	public void afflictMiningSpeed(BlockState pState, BlockPos pos, CallbackInfoReturnable<Float> cir) {
+		//noinspection ConstantConditions
 		if (!((Object) this instanceof FakePlayer)) {
 			if (((Player) (Object) this).level instanceof ITickerLevel tickerWorld) {
 				cir.setReturnValue(cir.getReturnValue() * tickerWorld.getUPB());
