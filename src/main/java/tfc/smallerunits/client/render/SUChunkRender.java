@@ -40,7 +40,7 @@ public class SUChunkRender {
 						buffer.getFirst().getZ() + 1
 				))) {
 					VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
-					buffer1.drawChunkLayer();
+					buffer1.draw();
 				}
 			}
 		}

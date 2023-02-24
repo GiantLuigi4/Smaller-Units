@@ -15,7 +15,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.world.ChunkEvent;
+import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
@@ -104,7 +104,7 @@ public class SmallerUnits {
 	}
 	
 	private static void onChunkLoaded(ChunkEvent.Load loadEvent) {
-		if (loadEvent.getWorld() instanceof ServerLevel lvl) {
+		if (loadEvent.getLevel() instanceof ServerLevel lvl) {
 			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 				ChunkAccess access = loadEvent.getChunk();
 				int min = access.getMinBuildHeight();
@@ -117,7 +117,7 @@ public class SmallerUnits {
 	}
 	
 	private static void onChunkUnloaded(ChunkEvent.Unload loadEvent) {
-		if (loadEvent.getWorld() instanceof ServerLevel lvl) {
+		if (loadEvent.getLevel() instanceof ServerLevel lvl) {
 			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) {
 				ISUCapability capability = SUCapabilityManager.getCapability(lvlChk);
 				for (UnitSpace unit : capability.getUnits()) {
@@ -174,16 +174,11 @@ public class SmallerUnits {
 	public void connect1(PlayerEvent.PlayerLoggedInEvent event) {
 		Connection connection;
 		Player player;
-		if (event.getPlayer() instanceof ServerPlayer) {
-			connection = ((ServerPlayer) event.getPlayer()).connection.connection;
-			player = event.getPlayer();
+		if (event.getEntity() instanceof ServerPlayer) {
+			connection = ((ServerPlayer) event.getEntity()).connection.connection;
+			player = event.getEntity();
 		} else {
-//			if (event.getPlayer() == Minecraft.getInstance().player) {
-//				pipeline = ((LocalPlayer)event.getPlayer()).connection.getConnection().channel().pipeline();
 			return;
-//			} else {
-//				return;
-//			}
 		}
 		setupConnectionButchery(player, connection, connection.channel().pipeline());
 	}

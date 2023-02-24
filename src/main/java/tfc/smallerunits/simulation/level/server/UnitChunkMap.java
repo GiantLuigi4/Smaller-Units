@@ -16,33 +16,30 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
-import tfc.smallerunits.mojangpls.NoPath;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 public class UnitChunkMap extends ChunkMap {
 	ServerLevel lvl;
-	
-	public UnitChunkMap(ServerLevel p_143040_, LevelStorageSource.LevelStorageAccess p_143041_, DataFixer p_143042_, StructureManager p_143043_, Executor p_143044_, BlockableEventLoop<Runnable> p_143045_, LightChunkGetter p_143046_, ChunkGenerator p_143047_, ChunkProgressListener p_143048_, ChunkStatusUpdateListener p_143049_, Supplier<DimensionDataStorage> p_143050_, int p_143051_, boolean p_143052_) {
-		super(p_143040_, p_143041_, p_143042_, p_143043_, p_143044_, p_143045_, p_143046_, p_143047_, p_143048_, p_143049_, p_143050_, p_143051_, p_143052_);
-		this.distanceManager = new ButcheredDistMap(p_143044_, p_143045_);
-		this.poiManager = new BlankPOIManager(new NoPath(), p_143042_, p_143052_ /* I don't know */, p_143040_);
-		lvl = p_143040_;
+
+	public UnitChunkMap(ServerLevel p_214836_, LevelStorageSource.LevelStorageAccess p_214837_, DataFixer p_214838_, StructureTemplateManager p_214839_, Executor p_214840_, BlockableEventLoop<Runnable> p_214841_, LightChunkGetter p_214842_, ChunkGenerator p_214843_, ChunkProgressListener p_214844_, ChunkStatusUpdateListener p_214845_, Supplier<DimensionDataStorage> p_214846_, int p_214847_, boolean p_214848_) {
+		super(p_214836_, p_214837_, p_214838_, p_214839_, p_214840_, p_214841_, p_214842_, p_214843_, p_214844_, p_214845_, p_214846_, p_214847_, p_214848_);
 	}
-	
+
 	@Override
 	public List<ServerPlayer> getPlayers(ChunkPos pPos, boolean pBoundaryOnly) {
 		// TODO: filter for chunk
@@ -135,9 +132,8 @@ public class UnitChunkMap extends ChunkMap {
 	public void write(ChunkPos pChunkPos, CompoundTag pChunkData) {
 	}
 	
-	@Nullable
 	@Override
-	public CompoundTag read(ChunkPos pChunkPos) throws IOException {
+	public CompletableFuture<Optional<CompoundTag>> read(ChunkPos pChunkPos) {
 		return null;
 	}
 	

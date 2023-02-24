@@ -1,7 +1,10 @@
 package tfc.smallerunits.mixin.core;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
+import net.minecraft.client.multiplayer.prediction.BlockStatePredictionHandler;
+import net.minecraft.client.multiplayer.prediction.PredictiveAction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
@@ -33,10 +36,13 @@ public class MultiPlayerGameModeMixin {
 		}
 	}
 	
-	@Inject(at = @At("HEAD"), method = "sendBlockAction", cancellable = true)
-	public void preSendAction(ServerboundPlayerActionPacket.Action pAction, BlockPos pPos, Direction pDir, CallbackInfo ci) {
+	@Inject(at = @At("HEAD"), method = "startPrediction", cancellable = true)
+	public void preSendAction(ClientLevel p_233730_, PredictiveAction p_233731_, CallbackInfo ci) {
 		HitResult result = minecraft.hitResult;
 		if (result instanceof UnitHitResult) {
+			BlockStatePredictionHandler blockStatePredictionHandler = p_233730_.getBlockStatePredictionHandler();
+			int i = blockStatePredictionHandler.currentSequence() + 1;
+			if(p_233731_.predict(i) instanceof ServerboundPlayerActionPacket)
 			// don't send the packet?
 			ci.cancel();
 		}

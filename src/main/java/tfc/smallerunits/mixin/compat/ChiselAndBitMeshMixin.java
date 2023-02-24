@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 
+/*
 @Mixin(value = ChiseledBlockModelDataExecutor.class, remap = false)
 public class ChiselAndBitMeshMixin {
 	@Inject(at = @At("HEAD"), method = "lambda$updateModelDataCore$5", cancellable = true)
@@ -23,4 +24,4 @@ public class ChiselAndBitMeshMixin {
 			ci.cancel();
 		}
 	}
-}
+} */

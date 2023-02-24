@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -52,7 +53,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
@@ -60,7 +61,6 @@ import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
-import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -118,7 +118,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
-//		super.playSound(pPlayer, pEntity, pEvent, pCategory, pVolume, pPitch);
 		double scl = 1f / upb;
 		if (ResizingUtils.isResizingModPresent())
 			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
@@ -131,7 +130,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
-//		super.playLocalSound(pX, pY, pZ, pSound, pCategory, pVolume, pPitch, pDistanceDelay);
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
 		pX *= scl;
@@ -167,8 +165,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		lookup = (pos) -> {
 			Pair<BlockState, VecMap<VoxelShape>> value = cache.getOrDefault(pos, null);
 			if (value != null) {
-//				BlockState state = cache.get(bp).getFirst();
-//				VoxelShape shape = state.getCollisionShape(parent, bp);
 				// TODO: empty shape check
 				return value.getFirst();
 			}
@@ -188,11 +184,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			return state;
 		};
 		
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(this));
 	}
 	
 	// forge is stupid and does not account for there being more than 1 world at once
-	public final SUModelDataManager modelDataManager = new SUModelDataManager();
+
+	//TODO where is class?
+//	public final SUModelDataManager modelDataManager = new SUModelDataManager();
 	
 	public UnitParticleEngine getParticleEngine() {
 		return particleEngine;
@@ -202,13 +200,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void destroyBlockProgress(int pBreakerId, BlockPos pPos, int pProgress) {
-//		Entity ent = getEntity(pBreakerId);
-//		if (!(ent instanceof Player)) {
-//			ent = parent.get().getEntity(pBreakerId);
-//			if (!(ent instanceof Player)) {
-//				return;
-//			}
-//		}
 		if (pProgress < 0) breakStatus.remove(pBreakerId);
 		else {
 			if (breakStatus.containsKey(pBreakerId))
@@ -225,7 +216,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	protected void finalize() throws Throwable {
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
+		MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(this));
 		super.finalize();
 	}
 	
@@ -551,7 +542,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	public void sendBlockUpdated(BlockPos pPos, BlockState pOldState, BlockState pNewState, int pFlags) {
 		// TODO: check
 		BlockEntity be = getBlockEntity(pPos);
-		if (be != null) modelDataManager.requestModelDataRefresh(be);
+		if (be != null) Objects.requireNonNull(getModelDataManager()).requestRefresh(be);
 		
 		ArrayList<BlockPos> positionsToRefresh = new ArrayList<>();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -575,18 +566,12 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 //			BlockPos parentPos = rp.offset(xo, yo, zo);
 			ChunkAccess ac;
 			ac = parent.get().getChunkAt(parentPos);
-			
+
 			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 			UnitSpace space = cap.getUnit(parentPos);
 			if (space != null) {
 				((SUCapableChunk) ac).SU$markDirty(parentPos);
 			}
-//			if (space == null) {
-//				space = cap.getOrMakeUnit(parentPos);
-//				space.setUpb(upb);
-//			}
-
-//			super.sendBlockUpdated(pPos, pOldState, pNewState, pFlags);
 		}
 	}
 	
@@ -673,7 +658,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this, () -> true));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this, () -> true));
 		
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
@@ -702,14 +687,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 				((EntityAccessor) entity).setMotionScalar(1);
 		entitiesGrabbedByBlocks.clear();
 	
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this, () -> true));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this, () -> true));
 	}
-	
+
 	@Override
-	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, Random pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
+	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, RandomSource pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
 		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
 		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
-//		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
 	}
 	
 	@Override
@@ -750,7 +734,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	@Override
 	public Holder<Biome> getBiome(BlockPos p_204167_) {
 		Registry<Biome> reg = registryAccess().registry(Registry.BIOME_REGISTRY).get();
-		return reg.getOrCreateHolder(Biomes.THE_VOID);
+		return reg.getOrCreateHolder(Biomes.THE_VOID).get().orThrow();
 	}
 	
 	@Override

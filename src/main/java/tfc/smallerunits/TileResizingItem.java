@@ -26,16 +26,6 @@ public class TileResizingItem extends Item {
 	}
 	
 	@Override
-	public ItemStack getContainerItem(ItemStack itemStack) {
-		return itemStack;
-	}
-	
-	@Override
-	public boolean hasContainerItem(ItemStack stack) {
-		return true;
-	}
-	
-	@Override
 	public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
 		if (GameplayOptions.resizeOther) {
 			if (ResizingUtils.isResizingModPresent()) {
@@ -54,10 +44,6 @@ public class TileResizingItem extends Item {
 			if (playerIn.isCrouching()) {
 				ResizingUtils.resize(playerIn, getScale());
 			}
-//			System.out.println(GameplayOptions.EntityScaleOptions.downscaleRate);
-//			System.out.println(GameplayOptions.EntityScaleOptions.upscaleRate);
-//			System.out.println(GameplayOptions.EntityScaleOptions.minSize);
-//			System.out.println(GameplayOptions.EntityScaleOptions.maxSize);
 		}
 		return super.use(worldIn, playerIn, handIn);
 	}

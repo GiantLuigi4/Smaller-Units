@@ -15,8 +15,8 @@ import virtuoel.pehkui.util.ScaleUtils;
 // TODO: this is temporary
 @Mixin(value = ScaleUtils.class, remap = false)
 public class PehkuiMixin {
-	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;F)F", cancellable = true)
-	private static void modifyReach(Entity entity, float tickDelta, CallbackInfoReturnable<Float> cir) {
+	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;)F", cancellable = true)
+	private static void modifyReach(Entity entity, CallbackInfoReturnable<Float> cir) {
 		if (entity instanceof LivingEntity livingEntity) {
 			AttributeInstance instance = livingEntity.getAttribute(ForgeMod.REACH_DISTANCE.get());
 			if (instance == null) return;

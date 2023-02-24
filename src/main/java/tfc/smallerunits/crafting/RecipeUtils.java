@@ -19,8 +19,6 @@ public class RecipeUtils {
 			if (item.getItem() instanceof TileResizingItem) {
 				ItemStack newStack = item.copy();
 				nonnulllist.set(i, newStack);
-			} else if (item.hasContainerItem()) {
-				nonnulllist.set(i, item.getContainerItem());
 			}
 		}
 		

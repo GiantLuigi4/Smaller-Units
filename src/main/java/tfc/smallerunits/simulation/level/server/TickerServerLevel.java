@@ -34,6 +34,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.storage.EntityStorage;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -55,7 +56,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityDispatcher;
 import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
@@ -133,7 +134,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	protected void finalize() throws Throwable {
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
+		MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(this));
 		super.finalize();
 	}
 	
@@ -152,9 +153,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				noAccess,
 				data,
 				p_8575_,
-				Holder.direct(dimType),
+				new LevelStem(Holder.direct(dimType), generator),
 				progressListener,
-				generator,
 				p_8579_,
 				p_8580_,
 				spawners,
@@ -208,7 +208,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 //		((ServerLevel) parent).getDataStorage()
 		isLoaded = true;
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(this));
 		
 		saveWorld = new SUSaveWorld(((ServerLevel) parent).getDataStorage().dataFolder, this);
 		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
@@ -258,12 +258,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	public void sendSoundEvent(@javax.annotation.Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
-		net.minecraftforge.event.entity.PlaySoundAtEntityEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
+		net.minecraftforge.event.PlayLevelSoundEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
 		if (event.isCanceled() || event.getSound() == null) return;
 		pSound = event.getSound();
-		pCategory = event.getCategory();
-		pVolume = event.getVolume();
-		broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch));
+		pCategory = event.getSource();
+		pVolume = event.getNewVolume();
+		broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch, this.getSeed()));
 	}
 	
 	public void broadcastTo(@javax.annotation.Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {
@@ -534,25 +534,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
-	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
-		if (p_8865_ == null) {
-			Loggers.WORLD_LOGGER.warn("Removing a null entity, this should not happen");
-			return;
-			// TODO: log stacktrace
-		}
-		if (entities.contains(p_8865_)) entities.remove(p_8865_);
-		if (!entitiesRemoved.contains(p_8865_)) entitiesRemoved.add(p_8865_);
-		super.removeEntityComplete(p_8865_, keepData);
-	}
-	
-	@Override
-	public void removeEntity(Entity p_8868_, boolean keepData) {
-		if (entities.contains(p_8868_)) entities.remove(p_8868_);
-		if (!entitiesRemoved.contains(p_8868_)) entitiesRemoved.add(p_8868_);
-		super.removeEntity(p_8868_, keepData);
-	}
-	
-	@Override
 	public LevelEntityGetter<Entity> getEntities() {
 		return new LevelEntityGetter<Entity>() {
 			public Entity get(int p_156931_) {
@@ -765,12 +746,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				entities.remove(entity);
 			}
 		}
-	}
-	
-	@Override
-	public void removeEntity(Entity entity) {
-		entities.remove(entity);
-		super.removeEntity(entity);
 	}
 	
 	@Override
@@ -1097,26 +1072,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.blockEvents.addAll(this.blockEventsToReschedule);
 	}
 	
-	protected void postGameEventInRadius(@javax.annotation.Nullable Entity pEntity, GameEvent pGameEvent, BlockPos pPos, int pNotificationRadius) {
-		int i = SectionPos.blockToSectionCoord(pPos.getX() - pNotificationRadius);
-		int j = SectionPos.blockToSectionCoord(pPos.getZ() - pNotificationRadius);
-		int k = SectionPos.blockToSectionCoord(pPos.getX() + pNotificationRadius);
-		int l = SectionPos.blockToSectionCoord(pPos.getZ() + pNotificationRadius);
-		int i1 = SectionPos.blockToSectionCoord(pPos.getY() - pNotificationRadius);
-		int j1 = SectionPos.blockToSectionCoord(pPos.getY() + pNotificationRadius);
-		
-		for (int k1 = i; k1 <= k; ++k1) {
-			for (int l1 = j; l1 <= l; ++l1) {
-				ChunkAccess chunkaccess = this.getChunkSource().getChunkNow(k1, l1);
-				if (chunkaccess != null) {
-					for (int i2 = i1; i2 <= j1; ++i2) {
-						chunkaccess.getEventDispatcher(i2).post(pGameEvent, pEntity, pPos);
-					}
-				}
-			}
-		}
-	}
-	
 	@Override
 	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
 		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
@@ -1140,7 +1095,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this, pHasTimeLeft));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this, pHasTimeLeft));
 		
 		randomTickCount = Integer.MIN_VALUE;
 		
@@ -1152,11 +1107,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
 		getChunkSource().pollTask();
-		
-		for (Entity entity : entitiesRemoved) {
-			removeEntity(entity);
-		}
-		entitiesRemoved.clear();
 		
 		// TODO: optimize this
 		HashMap<ServerPlayer, PositionalInfo> infoMap = new HashMap<>();
@@ -1191,30 +1141,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		for (Map.Entry<ServerPlayer, PositionalInfo> serverPlayerPositionalInfoEntry : infoMap.entrySet()) {
 			serverPlayerPositionalInfoEntry.getValue().reset(serverPlayerPositionalInfoEntry.getKey());
 		}
-//		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
-//			List<ServerPlayer> players = null;
-//			if (column == null) continue;
-//			for (BasicVerticalChunk basicVerticalChunk : column) {
-//				if (basicVerticalChunk == null) continue;
-//				if (players == null) {
-//					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
-//					for (ServerPlayer player : players) {
-//						// TODO: do this properly
-//						try {
-//							getChunkSource().chunkMap.move(player);
-//						} catch (Throwable ignored) {
-//						}
-//					}
-//				}
-//
-//				for (BlockPos pos : basicVerticalChunk.besRemoved) {
-//					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
-//					if (be != null && !be.isRemoved())
-//						be.setRemoved();
-//				}
-//				basicVerticalChunk.beChanges.clear();
-//			}
-//		}
 		
 		NetworkingHacks.unitPos.remove();
 		
@@ -1229,7 +1155,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		
 		saveWorld.tick();
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, this, pHasTimeLeft));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, this, pHasTimeLeft));
 	}
 	
 	@Override

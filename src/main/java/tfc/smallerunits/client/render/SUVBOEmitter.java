@@ -2,11 +2,14 @@ package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,9 +17,8 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.model.ModelDataManager;
-import net.minecraftforge.client.model.data.EmptyModelData;
-import net.minecraftforge.client.model.data.IModelData;
+import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.data.ModelDataManager;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.storage.BufferStorage;
@@ -29,6 +31,7 @@ import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Random;
 
 public class SUVBOEmitter {
@@ -89,12 +92,10 @@ public class SUVBOEmitter {
 		
 		for (int i = 0; i < RenderType.chunkBufferLayers().size(); i++) {
 			RenderType chunkBufferLayer = RenderType.chunkBufferLayers().get(i);
-			ForgeHooksClient.setRenderType(chunkBufferLayer);
 			handleLayer(chunkBufferLayer, buffers, space.getRenderWorld(), stack, upb, space, dispatcher, states);
 		}
 		Minecraft.getInstance().getProfiler().popPush("finish");
-		
-		ForgeHooksClient.setRenderType(null);
+
 		Minecraft.getInstance().getProfiler().popPush("upload");
 		buffers.forEach(storage::upload);
 		Minecraft.getInstance().getProfiler().pop();
@@ -119,20 +120,22 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
-//					if (block == null) continue;
 					if (block.isAir()) continue;
 					FluidState fluid = block.getFluidState();
+					BlockPos offsetPos = space.getOffsetPos(blockPosMut);
+					RandomSource randomSource = RandomSource.create(offsetPos.asLong());
+					BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
+					ModelData modelData = wld.getModelDataManager().getAt(offsetPos);
 					if (!fluid.isEmpty()) {
-						if (ItemBlockRenderTypes.canRenderInLayer(fluid, chunkBufferLayer)) {
+						if (model.getRenderTypes(fluid.createLegacyBlock(), randomSource, modelData).contains(chunkBufferLayer)) {
 							if (vertexBuilder == null) {
 								if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 								vertexBuilder = new TranslatingVertexBuilder(1f / upb, consumer);
 							}
-							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 							vertexBuilder.offset = new Vec3(
-									((int) Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
-									((int) Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
-									((int) Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
+									(Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
+									(Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
+									(Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
 							dispatcher.renderLiquid(
 									offsetPos, wld, vertexBuilder,
@@ -141,19 +144,19 @@ public class SUVBOEmitter {
 						}
 					}
 					if (block.getRenderShape() != RenderShape.INVISIBLE) {
-						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
+						if (model.getRenderTypes(block, randomSource, modelData).contains(chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
 							
 							// TODO: check this
 							// TODO: what is there to check here?
-							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
-							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), offsetPos);
-							if (data == null) data = EmptyModelData.INSTANCE;
+
+							ModelData data = wld.getModelDataManager().getAt(offsetPos);
+							if (data == null) data = ModelData.EMPTY;
 							dispatcher.renderBatched(
 									block, offsetPos, wld, stk, consumer,
-									true, new Random(offsetPos.asLong()), data
+									true, randomSource, data, chunkBufferLayer
 							);
 
 //							stk.translate(-x, -y, -z);

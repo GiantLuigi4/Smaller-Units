@@ -8,10 +8,10 @@ import tfc.smallerunits.client.access.VertexBufferAccessor;
 @Mixin(VertexBuffer.class)
 public abstract class VertexBufferMixin implements VertexBufferAccessor {
 	@Shadow
-	protected abstract void bindVertexArray();
+	public abstract void bind();
 	
 	@Override
 	public void invokeBindVAO() {
-		bindVertexArray();
+		bind();
 	}
 }

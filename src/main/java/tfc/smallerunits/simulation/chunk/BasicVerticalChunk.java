@@ -321,7 +321,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	public void addBlockEntity$(BlockPos pos, BlockEntity pBlockEntity) {
 		this.setBlockEntity$(pBlockEntity);
 		if (isLoaded() || level.isClientSide) {
-			super.addGameEventListener(pBlockEntity);
+			super.addAndRegisterBlockEntity(pBlockEntity);
 			this.updateBlockEntityTicker(pBlockEntity);
 			pBlockEntity.onLoad();
 		}

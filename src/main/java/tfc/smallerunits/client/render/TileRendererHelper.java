@@ -251,7 +251,7 @@ public class TileRendererHelper {
 		if (builder != null) {
 			builder.end();
 			buffers[upb - 1] = new VertexBuffer();
-			buffers[upb - 1].upload(builder);
+			buffers[upb - 1].upload(builder.end());
 			builder.discard();
 		}
 	}
