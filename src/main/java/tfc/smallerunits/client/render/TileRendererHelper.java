@@ -73,7 +73,7 @@ public class TileRendererHelper {
 	
 	//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 	public static void drawUnit(Frustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-//		if (true) return;
+		if (true) return;
 		
 		float r = 1;
 		float g = 1;
@@ -94,7 +94,7 @@ public class TileRendererHelper {
 		if (consumer == null) {
 			if (buffers[upb - 1] != null) {
 				if (lastScale != upb) {
-					((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
+				//	((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
 					buffers[upb - 1].bind();
 					DefaultVertexFormat.POSITION_COLOR.setupBufferState();
 					GameRenderer.getPositionColorShader().apply();
@@ -249,9 +249,10 @@ public class TileRendererHelper {
 		stk.popPose();
 		
 		if (builder != null) {
-			builder.end();
 			buffers[upb - 1] = new VertexBuffer();
+			buffers[upb - 1].bind();
 			buffers[upb - 1].upload(builder.end());
+			VertexBuffer.unbind();
 			builder.discard();
 		}
 	}

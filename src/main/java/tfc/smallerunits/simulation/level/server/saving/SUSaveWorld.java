@@ -46,7 +46,9 @@ public class SUSaveWorld {
 		if (fl1.exists()) {
 			try {
 				CompoundTag tag = NbtIo.readCompressed(fl1);
-				level.getCaps().deserializeNBT(tag.getCompound("capabilities"));
+				if(level.getCaps() != null) {
+					level.getCaps().deserializeNBT(tag.getCompound("capabilities"));
+				}
 			} catch (Throwable ignored) {
 				ignored.printStackTrace();
 			}
@@ -264,14 +266,16 @@ public class SUSaveWorld {
 					fl.createNewFile();
 				else return;
 			}
-			
-			CompoundTag caps = level.getCaps().serializeNBT();
-			if (!caps.equals(prevCapsNbt)) {
-				prevCapsNbt = caps;
-				
-				CompoundTag tag = new CompoundTag();
-				if (!caps.isEmpty()) tag.put("capabilities", caps);
-				NbtIo.writeCompressed(tag, fl);
+
+			if(level.getCaps() != null) {
+				CompoundTag caps = level.getCaps().serializeNBT();
+				if (!caps.equals(prevCapsNbt)) {
+					prevCapsNbt = caps;
+
+					CompoundTag tag = new CompoundTag();
+					if (!caps.isEmpty()) tag.put("capabilities", caps);
+					NbtIo.writeCompressed(tag, fl);
+				}
 			}
 		} catch (Throwable ignored) {
 			ignored.printStackTrace();

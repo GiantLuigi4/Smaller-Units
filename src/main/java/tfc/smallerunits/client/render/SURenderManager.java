@@ -27,7 +27,6 @@ public class SURenderManager {
 		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
 		SUChunkRender render = suCapable.SU$getChunkRender();
 
-		
 		if (type.equals(RenderType.solid())) {
 			SUVBOEmitter vboEmitter = ((SUCapableWorld) world).getVBOEmitter();
 			Minecraft.getInstance().getProfiler().popPush("regen_dirty");

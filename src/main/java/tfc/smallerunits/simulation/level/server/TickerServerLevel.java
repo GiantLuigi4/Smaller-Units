@@ -258,12 +258,14 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	public void sendSoundEvent(@javax.annotation.Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
-		net.minecraftforge.event.PlayLevelSoundEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
-		if (event.isCanceled() || event.getSound() == null) return;
-		pSound = event.getSound();
-		pCategory = event.getSource();
-		pVolume = event.getNewVolume();
-		broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch, this.getSeed()));
+		if (pPlayer != null) {
+			net.minecraftforge.event.PlayLevelSoundEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
+			if (event.isCanceled() || event.getSound() == null) return;
+			pSound = event.getSound();
+			pCategory = event.getSource();
+			pVolume = event.getNewVolume();
+			broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch, this.getSeed()));
+		}
 	}
 	
 	public void broadcastTo(@javax.annotation.Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {

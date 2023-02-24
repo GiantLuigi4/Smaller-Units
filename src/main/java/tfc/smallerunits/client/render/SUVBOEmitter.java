@@ -125,7 +125,7 @@ public class SUVBOEmitter {
 					BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 					RandomSource randomSource = RandomSource.create(offsetPos.asLong());
 					BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
-					ModelData modelData = wld.getModelDataManager().getAt(offsetPos);
+					ModelData modelData = Objects.requireNonNull(wld.getModelDataManager()).getAt(offsetPos);
 					if (!fluid.isEmpty()) {
 						if (model.getRenderTypes(fluid.createLegacyBlock(), randomSource, modelData).contains(chunkBufferLayer)) {
 							if (vertexBuilder == null) {
