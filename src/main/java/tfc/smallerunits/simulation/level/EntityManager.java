@@ -1,11 +1,22 @@
 package tfc.smallerunits.simulation.level;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.entity.*;
+import tfc.smallerunits.data.access.EntityManagerAccessor;
+import tfc.smallerunits.simulation.level.server.TickerServerLevel;
+import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.UUID;
@@ -18,6 +29,9 @@ import java.util.stream.Stream;
 //m_157587_()Lit/unimi/dsi/fastutil/longs/LongSet;
 //m_157554_()V
 public class EntityManager<T extends EntityAccess> extends PersistentEntitySectionManager<T> {
+	SUSaveWorld world;
+	Level level;
+	
 	public EntityManager(ITickerLevel wld, Class<T> p_157503_, LevelCallback<T> p_157504_, EntityPersistentStorage<T> p_157505_) {
 		super(p_157503_, new LevelCallback<T>() {
 			@Override
@@ -54,15 +68,39 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 				p_157504_.onTickingEnd(pEntity);
 			}
 		}, p_157505_);
+		if (wld instanceof TickerServerLevel tkLvl)
+			this.world = tkLvl.saveWorld;
+		this.level = (Level) wld;
+	}
+	
+	public Stream<Entity> collectFromFile(File entityFile) {
+		try {
+			CompoundTag tag = NbtIo.readCompressed(entityFile);
+			return EntityType.loadEntitiesRecursive(tag.getList("ents", Tag.TAG_COMPOUND), level);
+		} catch (Throwable ignored) {
+		}
+		return null;
+	}
+	
+	public void addEnt(T ent) {
+		long i = SectionPos.asLong(ent.blockPosition());
+		//noinspection unchecked
+		EntitySection<T> entitysection = ((EntityManagerAccessor<T>) this).getSections().getSection(i);
+		if (entitysection == null) {
+			entitysection = ((EntityManagerAccessor<T>) this).getSections().getOrCreateSection(i);
+		}
+		entitysection.updateChunkStatus(Visibility.TICKING);
 	}
 	
 	@Override
 	public boolean addNewEntity(T pEntity) {
+		addEnt(pEntity);
 		return super.addNewEntity(pEntity);
 	}
 	
 	@Override
 	public boolean addNewEntityWithoutEvent(T entity) {
+		addEnt(entity);
 		return super.addNewEntityWithoutEvent(entity);
 	}
 	
@@ -91,12 +129,39 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 		super.tick();
 	}
 	
+	protected void saveChunk(EntitySection<T> section, long pos) throws IOException {
+		SectionPos sPos = SectionPos.of(pos);
+		
+		CompoundTag tag = new CompoundTag();
+		ListTag ents = new ListTag();
+		section.getEntities().forEach((ent) -> {
+			if (ent instanceof Entity) {
+				ents.add(((Entity) ent).serializeNBT());
+			} else {
+				throw new RuntimeException("Idk what to do with " + ent.getClass());
+			}
+		});
+		
+		tag.put("ents", ents);
+		File fl1 = world.getEntityFile(sPos);
+		if (!fl1.exists()) fl1.createNewFile();
+		NbtIo.writeCompressed(tag, fl1);
+	}
+	
 	@Override
 	public void autoSave() {
+		for (Long aLong : ((EntityManagerAccessor) this).$getAllChunksToSave()) {
+			try {
+				saveChunk(((EntityManagerAccessor<T>) this).getSections().getOrCreateSection(aLong), aLong);
+			} catch (Throwable ignored) {
+				ignored.printStackTrace();
+			}
+		}
 	}
 	
 	@Override
 	public void saveAll() {
+		autoSave();
 	}
 	
 	@Override

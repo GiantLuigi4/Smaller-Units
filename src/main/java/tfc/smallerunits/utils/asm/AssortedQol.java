@@ -2,6 +2,7 @@ package tfc.smallerunits.utils.asm;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -20,11 +21,13 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.UnitSpace;
+import tfc.smallerunits.client.render.util.SUTesselator;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.selection.MutableVec3;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 import java.util.List;
@@ -149,5 +152,14 @@ public class AssortedQol {
 		
 		// TODO: check for a better scaling algo?
 		return Vec3.atCenterOf(pPos).closerThan(pCameraPos, vd / Math.sqrt(divisor));
+	}
+	
+	public static void scaleVert(SUTesselator.TranslatingBufferBuilder translatingBufferBuilder, double pX, double pY, double pZ, float scl, MutableVec3 coords, MutableVec3 offset) {
+		Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+		coords.set(
+				(pX + camera.getPosition().x) * scl - camera.getPosition().x + offset.x,
+				(pY + camera.getPosition().y) * scl - camera.getPosition().y + offset.y,
+				(pZ + camera.getPosition().z) * scl - camera.getPosition().z + offset.z
+		);
 	}
 }

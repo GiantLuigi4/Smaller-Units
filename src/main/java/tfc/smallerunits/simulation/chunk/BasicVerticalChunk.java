@@ -688,4 +688,8 @@ public class BasicVerticalChunk extends LevelChunk {
 		}
 		// TODO:
 	}
+	
+	public SectionPos getSectionPos() {
+		return SectionPos.of(getPos(), yPos);
+	}
 }

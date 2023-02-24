@@ -6,6 +6,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -18,6 +19,7 @@ import tfc.smallerunits.data.access.DimensionDataStorageAccessor;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
+import tfc.smallerunits.simulation.level.EntityManager;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 
@@ -46,15 +48,19 @@ public class SUSaveWorld {
 		if (fl1.exists()) {
 			try {
 				CompoundTag tag = NbtIo.readCompressed(fl1);
-				level.getCaps().deserializeNBT(tag.getCompound("capabilities"));
+				if (level.getCaps() != null) level.getCaps().deserializeNBT(tag.getCompound("capabilities"));
 			} catch (Throwable ignored) {
 				ignored.printStackTrace();
 			}
 		}
 	}
 	
-	protected File getFile(ChunkPos ckPos, int y) {
+	public File getFile(ChunkPos ckPos, int y) {
 		return new File(file + "/" + ckPos.x + "_" + y + "_" + ckPos.z + ".dat");
+	}
+	
+	public File getEntityFile(SectionPos sPos) {
+		return new File(file + "/" + sPos.getX() + "_" + sPos.getY() + "_" + sPos.getZ() + "_e.dat");
 	}
 	
 	public void tick() {
@@ -153,6 +159,27 @@ public class SUSaveWorld {
 			if (!ticks.isEmpty()) tag.put("ticks", ticks);
 			
 			tag.putInt("version", 0);
+
+//			{
+//				ListTag entities = new ListTag();
+//				level.entityManager.getEntityGetter().get(
+//						new AABB(
+//								basicVerticalChunk.getPos().getMinBlockX(),
+//								basicVerticalChunk.yPos * 16,
+//								basicVerticalChunk.getPos().getMinBlockZ(),
+//								basicVerticalChunk.getPos().getMaxBlockX(),
+//								basicVerticalChunk.yPos * 16 + 16,
+//								basicVerticalChunk.getPos().getMaxBlockZ()
+//						), (ent) -> entities.add(ent.serializeNBT())
+//				);
+//
+//				if (!entities.isEmpty()) {
+//					CompoundTag entsCompound = new CompoundTag();
+//					entsCompound.put("entities", entities);
+//					File fl1 = new File(fl.toString().replace(".dat", "_e.dat"));
+//					NbtIo.writeCompressed(entsCompound, fl1);
+//				}
+//			}
 			
 			NbtIo.writeCompressed(tag, fl);
 			
@@ -210,6 +237,7 @@ public class SUSaveWorld {
 								BlockPos pz = new BlockPos(ox + x, oy + y, oz + z);
 								BlockPos ps = new BlockPos(new BlockPos(x, y, z));
 								BlockEntity be = null;
+								// TODO: might wanna make this less jank
 								try {
 									CompoundTag creationTag = new CompoundTag();
 									creationTag.putInt("x", tile.getInt("x"));
@@ -219,6 +247,7 @@ public class SUSaveWorld {
 									
 									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), creationTag);
 								} catch (Exception err) {
+									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), tag);
 									err.printStackTrace();
 								}
 								if (be == null) continue;
@@ -235,6 +264,11 @@ public class SUSaveWorld {
 			
 			if (tag.contains("capabilities", Tag.TAG_COMPOUND))
 				shell.readCapsFromNBT(tag.getCompound("capabilities"));
+			
+			File entityFile = getEntityFile(shell.getSectionPos());
+			if (entityFile.exists()) {
+				((EntityManager) level.entityManager).collectFromFile(entityFile).forEach((ent1) -> level.entityManager.addNewEntity((Entity) ent1));
+			}
 			
 			return shell;
 		} catch (Throwable ignored) {
@@ -265,13 +299,15 @@ public class SUSaveWorld {
 				else return;
 			}
 			
-			CompoundTag caps = level.getCaps().serializeNBT();
-			if (!caps.equals(prevCapsNbt)) {
-				prevCapsNbt = caps;
-				
-				CompoundTag tag = new CompoundTag();
-				if (!caps.isEmpty()) tag.put("capabilities", caps);
-				NbtIo.writeCompressed(tag, fl);
+			if (level.getCaps() != null) {
+				CompoundTag caps = level.getCaps().serializeNBT();
+				if (!caps.equals(prevCapsNbt)) {
+					prevCapsNbt = caps;
+					
+					CompoundTag tag = new CompoundTag();
+					if (!caps.isEmpty()) tag.put("capabilities", caps);
+					NbtIo.writeCompressed(tag, fl);
+				}
 			}
 		} catch (Throwable ignored) {
 			ignored.printStackTrace();

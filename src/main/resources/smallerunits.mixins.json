@@ -27,7 +27,8 @@
     "data.LevelMixin", "data.access.VertexBufferMixin", "data.regions.ClientChunkCacheMixin",
     "data.regions.ClientLevelMixin", "data.regions.LevelMixin", "debug.RenderWorldLast",
     "quality.BlockEntityRenderDispatcherMixin", "quality.BlockEntityRendererMixin", "quality.CameraMixin",
-    "quality.ParticleEngineAccessor"
+    "quality.ParticleEngineAccessor",
+    "quality.TesselatorMixin"
   ],
   "injectors": {
     "defaultRequire": 1
