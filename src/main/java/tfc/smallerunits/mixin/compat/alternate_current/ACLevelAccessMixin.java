@@ -24,7 +24,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 public class ACLevelAccessMixin {
 	
 	@Inject(at = @At("HEAD"), method = "setWireState", cancellable = true)
-	static void setBlockState(ServerLevel level, BlockPos pos, BlockState state, boolean updateNeighborShapes, CallbackInfoReturnable<Boolean> cir) {
+	private static void setWireState(ServerLevel level, BlockPos pos, BlockState state, boolean updateNeighborShapes, CallbackInfoReturnable<Boolean> cir) {
 		if (!(level instanceof ITickerLevel)) return;
 		
 		if (!state.is(Blocks.REDSTONE_WIRE)) cir.setReturnValue(false);

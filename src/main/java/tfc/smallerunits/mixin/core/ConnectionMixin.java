@@ -29,7 +29,7 @@ public abstract class ConnectionMixin {
 	@Shadow
 	public abstract PacketFlow getDirection();
 	
-	@Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;)V", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "sendPacket", cancellable = true)
 	public void preSend(Packet<?> p_129515_, PacketSendListener p_243316_, CallbackInfo ci) {
 		try {
 			if (((PacketListenerAccessor) this.packetListener).getPlayer() == null) return;
