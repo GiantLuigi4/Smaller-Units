@@ -42,10 +42,10 @@ public class SUChunkRender {
 					VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
 					buffer1.bind();
 					buffer1.draw();
-					VertexBuffer.unbind();
 				}
 			}
 		}
+		VertexBuffer.unbind();
 	}
 	
 	public void addBuffers(BlockPos pos, BufferStorage genBuffers) {

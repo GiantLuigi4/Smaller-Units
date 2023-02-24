@@ -22,7 +22,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -73,8 +72,6 @@ public class TileRendererHelper {
 	
 	//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 	public static void drawUnit(Frustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-		if (true) return;
-		
 		float r = 1;
 		float g = 1;
 		float b = 0;
@@ -91,13 +88,13 @@ public class TileRendererHelper {
 			return;
 		}
 		
+		if (lastScale == -1)
+			GameRenderer.getPositionColorShader().apply();
+		
 		if (consumer == null) {
 			if (buffers[upb - 1] != null) {
 				if (lastScale != upb) {
-				//	((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
 					buffers[upb - 1].bind();
-					DefaultVertexFormat.POSITION_COLOR.setupBufferState();
-					GameRenderer.getPositionColorShader().apply();
 					lastScale = upb;
 				}
 				
@@ -117,14 +114,11 @@ public class TileRendererHelper {
 					instance.MODEL_VIEW_MATRIX.set(stk.last().pose());
 					instance.MODEL_VIEW_MATRIX.upload();
 				}
+				
 				buffers[upb - 1].draw();
 				
 				stk.popPose();
-
-//				if (buffers[upb - 1] != null) {
-//					buffers[upb - 1].close();
-//					buffers[upb - 1] = null;
-//				}
+				
 				return;
 			}
 		}
@@ -252,6 +246,7 @@ public class TileRendererHelper {
 			buffers[upb - 1] = new VertexBuffer();
 			buffers[upb - 1].bind();
 			buffers[upb - 1].upload(builder.end());
+			DefaultVertexFormat.POSITION_COLOR.setupBufferState();
 			VertexBuffer.unbind();
 			builder.discard();
 		}

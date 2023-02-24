@@ -89,22 +89,22 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-		) {
-			try {
-				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
-				ClassWriter writer = new ClassWriter(0);
-				targetClass.accept(writer);
-				outputStream.write(writer.toByteArray());
-				outputStream.flush();
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if (
+//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+//		) {
+//			try {
+//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
+//				ClassWriter writer = new ClassWriter(0);
+//				targetClass.accept(writer);
+//				outputStream.write(writer.toByteArray());
+//				outputStream.flush();
+//				outputStream.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
 			String target = ASMAPI.mapMethod("m_172993_"); // renderChunkLayer
 			String desc = "(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"; // TODO: I'd like to not assume Mojmap
@@ -140,21 +140,21 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-		) {
-			try {
-				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
-				ClassWriter writer = new ClassWriter(0);
-				targetClass.accept(writer);
-				outputStream.write(writer.toByteArray());
-				outputStream.flush();
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if (
+//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+//		) {
+//			try {
+//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
+//				ClassWriter writer = new ClassWriter(0);
+//				targetClass.accept(writer);
+//				outputStream.write(writer.toByteArray());
+//				outputStream.flush();
+//				outputStream.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 }

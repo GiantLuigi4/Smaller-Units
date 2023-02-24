@@ -6,6 +6,7 @@ import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -127,7 +128,8 @@ public class SUVBOEmitter {
 					BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
 					ModelData modelData = Objects.requireNonNull(wld.getModelDataManager()).getAt(offsetPos);
 					if (!fluid.isEmpty()) {
-						if (model.getRenderTypes(block, randomSource, modelData).contains(chunkBufferLayer)) {
+						RenderType rendertype = ItemBlockRenderTypes.getRenderLayer(fluid);
+						if (rendertype.equals(chunkBufferLayer)) {
 							if (vertexBuilder == null) {
 								if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 								vertexBuilder = new TranslatingVertexBuilder(1f / upb, consumer);
