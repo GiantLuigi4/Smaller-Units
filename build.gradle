@@ -201,6 +201,8 @@ dependencies {
     addLib curios
     addLib ortusLib
 
+//    addMod "curse.maven:terrafirmacraft-302973:4395178", "Misc"
+
 //    addMod "curse.maven:quark-243121:3840125", "Misc"
 //    addLib autoRegLib
     addMod "curse.maven:supplementaries-412082:3800501", "Misc"

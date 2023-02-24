@@ -21,6 +21,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.biome.Biome;
@@ -461,7 +462,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 
 //		entities.add(pEntity);
 		
-		if (!(pEntity instanceof LivingEntity))
+		if ((!(pEntity instanceof LivingEntity)) && !(pEntity instanceof ItemEntity))
 			return super.addFreshEntity(pEntity);
 		
 		Level lvl = parent.get();
