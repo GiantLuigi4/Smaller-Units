@@ -53,6 +53,11 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 			public void onTrackingEnd(T pEntity) {
 				p_157504_.onTickingEnd(pEntity);
 			}
+
+			@Override
+			public void onSectionChange(T pEntity) {
+				p_157504_.onSectionChange(pEntity);
+			}
 		}, p_157505_);
 	}
 	

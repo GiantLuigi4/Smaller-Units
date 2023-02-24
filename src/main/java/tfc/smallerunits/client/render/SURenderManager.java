@@ -27,19 +27,6 @@ public class SURenderManager {
 		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
 		SUChunkRender render = suCapable.SU$getChunkRender();
 
-//		boolean foundAny = false;
-//		for (UnitSpace unit : capability.getUnits()) {
-//			if (unit != null) {
-//				ModCompat.postSetupMatrix(
-//						Minecraft.getInstance().renderBuffers(),
-//						((ClientLevel) unit.getMyLevel()), type, matrixStack,
-//						Minecraft.getInstance().renderBuffers(),
-//						HitboxScaling.scaleX(unit, pCamX), HitboxScaling.scaleY(unit, pCamY), HitboxScaling.scaleZ(unit, pCamZ) // TODO
-//				);
-//				foundAny = true;
-//			}
-//		}
-		
 		if (type.equals(RenderType.solid())) {
 			SUVBOEmitter vboEmitter = ((SUCapableWorld) world).getVBOEmitter();
 			Minecraft.getInstance().getProfiler().popPush("regen_dirty");

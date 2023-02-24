@@ -2,13 +2,14 @@ package tfc.smallerunits.mixin.dangit;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.gameevent.DynamicGameEventListener;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.gameevent.GameEventListenerRegistrar;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -21,6 +22,7 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 
 import javax.annotation.Nullable;
+import java.util.function.BiConsumer;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements EntityAccessor {
@@ -38,10 +40,6 @@ public abstract class EntityMixin implements EntityAccessor {
 	private ChunkPos chunkPosition;
 	
 	@Shadow
-	@Nullable
-	public abstract GameEventListenerRegistrar getGameEventListenerRegistrar();
-	
-	@Shadow
 	public Level level;
 	
 	@Shadow
@@ -49,7 +47,9 @@ public abstract class EntityMixin implements EntityAccessor {
 	
 	@Shadow
 	public abstract boolean isRemoved();
-	
+
+	@Shadow public abstract void updateDynamicGameEventListener(BiConsumer<DynamicGameEventListener<?>, ServerLevel> p_216996_);
+
 	@Unique
 	private float SU$motionScalar = 1;
 	
@@ -68,13 +68,16 @@ public abstract class EntityMixin implements EntityAccessor {
 				}
 			}
 
-			GameEventListenerRegistrar gameeventlistenerregistrar = this.getGameEventListenerRegistrar();
+			//TODO fix this
+			/*
+			GameEventListenerRenderer gameeventlistenerregistrar = this.updateDynamicGameEventListener();
 			if (gameeventlistenerregistrar != null) {
 				gameeventlistenerregistrar.onListenerMove(this.level);
 			}
+			 */
 		}
 	}
-	
+
 	@Override
 	public void setMotionScalar(float scl) {
 		SU$motionScalar = scl;
@@ -119,13 +122,13 @@ public abstract class EntityMixin implements EntityAccessor {
 		moveIn();
 	}
 	
-	@Inject(at = @At("HEAD"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;)V")
-	public void preRemove(GameEvent pEvent, Entity pEntity, BlockPos pPos, CallbackInfo ci) {
+	@Inject(at = @At("HEAD"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;)V")
+	public void preRemove(GameEvent p_146853_, Entity p_146854_, CallbackInfo ci) {
 		moveOut();
 	}
 	
-	@Inject(at = @At("RETURN"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;)V")
-	public void postRemove(GameEvent pEvent, Entity pEntity, BlockPos pPos, CallbackInfo ci) {
+	@Inject(at = @At("RETURN"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;)V")
+	public void postRemove(GameEvent p_146853_, Entity p_146854_, CallbackInfo ci) {
 		moveIn();
 	}
 }

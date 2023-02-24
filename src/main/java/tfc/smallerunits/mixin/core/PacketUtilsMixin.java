@@ -11,16 +11,18 @@ import tfc.smallerunits.networking.hackery.PacketUtilMess;
 
 @Mixin(PacketUtils.class)
 public class PacketUtilsMixin {
-	@Inject(at = @At("HEAD"), method = {"lambda$ensureRunningOnSameThread$0", "m_131356_"}, require = 0)
+	@Inject(at = @At("HEAD"), method = {"lambda$ensureRunningOnSameThread$0"}, require = 0)
 	private static <T extends PacketListener> void preHandlePacket(PacketListener listener, Packet packet, CallbackInfo ci) {
 		PacketUtilMess.preHandlePacket(listener, packet);
 	}
 	
-	@Inject(at = @At("RETURN"), method = {"lambda$ensureRunningOnSameThread$0", "m_131356_"}, require = 0)
+	@Inject(at = @At("RETURN"), method = {"lambda$ensureRunningOnSameThread$0"}, require = 0)
 	private static <T extends PacketListener> void postHandlePacket(PacketListener listener, Packet packet, CallbackInfo ci) {
 		PacketUtilMess.postHandlePacket(listener, packet);
 	}
-	
+
+	//TODO does this still work
+	/*
 	// optifine moment
 	// for some reason, optifine renames this lambda and reverses the parameter order
 	@SuppressWarnings("MixinAnnotationTarget")
@@ -34,4 +36,5 @@ public class PacketUtilsMixin {
 	private static <T extends PacketListener> void postHandlePacketOF(Packet packet, PacketListener listener, CallbackInfo ci) {
 		PacketUtilMess.postHandlePacket(listener, packet);
 	}
+	 */
 }

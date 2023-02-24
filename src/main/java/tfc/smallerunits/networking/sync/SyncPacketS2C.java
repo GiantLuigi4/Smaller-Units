@@ -54,7 +54,7 @@ public class SyncPacketS2C extends Packet {
 					tg.putInt("x", tile.getBlockPos().getX());
 					tg.putInt("y", tile.getBlockPos().getY());
 					tg.putInt("z", tile.getBlockPos().getZ());
-					tg.putString("id", tile.getType().getRegistryName().toString());
+					tg.putString("id", tile.getType().toString());
 					beData.add(tg);
 				}
 			}

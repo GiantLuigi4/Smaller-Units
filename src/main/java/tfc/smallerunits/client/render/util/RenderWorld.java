@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraftforge.client.model.data.ModelDataManager;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -124,5 +125,10 @@ public class RenderWorld implements BlockAndTintGetter {
 	
 	public Region getRegion() {
 		return ((ITickerLevel) lvl).getRegion();
+	}
+
+	@Override
+	public @Nullable ModelDataManager getModelDataManager() {
+		return lvl.getModelDataManager();
 	}
 }

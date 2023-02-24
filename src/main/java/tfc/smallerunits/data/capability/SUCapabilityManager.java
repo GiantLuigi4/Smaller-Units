@@ -10,7 +10,7 @@ import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.world.ChunkWatchEvent;
+import net.minecraftforge.event.level.ChunkWatchEvent;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
@@ -103,7 +103,7 @@ public class SUCapabilityManager {
 	 */
 	public static void onChunkWatchEvent(ChunkWatchEvent.Watch event) {
 		if (event.getPlayer() != null) {
-			ISUCapability capability = SUCapabilityManager.getCapability(event.getWorld(), event.getPos());
+			ISUCapability capability = SUCapabilityManager.getCapability(event.getLevel(), event.getPos());
 			if (capability == null) return;
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;

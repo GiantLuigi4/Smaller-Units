@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraftforge.client.ForgeHooksClient;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.Event;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -53,7 +54,7 @@ public class ForgeHooksClientMixin {
 	}
 	
 	@Inject(at = @At("HEAD"), method = "onScreenPotionSize")
-	private static void preScreenPotionSize(Screen screen, CallbackInfoReturnable<Event.Result> cir) {
+	private static void preScreenPotionSize(Screen screen, int availableSpace, boolean compact, int horizontalOffset, CallbackInfoReturnable<ScreenEvent.RenderInventoryMobEffects> cir) {
 		currentScreen.set(screen);
 		if (Minecraft.getInstance().player != null) {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
@@ -66,7 +67,7 @@ public class ForgeHooksClientMixin {
 	}
 	
 	@Inject(at = @At("RETURN"), method = "onScreenPotionSize")
-	private static void postScreenPotionSize(Screen screen, CallbackInfoReturnable<Event.Result> cir) {
+	private static void postScreenPotionSize(Screen screen, int availableSpace, boolean compact, int horizontalOffset, CallbackInfoReturnable<ScreenEvent.RenderInventoryMobEffects> cir) {
 		if (Minecraft.getInstance().player != null) {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
 			PositionalInfo info = screenAttachments.getPositionalInfo();
