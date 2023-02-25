@@ -80,93 +80,99 @@ public class SyncPacketS2C extends Packet {
 		if (Minecraft.getInstance().player == null) return;
 //		if (Minecraft.getInstance().levelRenderer == null) return;
 		if (Minecraft.getInstance().levelRenderer.level == null) return;
-		for (SyncPacketS2C syncPacket : deferred) {
-			ChunkAccess access = Minecraft.getInstance().level.getChunk(syncPacket.realPos);
-			if (access instanceof EmptyLevelChunk) continue;
-			if (!(access instanceof LevelChunk chunk)) continue;
-			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
-			UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
-			if (space.getMyLevel() == null) return;
+		SyncPacketS2C[] packets;
+		synchronized (deferred) {
+			packets = deferred.toArray(new SyncPacketS2C[0]);
 			
-			// TODO: adjust player position and whatnot
-			
-			{
-				BlockState state = chunk.getBlockState(syncPacket.realPos);
-				chunk.setBlockState(syncPacket.realPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-				chunk.getLevel().sendBlockUpdated(syncPacket.realPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-			}
-			
-			space.unitsPerBlock = syncPacket.upb;
-			space.setUpb(space.unitsPerBlock);
-			space.isNatural = syncPacket.natural;
-			HashSet<BlockPos> positionsWithBE = new HashSet<>();
-			space.loadPallet(syncPacket.pallet, positionsWithBE);
-			if (cap.getUnit(syncPacket.realPos) != null)
-				cap.removeUnit(syncPacket.realPos);
-			cap.setUnit(syncPacket.realPos, space);
-			((SUCapableChunk) chunk).SU$markDirty(syncPacket.realPos);
-			toRemove.add(syncPacket);
-			
-			Level lvl = space.getMyLevel();
-			
-			ClientLevel clvl = Minecraft.getInstance().level;
-			Minecraft.getInstance().level = (ClientLevel) lvl;
-			for (CompoundTag data : syncPacket.beData) {
-				String id = data.getString("id");
-				CompoundTag tag = data.getCompound("data");
-				if (!tag.contains("id"))
-					tag.putString("id", id);
-				BlockPos up = new BlockPos(data.getInt("x"), data.getInt("y"), data.getInt("z"));
+			for (SyncPacketS2C syncPacket : packets) {
+				ChunkAccess access = Minecraft.getInstance().level.getChunk(syncPacket.realPos);
+				if (access instanceof EmptyLevelChunk) continue;
+				if (!(access instanceof LevelChunk chunk)) continue;
+				ISUCapability cap = SUCapabilityManager.getCapability(chunk);
+				UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
+				if (space.getMyLevel() == null) continue;
 				
-				CompoundTag creationTag = new CompoundTag();
-				creationTag.putInt("x", tag.getInt("x"));
-				creationTag.putInt("y", tag.getInt("y"));
-				creationTag.putInt("z", tag.getInt("z"));
-				creationTag.putString("id", tag.getString("id"));
+				// TODO: adjust player position and whatnot
 				
-				BlockEntity be = lvl.getBlockEntity(up);
-				if (be == null) {
-					be = BlockEntity.loadStatic(up, lvl.getBlockState(up), creationTag);
+				{
+					BlockState state = chunk.getBlockState(syncPacket.realPos);
+					chunk.setBlockState(syncPacket.realPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+					chunk.getLevel().sendBlockUpdated(syncPacket.realPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+				}
+				
+				space.unitsPerBlock = syncPacket.upb;
+				space.setUpb(space.unitsPerBlock);
+				space.isNatural = syncPacket.natural;
+				HashSet<BlockPos> positionsWithBE = new HashSet<>();
+				space.loadPallet(syncPacket.pallet, positionsWithBE);
+				if (cap.getUnit(syncPacket.realPos) != null)
+					cap.removeUnit(syncPacket.realPos);
+				cap.setUnit(syncPacket.realPos, space);
+				((SUCapableChunk) chunk).SU$markDirty(syncPacket.realPos);
+				toRemove.add(syncPacket);
+				
+				Level lvl = space.getMyLevel();
+				
+				ClientLevel clvl = Minecraft.getInstance().level;
+				Minecraft.getInstance().level = (ClientLevel) lvl;
+				for (CompoundTag data : syncPacket.beData) {
+					String id = data.getString("id");
+					CompoundTag tag = data.getCompound("data");
+					if (!tag.contains("id"))
+						tag.putString("id", id);
+					BlockPos up = new BlockPos(data.getInt("x"), data.getInt("y"), data.getInt("z"));
+					
+					CompoundTag creationTag = new CompoundTag();
+					creationTag.putInt("x", tag.getInt("x"));
+					creationTag.putInt("y", tag.getInt("y"));
+					creationTag.putInt("z", tag.getInt("z"));
+					creationTag.putString("id", tag.getString("id"));
+					
+					BlockEntity be = lvl.getBlockEntity(up);
+					if (be == null) {
+						be = BlockEntity.loadStatic(up, lvl.getBlockState(up), creationTag);
+						if (be == null) continue;
+						lvl.setBlockEntity(be);
+					}
+					
+					// this is jank, I should probably de-jankify it
+					try {
+						be.onDataPacket(null, ClientboundBlockEntityDataPacket.create(be, (e) -> tag));
+					} catch (Throwable ignored) {
+						be.load(tag);
+					}
+					
+					// TODO: this is like 90% redundant
+					BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();
+					BlockPos pos = be.getBlockPos();
+					int xo = (pos.getX() / syncPacket.upb);
+					int yo = (pos.getY() / syncPacket.upb);
+					int zo = (pos.getZ() / syncPacket.upb);
+					BlockPos parentPos = rp.offset(xo, yo, zo);
+					ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
+					ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+					((SUCapableChunk) ac).addTile(be);
+					
+					positionsWithBE.remove(be.getBlockPos());
+				}
+				
+				for (BlockPos blockPos : positionsWithBE) {
+					BlockState state = lvl.getBlockState(blockPos);
+					
+					BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(blockPos, state);
 					if (be == null) continue;
 					lvl.setBlockEntity(be);
+					
+					BlockPos parentPos = PositionUtils.getParentPos(blockPos, (ITickerLevel) space.getMyLevel());
+					ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
+					((SUCapableChunk) ac).addTile(be);
 				}
 				
-				// this is jank, I should probably de-jankify it
-				try {
-					be.onDataPacket(null, ClientboundBlockEntityDataPacket.create(be, (e) -> tag));
-				} catch (Throwable ignored) {
-					be.load(tag);
-				}
-				
-				// TODO: this is like 90% redundant
-				BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();
-				BlockPos pos = be.getBlockPos();
-				int xo = (pos.getX() / syncPacket.upb);
-				int yo = (pos.getY() / syncPacket.upb);
-				int zo = (pos.getZ() / syncPacket.upb);
-				BlockPos parentPos = rp.offset(xo, yo, zo);
-				ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
-				ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-				((SUCapableChunk) ac).addTile(be);
-				
-				positionsWithBE.remove(be.getBlockPos());
+				Minecraft.getInstance().level = clvl;
 			}
 			
-			for (BlockPos blockPos : positionsWithBE) {
-				BlockState state = lvl.getBlockState(blockPos);
-				
-				BlockEntity be = ((EntityBlock) state.getBlock()).newBlockEntity(blockPos, state);
-				if (be == null) continue;
-				lvl.setBlockEntity(be);
-				
-				BlockPos parentPos = PositionUtils.getParentPos(blockPos, (ITickerLevel) space.getMyLevel());
-				ChunkAccess ac = ((ITickerLevel) lvl).getParent().getChunkAt(parentPos);
-				((SUCapableChunk) ac).addTile(be);
-			}
-			
-			Minecraft.getInstance().level = clvl;
+			deferred.removeAll(toRemove);
 		}
-		deferred.removeAll(toRemove);
 //		toRemove.forEach(deferred::remove);
 	}
 	
@@ -184,7 +190,9 @@ public class SyncPacketS2C extends Packet {
 	@Override
 	public void handle(NetworkEvent.Context ctx) {
 		if (checkClient(ctx)) {
-			deferred.add(this);
+			synchronized (deferred) {
+				deferred.add(this);
+			}
 			ctx.setPacketHandled(true);
 		}
 	}
