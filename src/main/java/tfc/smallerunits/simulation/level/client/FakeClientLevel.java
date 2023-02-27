@@ -50,17 +50,12 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
-import tfc.smallerunits.client.forge.SUModelDataManager;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -74,6 +69,8 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtils;
+import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
@@ -188,11 +185,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			return state;
 		};
 		
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+		PlatformUtilsClient.onLoad(this);
 	}
-	
-	// forge is stupid and does not account for there being more than 1 world at once
-	public final SUModelDataManager modelDataManager = new SUModelDataManager();
 	
 	public UnitParticleEngine getParticleEngine() {
 		return particleEngine;
@@ -225,7 +219,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	protected void finalize() throws Throwable {
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
 		super.finalize();
 	}
 	
@@ -369,7 +362,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 					case 2001:
 						BlockState blockstate = Block.stateById(pData);
 						if (!blockstate.isAir()) {
-							SoundType soundtype = blockstate.getSoundType(this, pPos, null);
+							SoundType soundtype = blockstate.getSoundType();
 							this.playLocalSound(pPos, soundtype.getBreakSound(), SoundSource.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
 						}
 						
@@ -551,7 +544,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	public void sendBlockUpdated(BlockPos pPos, BlockState pOldState, BlockState pNewState, int pFlags) {
 		// TODO: check
 		BlockEntity be = getBlockEntity(pPos);
-		if (be != null) modelDataManager.requestModelDataRefresh(be);
+//		if (be != null) modelDataManager.requestModelDataRefresh(be);
 		
 		ArrayList<BlockPos> positionsToRefresh = new ArrayList<>();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -673,7 +666,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		// TODO: does this need the player position and whatnot to be setup?
 		particleEngine.tick();
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this, () -> true));
+		PlatformUtilsClient.preTick(this);
 		
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
@@ -701,8 +694,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			for (Entity entity : entitiesGrabbedByBlock)
 				((EntityAccessor) entity).setMotionScalar(1);
 		entitiesGrabbedByBlocks.clear();
-	
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this, () -> true));
+		
+		PlatformUtilsClient.postTick(this);
 	}
 	
 	@Override
@@ -818,46 +811,9 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		return "FakeClientLevel@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
-	// TODO: try to optimize or shrink this?
 	@Override
 	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
-		if (this.isOutsideBuildHeight(pPos)) {
-			return false;
-		} else if (!this.isClientSide && this.isDebug()) {
-			return false;
-		} else {
-			LevelChunk levelchunk = this.getChunkAt(pPos);
-			
-			BlockPos actualPos = pPos;
-			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
-			net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
-			if (this.captureBlockSnapshots && !this.isClientSide) {
-				blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.create(this.dimension(), this, pPos, pFlags);
-				this.capturedBlockSnapshots.add(blockSnapshot);
-			}
-			
-			BlockState old = levelchunk.getBlockState(pPos);
-			int oldLight = old.getLightEmission(this, pPos);
-			int oldOpacity = old.getLightBlock(this, pPos);
-			
-			BlockState blockstate = levelchunk.setBlockState(pPos, pState, (pFlags & 64) != 0);
-			if (blockstate == null) {
-				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
-				return false;
-			} else {
-				BlockState blockstate1 = levelchunk.getBlockState(pPos);
-				if ((pFlags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getLightBlock(this, pPos) != oldOpacity || blockstate1.getLightEmission(this, pPos) != oldLight || blockstate1.useShapeForLightOcclusion() || blockstate.useShapeForLightOcclusion())) {
-					this.getProfiler().push("queueCheckLight");
-					this.getChunkSource().getLightEngine().checkBlock(actualPos);
-					this.getProfiler().pop();
-				}
-				
-				if (blockSnapshot == null) // Don't notify clients or update physics while capturing blockstates
-					this.markAndNotifyBlock(actualPos, levelchunk, blockstate, pState, pFlags, pRecursionLeft);
-				
-				return true;
-			}
-		}
+		return super.setBlock(pPos, pState, pFlags, pRecursionLeft);
 	}
 	
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {

@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 public class PlayerOffsetRenderHelper {
@@ -72,7 +73,7 @@ public class PlayerOffsetRenderHelper {
 			Vec3 delta = Minecraft.getInstance().player.getDeltaMovement();
 //			delta = delta.normalize();
 			double dx = delta.x;
-			double dy = -Minecraft.getInstance().player.getStepHeight();
+			double dy = -PlatformUtils.getStepHeight(Minecraft.getInstance().player);
 			double dz = delta.z;
 			box = box.move(dx, dy, dz);
 			renderShape(

@@ -12,12 +12,12 @@ import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.Packet;
+import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 public class UnitInteractionPacket extends Packet {
@@ -48,7 +48,7 @@ public class UnitInteractionPacket extends Packet {
 	}
 	
 	@Override
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 		if (checkServer(ctx)) {
 			Player player = ctx.getSender();
 			Level lvl = ctx.getSender().level;

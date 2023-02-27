@@ -13,14 +13,13 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.world.WorldEvent;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.simulation.level.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -175,7 +174,8 @@ public class Region {
 		for (Level level : levels) {
 			try {
 				if (level != null) {
-					MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(level));
+					if (!level.isClientSide) PlatformUtils.postUnload(level);
+					else IHateTheDistCleaner.postUnload(level);
 					level.close();
 					if (level instanceof TickerServerLevel) {
 						((TickerServerLevel) level).saveWorld.saveLevel();

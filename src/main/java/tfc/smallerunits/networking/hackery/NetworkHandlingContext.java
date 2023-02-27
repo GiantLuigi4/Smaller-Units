@@ -1,7 +1,7 @@
 package tfc.smallerunits.networking.hackery;
 
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkDirection;
+import tfc.smallerunits.networking.platform.NetworkDirection;
 import tfc.smallerunits.utils.PositionalInfo;
 
 public class NetworkHandlingContext {

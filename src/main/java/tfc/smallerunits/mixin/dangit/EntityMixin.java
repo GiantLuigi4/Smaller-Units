@@ -2,13 +2,16 @@ package tfc.smallerunits.mixin.dangit;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.gameevent.GameEventListenerRegistrar;
+import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,10 +20,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
-
-import javax.annotation.Nullable;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements EntityAccessor {
@@ -31,27 +33,52 @@ public abstract class EntityMixin implements EntityAccessor {
 	private BlockPos blockPosition;
 	
 	@Shadow
-	@Nullable
 	private BlockState feetBlockState;
 	
 	@Shadow
 	private ChunkPos chunkPosition;
 	
 	@Shadow
-	@Nullable
 	public abstract GameEventListenerRegistrar getGameEventListenerRegistrar();
 	
 	@Shadow
 	public Level level;
 	
 	@Shadow
-	public abstract boolean isAddedToWorld();
+	public abstract EntityType<?> getType();
 	
 	@Shadow
-	public abstract boolean isRemoved();
+	protected abstract void removeAfterChangingDimensions();
 	
 	@Unique
 	private float SU$motionScalar = 1;
+	
+	@Unique
+	PortalInfo target;
+	
+	@Override
+	public void setPortalInfo(PortalInfo trg) {
+		this.target = trg;
+	}
+	
+	@Inject(at = @At("HEAD"), method = "changeDimension", cancellable = true)
+	public void preFindTeleportTarget(ServerLevel serverLevel, CallbackInfoReturnable<Entity> cir) {
+		if (target != null) {
+			Entity entity = this.getType().create(serverLevel);
+			if (entity != null) {
+				entity.restoreFrom((Entity) (Object) this);
+				entity.moveTo(target.pos.x, target.pos.y, target.pos.z, target.yRot, entity.getXRot());
+				entity.setDeltaMovement(target.speed);
+				serverLevel.addDuringTeleport(entity);
+			}
+			
+			this.removeAfterChangingDimensions();
+			((ServerLevel) this.level).resetEmptyTime();
+			serverLevel.resetEmptyTime();
+			
+			cir.setReturnValue(entity);
+		}
+	}
 	
 	@Override
 	public void setPosRawNoUpdate(double pX, double pY, double pZ) {
@@ -67,7 +94,7 @@ public abstract class EntityMixin implements EntityAccessor {
 					this.chunkPosition = new ChunkPos(this.blockPosition);
 				}
 			}
-
+			
 			GameEventListenerRegistrar gameeventlistenerregistrar = this.getGameEventListenerRegistrar();
 			if (gameeventlistenerregistrar != null) {
 				gameeventlistenerregistrar.onListenerMove(this.level);

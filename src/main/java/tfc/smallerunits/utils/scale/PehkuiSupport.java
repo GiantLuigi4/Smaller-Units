@@ -23,13 +23,13 @@ public class PehkuiSupport {
 				return SUScaleType.get().getScaleData(scaleData.getEntity()).getScale(delta) * modifiedScale;
 			}
 		};
-		ScaleRegistries.SCALE_MODIFIERS.put(new ResourceLocation("smallerunits:su_resize"), modifier);
+		ScaleRegistries.register(ScaleRegistries.SCALE_MODIFIERS, new ResourceLocation("smallerunits:su_resize"), modifier);
 		SUScaleModifier.set(modifier);
 		ScaleType suType = ScaleType.Builder.create()
 				.affectsDimensions()
 				.addDependentModifier(SUScaleModifier.get())
 				.build();
-		ScaleRegistries.SCALE_TYPES.put(new ResourceLocation("smallerunits:su_resize"), suType);
+		ScaleRegistries.register(ScaleRegistries.SCALE_TYPES, new ResourceLocation("smallerunits:su_resize"), suType);
 		Optional<ScaleType> baseType = getType("base");
 		// suppress warning because I don't want to risk accidental class loading, nor do I want intelliJ constantly warning me about the fact that I do this
 		//noinspection OptionalIsPresent

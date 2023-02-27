@@ -1,22 +1,18 @@
 package tfc.smallerunits;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -25,27 +21,21 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Material;
 import net.minecraft.world.level.material.MaterialColor;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
-import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
-import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
@@ -168,7 +158,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			if (unit == null) {
 				unit = capability.getOrMakeUnit(pPos);
 				chunk.setUnsaved(true);
-				unit.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> asLevelChunk));
+				unit.sendSync(PacketTarget.trackingChunk((LevelChunk) chunk));
 			}
 		}
 	}
@@ -181,154 +171,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 	}
 	
 	@Override
-	public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
-		if (pLevel.isClientSide) {
-			if (pHit instanceof UnitHitResult) {
-				BlockPos pos = ((UnitHitResult) pHit).geetBlockPos();
-				
-				
-				LevelChunk chnk = pLevel.getChunkAt(pPos);
-				UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-				ItemStack itm = pPlayer.getItemInHand(pHand);
-				
-				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) space.myLevel).getRegion().pos, space.unitsPerBlock));
-
-//				AABB srcBB = pPlayer.getBoundingBox();
-//				ClientLevel trueLvl = (ClientLevel) pPlayer.getLevel();
-//				Vec3 trueVec = new Vec3(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ());
-//				double oldEyeHeight = pPlayer.getEyeHeight();
-				PositionalInfo info = new PositionalInfo(pPlayer);
-				info.scalePlayerReach(pPlayer, space.unitsPerBlock);
-				info.adjust(pPlayer, space);
-				
-				HitResult mcHitResult = Minecraft.getInstance().hitResult;
-				double reach = pPlayer.getAttribute(ForgeMod.REACH_DISTANCE.get()).getValue();// 154
-				Minecraft.getInstance().hitResult = pPlayer.pick(reach * space.unitsPerBlock, 1, true);
-//				if (Minecraft.getInstance().hitResult.getType() == HitResult.Type.MISS)
-//					Minecraft.getInstance().hitResult = pPlayer.pick(reach * space.unitsPerBlock, 1, false);
-
-//				Minecraft.getInstance().hitResult = new BlockHitResult(
-//						pHit
-//								.getLocation()
-//								.subtract(pPos.getX(), pPos.getY(), pPos.getZ())
-//								.add(pos.getX(), pos.getY(), pos.getZ())
-////										.scale(space.unitsPerBlock)
-//						,
-//						pHit.getDirection(),
-//						space.getOffsetPos(pos), pHit.isInside()
-//				);
-				ClientLevel lvl = Minecraft.getInstance().level;
-				Minecraft.getInstance().level = (ClientLevel) space.myLevel;
-				
-				net.minecraftforge.client.event.InputEvent.ClickInputEvent inputEvent = net.minecraftforge.client.ForgeHooksClient.onClickInput(0, Minecraft.getInstance().options.keyUse, InteractionHand.MAIN_HAND);
-				InteractionResult result = InteractionResult.FAIL;
-				if (!inputEvent.isCanceled()) {
-					if (Minecraft.getInstance().player.connection != null) {
-						result = Minecraft.getInstance().gameMode.useItemOn(
-								(LocalPlayer) pPlayer, (ClientLevel) space.myLevel, pHand,
-								(BlockHitResult) Minecraft.getInstance().hitResult
-						);
-					}
-				}
-				Minecraft.getInstance().hitResult = mcHitResult;
-				Minecraft.getInstance().level = lvl;
-				
-				info.reset(pPlayer);
-//				pPlayer.eyeHeight = (float) (oldEyeHeight);
-//				pPlayer.level = ((LocalPlayer) pPlayer).clientLevel = (trueLvl);
-//				pPlayer.setPosRaw(trueVec.x, trueVec.y, trueVec.z);
-//				pPlayer.setBoundingBox(srcBB);
-				
-				NetworkingHacks.unitPos.remove();
-
-//				if (!result.consumesAction()) {
-//					UnitInteractionPacket packet = new UnitInteractionPacket((UnitHitResult) pHit);
-//					SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(packet);
-//				}
-				
-				if (result.shouldSwing()) return result;
-				
-				if (pHand == InteractionHand.MAIN_HAND && result == InteractionResult.PASS)
-					return InteractionResult.PASS;
-				if (result == InteractionResult.PASS) return InteractionResult.CONSUME;
-//				return result.consumesAction() ? InteractionResult.CONSUME : InteractionResult.CONSUME_PARTIAL;
-				return result;
-			}
-		}
-		if (pHit instanceof UnitHitResult) {
-//			BlockPos pos = ((UnitHitResult) pHit).geetBlockPos();
-//			LevelChunk chnk = pLevel.getChunkAt(pPos);
-//			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-//			ItemStack itm = pPlayer.getItemInHand(pHand);
-////			if (itm.getItem() instanceof BlockItem) {
-////				itm.useOn(
-////						new UseOnContext(
-////								space.myLevel, pPlayer, pHand,
-////								pPlayer.getItemInHand(pHand),
-////								new BlockHitResult(
-////										pHit.getLocation(),
-////										pHit.getDirection(),
-////										space.getOffsetPos(pos), pHit.isInside()
-////								)
-////						)
-////				);
-////			}
-//
-////			space.getBlock(pos.getX(), pos.getY(), pos.getZ()).use(
-////					space.myLevel, pPlayer, pHand, new BlockHitResult(
-////							pHit.getLocation(),
-////							pHit.getDirection(),
-////							space.getOffsetPos(pos), pHit.isInside()
-////					));
-//
-//			if (pPlayer instanceof ServerPlayer) {
-//				NetworkingHacks.setPos(pPos);
-//
-//				AABB srcBB = pPlayer.getBoundingBox();
-//				ServerLevel trueLvl = ((ServerPlayer) pPlayer).getLevel();
-//				Vec3 trueVec = new Vec3(pPlayer.getX(), pPlayer.getY(), pPlayer.getZ());
-//				double oldEyeHeight = pPlayer.getEyeHeight();
-//
-//				AABB scaledBB;
-//				pPlayer.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(
-//						srcBB, trueVec, space
-//				));
-//				pPlayer.eyeHeight = (float) (oldEyeHeight * space.unitsPerBlock);
-//				pPlayer.setPosRaw(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
-//				((ServerPlayer) pPlayer).setLevel((ServerLevel) space.getMyLevel());
-//
-//				InteractionResult result = ((ServerPlayer) pPlayer).gameMode.useItemOn(
-//						(ServerPlayer) pPlayer, space.myLevel, itm, InteractionHand.MAIN_HAND,
-//						new BlockHitResult(
-//								pHit
-//										.getLocation()
-//										.subtract(pPos.getX(), pPos.getY(), pPos.getZ())
-//										.add(pos.getX(), pos.getY(), pos.getZ())
-////										.scale(space.unitsPerBlock)
-//								,
-//								pHit.getDirection(),
-//								space.getOffsetPos(pos), pHit.isInside()
-//						)
-//				);
-//
-//				pPlayer.eyeHeight = (float) (oldEyeHeight);
-//				((ServerPlayer) pPlayer).setLevel(trueLvl);
-//				pPlayer.setPosRaw(trueVec.x, trueVec.y, trueVec.z);
-//				pPlayer.setBoundingBox(srcBB);
-//				NetworkingHacks.unitPos.remove();
-//
-//				if (result == InteractionResult.PASS) return InteractionResult.FAIL;
-//				return result.consumesAction() ? InteractionResult.CONSUME_PARTIAL : InteractionResult.CONSUME;
-//			}
-//
-////			((SUCapableChunk) chnk).SU$markDirty(pPos);
-////			chnk.setUnsaved(true);
-			return InteractionResult.CONSUME;
-		}
-		return super.use(pState, pLevel, pPos, pPlayer, pHand, pHit);
-	}
-	
-	@Override
 	public void tick(BlockState pState, ServerLevel pLevel, BlockPos pPos, Random pRandom) {
 //		pLevel.scheduleTick(pPos, this, 1);
 //		LevelChunk chnk = pLevel.getChunkAt(pPos);
@@ -337,23 +179,12 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 //		space.tick();
 		super.tick(pState, pLevel, pPos, pRandom);
 	}
-	
-	@Override
-	public boolean onDestroyedByPlayer(BlockState state, Level pLevel, BlockPos pPos, Player player, boolean willHarvest, FluidState fluid) {
-//		HitResult result = null;
-//		if (FMLEnvironment.dist.isClient())
-////			if (pLevel.isClientSide)
-//			result = Minecraft.getInstance().hitResult;
-////		super.playerDestroy(pLevel, pPlayer, pPos, pState, pBlockEntity, pTool);
-//		if (result instanceof UnitHitResult) {
-//			LevelChunk chnk = pLevel.getChunkAt(pPos);
-//			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-//			BlockPos pos = ((UnitHitResult) result).geetBlockPos();
-//			space.setState(pos, Blocks.AIR);
-//		}
-//		// TODO: check if the unit is empty
-		return false;
-	}
+
+//	// TODO: port
+//	@Override
+//	public boolean onDestroyedByPlayer(BlockState state, Level pLevel, BlockPos pPos, Player player, boolean willHarvest, FluidState fluid) {
+//		return false;
+//	}
 	
 	@Override
 	// relative block hardness
@@ -361,12 +192,11 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		return super.getDestroyProgress(pState, pPlayer, pLevel, pPos);
 	}
 	
-	// shoot, this is forge
-	@Override
-	public boolean canEntityDestroy(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
-		// TODO: figure this out?
-		return false;
-	}
+	// TODO: port
+//	@Override
+//	public boolean canEntityDestroy(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
+//		return false;
+//	}
 	
 	@Override
 	public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
@@ -376,7 +206,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 			space.clear();
 		SUCapabilityManager.getCapability(chnk).removeUnit(pPos);
 		RemoveUnitPacketS2C pckt = new RemoveUnitPacketS2C(pPos, space.unitsPerBlock);
-		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
+		SUNetworkRegistry.send(PacketTarget.trackingChunk(pLevel.getChunkAt(pPos)), pckt);
 //		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
 	}
 	
@@ -386,114 +216,115 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 //		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(blockPos);
 //		BlockPos pos = result.geetBlockPos();
 //		space.setState(pos, Blocks.AIR);
+		onRemove(blockState, lvl, blockPos, Blocks.AIR.defaultBlockState(), false);
 	}
 	
-	@Override
-	public boolean isLadder(BlockState state, LevelReader pLevel, BlockPos pPos, LivingEntity entity) {
-		if (pLevel instanceof Level level) {
-			LevelChunk chnk = level.getChunkAt(pPos);
-			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-			if (space == null) return false;
-			if (space.myLevel == null) return false;
-			
-			PositionalInfo info = new PositionalInfo(entity, false);
-			info.adjust(entity, space);
-			if (entity instanceof Player player)
-				info.scalePlayerReach(player, space.unitsPerBlock);
-			
-			AABB scaledBox = entity.getBoundingBox();
-			
-			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
-			
-			int minX = (int) (scaledBox.minX);
-			minX = Math.max(bp.getX(), minX);
-			int minY = (int) (scaledBox.minY);
-			minY = Math.max(bp.getY(), minY);
-			int minZ = (int) (scaledBox.minZ);
-			minZ = Math.max(bp.getZ(), minZ);
-			int maxX = (int) Math.floor(scaledBox.maxX);
-			maxX = Math.min(bp.getX() + space.unitsPerBlock, maxX);
-			int maxY = (int) Math.floor(scaledBox.maxY);
-			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
-			int maxZ = (int) Math.floor(scaledBox.maxZ);
-			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
-			
-			Level smallWorld = space.myLevel;
-			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-			double motY = entity.getDeltaMovement().y;
-			double d2 = Math.max(motY, (double) -0.15F);
-			BlockPos posOn = entity.getOnPos();
-			BlockState blockOn = smallWorld.getBlockState(posOn);
-			BlockState feetState = entity.getFeetBlockState();
-			Vec3 position = entity.getPosition(0);
-			BlockState legState = smallWorld.getBlockState(new BlockPos(position.x, position.y + 0.15, position.z));
-			boolean onScaffold = blockOn.isScaffolding(entity);
-			boolean inScaffold = feetState.isScaffolding(entity);
-			boolean legScaffold = legState.isScaffolding(entity);
-			
-			Vec3 center = scaledBox.getCenter();
-			
-			for (int x = minX; x <= maxX; x++) {
-				for (int z = minZ; z <= maxZ; z++) {
-					int pX = SectionPos.blockToSectionCoord(x);
-					int pZ = SectionPos.blockToSectionCoord(z);
-					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, true);
-					if (chunk == null) {
-						if (z == (z >> 4) << 4) {
-							z += 15;
-						} else {
-							z = ((z >> 4) << 4) + 15;
-						}
-						continue;
-					}
-					
-					for (int y = minY; y <= maxY; y++) {
-						int sectionIndex = chunk.getSectionIndex(y);
-						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
-						if (section == null || section.hasOnlyAir()) {
-							if (y == (y >> 4) << 4) {
-								y += 15;
-							} else {
-								y = ((y >> 4) << 4) + 15;
-							}
-							continue;
-						}
-						
-						if (center.x > x + 1) continue;
-						if (scaledBox.minY > y + 1) continue;
-						if (center.z > z + 1) continue;
-						if (center.x < x) continue;
-						if (center.y < y) continue;
-						if (center.z < z) continue;
-						
-						mutableBlockPos.set(x, y, z);
-						
-						BlockState state1 = chunk.getBlockState(mutableBlockPos);
-						if (state1.isLadder(smallWorld, mutableBlockPos.immutable(), entity)) {
-							if (onScaffold) {
-								if (entity.jumping) {
-									info.reset(entity);
-									return true;
-								}
-								if (!inScaffold || legScaffold) {
-									if (d2 < 0 && entity.isSuppressingSlidingDownLadder() && entity instanceof Player) {
-										// TODO: do this better
-										Vec3 mot = entity.getDeltaMovement();
-										entity.setDeltaMovement(new Vec3(mot.x, d2, mot.z));
-										entity.resetFallDistance();
-										continue;
-									}
-								}
-							}
-							info.reset(entity);
-							return true;
-						}
-					}
-				}
-			}
-			
-			info.reset(entity);
-		}
-		return false;
-	}
+//	@Override
+//	public boolean isLadder(BlockState state, LevelReader pLevel, BlockPos pPos, LivingEntity entity) {
+//		if (pLevel instanceof Level level) {
+//			LevelChunk chnk = level.getChunkAt(pPos);
+//			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
+//			if (space == null) return false;
+//			if (space.myLevel == null) return false;
+//
+//			PositionalInfo info = new PositionalInfo(entity, false);
+//			info.adjust(entity, space);
+//			if (entity instanceof Player player)
+//				info.scalePlayerReach(player, space.unitsPerBlock);
+//
+//			AABB scaledBox = entity.getBoundingBox();
+//
+//			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
+//
+//			int minX = (int) (scaledBox.minX);
+//			minX = Math.max(bp.getX(), minX);
+//			int minY = (int) (scaledBox.minY);
+//			minY = Math.max(bp.getY(), minY);
+//			int minZ = (int) (scaledBox.minZ);
+//			minZ = Math.max(bp.getZ(), minZ);
+//			int maxX = (int) Math.floor(scaledBox.maxX);
+//			maxX = Math.min(bp.getX() + space.unitsPerBlock, maxX);
+//			int maxY = (int) Math.floor(scaledBox.maxY);
+//			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
+//			int maxZ = (int) Math.floor(scaledBox.maxZ);
+//			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
+//
+//			Level smallWorld = space.myLevel;
+//			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
+//			double motY = entity.getDeltaMovement().y;
+//			double d2 = Math.max(motY, (double) -0.15F);
+//			BlockPos posOn = entity.getOnPos();
+//			BlockState blockOn = smallWorld.getBlockState(posOn);
+//			BlockState feetState = entity.getFeetBlockState();
+//			Vec3 position = entity.getPosition(0);
+//			BlockState legState = smallWorld.getBlockState(new BlockPos(position.x, position.y + 0.15, position.z));
+//			boolean onScaffold = blockOn.isScaffolding(entity);
+//			boolean inScaffold = feetState.isScaffolding(entity);
+//			boolean legScaffold = legState.isScaffolding(entity);
+//
+//			Vec3 center = scaledBox.getCenter();
+//
+//			for (int x = minX; x <= maxX; x++) {
+//				for (int z = minZ; z <= maxZ; z++) {
+//					int pX = SectionPos.blockToSectionCoord(x);
+//					int pZ = SectionPos.blockToSectionCoord(z);
+//					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, true);
+//					if (chunk == null) {
+//						if (z == (z >> 4) << 4) {
+//							z += 15;
+//						} else {
+//							z = ((z >> 4) << 4) + 15;
+//						}
+//						continue;
+//					}
+//
+//					for (int y = minY; y <= maxY; y++) {
+//						int sectionIndex = chunk.getSectionIndex(y);
+//						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
+//						if (section == null || section.hasOnlyAir()) {
+//							if (y == (y >> 4) << 4) {
+//								y += 15;
+//							} else {
+//								y = ((y >> 4) << 4) + 15;
+//							}
+//							continue;
+//						}
+//
+//						if (center.x > x + 1) continue;
+//						if (scaledBox.minY > y + 1) continue;
+//						if (center.z > z + 1) continue;
+//						if (center.x < x) continue;
+//						if (center.y < y) continue;
+//						if (center.z < z) continue;
+//
+//						mutableBlockPos.set(x, y, z);
+//
+//						BlockState state1 = chunk.getBlockState(mutableBlockPos);
+//						if (state1.isLadder(smallWorld, mutableBlockPos.immutable(), entity)) {
+//							if (onScaffold) {
+//								if (entity.jumping) {
+//									info.reset(entity);
+//									return true;
+//								}
+//								if (!inScaffold || legScaffold) {
+//									if (d2 < 0 && entity.isSuppressingSlidingDownLadder() && entity instanceof Player) {
+//										// TODO: do this better
+//										Vec3 mot = entity.getDeltaMovement();
+//										entity.setDeltaMovement(new Vec3(mot.x, d2, mot.z));
+//										entity.resetFallDistance();
+//										continue;
+//									}
+//								}
+//							}
+//							info.reset(entity);
+//							return true;
+//						}
+//					}
+//				}
+//			}
+//
+//			info.reset(entity);
+//		}
+//		return false;
+//	}
 }

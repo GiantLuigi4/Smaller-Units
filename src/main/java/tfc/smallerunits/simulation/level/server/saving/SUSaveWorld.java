@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.level.server.saving;
 
 import com.mojang.datafixers.util.Pair;
+import dev.onyxstudios.cca.api.v3.component.ComponentContainer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -22,6 +23,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.EntityManager;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +50,7 @@ public class SUSaveWorld {
 		if (fl1.exists()) {
 			try {
 				CompoundTag tag = NbtIo.readCompressed(fl1);
-				if (level.getCaps() != null) level.getCaps().deserializeNBT(tag.getCompound("capabilities"));
+				PlatformUtils.readCaps(level, tag);
 			} catch (Throwable ignored) {
 				ignored.printStackTrace();
 			}
@@ -144,7 +146,7 @@ public class SUSaveWorld {
 			}
 			
 			{
-				CompoundTag caps = basicVerticalChunk.writeCapsToNBT();
+				CompoundTag caps = PlatformUtils.getCapTag(basicVerticalChunk);
 				if (caps != null && !caps.isEmpty()) {
 					tag.put("capabilities", caps);
 				}
@@ -159,27 +161,6 @@ public class SUSaveWorld {
 			if (!ticks.isEmpty()) tag.put("ticks", ticks);
 			
 			tag.putInt("version", 0);
-
-//			{
-//				ListTag entities = new ListTag();
-//				level.entityManager.getEntityGetter().get(
-//						new AABB(
-//								basicVerticalChunk.getPos().getMinBlockX(),
-//								basicVerticalChunk.yPos * 16,
-//								basicVerticalChunk.getPos().getMinBlockZ(),
-//								basicVerticalChunk.getPos().getMaxBlockX(),
-//								basicVerticalChunk.yPos * 16 + 16,
-//								basicVerticalChunk.getPos().getMaxBlockZ()
-//						), (ent) -> entities.add(ent.serializeNBT())
-//				);
-//
-//				if (!entities.isEmpty()) {
-//					CompoundTag entsCompound = new CompoundTag();
-//					entsCompound.put("entities", entities);
-//					File fl1 = new File(fl.toString().replace(".dat", "_e.dat"));
-//					NbtIo.writeCompressed(entsCompound, fl1);
-//				}
-//			}
 			
 			NbtIo.writeCompressed(tag, fl);
 			
@@ -263,7 +244,7 @@ public class SUSaveWorld {
 				((ITickerLevel) shell.level).loadTicks(tag.getCompound("ticks"));
 			
 			if (tag.contains("capabilities", Tag.TAG_COMPOUND))
-				shell.readCapsFromNBT(tag.getCompound("capabilities"));
+				PlatformUtils.readCaps(shell, tag.getCompound("capabilities"));
 			
 			File entityFile = getEntityFile(shell.getSectionPos());
 			if (entityFile.exists()) {
@@ -299,8 +280,9 @@ public class SUSaveWorld {
 				else return;
 			}
 			
-			if (level.getCaps() != null) {
-				CompoundTag caps = level.getCaps().serializeNBT();
+			CompoundTag caps = PlatformUtils.getCapTag(level);
+			//noinspection ConstantConditions
+			if (caps != null) {
 				if (!caps.equals(prevCapsNbt)) {
 					prevCapsNbt = caps;
 					

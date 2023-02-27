@@ -1,6 +1,7 @@
 package tfc.smallerunits.utils.asm;
 
-import net.minecraftforge.coremod.api.ASMAPI;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -105,13 +106,30 @@ public class MixinConnector implements IMixinConfigPlugin {
 				e.printStackTrace();
 			}
 		}
+		
+		Remapper remapper = new Remapper(FabricLoader.getInstance().getMappingResolver());
+		
 		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
-			String target = ASMAPI.mapMethod("m_172993_"); // renderChunkLayer
-			String desc = "(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"; // TODO: I'd like to not assume Mojmap
+			// renderChunkLayer
+			String target = remapper.mapMethod(new MappingInfo(
+					"net/minecraft/class_761",
+					"method_3251",
+					"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLnet/minecraft/class_1159;)V"
+			));
+			String desc = "(" + target.split("\\(")[1];
+			target = target.split("\\(")[0];
 			
-			String refOwner = "net/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk";
-			String ref = ASMAPI.mapMethod("m_112835_"); // getCompiledChunk
-			String refDesc = "()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;";
+			// getCompiledChunk
+			String refOwner = "net/minecraft/class_846$class_851";
+			String ref = remapper.mapMethod(new MappingInfo(
+					refOwner,
+					"method_3677",
+					"()Lnet/minecraft/class_846$class_849;"
+			));
+			refOwner = remapper.mapClass(refOwner);
+			String refDesc = "(" + ref.split("\\(")[1];
+			ref = ref.split("\\(")[0];
+			
 			for (MethodNode method : targetClass.methods) {
 				if (method.name.equals(target) && method.desc.equals(desc)) {
 //					AbstractInsnNode targetNode = null;
@@ -129,7 +147,13 @@ public class MixinConnector implements IMixinConfigPlugin {
 //					if (targetNode != null) {
 					for (AbstractInsnNode targetNode : targetNodes) {
 						InsnList list = new InsnList();
-						list.add(ASMAPI.buildMethodCall("tfc/smallerunits/utils/IHateTheDistCleaner", "updateRenderChunk", "(Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;)Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;", ASMAPI.MethodType.STATIC));
+						list.add(
+								remapper.buildMethodCall(
+										"tfc/smallerunits/utils/IHateTheDistCleaner",
+										"updateRenderChunk",
+										"(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;"
+								)
+						);
 						method.instructions.insertBefore(targetNode, list);
 					}
 //					}

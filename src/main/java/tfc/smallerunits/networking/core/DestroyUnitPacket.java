@@ -7,10 +7,10 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.networking.Packet;
+import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 public class DestroyUnitPacket extends Packet {
@@ -41,7 +41,7 @@ public class DestroyUnitPacket extends Packet {
 	}
 	
 	@Override
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 		if (checkServer(ctx)) {
 			Player player = ctx.getSender();
 			Level lvl = ctx.getSender().level;

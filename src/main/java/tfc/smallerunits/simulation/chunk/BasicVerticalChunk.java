@@ -21,7 +21,6 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitEdge;
@@ -34,12 +33,14 @@ import tfc.smallerunits.data.access.ChunkAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.util.ArrayList;
@@ -323,7 +324,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (isLoaded() || level.isClientSide) {
 			super.addGameEventListener(pBlockEntity);
 			this.updateBlockEntityTicker(pBlockEntity);
-			pBlockEntity.onLoad();
 		}
 	}
 	
@@ -366,7 +366,7 @@ public class BasicVerticalChunk extends LevelChunk {
 						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
 						space.setUpb(((ITickerLevel) level).getUPB());
-						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+						space.sendSync(PacketTarget.trackingChunk(ac));
 					}
 				}
 			}
@@ -426,7 +426,7 @@ public class BasicVerticalChunk extends LevelChunk {
 				if (!section.getBlockState(j, k, l).is(block)) {
 					return null;
 				} else {
-					if (!this.level.isClientSide && !this.level.captureBlockSnapshots) {
+					if (!this.level.isClientSide && !PlatformUtils.shouldCaptureBlockSnapshots(this.level)) {
 						pState.onPlace(this.level, offsetPos, blockstate, pIsMoving);
 					}
 					

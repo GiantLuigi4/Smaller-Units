@@ -6,12 +6,12 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.Packet;
+import tfc.smallerunits.networking.platform.NetCtx;
 
 public class RemoveUnitPacketS2C extends Packet {
 	BlockPos position;
@@ -35,7 +35,7 @@ public class RemoveUnitPacketS2C extends Packet {
 	}
 	
 	@Override
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 		if (checkClient(ctx)) {
 //			Region r = ((RegionalAttachments) Minecraft.getInstance().level).SU$getRegion(new RegionPos(position));
 //			Level lvl = r.getClientWorld(Minecraft.getInstance().level, upb);

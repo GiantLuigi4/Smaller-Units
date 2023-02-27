@@ -24,7 +24,6 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.utils.asm.EntityQol;
 
-import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -53,7 +52,6 @@ public abstract class EntityMixin {
 	public abstract Vec3 getPosition(float pPartialTicks);
 	
 	@Shadow
-	@Nullable
 	public abstract GameEventListenerRegistrar getGameEventListenerRegistrar();
 	
 	@Shadow

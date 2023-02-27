@@ -1,19 +1,15 @@
 package tfc.smallerunits.data.capability;
 
+import dev.onyxstudios.cca.api.v3.chunk.ChunkSyncCallback;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.world.ChunkWatchEvent;
-import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
+import tfc.smallerunits.networking.PacketTarget;
 
 // so I mostly just abandoned any documentation that I was given and write this
 // CCA's readme is actually extremely good
@@ -22,38 +18,6 @@ import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
 // this whole class is basically just a wrapper around forge's method of storing additional data to a chunk
 // on fabric, it should either be pretty similar or simpler
 public class SUCapabilityManager {
-	/**
-	 * attaches an SUCapability to a chunk
-	 * attempts to optimize for performance in the parent world and for memory in the unit world
-	 *
-	 * @param event the event, which contains info about the chunk as well as the list of already attached capabilities... why am I explaining what the event contains, lol
-	 */
-	public static void onAttachCapabilities(AttachCapabilitiesEvent<LevelChunk> event) {
-		// TODO: check if the chunk is an instance of a SU chunk
-		// if it is and instance of a SU chunk, use lightweightProvider (optimized for memory usage)
-		// elsewise, use provider (optimized for speed)
-		event.addCapability(
-				new ResourceLocation("smallerunits", "unit_space_cap"),
-				// I find it a bit ridiculous that I need a whole provider for every single chunk in the world...
-				// but I guess it makes sense
-				new CapabilityProvider(new SUCapability(event.getObject().getLevel()))
-		);
-	}
-	
-	// I can't remember the CCA equivalent to this, but I know it's an entry point
-	
-	/**
-	 * Runs during game load
-	 *
-	 * @param event the Event, what words about this do you want from me
-	 */
-	public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-		event.register(ISUCapability.class);
-	}
-	
-	public static final Capability<ISUCapability> SU_CAPABILITY_TOKEN = CapabilityManager.get(new CapabilityToken<>() {
-	});
-	
 	/**
 	 * Idk what there is to say about this
 	 * Imo, the name says it all
@@ -64,7 +28,7 @@ public class SUCapabilityManager {
 	public static ISUCapability getCapability(LevelChunk chunk) {
 		if (chunk instanceof FastCapabilityHandler)
 			return ((FastCapabilityHandler) chunk).getSUCapability();
-		return chunk.getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
+		return getCap(chunk);
 	}
 	
 	public static ISUCapability getCapability(Level lvl, ChunkAccess chunk) {
@@ -82,7 +46,11 @@ public class SUCapabilityManager {
 		ChunkAccess access = world.getChunk(/* CC safety */ pos.getWorldPosition());
 		if (!(access instanceof LevelChunk)) return getCapability(world.getChunkAt(pos.getWorldPosition()));
 		if (access instanceof FastCapabilityHandler chunk) return chunk.getSUCapability();
-		return ((LevelChunk) access).getCapability(SU_CAPABILITY_TOKEN, null).orElse(null);
+		return getCap((LevelChunk) access);
+	}
+	
+	private static ISUCapability getCap(LevelChunk chunk) {
+		return chunk.getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
 	}
 	
 	// for CCA, most of this stuff can be automated via an AutoSyncedComponent
@@ -98,16 +66,14 @@ public class SUCapabilityManager {
 	 * <p>
 	 * Actually no, that's not finally
 	 * *Finally*, iterate through every small block entity and tell the tile that the player has started to track it
-	 *
-	 * @param event the event saying that the chunk has started to be tracked
 	 */
-	public static void onChunkWatchEvent(ChunkWatchEvent.Watch event) {
-		if (event.getPlayer() != null) {
-			ISUCapability capability = SUCapabilityManager.getCapability(event.getWorld(), event.getPos());
+	public static void onChunkWatchEvent(ServerPlayer player, LevelChunk chunk) {
+		if (player != null) {
+			ISUCapability capability = SUCapabilityManager.getCapability(chunk);
 			if (capability == null) return;
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;
-				unit.sendSync(PacketDistributor.PLAYER.with(event::getPlayer));
+				unit.sendSync(PacketTarget.trackingChunk(chunk));
 			}
 		}
 	}

@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.logging.Loggers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class ClientLevelMixin implements RegionalAttachments {
 		ChunkPos pos = pChunk.getPos();
 		int min = pChunk.getMinBuildHeight();
 		int max = pChunk.getMaxBuildHeight();
+		Loggers.SU_LOGGER.info("A chunk has been unloaded: " + pChunk.getPos());
 		for (int y = min; y < max; y += 16)
 			findChunk(y, pos, (rp, r) -> {
 				if (r.subtractRef(rp) <= 0) {
@@ -41,6 +43,7 @@ public class ClientLevelMixin implements RegionalAttachments {
 	public void onLoadChunk(ChunkPos pChunkPos, CallbackInfo ci) {
 		int min = ((Level) (Object) this).getMinBuildHeight();
 		int max = ((Level) (Object) this).getMaxBuildHeight();
+		Loggers.SU_LOGGER.info("A chunk has been loaded: " + pChunkPos);
 		for (int y = min; y < max; y += 16)
 			findChunk(y, pChunkPos, (rp, r) -> {
 				r.addRef(rp);

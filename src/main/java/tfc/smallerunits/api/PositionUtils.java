@@ -126,7 +126,7 @@ public class PositionUtils {
 		if (lvl.isEmptyBlock(pos)) {
 			BlockPos blockpos1 = pos.below();
 			BlockState blockstate = lvl.getBlockState(blockpos1);
-			if (blockstate.collisionExtendsVertically(lvl, blockpos1, entity)) {
+			if (blockstate.hasLargeCollisionShape()) {
 				return blockpos1;
 			}
 		}

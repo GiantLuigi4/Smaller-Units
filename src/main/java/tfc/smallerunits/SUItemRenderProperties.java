@@ -1,13 +1,17 @@
 package tfc.smallerunits;
 
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraftforge.client.IItemRenderProperties;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
+import net.fabricmc.fabric.impl.client.rendering.BuiltinItemRendererRegistryImpl;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
+import net.minecraft.world.item.ItemStack;
 
-public class SUItemRenderProperties implements IItemRenderProperties {
+public class SUItemRenderProperties {
 	private static final SUItemRenderer renderer = new SUItemRenderer();
 	
-	@Override
-	public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
-		return renderer;
+	public static void init() {
+		// amazingly pointless wrapper class
+		BuiltinItemRendererRegistryImpl.INSTANCE.register(Registry.UNIT_SPACE_ITEM.get(), (stack, mode, matrices, vertexConsumers, light, overlay) -> renderer.renderByItem(stack, mode, matrices, vertexConsumers, light, overlay));
 	}
 }

@@ -14,8 +14,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import tfc.smallerunits.TileResizingItem;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
@@ -31,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class IHateTheDistCleaner {
 	public static AtomicReference<ChunkRenderDispatcher.RenderChunk> currentRenderChunk = new AtomicReference<>();
 	
-	@OnlyIn(Dist.CLIENT)
+	// TODO: OnlyIn equivalent?
 	public static ChunkRenderDispatcher.RenderChunk updateRenderChunk(ChunkRenderDispatcher.RenderChunk chunk) {
 		currentRenderChunk.set(chunk);
 		return chunk;
@@ -147,5 +145,9 @@ public class IHateTheDistCleaner {
 	
 	public static boolean isClientPlayer(Player player) {
 		return player.getUUID().equals(Minecraft.getInstance().player.getUUID());
+	}
+	
+	public static void postUnload(Level level) {
+		// no-op?
 	}
 }

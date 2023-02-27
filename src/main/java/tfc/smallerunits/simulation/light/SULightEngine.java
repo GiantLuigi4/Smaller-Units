@@ -17,7 +17,6 @@ import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.lighting.LightOffset;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,11 +58,6 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 		super(p_75640_, p_75641_, p_75642_);
 		if (p_75640_ instanceof ITickerChunkCache chunkCache)
 			this.level = chunkCache.tickerLevel();
-	}
-	
-	@Override
-	public int queuedUpdateSize() {
-		return positionsToUpdate.size();
 	}
 	
 	// getLightBlockInto
@@ -123,7 +117,7 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	public int calcLightValue(BlockPos pPos) {
 		BlockGetter level = chunkSource.getLevel();
 		BlockState state = level.getBlockState(pPos); // TODO: optimize?
-		int neighbor = state.getLightEmission(level, pPos);
+		int neighbor = state.getLightEmission(); // TODO: check?
 		VoxelShape shape = state.getShape(level, pPos);
 		int block = state.getLightBlock(level, pPos);
 		// TODO: make this be more proper
@@ -240,10 +234,9 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	public void retainData(ChunkPos pPos, boolean pRetain) {
 	}
 	
-	protected void queueSectionData(long pSectionPos, @Nullable DataLayer pArray, boolean p_75663_) {
+	protected void queueSectionData(long pSectionPos, DataLayer pArray, boolean p_75663_) {
 	}
 	
-	@Nullable
 	public DataLayer getDataLayerData(SectionPos p_75690_) {
 		return null;
 	}

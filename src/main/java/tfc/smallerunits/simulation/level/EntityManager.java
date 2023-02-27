@@ -120,12 +120,6 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 	}
 	
 	@Override
-	public boolean addNewEntityWithoutEvent(T entity) {
-		addEnt(entity);
-		return super.addNewEntityWithoutEvent(entity);
-	}
-	
-	@Override
 	public void addLegacyChunkEntities(Stream<T> pEntities) {
 		super.addLegacyChunkEntities(pEntities);
 	}
@@ -157,7 +151,11 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 		ListTag ents = new ListTag();
 		section.getEntities().forEach((ent) -> {
 			if (ent instanceof Entity) {
-				ents.add(((Entity) ent).serializeNBT());
+				CompoundTag eTag = new CompoundTag();
+				// TODO: check?
+				if (((Entity) ent).save(eTag)) {
+					ents.add(eTag);
+				}
 			} else {
 				throw new RuntimeException("Idk what to do with " + ent.getClass());
 			}

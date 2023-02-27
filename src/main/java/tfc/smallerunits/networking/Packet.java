@@ -2,8 +2,9 @@ package tfc.smallerunits.networking;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.server.level.ServerPlayer;
+import tfc.smallerunits.networking.platform.NetCtx;
+import tfc.smallerunits.networking.platform.NetworkDirection;
 
 public class Packet implements net.minecraft.network.protocol.Packet {
 	public Packet() {
@@ -15,7 +16,7 @@ public class Packet implements net.minecraft.network.protocol.Packet {
 	public void write(FriendlyByteBuf buf) {
 	}
 	
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 	}
 	
 	public final void handle(PacketListener pHandler) {
@@ -25,18 +26,15 @@ public class Packet implements net.minecraft.network.protocol.Packet {
 		return net.minecraft.network.protocol.Packet.super.isSkippable();
 	}
 	
-	public boolean checkClient(NetworkEvent.Context ctx) {
-		return ctx.getDirection().getReceptionSide().isClient();
+	public boolean checkClient(NetCtx ctx) {
+		return ctx.getDirection().equals(NetworkDirection.TO_CLIENT);
 	}
 	
-	public boolean checkServer(NetworkEvent.Context ctx) {
-		return ctx.getDirection().getReceptionSide().isServer();
+	public boolean checkServer(NetCtx ctx) {
+		return ctx.getDirection().equals(NetworkDirection.TO_SERVER);
 	}
 	
-	public void respond(NetworkEvent.Context ctx, Packet packet) {
-		ctx.enqueueWork(() -> {
-			if (checkClient(ctx)) SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(packet);
-			else SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.PLAYER.with(ctx::getSender), packet);
-		});
+	public void respond(NetCtx ctx, Packet packet) {
+		ctx.respond(packet);
 	}
 }

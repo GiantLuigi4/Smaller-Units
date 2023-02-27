@@ -1,382 +1,110 @@
-import java.util.function.Consumer
+plugins {
+    id 'fabric-loom' version '1.1-SNAPSHOT'
+    id 'maven-publish'
 
-buildscript {
-    repositories {
-        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
-        maven { url = 'https://maven.minecraftforge.net' }
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        maven { url = 'https://maven.parchmentmc.org' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-        classpath 'org.parchmentmc:librarian:1.+'
-    }
 }
 
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'org.spongepowered.mixin'
-apply plugin: 'org.parchmentmc.librarian.forgegradle'
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
-group = 'tfc'
-version = '2.1'
+archivesBaseName = project.archives_base_name
+version = project.mod_version
+group = project.maven_group
 
-java {
-    archivesBaseName = 'smallerunits-1.18.2'
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+loom {
+    accessWidenerPath = file("src/main/resources/smallerunits.accesswidener")
 }
-
-minecraft {
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-}
-
-minecraft {
-    // The mappings can be changed at any time and must be in the following format.
-    // Channel:   Version:
-    // snapshot   YYYYMMDD   Snapshot are built nightly.
-    // stable     #          Stables are built at the discretion of the MCP team.
-    // official   MCVersion  Official field/method names from Mojang mapping files
-    //
-    // You must be aware of the Mojang license when using the 'official' mappings.
-    // See more information here: https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
-    //
-    // Use non-default mappings at your own risk. They may not always work.
-    // Simply re-run your setup task after changing the mappings to update your workspace.
-//    mappings channel: 'official', version: '1.18.1'
-//    mappings channel: 'parchment', version: '1.18.1-2022.03.06-1.18.1'
-    mappings channel: 'parchment', version: '1.18.1-2022.03.06-1.18.2'
-
-    // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    // Default run configurations.
-    // These can be tweaked, removed, or duplicated as needed.
-    runs {
-        client {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            // The markers can be added/removed as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            property 'forge.logging.console.level', 'debug'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            // The markers can be added/removed as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            property 'forge.logging.console.level', 'debug'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        data {
-            workingDirectory project.file('run')
-
-            // Recommended logging data for a userdev environment
-            // The markers can be added/removed as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            property 'forge.logging.console.level', 'debug'
-
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            args '--mod', 'smallerunits', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
-    }
-}
-
-mixin {
-    add sourceSets.main, "smallerunits.refmap.json"
-    config "smallerunits.mixins.json"
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    maven { url = "https://jitpack.io" }
-    maven { url = "https://www.cursemaven.com" }
-    if (new File("libs").exists()) {
-        flatDir { dirs 'libs' }
+    // Add repositories to retrieve artifacts from in here.
+    // You should only use this when depending on other mods because
+    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
+    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
+    // for more information about repositories.
+    maven { url "https://cursemaven.com" }
+    maven {
+        name = 'Ladysnake Mods'
+        url = 'https://ladysnake.jfrog.io/artifactory/mods'
     }
-}
-
-configurations {
-    api
-}
-
-String forgeVersion = "40.1.69"
-
-dependencies {
-    Mod.mods.clear()
-    Mod.modsList.clear()
-
-//    minecraft 'net.minecraftforge:forge:1.18.1-39.1.19'
-    minecraft 'net.minecraftforge:forge:1.18.2-' + forgeVersion
-//    minecraft 'net.minecraftforge:forge:1.18.2-40.1.60'
-
-    System.out.println("CF mods")
-    System.out.println(": Compilied against")
-    api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
-    api fg.deobf("curse.maven:pehkui-319596:3808012")
-    api fg.deobf("curse.maven:alternate_current-548115:3789218")
-    api fg.deobf("curse.maven:vivecraft-667903:3984471")
-    compileOnly fg.deobf("curse.maven:vfe-325360:3893747")
-
-    /* libraries */
-    String curios = "curse.maven:curios-309927:3841948"
-    String ortusLib = "curse.maven:ortuslib-616457:3768197"
-    String patchouli = "curse.maven:patchouli-306770:3809545"
-    String flywheel = "curse.maven:flywheel-486392:3737402"
-    String tkLib = "curse.maven:tklib-566563:3650390"
-    String cyclopsCore = "curse.maven:cyc_core-232758:3832119"
-    String clothConfig = "curse.maven:cloth_config-348521:3782776"
-    String autoRegLib = "curse.maven:autoreglib-250363:3642382"
-    String selene = "curse.maven:selene-499980:3802427"
-
-    System.out.println(": Flatdirs")
-    if (new File("libs").exists()) {
-        for (File f : new File("libs").listFiles()) {
-            String name = f.getName().replace(".jar", "")
-            String[] split = name.split("-", 2)
-            String lib = "flatdir.lib:" + split[0] + ":" + split[1]
-            System.out.println("| " + lib)
-            api fg.deobf(lib)
+    maven {
+        name = "JitPack"
+        url = "https://jitpack.io"
+        content {
+            includeGroup "com.github.Virtuoel"
         }
     }
+}
 
-    System.out.println(": Pre-deobf mods")
-    for (File fi : new File("run/libs").listFiles()) {
-        System.out.println(fi.getName())
-        api files(fi.toString())
+String ccaVersion = "4.2.0"
+String[] ccaModules = new String[]{
+        "chunk",
+        "world",
+        "entity"
+}
+
+dependencies {
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Fabric API. This is technically optional, but you probably want it anyway.
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:" + ccaVersion
+    for (String module : ccaModules) modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-" + module + ":" + ccaVersion
+
+    modImplementation "curse.maven:alternate_current-548115:4406078"
+    modImplementation "curse.maven:pehkui-319596:4408057"
+    modImplementation "curse.maven:chiselandbits-561059:4119189"
+    modImplementation "curse.maven:bitsandchisel-420709:3841573"
+
+    modCompileOnly "curse.maven:vivecraft-667903:4409424"
+    modCompileOnly "curse.maven:vfe-325360:3893747" // TODO: is there a fabric equivalent?
+
+    modImplementation("com.github.Virtuoel:KanosConfig:0.3.1", {
+        exclude group: "net.fabricmc", module: "fabric-loader"
+        exclude group: "net.fabricmc.fabric-api"
+    })
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
     }
+}
 
-    System.out.println(": Testing with")
-    addMod "curse.maven:spark-361579:3670050", "Debug"
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 17
+}
 
-    addMod "curse.maven:betterlilies-626812:3808620", "Tweaks"
-
-    addMod "curse.maven:malum-484064:3838894", "Magic"
-    addLib curios
-    addLib ortusLib
-
-//    addMod "curse.maven:terrafirmacraft-302973:4395178", "Misc"
-
-//    addMod "curse.maven:quark-243121:3840125", "Misc"
-//    addLib autoRegLib
-    addMod "curse.maven:supplementaries-412082:3800501", "Misc"
-    addLib selene
-//    addMod "curse.maven:immweather-592449:3800547", "Misc"
-    addMod "curse.maven:twilight_forest-227639:3873593", "Misc"
-    addLib curios
-//    addMod "curse.maven:dynamic_trees-252818:3831578", "Misc"
-    addMod "curse.maven:ttc-467136:3817745", "Misc"
-    addMod "curse.maven:framedblocks-441647:3805861", "Misc"
-//    addMod "curse.maven:vfx_gen:521724:3885747", "Misc"
-
-    addMod "curse.maven:botania-225643:3789677", "Tech"
-    addLib curios
-    addLib patchouli
-    addMod "curse.maven:create-328085:3737418", "Tech"
-    addLib flywheel
-    addMod "curse.maven:scm-248619:3670826", "Tech"
-    addLib tkLib
-
-    addMod "curse.maven:TOP-245211:3965688", "QOL"
-
-    addMod "curse.maven:storage_drawers-223852:3807626", "Storage"
-
-    addMod "curse.maven:iron_chests_restocked-498794:3837131", "Storage"
-    addMod "curse.maven:iron_chests-228756:3795374", "Storage"
-
-    addMod "curse.maven:colossal_chests-237875:3768512", "Storage"
-    addLib cyclopsCore
-    addLib clothConfig
-
-    addMod "curse.maven:refined_storage-243076:3712882", "Storage"
-    addMod "curse.maven:appeng-223794:4136407", "Storage"
-
-//    addMod "curse.maven:rubidium-574856:4024781", "Optimization"
-    addMod "curse.maven:krypton-549394:3819215", "Optimization"
-    addMod "curse.maven:ferrite-429235:3767288", "Optimization"
-
-    /* Invasive */
-//    addMod "curse.maven:vivecraft-667903:3984471", "Invasive"
-//    api fg.deobf("curse.maven:dist_horizons-508933:3863541")
-//    api fg.deobf("curse.maven:nocubes-309664:3682612")
-//    api fg.deobf("curse.maven:shimmer-627824:3884288")
-
-    Mod.apply((name) -> { api fg.deobf(name) })
-
-    System.out.println("Mixin")
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-
-    System.out.println("Inheritance")
-    configurations.compileOnly.extendsFrom(configurations.api)
-    configurations.runtimeOnly.extendsFrom(configurations.api)
+java {
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
 }
 
 jar {
-    //noinspection GroovyAssignabilityCheck
-    manifest {
-        attributes([
-                "Specification-Title"     : "smallerunits",
-                "Specification-Vendor"    : "GiantLuigi4",
-                "Specification-Version"   : "1", // We are version 1 of ourselves
-                "Implementation-Title"    : project.name,
-                "Implementation-Version"  : project.jar.archiveVersion,
-                "Implementation-Vendor"   : "GiantLuigi4",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}" }
     }
 }
 
-jar.finalizedBy('reobfJar')
-
-// I debug stuff a lot, and I mess with ATs a lot
-// everytime I change ATs, I need to reswap the game jar for the recomp jar
-System.out.println("Swap for recomp jar")
-String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
-File fl = new File((String) ("/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2"))
-if (fl.exists()) {
-    File fl1 = new File((String) (dir + "/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2.jar"))
-    File fl2 = new File((String) (dir + "/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2-recomp.jar"))
-    if (fl2.exists()) {
-        if (fl1.length() != fl2.length()) {
-            if (fl1.exists())
-                fl1.delete()
-
-            FileInputStream inputStream = new FileInputStream(fl2)
-            byte[] bytes = inputStream.readAllBytes()
-            fl1.createNewFile()
-            FileOutputStream outputStream = new FileOutputStream(fl1)
-            outputStream.write(bytes)
-            outputStream.flush()
-            outputStream.close()
-            inputStream.close()
+// configure the maven publication
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
         }
     }
-}
-System.out.println("Swapped")
 
-
-/* mod organization util */
-class Pair<T, V> {
-    T t
-    V v
-
-    Pair(T t, V v) {
-        this.t = t
-        this.v = v
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+    repositories {
+        // Add repositories to publish to here.
+        // Notice: This block does NOT have the same function as the block in the top level.
+        // The repositories here will be used for publishing your artifact, not for
+        // retrieving dependencies.
     }
-
-    static <T, V> Pair<T, V> of(T t, V v) {
-        return new Pair<T, V>(t, v)
-    }
-}
-
-class Mod {
-    String name
-    boolean isLibrary
-
-    static HashMap<String, ArrayList<Mod>> mods = new ArrayList<>();
-    static ArrayList<Pair<String, ArrayList<Mod>>> modsList = new ArrayList<>();
-    static ArrayList<Mod> libraries = new ArrayList<>()
-
-    Mod(String name, boolean isLibrary) {
-        this.name = name
-        this.isLibrary = isLibrary
-    }
-
-    boolean equals(o) {
-        if (this.is(o)) return true
-        if (getClass() != o.class) return false
-
-        Mod mod = (Mod) o
-
-        if (isLibrary != mod.isLibrary) return false
-        if (name != mod.name) return false
-
-        return true
-    }
-
-    int hashCode() {
-        int result
-        result = (name != null ? name.hashCode() : 0)
-        result = 31 * result + (isLibrary ? 1 : 0)
-        return result
-    }
-
-    static void apply(Consumer<String> moduleAdder) {
-        for (Pair<String, ArrayList<Mod>> s : modsList) {
-            System.out.println((String) ("| " + s.t))
-            for (Mod m : s.v) {
-                System.out.println((String) ("|-| " + m.name))
-                moduleAdder.accept(m.name)
-            }
-        }
-        System.out.println(": Libraries")
-        for (Mod m : libraries) {
-            System.out.println((String) ("|-| " + m.name))
-            moduleAdder.accept(m.name)
-        }
-    }
-}
-
-static void addMod(String name, String section) {
-    ArrayList<Mod> mods
-    if (section == "Libraries") {
-        mods = Mod.libraries
-    } else if (!Mod.mods.containsKey(section)) {
-        Mod.mods.put(section, mods = new ArrayList<>())
-        Mod.modsList.add(Pair.of(section, mods))
-    } else mods = Mod.mods.get(section)
-    Mod md = new Mod(name, section == "Libraries")
-    if (!mods.contains(md)) mods.add(md)
-}
-
-
-static void addLib(String name) {
-    addMod name, "Libraries"
 }

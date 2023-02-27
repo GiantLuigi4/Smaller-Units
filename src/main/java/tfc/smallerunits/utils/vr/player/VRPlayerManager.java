@@ -1,9 +1,9 @@
 package tfc.smallerunits.utils.vr.player;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.vr.player.mods.VFE;
 import tfc.smallerunits.utils.vr.player.mods.Vivecraft;
 
@@ -22,7 +22,7 @@ public class VRPlayerManager {
 	
 	protected static SUVRPlayer getVivecraft(Player player) {
 		if (SmallerUnits.isVivecraftPresent()) {
-			if (player.level.isClientSide && FMLEnvironment.dist.isClient()) {
+			if (player.level.isClientSide && PlatformUtils.isClient()) {
 				if (IHateTheDistCleaner.isClientPlayer(player)) return Vivecraft.getPlayerClient();
 				else return Vivecraft.getOtherClient(player);
 			} else return Vivecraft.getPlayerJRBudda(player);

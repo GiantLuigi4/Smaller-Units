@@ -14,13 +14,13 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
@@ -180,6 +180,8 @@ public class UnitSpace {
 				
 				// TODO: allow for optimization?
 				wld = new RenderWorld(getMyLevel(), getOffsetPos(new BlockPos(0, 0, 0)), upb);
+			} else {
+				throw new RuntimeException("Unit Space managed to get created without any level");
 			}
 			loadWorld(tag);
 		}
@@ -348,11 +350,11 @@ public class UnitSpace {
 		return wld;
 	}
 	
-	public void sendSync(PacketDistributor.PacketTarget target) {
+	public void sendSync(PacketTarget target) {
 		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 		NetworkingHacks.unitPos.remove();
 		SyncPacketS2C pkt = new SyncPacketS2C(this);
-		SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
+		SUNetworkRegistry.send(target, pkt);
 		if (descriptor != null)
 			NetworkingHacks.setPos(descriptor);
 	}

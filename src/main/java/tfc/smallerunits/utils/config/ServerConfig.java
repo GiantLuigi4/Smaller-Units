@@ -1,20 +1,19 @@
 package tfc.smallerunits.utils.config;
 
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
+//import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
+import tfc.smallerunits.utils.config.annoconfg.ConfigSide;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.DoubleRange;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.IntRange;
 
-@Config(type = ModConfig.Type.SERVER)
+@Config(type = ConfigSide.SERVER, namespace = "smallerunits")
 public class ServerConfig {
 	private static boolean getFalse() {
 		return false;
 	}
 	
-	private static final AnnoCFG CFG = new AnnoCFG(FMLJavaModLoadingContext.get().getModEventBus(), ServerConfig.class);
+//	private static final AnnoCFG CFG = new AnnoCFG(ServerConfig.class);
 	
 	@Comment({
 			"Restrictions on Units Per Block",
@@ -131,6 +130,5 @@ public class ServerConfig {
 	}
 	
 	public static void init() {
-//		CFG.create(ModConfig.Type.SERVER, ModLoadingContext.get().getActiveNamespace() + "_server.toml");
 	}
 }

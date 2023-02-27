@@ -96,7 +96,6 @@ public class NoStorageSource extends LevelStorageSource {
 			return null;
 		}
 		
-		@Override
 		public void readAdditionalLevelSaveData() {
 		}
 		
@@ -120,11 +119,6 @@ public class NoStorageSource extends LevelStorageSource {
 		}
 		
 		@Override
-		public Path getWorldDir() {
-			return super.getWorldDir();
-		}
-		
-		@Override
 		public void deleteLevel() throws IOException {
 		}
 		
@@ -142,6 +136,4 @@ public class NoStorageSource extends LevelStorageSource {
 			super.close();
 		}
 	}
-	
-	;
 }

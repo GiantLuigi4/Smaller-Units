@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
 import tfc.smallerunits.utils.selection.UnitHitResult;
@@ -28,7 +29,7 @@ public class MultiPlayerGameModeMixin {
 		HitResult result = minecraft.hitResult;
 		if (result instanceof UnitHitResult) {
 			DestroyUnitPacket packet = new DestroyUnitPacket((UnitHitResult) result);
-			SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(packet);
+			SUNetworkRegistry.send(PacketTarget.SERVER, packet);
 			cir.setReturnValue(false);
 		}
 	}

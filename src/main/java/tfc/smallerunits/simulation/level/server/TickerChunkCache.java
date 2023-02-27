@@ -124,7 +124,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		}
 		
 		super.tick(pHasTimeLeft, false);
-		((UnitChunkMap)chunkMap).tick();
+		((UnitChunkMap) chunkMap).tick();
 		
 		synchronized (holders) {
 			for (ChunkHolder holder : holders) {
@@ -252,7 +252,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
-		((TickerServerLevel)level).saveWorld.load(bvc, bvc.getPos(), bvc.yPos);
+		((TickerServerLevel) level).saveWorld.load(bvc, bvc.getPos(), bvc.yPos);
 		synchronized (newChunks) {
 			newChunks.add(bvc);
 		}

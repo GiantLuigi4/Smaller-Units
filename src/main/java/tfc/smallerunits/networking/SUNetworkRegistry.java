@@ -1,11 +1,10 @@
 package tfc.smallerunits.networking;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
 import tfc.smallerunits.networking.core.UnitInteractionPacket;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
+import tfc.smallerunits.networking.platform.PacketRegister;
 import tfc.smallerunits.networking.sync.*;
 
 import java.util.ArrayList;
@@ -13,16 +12,15 @@ import java.util.ArrayList;
 public class SUNetworkRegistry {
 	public static final String networkingVersion = "1.0.0";
 	protected static String serverVersion = "";
-	public static final SimpleChannel NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
-			new ResourceLocation("smaller_units", "main"),
-			() -> networkingVersion,
-			(s) -> compareVersionsClient(networkingVersion, s),
-			(s) -> compareVersionsServer(networkingVersion, s)
-	);
+	public static final ResourceLocation NAME = new ResourceLocation("smallerunits:main");
+	//	public static final PacketRegister NETWORK_INSTANCE = PacketRegister.setup(
+//			() -> networkingVersion,
+//			(s) -> compareVersionsClient(networkingVersion, s),
+//			(s) -> compareVersionsServer(networkingVersion, s)
+//	);
+	public static final PacketRegister NETWORK_INSTANCE = new PacketRegister(NAME);
 	
 	static {
-//		NetworkEntry<?>[] entries = new NetworkEntry[]{
-//		};
 		ArrayList<NetworkEntry<?>> entries = new ArrayList<>();
 		entries.add(new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new));
 		entries.add(new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new));
@@ -116,5 +114,9 @@ public class SUNetworkRegistry {
 			}
 		}
 		return strs;
+	}
+	
+	public static void send(PacketTarget target, Packet pkt) {
+		target.send(pkt, NETWORK_INSTANCE);
 	}
 }

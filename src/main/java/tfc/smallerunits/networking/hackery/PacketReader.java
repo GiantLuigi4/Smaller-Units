@@ -19,7 +19,7 @@ public class PacketReader extends SimpleChannelInboundHandler<WrapperPacket> {
 	protected void channelRead0(ChannelHandlerContext ctx, WrapperPacket msg) throws Exception {
 //		if (msg instanceof WrapperPacket)
 //			msg = ((WrapperPacket) msg).wrapped;
-		NetworkContext context = new NetworkContext(connection, player, (Packet) msg.wrapped);
+		NetworkContext context = new NetworkContext(connection.getPacketListener(), player, (Packet) msg.wrapped);
 		msg.preRead(context);
 		super.channelRead(ctx, msg.wrapped);
 		msg.teardown(context);

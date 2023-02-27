@@ -1,7 +1,7 @@
 package tfc.smallerunits.networking;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.simple.SimpleChannel;
+import tfc.smallerunits.networking.platform.PacketRegister;
 
 import java.util.function.Function;
 
@@ -14,12 +14,12 @@ public class NetworkEntry<T extends Packet> {
 		this.fabricator = fabricator;
 	}
 	
-	public void register(int indx, SimpleChannel channel) {
+	public void register(int indx, PacketRegister channel) {
 		channel.registerMessage(
 				indx, clazz,
 				Packet::write,
 				fabricator,
-				(pkt, ctx) -> pkt.handle(ctx.get())
+				Packet::handle
 		);
 	}
 }

@@ -1,5 +1,6 @@
 package tfc.smallerunits.data.capability;
 
+import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
@@ -7,13 +8,16 @@ import it.unimi.dsi.fastutil.objects.ObjectBigList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.util.INBTSerializable;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.UnitSpace;
 
-public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag> {
-	final Level level;
+public class SUCapability implements ISUCapability, ComponentV3 {
+	Level level;
+	final ChunkAccess access;
 	
-	public SUCapability(Level level) {
+	public SUCapability(ChunkAccess access, Level level) {
+		this.access = access;
 		this.level = level;
 	}
 	
@@ -21,6 +25,24 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	ObjectBigList<UnitSpace> spaces = new ObjectBigArrayBigList<>();
 	UnitSpace[] allSpaces = new UnitSpace[0];
 	boolean modified = false;
+	
+	@Override
+	public void readFromNbt(CompoundTag tag) {
+		deserializeNBT(tag);
+	}
+	
+	@Override
+	public void writeToNbt(CompoundTag tag) {
+		CompoundTag nbt = serializeNBT();
+		for (String allKey : nbt.getAllKeys()) {
+			tag.put(allKey, nbt.get(allKey));
+		}
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		return o == this;
+	}
 	
 	@Override
 	public CompoundTag serializeNBT() {
@@ -42,7 +64,6 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 		return tag;
 	}
 	
-	@Override
 	public void deserializeNBT(CompoundTag nbt) {
 		deserializeNBT(0, nbt);
 	}
@@ -70,6 +91,13 @@ public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag
 	}
 	
 	private UnitSpace[] getUnits(int section) {
+		if (this.level == null) {
+			if (access instanceof LevelChunk lvlChk) {
+				this.level = lvlChk.getLevel();
+			} else if (access.levelHeightAccessor instanceof Level) {
+				this.level = (Level) access.levelHeightAccessor;
+			}
+		}
 		UnitSpace[] spaces = spaceMap.get(section);
 		if (spaces == null) spaceMap.put(section, spaces = new UnitSpace[16 * 16 * 16]);
 		return spaces;

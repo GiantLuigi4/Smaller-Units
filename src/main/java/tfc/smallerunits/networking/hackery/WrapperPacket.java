@@ -7,11 +7,11 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent;
 import sun.misc.Unsafe;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
@@ -112,7 +112,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 	}
 	
 	@Override
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 		ctx.setPacketHandled(true);
 		// TODO: I don't know why this happens
 		if (wrapped == null) return;
@@ -138,17 +138,17 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		}
 	}
 	
-	protected void doHandle(NetworkEvent.Context ctx) {
+	protected void doHandle(NetCtx ctx) {
 		NetworkingHacks.increaseBlockPosPrecision.set(true);
-		NetworkContext context = new NetworkContext(ctx.getNetworkManager(), ((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).getPlayer(), ((Packet) this.wrapped));
+		NetworkContext context = new NetworkContext(ctx.getHandler(), ((PacketListenerAccessor) ctx.getHandler()).getPlayer(), ((Packet) this.wrapped));
 		
 		PositionalInfo info = new PositionalInfo(context.player);
 		
 		preRead(context);
-		PacketUtilMess.preHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
+		PacketUtilMess.preHandlePacket(ctx.getHandler(), context.pkt);
 		
 		Object old = null;
-		boolean toServer = ctx.getDirection().getReceptionSide().isServer();
+		boolean toServer = checkServer(ctx);
 		if (toServer) old = context.player.containerMenu;
 		else old = IHateTheDistCleaner.getScreen();
 		// get level
@@ -156,14 +156,14 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		int upb = 0;
 		if (preHandleLevel instanceof ITickerLevel tl) upb = tl.getUPB();
 		// TODO: debug this garbage
-		((PacketListenerAccessor) ctx.getNetworkManager().getPacketListener()).setWorld(preHandleLevel);
+		((PacketListenerAccessor) ctx.getHandler()).setWorld(preHandleLevel);
 		
 		NetworkingHacks.currentContext.set(new NetworkHandlingContext(
 				context, info, ctx.getDirection(), preHandleLevel
 		));
 		
 		try {
-			context.pkt.handle(ctx.getNetworkManager().getPacketListener());
+			context.pkt.handle(ctx.getHandler());
 		} catch (Throwable ignored) {
 			Loggers.PACKET_HACKS_LOGGER.error("-- A wrapped packet has encountered an error: desyncs are imminent --");
 			ignored.printStackTrace();
@@ -187,7 +187,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			}
 		}
 		
-		PacketUtilMess.postHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
+		PacketUtilMess.postHandlePacket(ctx.getHandler(), context.pkt);
 		teardown(context);
 		NetworkingHacks.increaseBlockPosPrecision.remove();
 		NetworkingHacks.unitPos.remove();

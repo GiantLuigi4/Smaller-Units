@@ -1,6 +1,7 @@
 package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.util.Pair;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.core.particles.ParticleOptions;
@@ -8,7 +9,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
-import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -42,7 +42,6 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraft.world.phys.AABB;
@@ -52,12 +51,6 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.CapabilityDispatcher;
-import net.minecraftforge.common.util.ITeleporter;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.world.WorldEvent;
-import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
@@ -67,7 +60,6 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
-import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -77,6 +69,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
@@ -134,7 +127,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	protected void finalize() throws Throwable {
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(this));
 		super.finalize();
 	}
 	
@@ -213,7 +205,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
 		
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
-		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(this));
+		ServerWorldEvents.LOAD.invoker().onWorldLoad(this.getServer(), this);
 	}
 	
 	@Override
@@ -254,21 +246,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				
 				double fScl = finalScl;
 				fScl *= 1 / ResizingUtils.getSize(player);
-				sendSoundEvent(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * fScl), pPitch);
+				lvl.playSound(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * fScl), pPitch);
 			}
 		});
 	}
 	
-	public void sendSoundEvent(@javax.annotation.Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
-		net.minecraftforge.event.entity.PlaySoundAtEntityEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
-		if (event.isCanceled() || event.getSound() == null) return;
-		pSound = event.getSound();
-		pCategory = event.getCategory();
-		pVolume = event.getVolume();
-		broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch));
-	}
-	
-	public void broadcastTo(@javax.annotation.Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {
+	public void broadcastTo(Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {
 		Level lvl = parent.get();
 		if (lvl == null) return;
 		for (int i = 0; i < lvl.players().size(); ++i) {
@@ -301,7 +284,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		return i;
 	}
 	
-	@Override
 	public boolean sendParticles(ServerPlayer pPlayer, boolean pLongDistance, double pPosX, double pPosY, double pPosZ, Packet<?> pPacket) {
 		Level lvl = parent.get();
 		if (lvl == null) return false;
@@ -471,50 +453,9 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 		NetworkingHacks.setPos(null);
 		
-		Entity entity = pEntity.changeDimension((ServerLevel) lvl, new ITeleporter() {
-			@Override
-			public Entity placeEntity(Entity entity, ServerLevel currentWorld, ServerLevel destWorld, float yaw, Function<Boolean, Entity> repositionEntity) {
-				PortalInfo portalinfo = getPortalInfo(entity, destWorld, null);
-				
-				currentWorld.getProfiler().popPush("reloading");
-				Entity newEntity = entity.getType().create(destWorld);
-				if (newEntity != null) {
-					ResizingUtils.resizeForUnit(entity, 1f / upb);
-					
-					newEntity.restoreFrom(entity);
-					newEntity.moveTo(portalinfo.pos.x, portalinfo.pos.y, portalinfo.pos.z, portalinfo.yRot, newEntity.getXRot());
-					newEntity.setDeltaMovement(portalinfo.speed);
-					destWorld.addFreshEntity(newEntity);
-				}
-				
-				return newEntity;
-			}
-			
-			@Nullable
-			@Override
-			public PortalInfo getPortalInfo(Entity entity, ServerLevel destWorld, Function<ServerLevel, PortalInfo> defaultPortalInfo) {
-				Vec3 pos = entity.getPosition(1);
-				BlockPos bp = region.pos.toBlockPos();
-				pos = pos.scale(1d / upb);
-				pos = pos.add(bp.getX(), bp.getY(), bp.getZ());
-				return new PortalInfo(
-						pos,
-						entity.getDeltaMovement(),
-						entity.getYRot(),
-						entity.getXRot()
-				);
-			}
-			
-			@Override
-			public boolean isVanilla() {
-				return false;
-			}
-			
-			@Override
-			public boolean playTeleportSound(ServerPlayer player, ServerLevel sourceWorld, ServerLevel destWorld) {
-				return false;
-			}
-		});
+		((EntityAccessor) pEntity).setPortalInfo(PlatformUtils.createPortalInfo(pEntity, this));
+		Entity entity = pEntity.changeDimension((ServerLevel) lvl);
+		((EntityAccessor) pEntity).setPortalInfo(null);
 		
 		NetworkingHacks.setPos(descriptor);
 		
@@ -534,25 +475,25 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		return null;
 	}
-	
-	@Override
-	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
-		if (p_8865_ == null) {
-			Loggers.WORLD_LOGGER.warn("Removing a null entity, this should not happen");
-			return;
-			// TODO: log stacktrace
-		}
-		if (entities.contains(p_8865_)) entities.remove(p_8865_);
-		if (!entitiesRemoved.contains(p_8865_)) entitiesRemoved.add(p_8865_);
-		super.removeEntityComplete(p_8865_, keepData);
-	}
-	
-	@Override
-	public void removeEntity(Entity p_8868_, boolean keepData) {
-		if (entities.contains(p_8868_)) entities.remove(p_8868_);
-		if (!entitiesRemoved.contains(p_8868_)) entitiesRemoved.add(p_8868_);
-		super.removeEntity(p_8868_, keepData);
-	}
+
+//	@Override
+//	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
+//		if (p_8865_ == null) {
+//			Loggers.WORLD_LOGGER.warn("Removing a null entity, this should not happen");
+//			return;
+//			// TODO: log stacktrace
+//		}
+//		if (entities.contains(p_8865_)) entities.remove(p_8865_);
+//		if (!entitiesRemoved.contains(p_8865_)) entitiesRemoved.add(p_8865_);
+//		super.removeEntityComplete(p_8865_, keepData);
+//	}
+//
+//	@Override
+//	public void removeEntity(Entity p_8868_, boolean keepData) {
+//		if (entities.contains(p_8868_)) entities.remove(p_8868_);
+//		if (!entitiesRemoved.contains(p_8868_)) entitiesRemoved.add(p_8868_);
+//		super.removeEntity(p_8868_, keepData);
+//	}
 	
 	@Override
 	public LevelEntityGetter<Entity> getEntities() {
@@ -564,7 +505,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				return null;
 			}
 			
-			@javax.annotation.Nullable
 			public Entity get(UUID pUuid) {
 				for (Entity entity : entities) {
 					if (entity.getUUID().equals(pUuid)) return entity; // TODO: be not dumb
@@ -767,12 +707,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				entities.remove(entity);
 			}
 		}
-	}
-	
-	@Override
-	public void removeEntity(Entity entity) {
-		entities.remove(entity);
-		super.removeEntity(entity);
 	}
 	
 	@Override
@@ -999,49 +933,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		return "TickerServerLevel[" + ((ServerLevelData) this.getLevelData()).getLevelName() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
-	// TODO: try to optimize or shrink this?
-	@Override
-	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
-		if (this.isOutsideBuildHeight(pPos)) {
-			return false;
-		} else if (!this.isClientSide && this.isDebug()) {
-			return false;
-		} else {
-			LevelChunk levelchunk = this.getChunkAt(pPos);
-			Block block = pState.getBlock();
-			
-			BlockPos actualPos = pPos;
-			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
-			net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
-			if (this.captureBlockSnapshots && !this.isClientSide) {
-				blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.create(this.dimension(), this, actualPos, pFlags);
-				this.capturedBlockSnapshots.add(blockSnapshot);
-			}
-			
-			BlockState old = levelchunk.getBlockState(pPos);
-			int oldLight = old.getLightEmission(this, actualPos);
-			int oldOpacity = old.getLightBlock(this, actualPos);
-			
-			BlockState blockstate = levelchunk.setBlockState(pPos, pState, (pFlags & 64) != 0);
-			if (blockstate == null) {
-				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
-				return false;
-			} else {
-				BlockState blockstate1 = levelchunk.getBlockState(pPos);
-				if ((pFlags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getLightBlock(this, pPos) != oldOpacity || blockstate1.getLightEmission(this, pPos) != oldLight || blockstate1.useShapeForLightOcclusion() || blockstate.useShapeForLightOcclusion())) {
-					this.getProfiler().push("queueCheckLight");
-					this.getChunkSource().getLightEngine().checkBlock(actualPos);
-					this.getProfiler().pop();
-				}
-				
-				if (blockSnapshot == null) // Don't notify clients or update physics while capturing blockstates
-					this.markAndNotifyBlock(actualPos, levelchunk, blockstate, pState, pFlags, pRecursionLeft);
-				
-				return true;
-			}
-		}
-	}
-	
 	@Override
 	public BlockState getBlockState(BlockPos pPos) {
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
@@ -1099,7 +990,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.blockEvents.addAll(this.blockEventsToReschedule);
 	}
 	
-	protected void postGameEventInRadius(@javax.annotation.Nullable Entity pEntity, GameEvent pGameEvent, BlockPos pPos, int pNotificationRadius) {
+	protected void postGameEventInRadius(Entity pEntity, GameEvent pGameEvent, BlockPos pPos, int pNotificationRadius) {
 		int i = SectionPos.blockToSectionCoord(pPos.getX() - pNotificationRadius);
 		int j = SectionPos.blockToSectionCoord(pPos.getZ() - pNotificationRadius);
 		int k = SectionPos.blockToSectionCoord(pPos.getX() + pNotificationRadius);
@@ -1142,7 +1033,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this, pHasTimeLeft));
+		PlatformUtils.preTick(this);
 		
 		randomTickCount = Integer.MIN_VALUE;
 		
@@ -1156,7 +1047,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		getChunkSource().pollTask();
 		
 		for (Entity entity : entitiesRemoved) {
-			removeEntity(entity);
+			entities.remove(entity);
 		}
 		entitiesRemoved.clear();
 		
@@ -1193,30 +1084,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		for (Map.Entry<ServerPlayer, PositionalInfo> serverPlayerPositionalInfoEntry : infoMap.entrySet()) {
 			serverPlayerPositionalInfoEntry.getValue().reset(serverPlayerPositionalInfoEntry.getKey());
 		}
-//		for (BasicVerticalChunk[] column : ((TickerChunkCache) chunkSource).columns) {
-//			List<ServerPlayer> players = null;
-//			if (column == null) continue;
-//			for (BasicVerticalChunk basicVerticalChunk : column) {
-//				if (basicVerticalChunk == null) continue;
-//				if (players == null) {
-//					players = getChunkSource().chunkMap.getPlayers(basicVerticalChunk.getPos(), false);
-//					for (ServerPlayer player : players) {
-//						// TODO: do this properly
-//						try {
-//							getChunkSource().chunkMap.move(player);
-//						} catch (Throwable ignored) {
-//						}
-//					}
-//				}
-//
-//				for (BlockPos pos : basicVerticalChunk.besRemoved) {
-//					BlockEntity be = basicVerticalChunk.getBlockEntity(pos);
-//					if (be != null && !be.isRemoved())
-//						be.setRemoved();
-//				}
-//				basicVerticalChunk.beChanges.clear();
-//			}
-//		}
 		
 		NetworkingHacks.unitPos.remove();
 		
@@ -1231,7 +1098,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		
 		saveWorld.tick();
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, this, pHasTimeLeft));
+		PlatformUtils.postTick(this);
 	}
 	
 	@Override
@@ -1314,10 +1181,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		
 		return super.getEntities(pEntityTypeTest, aabb, pPredicate);
-	}
-	
-	public CapabilityDispatcher getCaps() {
-		return getCapabilities();
 	}
 	
 	@Override

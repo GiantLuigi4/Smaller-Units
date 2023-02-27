@@ -1,6 +1,5 @@
 package tfc.smallerunits.mojangpls;
 
-import net.minecraftforge.fml.CrashReportCallables;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -199,7 +198,8 @@ public class NoFSProvider extends FileSystemProvider {
 			StringBuilder builder = new StringBuilder();
 			builder.append("-- INFO --\n");
 			builder.append(type.getName());
-			CrashReportCallables.registerCrashCallable("Smaller Units", builder::toString);
+			// TODO: find a way to port this
+//			CrashReportCallables.registerCrashCallable("Smaller Units", builder::toString);
 			throw new RuntimeException("Attribute could not be created, game will most likely crash regardless");
 		}
 	}
@@ -260,7 +260,8 @@ public class NoFSProvider extends FileSystemProvider {
 			StringBuilder builder = new StringBuilder();
 			builder.append("-- INFO --\n");
 			builder.append(type.getName());
-			CrashReportCallables.registerCrashCallable("Smaller Units", builder::toString);
+			// TODO: find a way to port this
+//			CrashReportCallables.registerCrashCallable("Smaller Units", builder::toString);
 			throw new RuntimeException("Attribute could not be created, game will most likely crash regardless");
 		}
 	}

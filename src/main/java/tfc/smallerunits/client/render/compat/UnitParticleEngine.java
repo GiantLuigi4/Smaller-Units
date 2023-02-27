@@ -17,9 +17,4 @@ public class UnitParticleEngine extends ParticleEngine {
 		super(pLevel, pTextureManager);
 		((ParticleEngineAccessor) this).copyProviders(Minecraft.getInstance().particleEngine);
 	}
-	
-	@Override
-	public void render(PoseStack p_107337_, MultiBufferSource.BufferSource p_107338_, LightTexture p_107339_, Camera p_107340_, float p_107341_, @Nullable Frustum clippingHelper) {
-		super.render(p_107337_, p_107338_, p_107339_, p_107340_, p_107341_, clippingHelper);
-	}
 }

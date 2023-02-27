@@ -7,11 +7,11 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.Packet;
+import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.List;
@@ -73,7 +73,7 @@ public class SyncEntityPacketS2C extends Packet {
 	}
 	
 	@Override
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 		if (checkClient(ctx)) {
 			Region r = ((RegionalAttachments) IHateTheDistCleaner.getClientLevel()).SU$getRegion(realPos);
 			Level lvl = r.getClientWorld(IHateTheDistCleaner.getClientLevel(), upb);

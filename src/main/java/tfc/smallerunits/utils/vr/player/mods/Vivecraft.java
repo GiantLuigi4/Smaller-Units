@@ -38,30 +38,12 @@ public class Vivecraft {
 	}
 	
 	public static SUVRPlayer getPlayerJRBudda(Player player) {
-//		if (true) return null;
-
-//		ServerVivePlayer vivePlayer = new ServerVivePlayer((ServerPlayer) player);
 		ServerVivePlayer vivePlayer = CommonNetworkHelper.vivePlayers.get(player.getUUID());
 		if (vivePlayer == null) return null;
 		if (!vivePlayer.isVR()) return null;
 		if (vivePlayer.hmdData == null || vivePlayer.controller0data == null || vivePlayer.controller1data == null)
 			return null;
 
-//		boolean flag = datainputstream.readBoolean();// 0
-//		float f = datainputstream.readFloat();// 1
-//		float f1 = datainputstream.readFloat();// 5
-//		float f2 = datainputstream.readFloat();// 9
-//		float f3 = datainputstream.readFloat();// 13
-//		float f4 = datainputstream.readFloat();// 17
-//		float f5 = datainputstream.readFloat();// 21
-//		float f6 = datainputstream.readFloat();// 25
-
-//		for (int i = 1; i < vivePlayer.hmdData.length; i++) {
-//			System.out.print(vivePlayer.hmdData[i] + ", ");
-//			if (i != 1 && (i - 1) % 4 == 0) System.out.println();
-//		}
-//		System.out.println();
-//		if (true) return null;
 		VRController head = new VRController(
 				vivePlayer.getHMDPos(player),
 				getQuatFrom(vivePlayer.hmdData)

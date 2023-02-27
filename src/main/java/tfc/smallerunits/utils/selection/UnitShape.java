@@ -27,7 +27,6 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -216,7 +215,6 @@ public class UnitShape extends VoxelShape {
 	
 	VoxelShape[] neighbors = new VoxelShape[Direction.values().length];
 	
-	@Nullable
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
 			Entity entity = entityCollisionContext.getEntity();

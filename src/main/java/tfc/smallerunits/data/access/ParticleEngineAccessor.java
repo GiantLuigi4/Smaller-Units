@@ -1,5 +1,6 @@
 package tfc.smallerunits.data.access;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -9,5 +10,5 @@ import java.util.Map;
 public interface ParticleEngineAccessor {
 	void copyProviders(ParticleEngine source);
 	
-	Map<ResourceLocation, ParticleProvider<?>> getProviders();
+	Int2ObjectMap<ParticleProvider<?>> getProviders();
 }

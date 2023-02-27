@@ -2,7 +2,6 @@ package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.core.BlockPos;
@@ -13,10 +12,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.model.ModelDataManager;
-import net.minecraftforge.client.model.data.EmptyModelData;
-import net.minecraftforge.client.model.data.IModelData;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.storage.BufferStorage;
@@ -25,6 +20,7 @@ import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
@@ -89,12 +85,14 @@ public class SUVBOEmitter {
 		
 		for (int i = 0; i < RenderType.chunkBufferLayers().size(); i++) {
 			RenderType chunkBufferLayer = RenderType.chunkBufferLayers().get(i);
-			ForgeHooksClient.setRenderType(chunkBufferLayer);
+			// TODO:
+//			ForgeHooksClient.setRenderType(chunkBufferLayer);
 			handleLayer(chunkBufferLayer, buffers, space.getRenderWorld(), stack, upb, space, dispatcher, states);
 		}
 		Minecraft.getInstance().getProfiler().popPush("finish");
 		
-		ForgeHooksClient.setRenderType(null);
+		// TODO:
+//		ForgeHooksClient.setRenderType(null);
 		Minecraft.getInstance().getProfiler().popPush("upload");
 		buffers.forEach(storage::upload);
 		Minecraft.getInstance().getProfiler().pop();
@@ -123,7 +121,7 @@ public class SUVBOEmitter {
 					if (block.isAir()) continue;
 					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
-						if (ItemBlockRenderTypes.canRenderInLayer(fluid, chunkBufferLayer)) {
+						if (PlatformUtilsClient.checkRenderLayer(fluid, chunkBufferLayer)) {
 							if (vertexBuilder == null) {
 								if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 								vertexBuilder = new TranslatingVertexBuilder(1f / upb, consumer);
@@ -141,19 +139,15 @@ public class SUVBOEmitter {
 						}
 					}
 					if (block.getRenderShape() != RenderShape.INVISIBLE) {
-						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
+						if (PlatformUtilsClient.checkRenderLayer(block, chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
 							
-							// TODO: check this
-							// TODO: what is there to check here?
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
-							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), offsetPos);
-							if (data == null) data = EmptyModelData.INSTANCE;
 							dispatcher.renderBatched(
 									block, offsetPos, wld, stk, consumer,
-									true, new Random(offsetPos.asLong()), data
+									true, new Random(offsetPos.asLong())
 							);
 
 //							stk.translate(-x, -y, -z);

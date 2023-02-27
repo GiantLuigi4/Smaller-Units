@@ -12,15 +12,16 @@ import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 public class ChiselAndBitMeshMixin {
 	@Inject(at = @At("HEAD"), method = "lambda$updateModelDataCore$5", cancellable = true)
 	private static void preUpdate(ChiseledBlockEntity tileEntity, CallbackInfo ci) {
-		if (tileEntity.getLevel() instanceof FakeClientLevel) {
-			((FakeClientLevel) tileEntity.getLevel()).modelDataManager.requestModelDataRefresh(tileEntity);
-			tileEntity.getLevel().sendBlockUpdated(
-					tileEntity.getBlockPos(),
-					tileEntity.getBlockState(),
-					tileEntity.getBlockState(),
-					8
-			);
-			ci.cancel();
-		}
+		// no-op?
+//		if (tileEntity.getLevel() instanceof FakeClientLevel) {
+//			((FakeClientLevel) tileEntity.getLevel()).modelDataManager.requestModelDataRefresh(tileEntity);
+//			tileEntity.getLevel().sendBlockUpdated(
+//					tileEntity.getBlockPos(),
+//					tileEntity.getBlockState(),
+//					tileEntity.getBlockState(),
+//					8
+//			);
+//			ci.cancel();
+//		}
 	}
 }

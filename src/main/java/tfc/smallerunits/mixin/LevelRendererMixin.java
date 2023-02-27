@@ -53,12 +53,9 @@ import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
-import javax.annotation.Nullable;
-
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
 	@Shadow
-	@Nullable
 	public ClientLevel level;
 	@Unique
 	PoseStack stk;
@@ -99,7 +96,6 @@ public abstract class LevelRendererMixin {
 	public abstract void renderEntity(Entity pEntity, double pCamX, double pCamY, double pCamZ, float pPartialTick, PoseStack pPoseStack, MultiBufferSource pBufferSource);
 	
 	@Shadow
-	@Nullable
 	public Frustum capturedFrustum;
 	
 	@Shadow
@@ -209,7 +205,7 @@ public abstract class LevelRendererMixin {
 	}
 	
 	// ok that's a long injection target
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;FLnet/minecraft/client/renderer/culling/Frustum;)V"), method = "renderLevel")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/particle/ParticleEngine;render(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource$BufferSource;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/client/Camera;F)V"), method = "renderLevel")
 	public void preRenderParticles(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, CallbackInfo ci) {
 		for (Region value : ((RegionalAttachments) level).SU$getRegionMap().values()) {
 			// TODO: frustum checks
@@ -314,7 +310,8 @@ public abstract class LevelRendererMixin {
 			}
 			stk.pushPose();
 			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
-			for (BlockEntity tile : bes) TileRendererHelper.renderBE(tile, origin, frustum, stk, blockEntityRenderDispatcher, pct);
+			for (BlockEntity tile : bes)
+				TileRendererHelper.renderBE(tile, origin, frustum, stk, blockEntityRenderDispatcher, pct);
 			stk.popPose();
 		}
 		stk.popPose();

@@ -7,7 +7,7 @@ import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
+import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
 
@@ -25,8 +26,7 @@ public abstract class ConnectionMixin {
 	@Shadow
 	private PacketListener packetListener;
 	
-	@Shadow
-	public abstract PacketFlow getDirection();
+	@Shadow @Final private PacketFlow receiving;
 	
 	@Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/util/concurrent/GenericFutureListener;)V", cancellable = true)
 	public void preSend(Packet<?> p_129515_, GenericFutureListener<? extends Future<? super Void>> p_129516_, CallbackInfo ci) {
@@ -39,10 +39,10 @@ public abstract class ConnectionMixin {
 			isSending.set(true);
 			p_129515_ = maybeWrap(p_129515_);
 			if (p_129515_ instanceof WrapperPacket) {
-				if (this.getDirection().equals(PacketFlow.SERVERBOUND)) {
-					SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) ((PacketListenerAccessor) this.packetListener).getPlayer()), p_129515_);
+				if (receiving.equals(PacketFlow.SERVERBOUND)) {
+					SUNetworkRegistry.send(PacketTarget.player((ServerPlayer) ((PacketListenerAccessor) this.packetListener).getPlayer()), (WrapperPacket)p_129515_);
 				} else {
-					SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(p_129515_);
+					SUNetworkRegistry.send(PacketTarget.SERVER, (WrapperPacket)p_129515_);
 				}
 				ci.cancel();
 			}

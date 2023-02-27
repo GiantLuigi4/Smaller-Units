@@ -8,13 +8,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 import java.util.Random;
 import java.util.UUID;
@@ -41,7 +40,7 @@ public class PositionalInfo {
 		eyeHeight = pEntity.eyeHeight;
 		oPos = new Vec3(pEntity.xo, pEntity.yo, pEntity.zo);
 		oldPos = new Vec3(pEntity.xOld, pEntity.yOld, pEntity.zOld);
-		if (FMLEnvironment.dist.isClient() && cacheParticleEngine) {
+		if (PlatformUtils.isClient() && cacheParticleEngine) {
 			if (pEntity.getLevel().isClientSide) {
 				if (pEntity instanceof Player player) {
 					particleEngine = IHateTheDistCleaner.getParticleEngine(player);
@@ -51,11 +50,11 @@ public class PositionalInfo {
 	}
 	
 	public void scalePlayerReach(Player pPlayer, int upb) {
-		AttributeInstance instance = pPlayer.getAttribute(ForgeMod.REACH_DISTANCE.get());
-		instance.removeModifier(SU_REACH_UUID);
-		instance.addPermanentModifier(
-				new AttributeModifier(SU_REACH_UUID, "su:reach", upb, AttributeModifier.Operation.MULTIPLY_TOTAL)
-		);
+		AttributeInstance instance = PlatformUtils.getReachAttrib(pPlayer);
+		if (instance != null) {
+			instance.removeModifier(SU_REACH_UUID);
+			instance.addPermanentModifier(new AttributeModifier(SU_REACH_UUID, "su:reach", upb, AttributeModifier.Operation.MULTIPLY_TOTAL));
+		}
 		isReachSet = true;
 	}
 	
@@ -102,8 +101,9 @@ public class PositionalInfo {
 		
 		if (isReachSet) {
 			if (pEntity instanceof LivingEntity livingEntity) {
-				AttributeInstance instance = livingEntity.getAttribute(ForgeMod.REACH_DISTANCE.get());
-				instance.removeModifier(SU_REACH_UUID);
+				AttributeInstance instance = PlatformUtils.getReachAttrib(livingEntity);
+				if (instance != null)
+					instance.removeModifier(SU_REACH_UUID);
 				isReachSet = false;
 			}
 		}
@@ -125,7 +125,7 @@ public class PositionalInfo {
 	}
 	
 	public void resetClient(Player player) {
-		if (FMLEnvironment.dist.isClient()) {
+		if (PlatformUtils.isClient()) {
 			if (player.level.isClientSide) {
 				IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
 			}
@@ -133,7 +133,7 @@ public class PositionalInfo {
 	}
 	
 	public void setupClient(Player player, Level spaceLevel, boolean updateParticleEngine) {
-		if (FMLEnvironment.dist.isClient()) {
+		if (PlatformUtils.isClient()) {
 			if (player.level.isClientSide) {
 				Object o = IHateTheDistCleaner.adjustClient(player, spaceLevel, particleEngine != null);
 			}

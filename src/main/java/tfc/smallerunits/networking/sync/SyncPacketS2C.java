@@ -13,8 +13,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.network.NetworkEvent;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.api.PositionUtils;
@@ -23,7 +21,9 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.networking.Packet;
+import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -54,7 +54,7 @@ public class SyncPacketS2C extends Packet {
 					tg.putInt("x", tile.getBlockPos().getX());
 					tg.putInt("y", tile.getBlockPos().getY());
 					tg.putInt("z", tile.getBlockPos().getZ());
-					tg.putString("id", tile.getType().getRegistryName().toString());
+					tg.putString("id", PlatformUtils.getRegistryName(tile).toString());
 					beData.add(tg);
 				}
 			}
@@ -74,7 +74,7 @@ public class SyncPacketS2C extends Packet {
 		for (int i = 0; i < count; i++) beData[i] = buf.readNbt();
 	}
 	
-	public static void tick(TickEvent.ClientTickEvent event) {
+	public static void tick() {
 		ArrayList<SyncPacketS2C> toRemove = new ArrayList<>();
 		if (Minecraft.getInstance().screen != null) return;
 		if (Minecraft.getInstance().player == null) return;
@@ -86,7 +86,7 @@ public class SyncPacketS2C extends Packet {
 			if (!(access instanceof LevelChunk chunk)) continue;
 			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 			UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
-			if (space.getMyLevel() == null) return;
+			if (space.getMyLevel() == null) continue;
 			
 			// TODO: adjust player position and whatnot
 			
@@ -131,12 +131,7 @@ public class SyncPacketS2C extends Packet {
 					lvl.setBlockEntity(be);
 				}
 				
-				// this is jank, I should probably de-jankify it
-				try {
-					be.onDataPacket(null, ClientboundBlockEntityDataPacket.create(be, (e) -> tag));
-				} catch (Throwable ignored) {
-					be.load(tag);
-				}
+				be.load(tag);
 				
 				// TODO: this is like 90% redundant
 				BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();
@@ -182,7 +177,7 @@ public class SyncPacketS2C extends Packet {
 	}
 	
 	@Override
-	public void handle(NetworkEvent.Context ctx) {
+	public void handle(NetCtx ctx) {
 		if (checkClient(ctx)) {
 			deferred.add(this);
 			ctx.setPacketHandled(true);

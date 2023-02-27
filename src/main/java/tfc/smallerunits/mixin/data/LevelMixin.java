@@ -1,7 +1,6 @@
 package tfc.smallerunits.mixin.data;
 
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -10,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.client.access.tracking.SUCapableWorld;
 import tfc.smallerunits.client.render.SUVBOEmitter;
 import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 @Mixin(Level.class)
 public class LevelMixin implements SUCapableWorld {
@@ -24,6 +24,6 @@ public class LevelMixin implements SUCapableWorld {
 	@Inject(at = @At("HEAD"), method = "close")
 	public void preClose(CallbackInfo ci) {
 		if (emitter != null) emitter.free();
-		if (!FMLEnvironment.production) Loggers.WORLD_LOGGER.info("World " + toString() + " offloaded!");
+		if (PlatformUtils.isDevEnv()) Loggers.WORLD_LOGGER.info("World " + toString() + " offloaded!");
 	}
 }

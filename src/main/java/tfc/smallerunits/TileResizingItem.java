@@ -26,16 +26,6 @@ public class TileResizingItem extends Item {
 	}
 	
 	@Override
-	public ItemStack getContainerItem(ItemStack itemStack) {
-		return itemStack;
-	}
-	
-	@Override
-	public boolean hasContainerItem(ItemStack stack) {
-		return true;
-	}
-	
-	@Override
 	public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
 		if (GameplayOptions.resizeOther) {
 			if (ResizingUtils.isResizingModPresent()) {

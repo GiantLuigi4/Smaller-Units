@@ -12,16 +12,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.utils.PositionalInfo;
 
-import javax.annotation.Nullable;
-
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
 	@Shadow
-	@Nullable
 	public Screen screen;
 	
 	@Shadow
-	@Nullable
 	public LocalPlayer player;
 	
 	@Shadow

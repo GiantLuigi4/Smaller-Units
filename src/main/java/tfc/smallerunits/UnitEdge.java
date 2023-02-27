@@ -8,6 +8,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -18,6 +19,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.simulation.level.ITickerLevel;
@@ -83,26 +85,28 @@ public class UnitEdge extends Block {
 	}
 	
 	@Override
-	public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
+	public void playerDestroy(Level level, Player player, BlockPos blockPos, BlockState blockState, @Nullable BlockEntity blockEntity, ItemStack itemStack) {
 		if (player instanceof ICanUseUnits unitUser)
 			unitUser.removeUnit();
-		return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+		super.playerDestroy(level, player, blockPos, blockState, blockEntity, itemStack);
 	}
 	
 	@Override
+	public ItemStack getCloneItemStack(BlockGetter blockGetter, BlockPos blockPos, BlockState blockState) {
+		return getCloneItemStack(blockState, null, blockGetter, blockPos, null);
+	}
+	
 	public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
 		if (player instanceof ICanUseUnits unitUser) {
 			if (level instanceof ITickerLevel tickerLevel) {
 				if (unitUser.actualResult() instanceof BlockHitResult bhr) {
 					// TODO: move player out temporarily
 					BlockPos pPos = bhr.getBlockPos().relative(bhr.getDirection().getOpposite());
-					return tickerLevel.getParent().getBlockState(pPos).getCloneItemStack(
-							bhr, tickerLevel.getParent(), pPos,
-							player
-					);
+					BlockState state1 = tickerLevel.getParent().getBlockState(pPos);
+					return state1.getBlock().getCloneItemStack(tickerLevel.getParent(), pPos, state1);
 				}
 			}
 		}
-		return super.getCloneItemStack(state, target, level, pos, player);
+		return super.getCloneItemStack(level, pos, state);
 	}
 }

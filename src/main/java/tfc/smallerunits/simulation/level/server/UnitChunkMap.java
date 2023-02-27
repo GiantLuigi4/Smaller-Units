@@ -111,10 +111,11 @@ public class UnitChunkMap extends ChunkMap {
 			return true;
 		}
 		
-		@Override
-		public boolean shouldForceTicks(long chunkPos) {
-			return true;
-		}
+		// TODO:
+//		@Override
+//		public boolean shouldForceTicks(long chunkPos) {
+//			return true;
+//		}
 	}
 	
 	@Nullable
