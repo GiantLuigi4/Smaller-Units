@@ -20,7 +20,9 @@ import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
 import net.minecraft.world.level.biome.Biome;
@@ -207,11 +209,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		};
 //		((ServerLevel) parent).getDataStorage()
 		isLoaded = true;
-		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
-		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(this));
 		
 		saveWorld = new SUSaveWorld(((ServerLevel) parent).getDataStorage().dataFolder, this);
 		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
+		
+		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
+		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(this));
 	}
 	
 	@Override
@@ -462,7 +465,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 
 //		entities.add(pEntity);
 		
-		if (pEntity instanceof FallingBlockEntity)
+		if ((!(pEntity instanceof LivingEntity)) && !(pEntity instanceof ItemEntity))
 			return super.addFreshEntity(pEntity);
 		
 		Level lvl = parent.get();

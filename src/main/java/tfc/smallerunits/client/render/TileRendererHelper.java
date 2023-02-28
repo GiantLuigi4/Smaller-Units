@@ -22,6 +22,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import tfc.smallerunits.SmallerUnits;
+import tfc.smallerunits.client.render.util.SUTesselator;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -320,17 +322,16 @@ public class TileRendererHelper {
 		PoseStack stack = new PoseStack();
 		stack.last().pose().multiply(pPoseStack.last().pose());
 		
-		stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
-		stack.translate(bp.getX(), bp.getY(), bp.getZ());
-		stack.scale(scl, scl, scl);
-		stack.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
+		SmallerUnits.tesselScale = scl;
+		((SUTesselator) Tesselator.getInstance()).setOffset(bp.getX(), bp.getY(), bp.getZ());
 		
 		// TODO: use forge method or smth
 		((FakeClientLevel) valueLevel).getParticleEngine().render(
 				stack, renderBuffers.bufferSource(),
 				pLightTexture, pCamera, pPartialTick
 		);
-//		mdlViewStk.popPose();
+		
+		SmallerUnits.tesselScale = 1;
 	}
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {

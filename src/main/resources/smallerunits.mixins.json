@@ -65,7 +65,8 @@
     "quality.BlockEntityRendererMixin",
     "quality.CameraMixin",
     "quality.ParticleEngineAccessor",
-    "compat.ChiselAndBitMeshMixin"
+    "compat.ChiselAndBitMeshMixin",
+    "quality.TesselatorMixin"
   ],
   "injectors": {
     "defaultRequire": 1

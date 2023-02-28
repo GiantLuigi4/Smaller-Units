@@ -59,8 +59,9 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 				Properties.of(Material.STONE, MaterialColor.COLOR_BLACK)
 						.isSuffocating((a, b, c) -> false)
 						.isViewBlocking((a, b, c) -> false)
-						.explosionResistance(0)
 						.dynamicShape()
+						.destroyTime(0)
+						.strength(-1.0F, 3600000.0F)
 		);
 	}
 	

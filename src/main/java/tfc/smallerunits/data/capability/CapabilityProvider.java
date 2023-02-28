@@ -21,8 +21,10 @@ public class CapabilityProvider implements ICapabilityProvider, INBTSerializable
 	@NotNull
 	@Override
 	public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-		//noinspection unchecked
-		return (LazyOptional<T>) optional;
+		if (cap.equals(SUCapabilityManager.SU_CAPABILITY_TOKEN)) // really?
+			//noinspection unchecked
+			return (LazyOptional<T>) optional;
+		return LazyOptional.empty();
 	}
 	
 	@Override

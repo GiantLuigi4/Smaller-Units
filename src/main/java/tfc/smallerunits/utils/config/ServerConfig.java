@@ -107,7 +107,7 @@ public class ServerConfig {
 		
 		@Comment("Options for VR players")
 		@CFGSegment("vr_options")
-		public class VROptions {
+		public static class VROptions {
 			@Name("PistonBlocking")
 			@Comment("Whether or not VR players should be able to use their arms to block small flying machines")
 			@Translation("config.smaller_units.vr.piston_blocking")
@@ -118,6 +118,7 @@ public class ServerConfig {
 			@Comment("Whether or not SU should tweak vanilla (1/1 scale pistons) to allow those to be blocked by VR players")
 			@Translation("config.smaller_units.vr.vanilla_piston_blocking")
 			@Default(valueBoolean = false)
+			@Skip
 			public static final boolean vanillaPistonBlocking = getFalse();
 			
 			@Name("BlockThreshold")

@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.config.ServerConfig;
+import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.spherebox.Box;
 import tfc.smallerunits.utils.vr.ArmUtils;
 import tfc.smallerunits.utils.vr.player.SUVRPlayer;
@@ -62,9 +63,19 @@ public class PistonMixin {
 						pPistonPos.getZ() + range
 				);
 				bxs = new ArrayList<>();
+				
+				double worldScale = 1d / tkLvl.getUPB();
+				
 				for (Player entitiesOfClass : pLevel.getEntitiesOfClass(Player.class, box)) {
+					double size = ResizingUtils.getActualSize(entitiesOfClass);
+					
+					// I believe this is correct?
+					if (worldScale > size * (ServerConfig.GameplayOptions.VROptions.blockThreshold))
+						continue;
+					
 					// TODO: thresholding
 					SUVRPlayer player = VRPlayerManager.getPlayer(entitiesOfClass);
+					
 					Box bx = ArmUtils.getArmBox(player, InteractionHand.MAIN_HAND);
 					if (bx != null) bxs.add(bx);
 					bx = ArmUtils.getArmBox(player, InteractionHand.OFF_HAND);
