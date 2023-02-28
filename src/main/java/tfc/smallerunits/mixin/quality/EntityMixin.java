@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.fluids.FluidType;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -66,6 +67,10 @@ public abstract class EntityMixin {
 	@Shadow
 	public abstract void setSwimming(boolean pSwimming);
 	
+	@Shadow protected Object2DoubleMap<FluidType> forgeFluidTypeHeight;
+	@Unique
+	double SUFluidHeight = -1;
+	
 	@Unique
 	private void SU$runPerWorld(BiConsumer<Level, RegionPos> action) {
 		if (!(level instanceof RegionalAttachments)) return;
@@ -100,16 +105,13 @@ public abstract class EntityMixin {
 		}
 	}
 	
-	// TODO
-	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing", cancellable = true)
-	public void postCheckInFluid(TagKey<Fluid> fluids, double something, CallbackInfoReturnable<Boolean> cir) {
-		boolean wasInFluid = cir.getReturnValueZ();
-		final boolean[] inFluid = {wasInFluid};
+	// forge, casually rewriting the entirety of fluid logic
+	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing()V", remap = false)
+	public void postCheckInFluid(CallbackInfo ci) {
 		SU$runPerWorld((level, regionPos) -> {
-			inFluid[0] = inFluid[0] || EntityQol.runSUFluidCheck((Entity) (Object) this, fluids, something, level, regionPos, fluidHeight);
+			// TODO: optimize?
+			EntityQol.runSUFluidCheck((Entity) (Object) this, level, regionPos, fluidHeight, forgeFluidTypeHeight);
 		});
-		if (inFluid[0] && !wasInFluid)
-			cir.setReturnValue(true);
 	}
 	
 	@Inject(at = @At("RETURN"), method = "updateFluidOnEyes")

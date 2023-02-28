@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import tfc.smallerunits.mixin.quality.EntityMixin;
 import tfc.smallerunits.utils.asm.AssortedQol;
 import tfc.smallerunits.utils.selection.MutableVec3;
 
@@ -39,7 +40,7 @@ public class SUTesselator extends Tesselator {
 	
 	@Override
 	public void end() {
-		BufferUploader.draw(this.builder.end());
+		BufferUploader.drawWithShader(this.builder.end());
 	}
 	
 	public class TranslatingBufferBuilder extends BufferBuilder {
