@@ -273,10 +273,10 @@ public class EntityQol {
 				}
 				
 				entity.push(interim.middle.x, interim.middle.y, interim.middle.z);
-				
-				double d = forgeFluidTypeHeight.getOrDefault(fluidType, 0d);
-				forgeFluidTypeHeight.put(fluidType, Math.max(d, interim.getRight()));
 			}
+			
+			double d = forgeFluidTypeHeight.getOrDefault(fluidType, 0d);
+			forgeFluidTypeHeight.put(fluidType, Math.max(d, interim.getRight()));
 		}
 	}
 	

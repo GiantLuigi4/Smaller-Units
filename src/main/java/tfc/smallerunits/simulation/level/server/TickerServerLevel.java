@@ -8,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -21,7 +22,6 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.FallingBlockEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.*;
@@ -39,7 +39,6 @@ import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
-import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
@@ -69,7 +68,6 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
-import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -231,6 +229,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
+	// TODO: look into correcting this?
 	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
@@ -251,32 +250,67 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			Level lvl = parent.get();
 			if (lvl == null) return;
 			for (Player player : lvl.players()) {
-				if (player == pPlayer) continue;
+//				if (player == pPlayer) continue;
 				
 				double fScl = finalScl;
 				fScl *= 1 / ResizingUtils.getSize(player);
-				sendSoundEvent(pPlayer, finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * fScl), pPitch);
+				this.playSeededSoundTo(
+						player, finalPX, finalPY, finalPZ,
+						pSound, pCategory, (float) (pVolume * fScl),
+						pPitch, this.random.nextLong()
+				);
 			}
 		});
 	}
 	
-	public void sendSoundEvent(@javax.annotation.Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
-		if (pPlayer != null) {
-			net.minecraftforge.event.PlayLevelSoundEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(pPlayer, pSound, pCategory, pVolume, pPitch);
-			if (event.isCanceled() || event.getSound() == null) return;
-			pSound = event.getSound();
-			pCategory = event.getSource();
-			pVolume = event.getNewVolume();
-			broadcastTo(pPlayer, pX, pY, pZ, pVolume > 1.0F ? (double) (16.0F * pVolume) : 16.0D, this.dimension(), new ClientboundSoundPacket(pSound, pCategory, pX, pY, pZ, pVolume, pPitch, this.getSeed()));
-		}
+	// TODO: override this instead of the vanilla method?
+	public void playSeededSound(@javax.annotation.Nullable Player p_215027_, Entity p_215028_, SoundEvent p_215029_, SoundSource p_215030_, float p_215031_, float p_215032_, long p_215033_) {
+		net.minecraftforge.event.PlayLevelSoundEvent.AtEntity event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(p_215028_, p_215029_, p_215030_, p_215031_, p_215032_);
+		if (event.isCanceled() || event.getSound() == null) return;
+		p_215029_ = event.getSound();
+		p_215030_ = event.getSource();
+		p_215031_ = event.getNewVolume();
+		p_215032_ = event.getNewPitch();
+		broadcastTo(p_215027_, p_215028_.getX(), p_215028_.getY(), p_215028_.getZ(), (double) p_215029_.getRange(p_215031_), this.dimension(), new ClientboundSoundEntityPacket(p_215029_, p_215030_, p_215028_, p_215031_, p_215032_, p_215033_));
 	}
 	
-	public void broadcastTo(@javax.annotation.Nullable Player pExcept, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {
+	public void playSeededSoundTo(@javax.annotation.Nullable Player p_215027_, Entity p_215028_, SoundEvent p_215029_, SoundSource p_215030_, float p_215031_, float p_215032_, long p_215033_) {
+		net.minecraftforge.event.PlayLevelSoundEvent.AtEntity event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(p_215028_, p_215029_, p_215030_, p_215031_, p_215032_);
+		if (event.isCanceled() || event.getSound() == null) return;
+		p_215029_ = event.getSound();
+		p_215030_ = event.getSource();
+		p_215031_ = event.getNewVolume();
+		p_215032_ = event.getNewPitch();
+		broadcastTo(p_215027_, p_215028_.getX(), p_215028_.getY(), p_215028_.getZ(), (double) p_215029_.getRange(p_215031_), this.dimension(), new ClientboundSoundEntityPacket(p_215029_, p_215030_, p_215028_, p_215031_, p_215032_, p_215033_));
+	}
+	
+	// TODO: override this instead of the vanilla method?
+	public void playSeededSound(@javax.annotation.Nullable Player p_215017_, double p_215018_, double p_215019_, double p_215020_, SoundEvent p_215021_, SoundSource p_215022_, float p_215023_, float p_215024_, long p_215025_) {
+		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_215018_, p_215019_, p_215020_, p_215021_, p_215022_, p_215023_, p_215024_);
+		if (event.isCanceled() || event.getSound() == null) return;
+		p_215021_ = event.getSound();
+		p_215022_ = event.getSource();
+		p_215023_ = event.getNewVolume();
+		p_215024_ = event.getNewPitch();
+		broadcastTo(p_215017_, p_215018_, p_215019_, p_215020_, (double) p_215021_.getRange(p_215023_), this.dimension(), new ClientboundSoundPacket(p_215021_, p_215022_, p_215018_, p_215019_, p_215020_, p_215023_, p_215024_, p_215025_));
+	}
+	
+	public void playSeededSoundTo(@javax.annotation.Nullable Player p_215017_, double p_215018_, double p_215019_, double p_215020_, SoundEvent p_215021_, SoundSource p_215022_, float p_215023_, float p_215024_, long p_215025_) {
+		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_215018_, p_215019_, p_215020_, p_215021_, p_215022_, p_215023_, p_215024_);
+		if (event.isCanceled() || event.getSound() == null) return;
+		p_215021_ = event.getSound();
+		p_215022_ = event.getSource();
+		p_215023_ = event.getNewVolume();
+		p_215024_ = event.getNewPitch();
+		broadcastTo(p_215017_, p_215018_, p_215019_, p_215020_, (double) p_215021_.getRange(p_215023_), this.dimension(), new ClientboundSoundPacket(p_215021_, p_215022_, p_215018_, p_215019_, p_215020_, p_215023_, p_215024_, p_215025_));
+	}
+	
+	public void broadcastTo(@javax.annotation.Nullable Player pTo, double pX, double pY, double pZ, double pRadius, ResourceKey<Level> pDimension, Packet<?> pPacket) {
 		Level lvl = parent.get();
 		if (lvl == null) return;
 		for (int i = 0; i < lvl.players().size(); ++i) {
 			ServerPlayer serverplayer = (ServerPlayer) lvl.players().get(i);
-			if (serverplayer != pExcept && serverplayer.level.dimension() == pDimension) {
+			if (serverplayer == pTo && serverplayer.level.dimension() == pDimension) {
 				double d0 = pX - serverplayer.getX();
 				double d1 = pY - serverplayer.getY();
 				double d2 = pZ - serverplayer.getZ();
