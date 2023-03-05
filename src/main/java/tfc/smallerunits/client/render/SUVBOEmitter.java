@@ -76,7 +76,6 @@ public class SUVBOEmitter {
 		stack.scale(scl, scl, scl);
 		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
 		buffers.setDefaultVal((type) -> {
-			if (type == RenderType.translucent() && PlatformUtils.isLoaded("sodium")) type = RenderType.translucentMovingBlock();
 			BufferBuilder builder = storage.getBuilder(type);
 			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 			return builder;

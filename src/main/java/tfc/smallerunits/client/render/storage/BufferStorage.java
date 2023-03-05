@@ -55,12 +55,6 @@ public class BufferStorage {
 			if (builder == null) sortableBuffers.put(type, builder = new BufferBuilder(type.bufferSize()));
 			return builder;
 		}
-		
-		BufferBuilder builder = bufferBuilderPack.builder(type);
-		if (builder == null) {
-			builder = sortableBuffers.get(type);
-			if (builder == null) sortableBuffers.put(type, builder = new BufferBuilder(4832));
-		}
-		return builder;
+		return bufferBuilderPack.builder(type);
 	}
 }

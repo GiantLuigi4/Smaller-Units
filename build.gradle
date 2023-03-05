@@ -66,10 +66,17 @@ dependencies {
 
     modImplementation "curse.maven:sodium-394468:3669187"
     modImplementation "curse.maven:indium-459496:3911811"
+    modImplementation "curse.maven:iris-455508:4385031"
     implementation 'org.joml:joml:1.10.2'
 
     modCompileOnly "curse.maven:vivecraft-667903:4409424"
     modCompileOnly "curse.maven:vfe-325360:3893747" // TODO: is there a fabric equivalent?
+
+    for (File f : new File("libs").listFiles())
+        if (!f.isDirectory())
+            implementation files(f)
+    for (File f : new File("libs/deobf").listFiles())
+        modImplementation files(f)
 
     modImplementation("com.github.Virtuoel:KanosConfig:0.3.1", {
         exclude group: "net.fabricmc", module: "fabric-loader"

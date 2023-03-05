@@ -1,5 +1,6 @@
 package tfc.smallerunits.client.compat;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -7,9 +8,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import net.coderbot.iris.Iris;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -20,6 +23,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL40;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.abstraction.SodiumFrustum;
@@ -33,18 +38,24 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 
 public class SodiumRenderer {
-	public static void render(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
-		RenderType shaderType = renderLayer;
-		// I hate both of these
+	public static void doRender(boolean isShaderPresent, RenderType shaderType, RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
+		RenderDevice.exitManagedCode();
+		
+		// I hate all of these
 		// but I couldn't find any other solution
-		if (renderLayer == RenderType.translucent()) shaderType = RenderType.translucentMovingBlock();
-		else if (renderLayer == RenderType.cutout()) shaderType = RenderType.solid();
+		if (!isShaderPresent) {
+			if (renderLayer == RenderType.translucent()) shaderType = RenderType.translucentMovingBlock();
+			else if (renderLayer == RenderType.tripwire()) shaderType = RenderType.translucentMovingBlock();
+			else if (renderLayer == RenderType.cutout()) shaderType = RenderType.translucentMovingBlock();
+			else if (renderLayer == RenderType.cutoutMipped()) shaderType = RenderType.translucentMovingBlock();
+		}
 		shaderType.setupRenderState();
 		
 		ShaderInstance instance = RenderSystem.getShader();
@@ -54,7 +65,24 @@ public class SodiumRenderer {
 			return;
 		}
 		
-		instance.apply();
+		if (
+				(renderLayer != RenderType.solid() && isShaderPresent) ||
+						(renderLayer != shaderType && !isShaderPresent)
+		) {
+			// I don't know why the heck this is needed
+			GlStateManager._glUseProgram(instance.getId());
+			instance.apply();
+			
+			// this is slow
+			int[] id = new int[1];
+			GL11.glGetIntegerv(GL40.GL_CURRENT_PROGRAM, id);
+			if (id[0] == 0) {
+				instance.clear();
+				shaderType.clearRenderState();
+			}
+		} else {
+			instance.apply();
+		}
 		
 		if (instance.MODEL_VIEW_MATRIX != null) {
 			instance.MODEL_VIEW_MATRIX.set(matrixStack.last().pose());
@@ -131,6 +159,38 @@ public class SodiumRenderer {
 		}
 		
 		shaderType.clearRenderState();
+		
+		RenderDevice.enterManagedCode();
+	}
+	
+	public static void render(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
+		RenderType shaderType = renderLayer;
+		
+		boolean isShaderPresent = false;
+		if (PlatformUtils.isLoaded("iris")) {
+			if (Iris.getCurrentPack().isPresent()) {
+				// for some reason, translucent bricks rendering with iris if I render it where it's meant to be rendered
+				// so instead, I render it where tripwires render, because for some reason, that doesn't brick rendering
+				if (renderLayer == RenderType.translucent())
+					return;
+				isShaderPresent = true;
+			}
+		}
+		
+		if (renderLayer == RenderType.tripwire()) {
+			doRender(
+					isShaderPresent, RenderType.translucent(), RenderType.translucent(),
+					matrixStack, x, y, z, ci,
+					frustum, client, world,
+					renderSectionManager
+			);
+		}
+		doRender(
+				isShaderPresent, shaderType, renderLayer,
+				matrixStack, x, y, z, ci,
+				frustum, client, world,
+				renderSectionManager
+		);
 	}
 	
 	public static void renderSection(BlockPos origin, RenderSection instance, PoseStack stk, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {
