@@ -1,7 +1,6 @@
 package tfc.smallerunits.utils.asm;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.MappingResolver;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -17,19 +16,17 @@ import java.util.Set;
 
 public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> classLookup = new ArrayList<>();
+	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
 	
 	static {
-		classLookup.add("tfc.smallerunits.mixin.compat.ChiselAndBitMeshMixin");
-		classLookup.add("tfc.smallerunits.mixin.compat.sodium.SodiumLevelRendererMixin");
-		classLookup.add("tfc.smallerunits.mixin.compat.sodium.RenderSectionManagerMixin");
-		classLookup.add("tfc.smallerunits.mixin.compat.alternate_current.ACLevelAccessMixin");
+		pkgLookup.add("tfc.smallerunits.mixin.compat.");
 		classLookup.add("tfc.smallerunits.mixin.dangit.block_pos.RSNetworkNodeMixin");
 		
 		{
 			ArrayList<String> incompat = new ArrayList<>();
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
-			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
 		}
 	}
 	
@@ -42,9 +39,16 @@ public class MixinConnector implements IMixinConfigPlugin {
 		return null;
 	}
 	
+	public boolean doesPkgNeedLookup(String name) {
+		for (String s : pkgLookup) {
+			if (name.startsWith(s)) return true;
+		}
+		return false;
+	}
+	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		if (classLookup.contains(mixinClassName)) {
+		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
 			InputStream stream = loader.getResourceAsStream(targetClassName.replace('.', '/') + ".class");

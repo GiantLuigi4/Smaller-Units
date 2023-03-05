@@ -20,6 +20,7 @@ import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
@@ -75,6 +76,7 @@ public class SUVBOEmitter {
 		stack.scale(scl, scl, scl);
 		DefaultedMap<RenderType, BufferBuilder> buffers = new DefaultedMap<>();
 		buffers.setDefaultVal((type) -> {
+			if (type == RenderType.translucent() && PlatformUtils.isLoaded("sodium")) type = RenderType.translucentMovingBlock();
 			BufferBuilder builder = storage.getBuilder(type);
 			builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 			return builder;

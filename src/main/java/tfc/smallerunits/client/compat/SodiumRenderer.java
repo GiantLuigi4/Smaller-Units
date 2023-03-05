@@ -1,41 +1,56 @@
 package tfc.smallerunits.client.compat;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Matrix4f;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.*;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.BlockDestructionProgress;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.abstraction.SodiumFrustum;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.client.access.tracking.sodium.RenderSectionManagerAccessor;
 import tfc.smallerunits.client.render.SURenderManager;
+import tfc.smallerunits.client.render.TileRendererHelper;
+import tfc.smallerunits.data.capability.ISUCapability;
+import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.BreakData;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 
 public class SodiumRenderer {
 	public static void render(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
-		renderLayer.setupRenderState();
+		RenderType shaderType = renderLayer;
+		// I hate both of these
+		// but I couldn't find any other solution
+		if (renderLayer == RenderType.translucent()) shaderType = RenderType.translucentMovingBlock();
+		else if (renderLayer == RenderType.cutout()) shaderType = RenderType.solid();
+		shaderType.setupRenderState();
 		
 		ShaderInstance instance = RenderSystem.getShader();
 		
-		RenderSystem.disableBlend();
-		
 		if (instance == null) {
-			renderLayer.clearRenderState();
+			shaderType.clearRenderState();
 			return;
 		}
 		
@@ -54,7 +69,14 @@ public class SodiumRenderer {
 			instance.COLOR_MODULATOR.upload();
 		}
 		
-		Uniform uniform = instance.CHUNK_OFFSET;
+		boolean isMatrix = false;
+		Uniform uniform;
+		if (instance.CHUNK_OFFSET == null) {
+			isMatrix = true;
+			uniform = instance.MODEL_VIEW_MATRIX;
+		} else {
+			uniform = instance.CHUNK_OFFSET;
+		}
 		
 		BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos();
 		for (Map.Entry<RenderRegion, List<RenderSection>> renderRegionListEntry : ((RenderSectionManagerAccessor) renderSectionManager).getChunkRenderList().sorted(false)) {
@@ -68,15 +90,26 @@ public class SodiumRenderer {
 				}
 				
 				origin.set(
-						-(renderSection.getChunkX() >> 4),
-						-(renderSection.getChunkY() >> 4) - 1,
-						-(renderSection.getChunkZ() >> 4)
+						-(renderSection.getChunkX() << 4),
+						-(renderSection.getChunkY() << 4),
+						-(renderSection.getChunkZ() << 4)
 				);
-				uniform.set(
-						(float) (-(origin.getX() * 16) - x),
-						(float) (-(origin.getY() * 16) - y),
-						(float) (-(origin.getZ() * 16) - z)
-				);
+				if (isMatrix) {
+					matrixStack.pushPose();
+					matrixStack.translate(
+							(float) (-(origin.getX()) - x),
+							(float) (-(origin.getY()) - y),
+							(float) (-(origin.getZ()) - z)
+					);
+					uniform.set(matrixStack.last().pose());
+					matrixStack.popPose();
+				} else {
+					uniform.set(
+							(float) (-(origin.getX()) - x),
+							(float) (-(origin.getY()) - y),
+							(float) (-(origin.getZ()) - z)
+					);
+				}
 				
 				SURenderManager.drawChunk(
 						(LevelChunk) chunk, world, origin, renderLayer,
@@ -92,9 +125,116 @@ public class SodiumRenderer {
 			instance.MODEL_VIEW_MATRIX.set(mat);
 			instance.MODEL_VIEW_MATRIX.upload();
 		}
-		uniform.set(0, 0, 0);
-		uniform.upload();
+		if (!isMatrix) {
+			uniform.set(0f, 0, 0);
+			uniform.upload();
+		}
 		
-		renderLayer.clearRenderState();
+		shaderType.clearRenderState();
+	}
+	
+	public static void renderSection(BlockPos origin, RenderSection instance, PoseStack stk, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {
+		SUCapableChunk capable = ((SUCompiledChunkAttachments) instance).getSUCapable();
+		
+		if (capable == null)
+			((SUCompiledChunkAttachments) instance).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
+		
+		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
+		
+		UnitSpace[] spaces = capability.getUnits();
+		// no reason to do SU related rendering in chunks where SU has not been used
+		if (spaces.length == 0) return;
+		
+		stk.pushPose();
+		Vec3 cam = Minecraft.getInstance().getEntityRenderDispatcher().camera.getPosition();
+		stk.translate(origin.getX() - cam.x, origin.getY() - cam.y, origin.getZ() - cam.z);
+		
+		/* draw indicators */
+		RenderType.solid().setupRenderState();
+		ShaderInstance shader = GameRenderer.getPositionColorShader();
+		shader.apply();
+		RenderSystem.setShader(() -> shader);
+		BufferUploader.reset();
+		RenderSystem.setupShaderLights(shader);
+		if (shader.PROJECTION_MATRIX != null) {
+			shader.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
+			shader.PROJECTION_MATRIX.upload();
+		}
+		TileRendererHelper.markNewFrame();
+		
+		boolean hammerHeld = IHateTheDistCleaner.isHammerHeld();
+		for (UnitSpace unit : spaces) {
+			if (unit != null) {
+				TileRendererHelper.drawUnit(
+						frustum,
+						unit.pos, unit.unitsPerBlock, unit.isNatural,
+						hammerHeld, unit.isEmpty(), null, stk,
+//						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
+						LightTexture.pack(0, 0),
+						origin.getX(), origin.getY(), origin.getZ()
+				);
+			}
+		}
+		
+		shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+		shader.COLOR_MODULATOR.upload();
+		
+		VertexBuffer.unbind();
+		VertexBuffer.unbindVertexArray();
+		shader.clear();
+		RenderType.solid().clearRenderState();
+		
+		/* breaking overlays */
+		for (UnitSpace unit : capability.getUnits()) {
+			if (unit != null) {
+				ITickerLevel world = (ITickerLevel) unit.getMyLevel();
+				for (BreakData integer : world.getBreakData().values()) {
+					BlockPos minPos = unit.getOffsetPos(new BlockPos(0, 0, 0));
+					BlockPos maxPos = unit.getOffsetPos(new BlockPos(unit.unitsPerBlock, unit.unitsPerBlock, unit.unitsPerBlock));
+					BlockPos posInQuestion = integer.pos;
+					if (
+							maxPos.getX() > posInQuestion.getX() && posInQuestion.getX() >= minPos.getX() &&
+									maxPos.getY() > posInQuestion.getY() && posInQuestion.getY() >= minPos.getY() &&
+									maxPos.getZ() > posInQuestion.getZ() && posInQuestion.getZ() >= minPos.getZ()
+					)
+						TileRendererHelper.drawBreakingOutline(integer.prog, bufferBuilders, stk, unit.getMyLevel(), integer.pos, ((Level) world).getBlockState(integer.pos), client);
+				}
+			}
+		}
+		
+		synchronized (capable.getTiles()) {
+			BlockEntity[] bes = new BlockEntity[0];
+			// TODO: debug????
+			try {
+				bes = capable.getTiles().toArray(bes);
+			} catch (Throwable ignored) {
+			}
+			stk.pushPose();
+			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
+			for (BlockEntity tile : bes)
+				TileRendererHelper.renderBE(tile, origin, frustum, stk, Minecraft.getInstance().getBlockEntityRenderDispatcher(), tickDelta);
+			stk.popPose();
+		}
+		stk.popPose();
+	}
+	
+	public static void renderTEs(PoseStack matrices, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
+		BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos();
+		for (Map.Entry<RenderRegion, List<RenderSection>> renderRegionListEntry : ((RenderSectionManagerAccessor) renderSectionManager).getChunkRenderList().sorted(false)) {
+			for (RenderSection renderSection : renderRegionListEntry.getValue()) {
+				origin.set(
+						-(renderSection.getChunkX() << 4),
+						-(renderSection.getChunkY() << 4),
+						-(renderSection.getChunkZ() << 4)
+				);
+				renderSection(
+						origin, renderSection,
+						matrices, bufferBuilders, blockBreakingProgressions,
+						camera, tickDelta, ci,
+						frustum, client, world,
+						renderSectionManager
+				);
+			}
+		}
 	}
 }
