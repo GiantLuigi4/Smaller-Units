@@ -38,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
+import tfc.smallerunits.client.abstraction.VanillaFrustum;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.client.render.SURenderManager;
@@ -106,6 +107,9 @@ public abstract class LevelRendererMixin {
 	
 	@Shadow
 	public abstract void tick();
+	
+	@Unique
+	VanillaFrustum SU$Frustum = new VanillaFrustum();
 	
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientLevel;entitiesForRendering()Ljava/lang/Iterable;"), method = "renderLevel")
 	public void beforeRenderEntities(PoseStack stack, float i, long j, boolean k, Camera l, GameRenderer i1, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
@@ -335,7 +339,8 @@ public abstract class LevelRendererMixin {
 			uniform.set((float) ((double) origin.getX() - pCamX), (float) ((double) origin.getY() - pCamY), (float) ((double) origin.getZ() - pCamZ));
 		}
 		
-		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, capturedFrustum != null ? capturedFrustum : cullingFrustum, pCamX, pCamY, pCamZ, uniform);
+		SU$Frustum.set(capturedFrustum != null ? capturedFrustum : cullingFrustum);
+		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, SU$Frustum, pCamX, pCamY, pCamZ, uniform);
 		return instance.isEmpty(pRenderType);
 	}
 }

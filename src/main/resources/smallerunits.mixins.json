@@ -63,7 +63,11 @@
     "quality.BlockEntityRendererMixin",
     "quality.CameraMixin",
     "quality.ParticleEngineAccessor",
-    "quality.TesselatorMixin"
+    "quality.TesselatorMixin",
+    "compat.sodium.RenderSectionManagerMixin",
+    "compat.sodium.SodiumLevelRendererMixin",
+    "compat.sodium.RenderSectionMixin",
+    "compat.sodium.SodiumDebugOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1

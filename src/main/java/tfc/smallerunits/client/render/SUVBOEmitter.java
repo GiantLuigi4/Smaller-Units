@@ -23,6 +23,7 @@ import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -67,8 +68,6 @@ public class SUVBOEmitter {
 		PoseStack stack = new PoseStack();
 		stack.translate(
 				pos.getX() - chunk.getPos().getMinBlockX(),
-//				pos.getY() < 0 ? ((16 - pos.getY() % 16) - 16) : (pos.getY() % 16),
-//				Math1D.chunkMod(pos.getY(), 16),
 				pos.getY() & 15,
 				pos.getZ() - chunk.getPos().getMinBlockZ()
 		);
@@ -117,8 +116,8 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
-//					if (block == null) continue;
 					if (block.isAir()) continue;
+					
 					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
 						if (PlatformUtilsClient.checkRenderLayer(fluid, chunkBufferLayer)) {
@@ -145,12 +144,19 @@ public class SUVBOEmitter {
 							stk.translate(x, y, z);
 							
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
+//							dispatcher.getModelRenderer().tesselateWithAO(
+//									wld, dispatcher.getBlockModel(block),
+//									block, offsetPos, stk,
+//									consumer, true,
+//									new Random(offsetPos.asLong()),
+//									0, 0
+//							);
+							
 							dispatcher.renderBatched(
 									block, offsetPos, wld, stk, consumer,
 									true, new Random(offsetPos.asLong())
 							);
-
-//							stk.translate(-x, -y, -z);
+							
 							stk.popPose();
 						}
 					}
