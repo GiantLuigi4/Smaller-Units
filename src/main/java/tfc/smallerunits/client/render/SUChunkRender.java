@@ -5,10 +5,10 @@ import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
+import tfc.smallerunits.client.abstraction.IFrustum;
 import tfc.smallerunits.client.render.storage.BufferStorage;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ public class SUChunkRender {
 		this.chunk = chunk;
 	}
 	
-	public void draw(BlockPos positionRendering, RenderType type, Frustum frustum, AbstractUniform uniform) {
+	public void draw(BlockPos positionRendering, RenderType type, IFrustum frustum, AbstractUniform uniform) {
 		int yRL = positionRendering.getY();
 		int yRM = positionRendering.getY() + 15;
 		if (!buffers.isEmpty()) {
@@ -31,7 +31,7 @@ public class SUChunkRender {
 			if (buffer.getFirst().getY() > yRM || buffer.getFirst().getY() < yRL) continue;
 			BufferStorage strg = buffer.getSecond();
 			if (strg.hasActive(type)) {
-				if (frustum.isVisible(new AABB(
+				if (frustum.test(new AABB(
 						buffer.getFirst().getX(),
 						buffer.getFirst().getY(),
 						buffer.getFirst().getZ(),

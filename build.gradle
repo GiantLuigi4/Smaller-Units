@@ -161,7 +161,7 @@ dependencies {
     api fg.deobf("curse.maven:chisel_and_bits-231095:3775218")
     api fg.deobf("curse.maven:pehkui-319596:3808012")
     api fg.deobf("curse.maven:alternate_current-548115:3789218")
-    api fg.deobf("curse.maven:vivecraft-667903:3984471")
+    compileOnly fg.deobf("curse.maven:vivecraft-667903:3984471")
     compileOnly fg.deobf("curse.maven:vfe-325360:3893747")
 
     /* libraries */
@@ -237,7 +237,8 @@ dependencies {
     addMod "curse.maven:refined_storage-243076:3712882", "Storage"
     addMod "curse.maven:appeng-223794:4136407", "Storage"
 
-//    addMod "curse.maven:rubidium-574856:4024781", "Optimization"
+    addMod "curse.maven:rubidium-574856:4024781", "Optimization"
+    addMod "curse.maven:oculus-581495:4354939", "Optimization"
     addMod "curse.maven:krypton-549394:3819215", "Optimization"
     addMod "curse.maven:ferrite-429235:3767288", "Optimization"
 

@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -23,6 +22,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.SmallerUnits;
+import tfc.smallerunits.client.abstraction.IFrustum;
 import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.SUTesselator;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
@@ -74,7 +74,7 @@ public class TileRendererHelper {
 	private static BufferBuilder theBuilder = new BufferBuilder(128);
 	
 	//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-	public static void drawUnit(Frustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
+	public static void drawUnit(IFrustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 //		if (true) return;
 		
 		float r = 1;
@@ -362,7 +362,7 @@ public class TileRendererHelper {
 		}
 	}
 	
-	public static void renderBE(BlockEntity tile, BlockPos origin, Frustum frustum, PoseStack stk, BlockEntityRenderDispatcher blockEntityRenderDispatcher, float pct) {
+	public static void renderBE(BlockEntity tile, BlockPos origin, IFrustum frustum, PoseStack stk, BlockEntityRenderDispatcher blockEntityRenderDispatcher, float pct) {
 		if (tile.getLevel() == null) return; // idk how this happens, but ok?
 		if (new RegionPos(origin).equals(((FakeClientLevel) tile.getLevel()).region.pos)) {
 			int y = tile.getBlockPos().getY() / ((FakeClientLevel) tile.getLevel()).upb;
@@ -393,7 +393,7 @@ public class TileRendererHelper {
 //					);
 //					stk.popPose();
 //				}
-				if (frustum.isVisible(renderBox)) {
+				if (frustum.test(renderBox)) {
 					TileRendererHelper.setupStack(stk, tile, origin);
 					blockEntityRenderDispatcher.render(
 							tile, pct,

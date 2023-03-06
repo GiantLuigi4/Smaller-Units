@@ -18,16 +18,18 @@
     "quality.PlayerMixin", "quality.vr.PistonMixin"
   ],
   "client": [
-    "LevelRendererMixin", "compat.ChiselAndBitMeshMixin", "core.ClientLevelMixin", "core.LocalPlayerMixin",
-    "core.MinecraftMixin", "core.MultiPlayerGameModeMixin", "core.PersistentEntitySectionManagerMixin",
-    "core.access.ClientPacketListenerMixin", "core.gui.client.ForgeHooksClientMixin",
-    "core.gui.client.KeyboardHandlerMixin", "core.gui.client.MinecraftMixin", "core.gui.client.MouseHandlerMixin",
-    "core.gui.client.ScreenMixin", "core.gui.client.expansion.DebugScreenOverlayMixin", "dangit.ClientLevelMixin",
-    "dangit.ForgeWhy", "data.AbstractClientPlayerMixin", "data.CompiledChunkMixin", "data.LevelChunkMixin",
-    "data.LevelMixin", "data.access.VertexBufferMixin", "data.regions.ClientChunkCacheMixin",
-    "data.regions.ClientLevelMixin", "data.regions.LevelMixin", "debug.RenderWorldLast",
-    "quality.BlockEntityRenderDispatcherMixin", "quality.BlockEntityRendererMixin", "quality.CameraMixin",
-    "quality.ParticleEngineAccessor",
+    "LevelRendererMixin", "LevelRendererMixinBlocks", "compat.ChiselAndBitMeshMixin",
+    "compat.sodium.RenderSectionManagerMixin", "compat.sodium.RenderSectionMixin",
+    "compat.sodium.SodiumDebugOverlayMixin", "compat.sodium.SodiumLevelRendererMixin", "core.ClientLevelMixin",
+    "core.LocalPlayerMixin", "core.MinecraftMixin", "core.MultiPlayerGameModeMixin",
+    "core.PersistentEntitySectionManagerMixin", "core.access.ClientPacketListenerMixin",
+    "core.gui.client.ForgeHooksClientMixin", "core.gui.client.KeyboardHandlerMixin", "core.gui.client.MinecraftMixin",
+    "core.gui.client.MouseHandlerMixin", "core.gui.client.ScreenMixin",
+    "core.gui.client.expansion.DebugScreenOverlayMixin", "dangit.ClientLevelMixin", "dangit.ForgeWhy",
+    "data.AbstractClientPlayerMixin", "data.CompiledChunkMixin", "data.LevelChunkMixin", "data.LevelMixin",
+    "data.access.VertexBufferMixin", "data.regions.ClientChunkCacheMixin", "data.regions.ClientLevelMixin",
+    "data.regions.LevelMixin", "debug.RenderWorldLast", "quality.BlockEntityRenderDispatcherMixin",
+    "quality.BlockEntityRendererMixin", "quality.CameraMixin", "quality.ParticleEngineAccessor",
     "quality.TesselatorMixin"
   ],
   "injectors": {

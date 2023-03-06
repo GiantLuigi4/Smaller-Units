@@ -7,19 +7,19 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
+import tfc.smallerunits.client.abstraction.IFrustum;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCapableWorld;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 
 public class SURenderManager {
-	public static void drawChunk(LevelChunk chunk, Level world, BlockPos positionRendering, RenderType type, Frustum frustum, double pCamX, double pCamY, double pCamZ, AbstractUniform uniform) {
+	public static void drawChunk(LevelChunk chunk, Level world, BlockPos positionRendering, RenderType type, IFrustum frustum, double pCamX, double pCamY, double pCamZ, AbstractUniform uniform) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		Minecraft.getInstance().getProfiler().push("SU");
 		Minecraft.getInstance().getProfiler().push("setup");
