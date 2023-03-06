@@ -1,6 +1,9 @@
 package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.coderbot.iris.block_rendering.BlockRenderingSettings;
+import net.coderbot.iris.vertices.BlockSensitiveBufferBuilder;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -17,6 +20,7 @@ import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.ModelDataManager;
 import net.minecraftforge.client.model.data.EmptyModelData;
 import net.minecraftforge.client.model.data.IModelData;
+import net.minecraftforge.fml.ModList;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.storage.BufferStorage;
@@ -104,7 +108,28 @@ public class SUVBOEmitter {
 		return storage;
 	}
 	
+	protected static boolean irisPresent = ModList.get().isLoaded("oculus");
+	
+	protected static void beginBlock(VertexConsumer consumer, BlockPos pos, BlockState block, Object2IntMap<BlockState> map, boolean isFluid) {
+		if (irisPresent) {
+			((BlockSensitiveBufferBuilder) consumer).beginBlock(
+					(short) (map == null ? -1 : map.getOrDefault(isFluid ? block.getFluidState().createLegacyBlock() : block, -1)),
+					(short) -1,
+					pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15
+			);
+		}
+	}
+	
+	private void endBlock(VertexConsumer consumer) {
+		if (irisPresent) {
+			((BlockSensitiveBufferBuilder) consumer).endBlock();
+		}
+	}
+	
 	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
+		Object2IntMap<BlockState> map = null;
+		if (irisPresent) map = BlockRenderingSettings.INSTANCE.getBlockStateIds();
+		
 		VertexConsumer consumer = null;
 		TranslatingVertexBuilder vertexBuilder = null;
 		SectionPos chunkPos = SectionPos.of(new BlockPos(space.pos.getX() & 511, space.pos.getY() & 511, space.pos.getZ() & 511));
@@ -119,7 +144,6 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
-//					if (block == null) continue;
 					if (block.isAir()) continue;
 					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
@@ -130,14 +154,16 @@ public class SUVBOEmitter {
 							}
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 							vertexBuilder.offset = new Vec3(
-									((int) Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
-									((int) Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
-									((int) Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
+									Math1D.getChunkOffset(offsetPos.getX(), 16) * 16 - chunkOffset.getX() * space.unitsPerBlock,
+									Math1D.getChunkOffset(offsetPos.getY(), 16) * 16 - chunkOffset.getY() * space.unitsPerBlock,
+									Math1D.getChunkOffset(offsetPos.getZ(), 16) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
+							beginBlock(consumer, offsetPos, block, map, true);
 							dispatcher.renderLiquid(
 									offsetPos, wld, vertexBuilder,
 									block, fluid
 							);
+							endBlock(consumer);
 						}
 					}
 					if (block.getRenderShape() != RenderShape.INVISIBLE) {
@@ -146,17 +172,16 @@ public class SUVBOEmitter {
 							stk.pushPose();
 							stk.translate(x, y, z);
 							
-							// TODO: check this
-							// TODO: what is there to check here?
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 							IModelData data = ModelDataManager.getModelData(space.getMyLevel(), offsetPos);
 							if (data == null) data = EmptyModelData.INSTANCE;
+							beginBlock(consumer, offsetPos, block, map, false);
 							dispatcher.renderBatched(
 									block, offsetPos, wld, stk, consumer,
 									true, new Random(offsetPos.asLong()), data
 							);
+							endBlock(consumer);
 
-//							stk.translate(-x, -y, -z);
 							stk.popPose();
 						}
 					}
