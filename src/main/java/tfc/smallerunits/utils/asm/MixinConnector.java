@@ -16,19 +16,17 @@ import java.util.Set;
 
 public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> classLookup = new ArrayList<>();
+	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
 	
 	static {
-		classLookup.add("tfc.smallerunits.mixin.compat.ChiselAndBitMeshMixin");
-		classLookup.add("tfc.smallerunits.mixin.compat.sodium.SodiumLevelRendererMixin");
-		classLookup.add("tfc.smallerunits.mixin.compat.sodium.RenderSectionManagerMixin");
-		classLookup.add("tfc.smallerunits.mixin.compat.alternate_current.ACLevelAccessMixin");
+		pkgLookup.add("tfc.smallerunits.mixin.compat.");
 		classLookup.add("tfc.smallerunits.mixin.dangit.block_pos.RSNetworkNodeMixin");
 		
 		{
 			ArrayList<String> incompat = new ArrayList<>();
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
-			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
 		}
 	}
 	
@@ -41,9 +39,16 @@ public class MixinConnector implements IMixinConfigPlugin {
 		return null;
 	}
 	
+	public boolean doesPkgNeedLookup(String name) {
+		for (String s : pkgLookup) {
+			if (name.startsWith(s)) return true;
+		}
+		return false;
+	}
+	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		if (classLookup.contains(mixinClassName)) {
+		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
 			InputStream stream = loader.getResourceAsStream(targetClassName.replace('.', '/') + ".class");
@@ -89,22 +94,22 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-//		if (
-//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-//		) {
-//			try {
-//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
-//				ClassWriter writer = new ClassWriter(0);
-//				targetClass.accept(writer);
-//				outputStream.write(writer.toByteArray());
-//				outputStream.flush();
-//				outputStream.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
+		if (
+				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
+						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+		) {
+			try {
+				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
+				ClassWriter writer = new ClassWriter(0);
+				targetClass.accept(writer);
+				outputStream.write(writer.toByteArray());
+				outputStream.flush();
+				outputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
 			String target = ASMAPI.mapMethod("m_172993_"); // renderChunkLayer
 			String desc = "(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"; // TODO: I'd like to not assume Mojmap
@@ -140,21 +145,21 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-//		if (
-//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-//		) {
-//			try {
-//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
-//				ClassWriter writer = new ClassWriter(0);
-//				targetClass.accept(writer);
-//				outputStream.write(writer.toByteArray());
-//				outputStream.flush();
-//				outputStream.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
+		if (
+				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
+						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+		) {
+			try {
+				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
+				ClassWriter writer = new ClassWriter(0);
+				targetClass.accept(writer);
+				outputStream.write(writer.toByteArray());
+				outputStream.flush();
+				outputStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

@@ -1,12 +1,13 @@
 package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.coderbot.iris.block_rendering.BlockRenderingSettings;
+import net.coderbot.iris.vertices.BlockSensitiveBufferBuilder;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -17,9 +18,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.client.model.data.ModelDataManager;
+import net.minecraftforge.fml.ModList;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.storage.BufferStorage;
@@ -33,7 +33,6 @@ import tfc.smallerunits.utils.storage.DefaultedMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
-import java.util.Random;
 
 public class SUVBOEmitter {
 	private static final ArrayList<BufferStorage> vbosFree = new ArrayList<>();
@@ -96,7 +95,7 @@ public class SUVBOEmitter {
 			handleLayer(chunkBufferLayer, buffers, space.getRenderWorld(), stack, upb, space, dispatcher, states);
 		}
 		Minecraft.getInstance().getProfiler().popPush("finish");
-
+		
 		Minecraft.getInstance().getProfiler().popPush("upload");
 		buffers.forEach(storage::upload);
 		Minecraft.getInstance().getProfiler().pop();
@@ -106,7 +105,28 @@ public class SUVBOEmitter {
 		return storage;
 	}
 	
+	protected static boolean irisPresent = ModList.get().isLoaded("oculus");
+	
+	protected static void beginBlock(VertexConsumer consumer, BlockPos pos, BlockState block, Object2IntMap<BlockState> map, boolean isFluid) {
+		if (irisPresent) {
+			((BlockSensitiveBufferBuilder) consumer).beginBlock(
+					(short) (map == null ? -1 : map.getOrDefault(isFluid ? block.getFluidState().createLegacyBlock() : block, -1)),
+					(short) -1,
+					pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15
+			);
+		}
+	}
+	
+	private void endBlock(VertexConsumer consumer) {
+		if (irisPresent) {
+			((BlockSensitiveBufferBuilder) consumer).endBlock();
+		}
+	}
+	
 	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
+		Object2IntMap<BlockState> map = null;
+		if (irisPresent) map = BlockRenderingSettings.INSTANCE.getBlockStateIds();
+		
 		VertexConsumer consumer = null;
 		TranslatingVertexBuilder vertexBuilder = null;
 		SectionPos chunkPos = SectionPos.of(new BlockPos(space.pos.getX() & 511, space.pos.getY() & 511, space.pos.getZ() & 511));
@@ -139,10 +159,12 @@ public class SUVBOEmitter {
 									(Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
 									(Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
 							);
+							beginBlock(consumer, offsetPos, block, map, true);
 							dispatcher.renderLiquid(
 									offsetPos, wld, vertexBuilder,
 									block, fluid
 							);
+							endBlock(consumer);
 						}
 					}
 					if (block.getRenderShape() != RenderShape.INVISIBLE) {
@@ -151,17 +173,15 @@ public class SUVBOEmitter {
 							stk.pushPose();
 							stk.translate(x, y, z);
 							
-							// TODO: check this
-							// TODO: what is there to check here?
-
 							ModelData data = wld.getModelDataManager().getAt(offsetPos);
 							if (data == null) data = ModelData.EMPTY;
+							beginBlock(consumer, offsetPos, block, map, false);
 							dispatcher.renderBatched(
 									block, offsetPos, wld, stk, consumer,
 									true, randomSource, data, chunkBufferLayer
 							);
-
-//							stk.translate(-x, -y, -z);
+							endBlock(consumer);
+							
 							stk.popPose();
 						}
 					}

@@ -15,6 +15,7 @@ public class VFE {
 	// TODO: this is untested
 	public static SUVRPlayer getPlayer(Player player) {
 		VRPlayerData data = PlayerTracker.getPlayerDataAbsolute(player);
+		if (data == null) return null;
 		VRController head = new VRController(data.head.getPos(), mojQuat(data.head.getRot()));
 		VRController mArm = new VRController(data.controller0.getPos(), mojQuat(data.controller0.getRot()));
 		VRController oArm = new VRController(data.controller1.getPos(), mojQuat(data.controller1.getRot()));

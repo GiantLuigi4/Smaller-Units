@@ -4,11 +4,13 @@ import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.datafixers.util.Pair;
+import net.coderbot.iris.vertices.IrisVertexFormats;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
+import tfc.smallerunits.client.abstraction.IFrustum;
 import tfc.smallerunits.client.render.storage.BufferStorage;
 
 import java.util.ArrayList;
@@ -21,31 +23,34 @@ public class SUChunkRender {
 		this.chunk = chunk;
 	}
 	
-	public void draw(BlockPos positionRendering, RenderType type, Frustum frustum, AbstractUniform uniform) {
-		int yRL = positionRendering.getY();
-		int yRM = positionRendering.getY() + 15;
+	public void draw(BlockPos positionRendering, RenderType type, IFrustum frustum, AbstractUniform uniform) {
 		if (!buffers.isEmpty()) {
+			int yRL = positionRendering.getY();
+			int yRM = positionRendering.getY() + 15;
+			
 			((Uniform) uniform).upload();
-		}
-		for (Pair<BlockPos, BufferStorage> buffer : buffers) {
-			if (buffer.getFirst().getY() > yRM || buffer.getFirst().getY() < yRL) continue;
-			BufferStorage strg = buffer.getSecond();
-			if (strg.hasActive(type)) {
-				if (frustum.isVisible(new AABB(
-						buffer.getFirst().getX(),
-						buffer.getFirst().getY(),
-						buffer.getFirst().getZ(),
-						buffer.getFirst().getX() + 1,
-						buffer.getFirst().getY() + 1,
-						buffer.getFirst().getZ() + 1
-				))) {
-					VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
-					buffer1.bind();
-					buffer1.draw();
+			
+			for (Pair<BlockPos, BufferStorage> buffer : buffers) {
+				if (buffer.getFirst().getY() > yRM || buffer.getFirst().getY() < yRL) continue;
+				BufferStorage strg = buffer.getSecond();
+				if (strg.hasActive(type)) {
+					if (frustum.test(new AABB(
+							buffer.getFirst().getX(),
+							buffer.getFirst().getY(),
+							buffer.getFirst().getZ(),
+							buffer.getFirst().getX() + 1,
+							buffer.getFirst().getY() + 1,
+							buffer.getFirst().getZ() + 1
+					))) {
+						VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
+						buffer1.bind();
+						buffer1.draw();
+					}
 				}
 			}
+			
+			VertexBuffer.unbind();
 		}
-		VertexBuffer.unbind();
 	}
 	
 	public void addBuffers(BlockPos pos, BufferStorage genBuffers) {

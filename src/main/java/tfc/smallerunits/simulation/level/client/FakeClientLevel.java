@@ -665,17 +665,19 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		BlockPos pos = new BlockPos(vec);
 		this.animateTick(pos.getX(), pos.getY(), pos.getZ()); // TODO: this is borked
 
-//		this.tickEntities();
-		for (Entity entity : entitiesForRendering()) {
-			// TODO: remove null entities..?
-			if (entity != null) {
-				entity.xOld = entity.position().x;
-				entity.yOld = entity.position().y;
-				entity.zOld = entity.position().z;
-				entity.yRotO = entity.getViewYRot(1);
-				entity.xRotO = entity.getViewXRot(1);
-				entity.tick();
+		try {
+			for (Entity entity : entitiesForRendering()) {
+				// TODO: remove null entities..?
+				if (entity != null) {
+					entity.xOld = entity.position().x;
+					entity.yOld = entity.position().y;
+					entity.zOld = entity.position().z;
+					entity.yRotO = entity.getViewYRot(1);
+					entity.xRotO = entity.getViewXRot(1);
+					entity.tick();
+				}
 			}
+		} catch (Throwable ignored) {
 		}
 		
 		getLightEngine().runUpdates(10000, true, false);

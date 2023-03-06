@@ -40,6 +40,12 @@
   ],
   "client": [
     "LevelRendererMixin",
+    "LevelRendererMixinBlocks",
+    "compat.ChiselAndBitMeshMixin",
+    "compat.sodium.RenderSectionManagerMixin",
+    "compat.sodium.RenderSectionMixin",
+    "compat.sodium.SodiumDebugOverlayMixin",
+    "compat.sodium.SodiumLevelRendererMixin",
     "core.ClientLevelMixin",
     "core.LocalPlayerMixin",
     "core.MinecraftMixin",
@@ -65,7 +71,6 @@
     "quality.BlockEntityRendererMixin",
     "quality.CameraMixin",
     "quality.ParticleEngineAccessor",
-    "compat.ChiselAndBitMeshMixin",
     "quality.TesselatorMixin"
   ],
   "injectors": {

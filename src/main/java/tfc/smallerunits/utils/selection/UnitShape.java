@@ -54,6 +54,17 @@ public class UnitShape extends VoxelShape {
 		this.collisionContext = pContext;
 	}
 	
+	// TODO:
+//	@Override
+//	public double min(Direction.Axis p_166079_, double p_166080_, double p_166081_) {
+//		return p_166079_.choose(offset.x, offset.y, offset.z);
+//	}
+//
+//	@Override
+//	public double max(Direction.Axis p_83291_, double p_83292_, double p_83293_) {
+//		return p_83291_.choose(offset.x, offset.y, offset.z) + 1;
+//	}
+	
 	private static double swivelOffset(AxisCycle axiscycle, AABB pCollisionBox, AABB box, double offsetX) {
 		Direction.Axis xSwivel = axiscycle.cycle(Direction.Axis.X);
 		Direction.Axis ySwivel = axiscycle.cycle(Direction.Axis.Y);
@@ -167,11 +178,13 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public double min(Direction.Axis pAxis) {
+		if (totalBB == null) return pAxis.choose(offset.x, offset.y, offset.z);
 		return totalBB.min(pAxis);
 	}
 	
 	@Override
 	public double max(Direction.Axis pAxis) {
+		if (totalBB == null) return pAxis.choose(offset.x, offset.y, offset.z) + 1;
 		return totalBB.max(pAxis);
 	}
 	
