@@ -53,7 +53,10 @@ public class SodiumRenderer {
 		if (!isShaderPresent) {
 			if (renderLayer == RenderType.cutout()) shaderType = RenderType.translucent();
 			else if (renderLayer == RenderType.cutoutMipped()) shaderType = RenderType.translucent();
-		}
+			if (renderLayer != RenderType.solid() && ModList.get().isLoaded("vivecraft")) {
+				shaderType = RenderType.translucentMovingBlock();
+			}
+		} else if (ModList.get().isLoaded("vivecraft")) return;
 		shaderType.setupRenderState();
 		
 		ShaderInstance instance = RenderSystem.getShader();
@@ -118,24 +121,24 @@ public class SodiumRenderer {
 				}
 				
 				origin.set(
-						-(renderSection.getChunkX() << 4),
-						-(renderSection.getChunkY() << 4),
-						-(renderSection.getChunkZ() << 4)
+						(renderSection.getChunkX() << 4),
+						(renderSection.getChunkY() << 4),
+						(renderSection.getChunkZ() << 4)
 				);
 				if (isMatrix) {
 					matrixStack.pushPose();
 					matrixStack.translate(
-							(float) (-(origin.getX()) - x),
-							(float) (-(origin.getY()) - y),
-							(float) (-(origin.getZ()) - z)
+							(float) ((origin.getX()) - x),
+							(float) ((origin.getY()) - y),
+							(float) ((origin.getZ()) - z)
 					);
 					uniform.set(matrixStack.last().pose());
 					matrixStack.popPose();
 				} else {
 					uniform.set(
-							(float) (-(origin.getX()) - x),
-							(float) (-(origin.getY()) - y),
-							(float) (-(origin.getZ()) - z)
+							(float) ((origin.getX()) - x),
+							(float) ((origin.getY()) - y),
+							(float) ((origin.getZ()) - z)
 					);
 				}
 				

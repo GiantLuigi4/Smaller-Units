@@ -375,7 +375,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock {
 		if (space != null && !space.isEmpty())
 			space.clear();
 		SUCapabilityManager.getCapability(chnk).removeUnit(pPos);
-		RemoveUnitPacketS2C pckt = new RemoveUnitPacketS2C(pPos, space.unitsPerBlock);
+		RemoveUnitPacketS2C pckt = new RemoveUnitPacketS2C(pPos, space == null ? 4 : space.unitsPerBlock);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.TRACKING_CHUNK.with(() -> pLevel.getChunkAt(pPos)), pckt);
 //		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
 	}
