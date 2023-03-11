@@ -1,6 +1,7 @@
 package tfc.smallerunits.mixin.data;
 
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.util.LazyOptional;
@@ -21,6 +22,8 @@ public abstract class FastCapabilityChunkMixin implements FastCapabilityHandler 
 	
 	@Override
 	public ISUCapability getSUCapability() {
+		//noinspection ConstantConditions
+		if (((Object) this) instanceof EmptyLevelChunk) return null;
 		if (capability == null)
 			capability = this.getCapability(SUCapabilityManager.SU_CAPABILITY_TOKEN, null).orElse(null);
 		return capability;

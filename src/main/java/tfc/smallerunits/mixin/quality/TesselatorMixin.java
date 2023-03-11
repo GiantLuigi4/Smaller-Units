@@ -14,7 +14,7 @@ public class TesselatorMixin {
 	
 	@Inject(at = @At("HEAD"), method = "getInstance", cancellable = true)
 	private static void preGetTessel(CallbackInfoReturnable<Tesselator> cir) {
-		if (SmallerUnits.tesselScale != 1) {
+		if (SmallerUnits.tesselScale != 0) {
 			SUTesselator.setScale(SmallerUnits.tesselScale);
 			cir.setReturnValue(SUTesselator);
 		}

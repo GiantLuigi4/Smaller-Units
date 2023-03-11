@@ -20,10 +20,15 @@ apply plugin: 'org.spongepowered.mixin'
 apply plugin: 'org.parchmentmc.librarian.forgegradle'
 
 group = 'tfc'
-version = '2.1'
+version = '2.1.1'
+
+String gameVersion = '1.18.2'
+//String forgeVersion = "40.1.73"
+String forgeVersion = "40.1.69"
+String parchmentVersion = '1.18.1-2022.03.06-1.18.2'
 
 java {
-    archivesBaseName = 'smallerunits-1.18.2'
+    archivesBaseName = "smallerunits-$gameVersion-forge"
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
@@ -45,7 +50,7 @@ minecraft {
     // Simply re-run your setup task after changing the mappings to update your workspace.
 //    mappings channel: 'official', version: '1.18.1'
 //    mappings channel: 'parchment', version: '1.18.1-2022.03.06-1.18.1'
-    mappings channel: 'parchment', version: '1.18.1-2022.03.06-1.18.2'
+    mappings channel: 'parchment', version: parchmentVersion
 
     // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
@@ -146,15 +151,11 @@ configurations {
     api
 }
 
-String forgeVersion = "40.1.69"
-
 dependencies {
     Mod.mods.clear()
     Mod.modsList.clear()
 
-//    minecraft 'net.minecraftforge:forge:1.18.1-39.1.19'
-    minecraft 'net.minecraftforge:forge:1.18.2-' + forgeVersion
-//    minecraft 'net.minecraftforge:forge:1.18.2-40.1.60'
+    minecraft "net.minecraftforge:forge:$gameVersion-$forgeVersion"
 
     System.out.println("CF mods")
     System.out.println(": Compilied against")
@@ -162,6 +163,7 @@ dependencies {
     api fg.deobf("curse.maven:pehkui-319596:3808012")
     api fg.deobf("curse.maven:alternate_current-548115:3789218")
     api fg.deobf("curse.maven:vivecraft-667903:3984471")
+    compileOnly fg.deobf("curse.maven:rubidium-574856:4024781")
     compileOnly fg.deobf("curse.maven:oculus-581495:4354939")
     compileOnly fg.deobf("curse.maven:vfe-325360:3893747")
 
@@ -238,7 +240,6 @@ dependencies {
     addMod "curse.maven:refined_storage-243076:3712882", "Storage"
     addMod "curse.maven:appeng-223794:4136407", "Storage"
 
-    addMod "curse.maven:rubidium-574856:4024781", "Optimization"
     addMod "curse.maven:krypton-549394:3819215", "Optimization"
     addMod "curse.maven:ferrite-429235:3767288", "Optimization"
 
@@ -279,10 +280,10 @@ jar.finalizedBy('reobfJar')
 // everytime I change ATs, I need to reswap the game jar for the recomp jar
 System.out.println("Swap for recomp jar")
 String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
-File fl = new File((String) ("/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2"))
+File fl = new File((String) ("/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion"))
 if (fl.exists()) {
-    File fl1 = new File((String) (dir + "/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2.jar"))
-    File fl2 = new File((String) (dir + "/1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2/forge-1.18.2-" + forgeVersion + "_mapped_parchment_1.18.1-2022.03.06-1.18.2-recomp.jar"))
+    File fl1 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion" + ".jar"))
+    File fl2 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion-recomp.jar"))
     if (fl2.exists()) {
         if (fl1.length() != fl2.length()) {
             if (fl1.exists())
@@ -316,6 +317,7 @@ class Pair<T, V> {
         return new Pair<T, V>(t, v)
     }
 }
+
 
 class Mod {
     String name
@@ -365,6 +367,7 @@ class Mod {
     }
 }
 
+
 static void addMod(String name, String section) {
     ArrayList<Mod> mods
     if (section == "Libraries") {
@@ -376,7 +379,6 @@ static void addMod(String name, String section) {
     Mod md = new Mod(name, section == "Libraries")
     if (!mods.contains(md)) mods.add(md)
 }
-
 
 static void addLib(String name) {
     addMod name, "Libraries"

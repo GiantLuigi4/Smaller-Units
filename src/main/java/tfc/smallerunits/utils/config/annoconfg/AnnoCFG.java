@@ -6,7 +6,10 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
-import tfc.smallerunits.utils.config.annoconfg.annotation.value.*;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.DoubleRange;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.IntRange;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.LongRange;
 import tfc.smallerunits.utils.config.annoconfg.handle.UnsafeHandle;
 import tfc.smallerunits.utils.config.annoconfg.util.EnumType;
 
@@ -76,15 +79,8 @@ public class AnnoCFG {
 				
 				String nameStr = field.getName();
 				if (name != null) nameStr = name.value();
-				if (field.getType().equals(IntBounds.Bound.class)) {
-					IntBounds bounds = field.getAnnotation(IntBounds.class);
-					setupCommentsAndTranslations(field, builder,
-							"Default: [" + bounds.minV() + ", " + bounds.midV() + ", " + bounds.maxV() + "]",
-							"Range: [" + bounds.rangeMin() + ", " + bounds.rangeMax() + "]"
-					);
-				} else {
-					setupCommentsAndTranslations(field, builder);
-				}
+				
+				setupCommentsAndTranslations(field, builder);
 				
 				Supplier<?> value;
 				
@@ -131,35 +127,7 @@ public class AnnoCFG {
 						value = builder.define(nameStr, b);
 					}
 					default -> {
-						IntBounds bounds = field.getAnnotation(IntBounds.class);
-						if (bounds != null) {
-							Supplier<String> src = builder.define(
-									nameStr, "[" + bounds.minV() + ", " + bounds.midV() + ", " + bounds.maxV() + "]", (text) -> {
-										try {
-											String txt = text.toString();
-											txt = txt.substring(1, txt.length() - 1);
-											String[] split = txt.split(",");
-											int[] ints = new int[3];
-											for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
-											if (ints[0] > ints[1]) return false;
-											if (ints[1] > ints[2]) return false;
-										} catch (Throwable ignored) {
-											return false;
-										}
-										return true;
-									}
-							);
-							value = () -> {
-								String txt = src.get();
-								txt = txt.substring(1, txt.length() - 1);
-								String[] split = txt.split(",");
-								int[] ints = new int[3];
-								for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
-								return new IntBounds.Bound(ints[0], ints[1], ints[2]);
-							};
-						} else {
-							throw new RuntimeException("NYI " + field.getType());
-						}
+						throw new RuntimeException("NYI " + field.getType());
 					}
 				}
 				
