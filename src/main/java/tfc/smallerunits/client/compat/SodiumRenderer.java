@@ -49,25 +49,24 @@ public class SodiumRenderer {
 	public static void doRender(boolean isShaderPresent, RenderType shaderType, RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
 		RenderDevice.exitManagedCode();
 		
-		// I hate all of these
-		// but I couldn't find any other solution
-		RenderType SOLID = RenderType.create(
-				"su_translucent",
-				shaderType.format(),
-				shaderType.mode(),
-				shaderType.bufferSize(),
-				false,
-				false,
-				RenderType.CompositeState.builder()
-						.setLightmapState(RenderType.NO_LIGHTMAP)
-						.setShaderState(RenderType.RENDERTYPE_SOLID_SHADER)
-						.setTextureState(RenderType.BLOCK_SHEET_MIPPED)
-						.setTransparencyState(RenderStateShard.NO_TRANSPARENCY)
-						.createCompositeState(false)
-		);
+		// I hate this
 		if (!isShaderPresent) {
+			RenderType SOLID = RenderType.create(
+					"su_translucent",
+					shaderType.format(),
+					shaderType.mode(),
+					shaderType.bufferSize(),
+					false,
+					false,
+					RenderType.CompositeState.builder()
+							.setLightmapState(RenderType.NO_LIGHTMAP)
+							.setShaderState(RenderType.RENDERTYPE_SOLID_SHADER)
+							.setTextureState(RenderType.BLOCK_SHEET_MIPPED)
+							.setTransparencyState(RenderStateShard.NO_TRANSPARENCY)
+							.createCompositeState(false)
+			);
+			shaderType = SOLID;
 		}
-		shaderType = SOLID;
 		
 		shaderType.setupRenderState();
 		

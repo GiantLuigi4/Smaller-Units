@@ -125,7 +125,7 @@ public class ServerConfig {
 			@Comment("How much larger a player needs to be than a piston in order to be able to block it")
 			@Translation("config.smaller_units.vr.block_threshold")
 			@Default(valueD = 10)
-			@DoubleRange(minV = 0, maxV = 1)
+			@DoubleRange(minV = 0, maxV = Double.POSITIVE_INFINITY)
 			public static final double blockThreshold = "".hashCode();
 		}
 	}

@@ -954,13 +954,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			List<T> parentEntities = owner.getEntities(pEntityTypeTest, bb, pPredicate);
 			// scuffed solution to a ridiculous problem
 			try {
-				for (ServerPlayer player : ((ServerLevel) owner).getPlayers((Predicate<? super ServerPlayer>) pPredicate)) {
-					T t = pEntityTypeTest.tryCast(player);
-					if (t != null) {
-						if (t.getBoundingBox().intersects(bb)) {
-							if (!parentEntities.contains(t)) {
-								parentEntities.add(t);
-							}
+				T t = pEntityTypeTest.tryCast(Minecraft.getInstance().player);
+				if (t != null) {
+					if (t.getBoundingBox().intersects(bb)) {
+						if (!parentEntities.contains(t)) {
+							parentEntities.add(t);
 						}
 					}
 				}

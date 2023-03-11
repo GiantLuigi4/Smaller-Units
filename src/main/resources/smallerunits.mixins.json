@@ -34,7 +34,6 @@
     "optimization.ShapesMixin",
     "optimization.VoxelShapeAccessor",
     "quality.EntityMixin",
-    "quality.ForgeHooksMixin",
     "quality.PlayerMixin",
     "quality.vr.PistonMixin"
   ],

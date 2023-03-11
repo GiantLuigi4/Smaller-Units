@@ -71,6 +71,11 @@ public class MinecraftMixin {
 		movePlayerTo();
 	}
 	
+	@Inject(at = @At("HEAD"), method = "pickBlock")
+	public void prePick(CallbackInfo ci) {
+		movePlayerTo();
+	}
+	
 	@Unique
 	private void movePlayerTo() {
 		while (hitResult instanceof UnitHitResult) {
@@ -107,6 +112,11 @@ public class MinecraftMixin {
 	
 	@Inject(at = @At("RETURN"), method = "continueAttack")
 	public void postContinueAttack(boolean direction, CallbackInfo ci) {
+		movePlayerBack();
+	}
+	
+	@Inject(at = @At("TAIL"), method = "pickBlock")
+	public void postPick(CallbackInfo ci) {
 		movePlayerBack();
 	}
 	
