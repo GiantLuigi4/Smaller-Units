@@ -177,9 +177,9 @@ public class SodiumRenderer {
 			}
 		}
 		
-		if (renderLayer == RenderType.tripwire()) {
+		if (isShaderPresent && renderLayer == RenderType.tripwire()) {
 			doRender(
-					isShaderPresent, RenderType.translucent(), RenderType.translucent(),
+					true, RenderType.translucent(), RenderType.translucent(),
 					matrixStack, x, y, z, ci,
 					frustum, client, world,
 					renderSectionManager

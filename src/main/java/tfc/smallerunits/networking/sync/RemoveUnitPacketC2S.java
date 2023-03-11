@@ -39,7 +39,7 @@ public class RemoveUnitPacketC2S extends Packet {
 			if (Math.sqrt(pos.distanceToSqr(position.getX() + 0.5, position.getY() + 0.5, position.getZ() + 0.5)) < reach) {
 				ISUCapability cap = SUCapabilityManager.getCapability(ctx.getSender().getLevel().getChunkAt(position));
 				UnitSpace space = cap.getUnit(position);
-				if (space.isEmpty())
+				if (space != null && space.isEmpty())
 					ctx.getSender().getLevel().removeBlock(position, false);
 				ctx.setPacketHandled(true);
 			}

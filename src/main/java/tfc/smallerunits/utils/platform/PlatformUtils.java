@@ -1,12 +1,11 @@
 package tfc.smallerunits.utils.platform;
 
+import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import dev.onyxstudios.cca.api.v3.component.ComponentProvider;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.impl.FabricLoaderImpl;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -16,6 +15,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -26,6 +26,10 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
+import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.asm.MixinConnector;
+
+import java.util.ArrayList;
 
 public class PlatformUtils {
 	public static boolean isDevEnv() {
@@ -45,13 +49,28 @@ public class PlatformUtils {
 	}
 	
 	public static double getReach(Player sender) {
-		return 7;
+		double reach = 7;
+		AttributeInstance instance = sender.getAttribute(ReachEntityAttributes.REACH);
+		if (instance == null) return reach;
+		AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
 		
-//		double reach = 7;
-//		if (ctx.getSender().getAttributes().hasAttribute(ForgeMod.REACH_DISTANCE.get()))
-//			reach = ctx.getSender().getAttributeValue(ForgeMod.REACH_DISTANCE.get());
+		for (AttributeModifier instanceModifier : instance.getModifiers())
+			if (instanceModifier.getOperation().equals(AttributeModifier.Operation.MULTIPLY_BASE))
+				reach *= instanceModifier.getAmount();
 		
-		// TODO: reach distance attribute support
+		for (AttributeModifier instanceModifier : instance.getModifiers())
+			if (instanceModifier.getOperation().equals(AttributeModifier.Operation.ADDITION))
+				reach += instanceModifier.getAmount();
+		
+		for (AttributeModifier instanceModifier : instance.getModifiers())
+			if (instanceModifier.getOperation().equals(AttributeModifier.Operation.MULTIPLY_TOTAL))
+				if (!instanceModifier.equals(modifier))
+					reach *= instanceModifier.getAmount();
+		
+		if (modifier != null)
+			reach *= modifier.getAmount();
+		
+		return reach;
 	}
 	
 	public static boolean shouldCaptureBlockSnapshots(Level level) {
@@ -73,8 +92,7 @@ public class PlatformUtils {
 	}
 	
 	public static AttributeInstance getReachAttrib(LivingEntity livingEntity) {
-		// TODO:
-		return null;
+		return livingEntity.getAttribute(ReachEntityAttributes.REACH);
 	}
 	
 	public static CompoundTag getCapTag(ComponentProvider level) {
@@ -104,5 +122,25 @@ public class PlatformUtils {
 				pEntity.getYRot(),
 				pEntity.getXRot()
 		);
+	}
+	
+	private static final ArrayList<Runnable> toRun = new ArrayList<>();
+	
+	public static void delayConfigInit(Runnable r) {
+		if (hasConfigLib()) {
+			if (r == null) {
+				for (Runnable runnable : toRun) {
+					runnable.run();
+				}
+				toRun.clear();
+				return;
+			}
+			
+			toRun.add(r);
+		}
+	}
+	
+	private static boolean hasConfigLib() {
+		return !MixinConnector.isFabric || isLoaded("cloth-config2");
 	}
 }

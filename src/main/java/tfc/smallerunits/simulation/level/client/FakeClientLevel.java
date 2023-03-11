@@ -15,8 +15,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -69,7 +67,6 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
-import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
@@ -924,13 +921,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			List<T> parentEntities = owner.getEntities(pEntityTypeTest, bb, pPredicate);
 			// scuffed solution to a ridiculous problem
 			try {
-				for (ServerPlayer player : ((ServerLevel) owner).getPlayers((Predicate<? super ServerPlayer>) pPredicate)) {
-					T t = pEntityTypeTest.tryCast(player);
-					if (t != null) {
-						if (t.getBoundingBox().intersects(bb)) {
-							if (!parentEntities.contains(t)) {
-								parentEntities.add(t);
-							}
+				T t = pEntityTypeTest.tryCast(Minecraft.getInstance().player);
+				if (t != null) {
+					if (t.getBoundingBox().intersects(bb)) {
+						if (!parentEntities.contains(t)) {
+							parentEntities.add(t);
 						}
 					}
 				}

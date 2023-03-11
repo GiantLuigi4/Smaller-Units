@@ -11,5 +11,5 @@ public abstract class RegistryWrapper<T> {
 	
 	public abstract void register();
 	
-	public abstract Supplier<T> register(String regName, Supplier<T> obj);
+	public abstract <E extends T> Supplier<E> register(String regName, Supplier<E> obj);
 }

@@ -17,6 +17,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.data.access.ChunkHolderAccessor;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -104,12 +105,12 @@ public class UnitChunkHolder extends ChunkHolder {
 					if (shortset.size() == 1) {
 						BlockPos blockpos = sectionpos.relativeToBlockPos(shortset.iterator().nextShort());
 						BlockState blockstate = level.getBlockState(blockpos);
-						this.broadcast(new ClientboundBlockUpdatePacket(blockpos, blockstate), false);
+						((ChunkHolderAccessor) this).SU$call_broadcast(new ClientboundBlockUpdatePacket(blockpos, blockstate), false);
 						this.broadcastBlockEntityIfNeeded(level, blockpos, blockstate);
 					} else {
 						LevelChunkSection levelchunksection = pChunk.getSection(yPos);
 						ClientboundSectionBlocksUpdatePacket clientboundsectionblocksupdatepacket = new ClientboundSectionBlocksUpdatePacket(sectionpos, shortset, levelchunksection, false);
-						this.broadcast(clientboundsectionblocksupdatepacket, false);
+						((ChunkHolderAccessor) this).SU$call_broadcast(clientboundsectionblocksupdatepacket, false);
 						clientboundsectionblocksupdatepacket.runUpdates((p_140078_, p_140079_) -> {
 							this.broadcastBlockEntityIfNeeded(level, p_140078_, p_140079_);
 						});

@@ -8,23 +8,21 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.ICanUseUnits;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.platform.hooks.IContextAwarePickable;
 
-public class UnitEdge extends Block {
+public class UnitEdge extends Block implements IContextAwarePickable {
 	public static final Property<Boolean> TRANSPARENT = BooleanProperty.create("transparent");
 	
 	public UnitEdge() {
@@ -85,10 +83,10 @@ public class UnitEdge extends Block {
 	}
 	
 	@Override
-	public void playerDestroy(Level level, Player player, BlockPos blockPos, BlockState blockState, @Nullable BlockEntity blockEntity, ItemStack itemStack) {
+	public void playerWillDestroy(Level level, BlockPos blockPos, BlockState blockState, Player player) {
 		if (player instanceof ICanUseUnits unitUser)
 			unitUser.removeUnit();
-		super.playerDestroy(level, player, blockPos, blockState, blockEntity, itemStack);
+		super.playerWillDestroy(level, blockPos, blockState, player);
 	}
 	
 	@Override
@@ -96,6 +94,7 @@ public class UnitEdge extends Block {
 		return getCloneItemStack(blockState, null, blockGetter, blockPos, null);
 	}
 	
+	@Override
 	public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
 		if (player instanceof ICanUseUnits unitUser) {
 			if (level instanceof ITickerLevel tickerLevel) {

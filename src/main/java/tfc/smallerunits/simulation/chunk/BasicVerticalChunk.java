@@ -2,11 +2,13 @@ package tfc.smallerunits.simulation.chunk;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
@@ -261,7 +263,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	public BlockEntity createBlockEntity(BlockPos pPos) {
 		BlockState blockstate = this.getBlockState(pPos);
-		return !blockstate.hasBlockEntity() ? null : ((EntityBlock)blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
+		return !blockstate.hasBlockEntity() ? null : ((EntityBlock) blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
 	}
 	
 	public void setBlockEntity$(BlockEntity pBlockEntity) {
@@ -426,7 +428,7 @@ public class BasicVerticalChunk extends LevelChunk {
 				if (!section.getBlockState(j, k, l).is(block)) {
 					return null;
 				} else {
-					if (!this.level.isClientSide && !PlatformUtils.shouldCaptureBlockSnapshots(this.level)) {
+					if (!this.level.isClientSide && !PlatformUtils.shouldCaptureBlockSnapshots(level)) {
 						pState.onPlace(this.level, offsetPos, blockstate, pIsMoving);
 					}
 					
@@ -691,5 +693,16 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	public SectionPos getSectionPos() {
 		return SectionPos.of(getPos(), yPos);
+	}
+	
+	@Override
+	public Holder<Biome> getNoiseBiome(int p_204347_, int p_204348_, int p_204349_) {
+		return level.getBiome(
+				new BlockPos(
+						getSectionPos().minBlockX() + p_204347_,
+						getSectionPos().minBlockY() + p_204348_,
+						getSectionPos().minBlockZ() + p_204349_
+				)
+		);
 	}
 }

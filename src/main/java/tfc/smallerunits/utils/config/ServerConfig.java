@@ -1,6 +1,7 @@
 package tfc.smallerunits.utils.config;
 
-//import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
+import net.minecraft.client.gui.screens.Screen;
+import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
 import tfc.smallerunits.utils.config.annoconfg.ConfigSide;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
@@ -13,7 +14,19 @@ public class ServerConfig {
 		return false;
 	}
 	
-//	private static final AnnoCFG CFG = new AnnoCFG(ServerConfig.class);
+	private static final AnnoCFG CFG = new AnnoCFG(ServerConfig.class);
+	
+	protected static int get(int v) {
+		return v;
+	}
+	
+	protected static double get(double v) {
+		return v;
+	}
+	
+	public static Screen getScreen(Screen screen) {
+		return CFG.getScreen(screen);
+	}
 	
 	@Comment({
 			"Restrictions on Units Per Block",
@@ -28,7 +41,7 @@ public class ServerConfig {
 		@Translation("config.smaller_units.def_upb")
 		@IntRange(minV = 1, maxV = 128)
 		@Default(valueI = 4)
-		public static final int defaultScale = "".hashCode();
+		public static final int defaultScale = get(4);
 		
 		@Name("MinimumUPB")
 		@Comment({
@@ -38,7 +51,7 @@ public class ServerConfig {
 		@Translation("config.smaller_units.min_upb")
 		@IntRange(minV = 1, maxV = 128)
 		@Default(valueI = 2)
-		public static final int minScale = "".hashCode();
+		public static final int minScale = get(2);
 		
 		@Name("MaximumUPB")
 		@Comment({
@@ -48,7 +61,7 @@ public class ServerConfig {
 		@Translation("config.smaller_units.max_upb")
 		@IntRange(minV = 1, maxV = 128)
 		@Default(valueI = 16)
-		public static final int maxScale = "".hashCode();
+		public static final int maxScale = get(16);
 	}
 	
 	@Comment({
@@ -83,25 +96,25 @@ public class ServerConfig {
 			@Comment("The smallest scale a player can resize themself to")
 			@Translation("config.smaller_units.min_size")
 			@Default(valueD = 1 / 8d)
-			public static final double minSize = "".hashCode();
+			public static final double minSize = get(1 / 8d);
 			
 			@Name("MaxSize")
 			@Comment("The largest scale a player can resize themself to")
 			@Translation("config.smaller_units.max_size")
 			@Default(valueD = 2d)
-			public static final double maxSize = "".hashCode();
+			public static final double maxSize = get(2d);
 			
 			@Name("UpscaleRate")
 			@Comment("The rate at which the player or entities get upscaled by a hammer")
 			@Translation("config.smaller_units.upscale_rate")
 			@Default(valueD = 1 / 2d)
-			public static final double upscaleRate = "".hashCode();
+			public static final double upscaleRate = get(1 / 2d);
 			
 			@Name("DownscaleRate")
 			@Comment("The rate at which the player or entities get downscaled by a hammer")
 			@Translation("config.smaller_units.downscale_rate")
 			@Default(valueD = 1 / 8d)
-			public static final double downscaleRate = "".hashCode();
+			public static final double downscaleRate = get(1 / 8d);
 		}
 		
 		@Comment("Options for VR players")
@@ -124,8 +137,8 @@ public class ServerConfig {
 			@Comment("How much larger a player needs to be than a piston in order to be able to block it")
 			@Translation("config.smaller_units.vr.block_threshold")
 			@Default(valueD = 10)
-			@DoubleRange(minV = 0, maxV = 1)
-			public static final double blockThreshold = "".hashCode();
+			@DoubleRange(minV = 0, maxV = Integer.MAX_VALUE)
+			public static final double blockThreshold = get(10);
 		}
 	}
 	

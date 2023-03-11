@@ -130,7 +130,6 @@ accessible method net/minecraft/world/phys/AABB getDirection (Lnet/minecraft/wor
 accessible field net/minecraft/server/level/ChunkHolder hasChangedSections Z
 accessible field net/minecraft/server/level/ChunkHolder changedBlocksPerSection [Lit/unimi/dsi/fastutil/shorts/ShortSet;
 accessible field net/minecraft/server/level/ChunkHolder levelHeightAccessor Lnet/minecraft/world/level/LevelHeightAccessor;
-accessible method net/minecraft/server/level/ChunkHolder broadcast (Lnet/minecraft/network/protocol/Packet;Z)V
 accessible method net/minecraft/server/level/ChunkHolder broadcastBlockEntityIfNeeded (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V
 
 accessible field net/minecraft/world/level/chunk/ChunkAccess levelHeightAccessor Lnet/minecraft/world/level/LevelHeightAccessor;

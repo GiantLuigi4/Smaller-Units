@@ -3,10 +3,11 @@ package tfc.smallerunits;
 import dev.onyxstudios.cca.api.v3.chunk.ChunkSyncCallback;
 import io.netty.channel.ChannelPipeline;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.impl.client.texture.SpriteRegistryCallbackHolder;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -50,7 +51,9 @@ public class SmallerUnits implements ModInitializer {
 		Registry.ITEM_REGISTER.register();
 		CraftingRegistry.RECIPES.register();
 		/* mod loading events */
-		ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
+		if (PlatformUtils.isClient())
+			ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
+		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setupCfg());
 		/* in game events */
 		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatchEvent);
 		ServerPlayConnectionEvents.INIT.register((handler, server) -> {
@@ -60,7 +63,10 @@ public class SmallerUnits implements ModInitializer {
 		ServerChunkEvents.CHUNK_LOAD.register(this::onChunkLoaded);
 		ServerChunkEvents.CHUNK_UNLOAD.register(this::onChunkUnloaded);
 		
-		ServerConfig.init();
+		PlatformUtils.delayConfigInit(() -> {
+			//noinspection Convert2MethodRef
+			ServerConfig.init();
+		});
 		
 		InfoRegistry.register("su:world_redir", () -> {
 			if (NetworkingHacks.unitPos.get() == null) return null;
@@ -108,6 +114,10 @@ public class SmallerUnits implements ModInitializer {
 //		}
 	}
 	
+	private void setupCfg() {
+		PlatformUtils.delayConfigInit(null);
+	}
+	
 	private void onChunkLoaded(ServerLevel world, LevelChunk chunk) {
 		if (world.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 			ChunkAccess access = chunk;
@@ -144,6 +154,7 @@ public class SmallerUnits implements ModInitializer {
 	
 	private void setup() {
 		if (PlatformUtils.isLoaded("pehkui")) PehkuiSupport.setup();
+		setupCfg();
 	}
 	
 	public static void setupConnectionButchery(Player player, Connection connection, ChannelPipeline pipeline) {

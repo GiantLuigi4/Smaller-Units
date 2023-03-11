@@ -1,7 +1,8 @@
+import java.util.function.Consumer
+
 plugins {
     id 'fabric-loom' version '1.1-SNAPSHOT'
     id 'maven-publish'
-
 }
 
 sourceCompatibility = JavaVersion.VERSION_17
@@ -11,42 +12,17 @@ archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
-loom {
-    accessWidenerPath = file("src/main/resources/smallerunits.accesswidener")
-}
+/* loom */
+loom.accessWidenerPath = file("src/main/resources/smallerunits.accesswidener")
 
-repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
-    maven { url "https://cursemaven.com" }
-    maven {
-        name = 'Ladysnake Mods'
-        url = 'https://ladysnake.jfrog.io/artifactory/mods'
-    }
-    maven {
-        name = "JitPack"
-        url = "https://jitpack.io"
-        content {
-            includeGroup "com.github.Virtuoel"
-        }
-    }
-    maven {
-        url "https://maven.jamieswhiteshirt.com/libs-release"
-        content {
-            includeGroup "com.jamieswhiteshirt"
-        }
-    }
-}
+/* repositories */
+maven "https://cursemaven.com"
+maven "https://ladysnake.jfrog.io/artifactory/mods"
+maven "https://jitpack.io"
+maven "https://maven.architectury.dev/"
+maven "https://maven.jamieswhiteshirt.com/libs-release", "com.jamieswhiteshirt"
 
 String ccaVersion = "4.2.0"
-String[] ccaModules = new String[]{
-        "chunk",
-        "world",
-        "entity"
-}
 
 dependencies {
     // To change the versions see the gradle.properties file
@@ -54,23 +30,41 @@ dependencies {
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Fabric API. This is technically optional, but you probably want it anyway.
+    /* dependencies */
+    DependencyTemplate cca = template (text) -> { modImplementation text }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
+    cca.apply "module=base"
+    cca.apply "module=world"
+    cca.apply "module=chunk"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:" + ccaVersion
-    for (String module : ccaModules) modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-" + module + ":" + ccaVersion
+    include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.2.0")
 
-    modImplementation "curse.maven:alternate_current-548115:4406078"
-    modImplementation "curse.maven:pehkui-319596:4408057"
-    modImplementation "curse.maven:chiselandbits-561059:4119189"
-    modImplementation "curse.maven:bitsandchisel-420709:3841573"
+    /* soft-deps */
+    curse "alternate_current", "548115", "4406078"
+    curse "pehkui", "319596", "4408057"
+    curse "cloth_config", "348521", "3972425"
+    curse "mod_menu", "308702", "4145213"
+    curse "chiselandbits", "561059", "4119189"
+    curse "bitsandchisel", "420709", "3841573"
+    modImplementation "me.shedaniel.cloth:basic-math:0.6.1"
 
-    modImplementation "curse.maven:sodium-394468:3669187"
-    modImplementation "curse.maven:indium-459496:3911811"
-    modImplementation "curse.maven:iris-455508:4385031"
-    implementation 'org.joml:joml:1.10.2'
+    curseCompile "vivecraft", "667903", "4409424"
+    // TODO: is there a fabric equivalent?
+    curseCompile "vfe", "325360", "3893747"
 
-    modCompileOnly "curse.maven:vivecraft-667903:4409424"
-    modCompileOnly "curse.maven:vfe-325360:3893747" // TODO: is there a fabric equivalent?
+    curseCompile "sodium", "394468", "3669187"
+    runtimeOnly 'org.joml:joml:1.10.2'
+    curseCompile "indium", "459496", "3911811"
+    curseCompile "iris", "455508", "4385031"
+
+    modCompileOnly "curse.maven:immersive_portals-332273:3807024"
+    modCompileOnly('com.github.qouteall.ImmersivePortalsMod:imm_ptl_core:v1.4.0-1.18') {
+        exclude(group: "net.fabricmc.fabric-api")
+        transitive(false)
+    }
+    modCompileOnly('com.github.qouteall.ImmersivePortalsMod:q_misc_util:v1.4.0-1.18') {
+        exclude(group: "net.fabricmc.fabric-api")
+        transitive(false)
+    }
 
     for (File f : new File("libs").listFiles())
         if (!f.isDirectory())
@@ -82,8 +76,6 @@ dependencies {
         exclude group: "net.fabricmc", module: "fabric-loader"
         exclude group: "net.fabricmc.fabric-api"
     })
-
-//    include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.3.1")
 }
 
 processResources {
@@ -126,4 +118,50 @@ publishing {
         // The repositories here will be used for publishing your artifact, not for
         // retrieving dependencies.
     }
+}
+
+void maven(String s) {
+    repositories.maven { url = s }
+}
+
+void maven(String s, String... groups) {
+    repositories.maven {
+        url = s
+        content {
+            for (String g : groups) {
+                includeGroup(g)
+            }
+        }
+    }
+}
+
+class DependencyTemplate {
+    String url
+    Consumer<String> artifactApplier
+
+    DependencyTemplate(Consumer<String> artifactApplier, String url) {
+        this.url = url
+        this.artifactApplier = artifactApplier
+    }
+
+    void apply(String... replacements) {
+        String r = url
+        for (String s : replacements) {
+            String[] split = s.split("=")
+            r = r.replace((String) ("\$" + split[0]), split[1])
+        }
+        artifactApplier.accept(r)
+    }
+}
+
+DependencyTemplate template(Consumer<String> artifactApplier, String txt) {
+    return new DependencyTemplate(artifactApplier, txt)
+}
+
+void curse(String name, String projId, String fileId) {
+    dependencies.modImplementation "curse.maven:$name-$projId:$fileId"
+}
+
+void curseCompile(String name, String projId, String fileId) {
+    dependencies.modCompileOnly "curse.maven:$name-$projId:$fileId"
 }

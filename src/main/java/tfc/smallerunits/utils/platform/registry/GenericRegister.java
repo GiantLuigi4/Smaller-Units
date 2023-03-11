@@ -17,8 +17,8 @@ public class GenericRegister<T> extends RegistryWrapper<T> {
 		else if (clazz == Item.class) this.registry = (Registry<T>) Registry.ITEM;
 	}
 	
-	public Supplier<T> register(String regName, Supplier<T> obj) {
-		T t = Registry.register(registry, new ResourceLocation(namespace, regName), obj.get());
+	public <E extends T> Supplier<E> register(String regName, Supplier<E> obj) {
+		E t = Registry.register(registry, new ResourceLocation(namespace, regName), obj.get());
 		return () -> t;
 	}
 	

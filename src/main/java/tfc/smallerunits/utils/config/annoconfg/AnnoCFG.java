@@ -1,219 +1,250 @@
-//package tfc.smallerunits.utils.config.annoconfg;
-//
-//import net.minecraftforge.common.ForgeConfigSpec;
-//import net.minecraftforge.eventbus.api.IEventBus;
-//import net.minecraftforge.fml.ModLoadingContext;
-//import net.minecraftforge.fml.config.ModConfig;
-//import net.minecraftforge.fml.event.config.ModConfigEvent;
-//import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
-//import tfc.smallerunits.utils.config.annoconfg.annotation.value.*;
-//import tfc.smallerunits.utils.config.annoconfg.handle.UnsafeHandle;
-//import tfc.smallerunits.utils.config.annoconfg.util.EnumType;
-//import tfc.smallerunits.utils.platform.PlatformUtils;
-//
-//import java.lang.reflect.AnnotatedElement;
-//import java.lang.reflect.Field;
-//import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.function.Supplier;
-//
-//public class AnnoCFG {
-//	private ForgeConfigSpec mySpec;
-//
-//	private final HashMap<String, ConfigEntry> handles = new HashMap<>();
-//
-//	private static final ArrayList<AnnoCFG> configs = new ArrayList<>();
-//
-//	public AnnoCFG(Class<?> clazz) {
-//		bus.addListener(this::onConfigChange);
-//		ForgeConfigSpec.Builder configBuilder = new ForgeConfigSpec.Builder();
-//		setup("", configBuilder, clazz);
-//		configs.add(this);
-//
-//		Config configDescriptor = clazz.getAnnotation(Config.class);
-//		if (configDescriptor != null) {
-//			String pth = configDescriptor.path();
-//			if (!pth.isEmpty()) pth = pth + "/";
-//			switch (configDescriptor.type()) {
-//				case SERVER -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_server.toml");
-//				case CLIENT -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_client.toml");
-//				case COMMON -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_common.toml");
-//				default -> throw new RuntimeException("wat");
-//			}
-//		}
-//	}
-//
-//	protected void setupCommentsAndTranslations(AnnotatedElement element, ForgeConfigSpec.Builder builder, String... additionalLines) {
-//		Translation translation = element.getAnnotation(Translation.class);
-//		Comment comment = element.getAnnotation(Comment.class);
-//
-//		StringBuilder builder1 = new StringBuilder();
-//		if (comment != null) {
-//			for (int i = 0; i < comment.value().length; i++) {
-//				String s = comment.value()[i];
-//				builder1.append(s);
-//				if (i != comment.value().length - 1)
-//					builder1.append("\n");
-//			}
-//		}
-//		for (String additionalLine : additionalLines) builder1.append(additionalLine);
-//		if (!builder1.isEmpty())
-//			builder.comment(builder1.toString());
-//
-//		if (translation != null) {
-//			builder.translation(translation.value());
-//		}
-//	}
-//
-//	public void setup(String dir, ForgeConfigSpec.Builder builder, Class<?> clazz) {
-//		if (dir.startsWith(".")) dir = dir.substring(1);
-//
-//		for (Field field : clazz.getFields()) {
-//			if (field.canAccess(null)) {
-//				Skip skip = field.getAnnotation(Skip.class);
-//				if (skip != null) continue;
-//
-//				Name name = field.getAnnotation(Name.class);
-//
-//				String nameStr = field.getName();
-//				if (name != null) nameStr = name.value();
-//				if (field.getType().equals(IntBounds.Bound.class)) {
-//					IntBounds bounds = field.getAnnotation(IntBounds.class);
-//					setupCommentsAndTranslations(field, builder,
-//							"Default: [" + bounds.minV() + ", " + bounds.midV() + ", " + bounds.maxV() + "]",
-//							"Range: [" + bounds.rangeMin() + ", " + bounds.rangeMax() + "]"
-//					);
-//				} else {
-//					setupCommentsAndTranslations(field, builder);
-//				}
-//
-//				Supplier<?> value;
-//
-//				Default defaultValue = field.getAnnotation(Default.class);
-//				switch (EnumType.forClass(field.getType())) {
-//					case INT -> {
-//						IntRange range = field.getAnnotation(IntRange.class);
-//						int v = defaultValue.valueI();
-//						if (range != null) {
-//							int min = range.minV();
-//							int max = range.maxV();
-//
-//							value = builder.defineInRange(nameStr, v, min, max);
-//						} else {
-//							value = builder.define(nameStr, v);
-//						}
-//					}
-//					case LONG -> {
-//						LongRange range = field.getAnnotation(LongRange.class);
-//						long v = defaultValue.valueL();
-//						if (range != null) {
-//							long min = range.minV();
-//							long max = range.maxV();
-//
-//							value = builder.defineInRange(nameStr, v, min, max);
-//						} else {
-//							value = builder.define(nameStr, v);
-//						}
-//					}
-//					case DOUBLE -> {
-//						DoubleRange range = field.getAnnotation(DoubleRange.class);
-//						double v = defaultValue.valueD();
-//						if (range != null) {
-//							double min = range.minV();
-//							double max = range.maxV();
-//
-//							value = builder.defineInRange(nameStr, v, min, max);
-//						} else {
-//							value = builder.define(nameStr, v);
-//						}
-//					}
-//					case BOOLEAN -> {
-//						boolean b = defaultValue.valueBoolean();
-//						value = builder.define(nameStr, b);
-//					}
-//					default -> {
-//						IntBounds bounds = field.getAnnotation(IntBounds.class);
-//						if (bounds != null) {
-//							Supplier<String> src = builder.define(
-//									nameStr, "[" + bounds.minV() + ", " + bounds.midV() + ", " + bounds.maxV() + "]", (text) -> {
-//										try {
-//											String txt = text.toString();
-//											txt = txt.substring(1, txt.length() - 1);
-//											String[] split = txt.split(",");
-//											int[] ints = new int[3];
-//											for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
-//											if (ints[0] > ints[1]) return false;
-//											if (ints[1] > ints[2]) return false;
-//										} catch (Throwable ignored) {
-//											return false;
-//										}
-//										return true;
-//									}
-//							);
-//							value = () -> {
-//								String txt = src.get();
-//								txt = txt.substring(1, txt.length() - 1);
-//								String[] split = txt.split(",");
-//								int[] ints = new int[3];
-//								for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
-//								return new IntBounds.Bound(ints[0], ints[1], ints[2]);
-//							};
-//						} else {
-//							throw new RuntimeException("NYI " + field.getType());
-//						}
-//					}
-//				}
-//
-//				Object o = null;
-//				try {
-//					o = field.get(null);
-//				} catch (Throwable ignored) {
-//				}
-//				UnsafeHandle handle = new UnsafeHandle(field);
-//				o = handle.get();
-//				handle.set(o);
-//
-//				//noinspection FunctionalExpressionCanBeFolded
-//				handles.put(dir + "." + nameStr, new ConfigEntry(
-//						handle, value::get
-//				));
-//			}
-//		}
-//
-//		// TODO: check if the nested class is a direct nesting
-//		for (Class<?> nestMember : clazz.getClasses()) {
-//			if (nestMember == clazz) continue;
-//			if (!nestMember.getName().startsWith(clazz.getName())) continue;
-//			CFGSegment segment = nestMember.getAnnotation(CFGSegment.class);
-//			if (segment == null) {
-//				System.out.println(nestMember);
-//				throw new RuntimeException("NYI: default name");
-//			}
-//			String name = segment.value();
-//
-//			setupCommentsAndTranslations(nestMember, builder);
-//
-//			builder.push(name);
-//			setup(dir + "." + name, builder, nestMember);
-//			builder.pop();
-//		}
-//
-//		mySpec = builder.build();
-//	}
-//
-//	public void onConfigChange(ModConfigEvent event) {
-//		if (
-//				event.getConfig().getSpec().equals(mySpec) ||
-//						event.getConfig().getSpec() == mySpec
-//		) {
-//			for (String s : handles.keySet()) {
-//				ConfigEntry entry = handles.get(s);
-//				entry.handle.set(entry.supplier.get());
-//			}
-//		}
-//	}
-//
-//	public void create(ConfigSide type, String file) {
-//		ModLoadingContext.get().registerConfig(type, mySpec, file);
-//	}
-//}
+package tfc.smallerunits.utils.config.annoconfg;
+
+import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
+import me.shedaniel.clothconfig2.api.ConfigBuilder;
+import me.shedaniel.clothconfig2.api.ConfigCategory;
+import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
+import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
+import me.shedaniel.clothconfig2.gui.entries.DoubleListEntry;
+import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
+import me.shedaniel.clothconfig2.gui.entries.LongListEntry;
+import me.shedaniel.clothconfig2.impl.builders.*;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.TranslatableComponent;
+import tfc.smallerunits.utils.config.annoconfg.annotation.format.CFGSegment;
+import tfc.smallerunits.utils.config.annoconfg.annotation.format.Config;
+import tfc.smallerunits.utils.config.annoconfg.annotation.format.Name;
+import tfc.smallerunits.utils.config.annoconfg.annotation.format.Skip;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.DoubleRange;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.IntRange;
+import tfc.smallerunits.utils.config.annoconfg.annotation.value.LongRange;
+import tfc.smallerunits.utils.config.annoconfg.handle.UnsafeHandle;
+import tfc.smallerunits.utils.config.annoconfg.util.EnumType;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+// TODO: finish this
+public class AnnoCFG {
+	private final Function<Screen, Screen> cfgScreen;
+	
+	private final HashMap<String, ConfigEntry> handles = new HashMap<>();
+	
+	private static final ArrayList<AnnoCFG> configs = new ArrayList<>();
+	
+	protected interface EntryAdder {
+		void add(AbstractConfigListEntry<?> entry);
+	}
+	
+	public AnnoCFG(Class<?> clazz) {
+		Config configDescriptor = clazz.getAnnotation(Config.class);
+		
+		String translationRoot = configDescriptor.path().replace("/", "_") + configDescriptor.namespace() + ":" + configDescriptor.type().name().toLowerCase();
+		
+		ConfigBuilder builder = ConfigBuilder.create()
+				.setTitle(new TranslatableComponent(translationRoot));
+		builder.setSavingRunnable(this::onConfigChange);
+		
+		ConfigCategory category = builder.getOrCreateCategory(new TranslatableComponent(translationRoot));
+		setup(translationRoot, "", builder, category::addEntry, clazz);
+		configs.add(this);
+		
+		String pth = configDescriptor.path();
+		if (!pth.isEmpty()) pth = pth + "/";
+		switch (configDescriptor.type()) {
+			case SERVER -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_server.toml");
+			case CLIENT -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_client.toml");
+			case COMMON -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_common.toml");
+			default -> throw new RuntimeException("wat");
+		}
+		
+		cfgScreen = (parent) -> {
+			builder.setParentScreen(parent);
+			builder.setEditable(true);
+			return builder.build();
+		};
+		builder.build();
+	}
+	
+	public void setup(String translationRoot, String dir, ConfigBuilder builder, EntryAdder category, Class<?> clazz) {
+		if (dir.startsWith(".")) dir = dir.substring(1);
+		
+		ConfigEntryBuilder builder1 = builder.entryBuilder();
+		
+		for (Field field : clazz.getFields()) {
+			if (field.canAccess(null)) {
+				Skip skip = field.getAnnotation(Skip.class);
+				if (skip != null) continue;
+				
+				Name name = field.getAnnotation(Name.class);
+				
+				String nameStr = field.getName();
+				if (name != null) nameStr = name.value();
+				
+				String translationName = translationRoot + "/" + dir.replace(".", "/") + "/" + nameStr.toLowerCase();
+				
+				Supplier<?> value;
+				
+				Default defaultValue = field.getAnnotation(Default.class);
+				switch (EnumType.forClass(field.getType())) {
+					case INT -> {
+						IntRange range = field.getAnnotation(IntRange.class);
+						int v = defaultValue.valueI();
+						if (range != null) {
+							int min = range.minV();
+							int max = range.maxV();
+							
+							IntFieldBuilder fieldBuilder = builder1.startIntField(new TranslatableComponent(translationName), v);
+							fieldBuilder.setMin(min);
+							fieldBuilder.setDefaultValue(v);
+							fieldBuilder.setMax(max);
+							fieldBuilder.setSaveConsumer((i) -> {
+							});
+							
+							IntegerListEntry entry = fieldBuilder.build();
+							entry.setEditable(true);
+							category.add(entry);
+							value = entry::getValue;
+						} else {
+							IntFieldBuilder fieldBuilder = builder1.startIntField(new TranslatableComponent(translationName), v);
+							fieldBuilder.setDefaultValue(v);
+							fieldBuilder.setSaveConsumer((i) -> {
+							});
+							
+							IntegerListEntry entry = fieldBuilder.build();
+							entry.setEditable(true);
+							category.add(entry);
+							value = entry::getValue;
+						}
+					}
+					case LONG -> {
+						LongRange range = field.getAnnotation(LongRange.class);
+						long v = defaultValue.valueL();
+						if (range != null) {
+							long min = range.minV();
+							long max = range.maxV();
+							
+							LongFieldBuilder fieldBuilder = builder1.startLongField(new TranslatableComponent(translationName), v);
+							fieldBuilder.setMin(min);
+							fieldBuilder.setDefaultValue(v);
+							fieldBuilder.setMax(max);
+							fieldBuilder.setSaveConsumer((i) -> {
+							});
+							
+							LongListEntry entry = fieldBuilder.build();
+							entry.setEditable(true);
+							category.add(entry);
+							value = entry::getValue;
+						} else {
+							LongFieldBuilder fieldBuilder = builder1.startLongField(new TranslatableComponent(translationName), v);
+							fieldBuilder.setDefaultValue(v);
+							fieldBuilder.setSaveConsumer((i) -> {
+							});
+							
+							LongListEntry entry = fieldBuilder.build();
+							entry.setEditable(true);
+							category.add(entry);
+							value = entry::getValue;
+						}
+					}
+					case DOUBLE -> {
+						DoubleRange range = field.getAnnotation(DoubleRange.class);
+						double v = defaultValue.valueD();
+						if (range != null) {
+							double min = range.minV();
+							double max = range.maxV();
+							
+							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(new TranslatableComponent(translationName), v);
+							fieldBuilder.setMin(min);
+							fieldBuilder.setDefaultValue(v);
+							fieldBuilder.setMax(max);
+							fieldBuilder.setSaveConsumer((i) -> {
+							});
+							
+							DoubleListEntry entry = fieldBuilder.build();
+							entry.setEditable(true);
+							category.add(entry);
+							value = entry::getValue;
+						} else {
+							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(new TranslatableComponent(translationName), v);
+							fieldBuilder.setDefaultValue(v);
+							fieldBuilder.setSaveConsumer((i) -> {
+							});
+							
+							DoubleListEntry entry = fieldBuilder.build();
+							entry.setEditable(true);
+							category.add(entry);
+							value = entry::getValue;
+						}
+					}
+					case BOOLEAN -> {
+						BooleanToggleBuilder fieldBuilder = builder1.startBooleanToggle(new TranslatableComponent(translationName), defaultValue.valueBoolean());
+						fieldBuilder.setDefaultValue(defaultValue.valueBoolean());
+						fieldBuilder.setSaveConsumer((i) -> {
+						});
+						
+						BooleanListEntry entry = fieldBuilder.build();
+						entry.setEditable(true);
+						category.add(entry);
+						value = entry::getValue;
+					}
+					default -> {
+						throw new RuntimeException("Invalid config entry (type: " + EnumType.forClass(clazz) + "): " + nameStr + " in " + clazz.getName());
+					}
+				}
+				
+				Object o = null;
+				try {
+					o = field.get(null);
+				} catch (Throwable ignored) {
+				}
+				UnsafeHandle handle = new UnsafeHandle(field);
+				o = handle.get();
+				handle.set(o);
+				
+				//noinspection FunctionalExpressionCanBeFolded
+				handles.put(dir + "." + nameStr, new ConfigEntry(
+						handle, value::get
+				));
+			}
+		}
+		
+		// TODO: check if the nested class is a direct nesting
+		for (Class<?> nestMember : clazz.getClasses()) {
+			if (nestMember == clazz) continue;
+			if (!nestMember.getName().startsWith(clazz.getName())) continue;
+			CFGSegment segment = nestMember.getAnnotation(CFGSegment.class);
+			if (segment == null) {
+				System.out.println(nestMember);
+				throw new RuntimeException("NYI: default name");
+			}
+			String name = segment.value();
+			String translationName = translationRoot + "/" + dir.replace(".", "/") + "/" + name.toLowerCase();
+			translationName = translationName.replace("//", "/");
+			
+			SubCategoryBuilder builder2 = builder1.startSubCategory(new TranslatableComponent(translationName));
+			setup(translationRoot, dir + "." + name, builder, builder2::add, nestMember);
+			AbstractConfigListEntry<?> entry = builder2.build();
+			entry.setEditable(true);
+			category.add(entry);
+		}
+	}
+	
+	public void onConfigChange() {
+		for (String s : handles.keySet()) {
+			ConfigEntry entry = handles.get(s);
+			entry.handle.set(entry.supplier.get());
+		}
+	}
+	
+	public void create(ConfigSide type, String file) {
+	}
+	
+	public Screen getScreen(Screen screen) {
+		return cfgScreen.apply(screen);
+	}
+}

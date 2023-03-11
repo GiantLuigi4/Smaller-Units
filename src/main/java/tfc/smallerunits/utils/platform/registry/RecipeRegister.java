@@ -17,7 +17,7 @@ public class RecipeRegister<T extends RecipeSerializer<?>> {
 		this.namespace = namespace;
 	}
 	
-	public <I extends T> Supplier<I> register(String regName, Supplier<T> obj) {
+	public <E extends T> Supplier<E> register(String regName, Supplier<E> obj) {
 		try {
 			String method = remapper.mapMethod(new MappingInfo(
 					"net/minecraft/class_1865",
@@ -28,7 +28,7 @@ public class RecipeRegister<T extends RecipeSerializer<?>> {
 			Method m = RecipeSerializer.class.getMethod(method, String.class, RecipeSerializer.class);
 			m.setAccessible(true);
 			//noinspection unchecked
-			I t = (I) Registry.register(Registry.RECIPE_SERIALIZER, namespace + ":" + regName, obj.get());
+			E t = Registry.register(Registry.RECIPE_SERIALIZER, namespace + ":" + regName, obj.get());
 			return () -> t;
 		} catch (Throwable e) {
 			throw new RuntimeException(e);

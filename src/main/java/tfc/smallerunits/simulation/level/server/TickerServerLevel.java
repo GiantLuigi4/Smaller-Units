@@ -454,6 +454,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		NetworkingHacks.setPos(null);
 		
 		((EntityAccessor) pEntity).setPortalInfo(PlatformUtils.createPortalInfo(pEntity, this));
+		ResizingUtils.resizeForUnit(pEntity, 1f / upb);
 		Entity entity = pEntity.changeDimension((ServerLevel) lvl);
 		((EntityAccessor) pEntity).setPortalInfo(null);
 		

@@ -28,7 +28,7 @@ public class ClientLevelMixin implements RegionalAttachments {
 		ChunkPos pos = pChunk.getPos();
 		int min = pChunk.getMinBuildHeight();
 		int max = pChunk.getMaxBuildHeight();
-		Loggers.SU_LOGGER.info("A chunk has been unloaded: " + pChunk.getPos());
+//		Loggers.SU_LOGGER.info("A chunk has been unloaded: " + pChunk.getPos());
 		for (int y = min; y < max; y += 16)
 			findChunk(y, pos, (rp, r) -> {
 				if (r.subtractRef(rp) <= 0) {
@@ -43,7 +43,7 @@ public class ClientLevelMixin implements RegionalAttachments {
 	public void onLoadChunk(ChunkPos pChunkPos, CallbackInfo ci) {
 		int min = ((Level) (Object) this).getMinBuildHeight();
 		int max = ((Level) (Object) this).getMaxBuildHeight();
-		Loggers.SU_LOGGER.info("A chunk has been loaded: " + pChunkPos);
+//		Loggers.SU_LOGGER.info("A chunk has been loaded: " + pChunkPos);
 		for (int y = min; y < max; y += 16)
 			findChunk(y, pChunkPos, (rp, r) -> {
 				r.addRef(rp);

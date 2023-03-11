@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.utils.scale.ResizingUtils;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements EntityAccessor {

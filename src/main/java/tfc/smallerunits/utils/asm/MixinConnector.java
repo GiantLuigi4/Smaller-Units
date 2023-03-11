@@ -19,6 +19,8 @@ public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
 	
+	public static final boolean isFabric;
+	
 	static {
 		pkgLookup.add("tfc.smallerunits.mixin.compat.");
 		classLookup.add("tfc.smallerunits.mixin.dangit.block_pos.RSNetworkNodeMixin");
@@ -27,6 +29,22 @@ public class MixinConnector implements IMixinConfigPlugin {
 			ArrayList<String> incompat = new ArrayList<>();
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
+		}
+		
+		{
+			boolean fabric = true;
+			
+			ClassLoader loader = MixinConnector.class.getClassLoader();
+			InputStream stream = loader.getResourceAsStream("net/minecraftforge/fml/loading/FMLEnvironment.class");
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (Throwable ignored) {
+				}
+				fabric = false;
+			}
+			
+			isFabric = fabric;
 		}
 	}
 	
@@ -48,6 +66,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+		if (mixinClassName.contains(".fabric.")) {
+			return isFabric;
+		}
 		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -55,10 +76,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 			if (stream != null) {
 				try {
 					stream.close();
-					return true;
 				} catch (Throwable ignored) {
-					return true;
 				}
+				return true;
 			}
 			return false;
 		}
@@ -72,10 +92,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 				} else {
 					try {
 						stream.close();
-						return false;
 					} catch (Throwable ignored) {
-						return false;
 					}
+					return false;
 				}
 			}
 			return false;
@@ -94,22 +113,22 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-		) {
-			try {
-				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
-				ClassWriter writer = new ClassWriter(0);
-				targetClass.accept(writer);
-				outputStream.write(writer.toByteArray());
-				outputStream.flush();
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if (
+//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+//		) {
+//			try {
+//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
+//				ClassWriter writer = new ClassWriter(0);
+//				targetClass.accept(writer);
+//				outputStream.write(writer.toByteArray());
+//				outputStream.flush();
+//				outputStream.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 		
 		Remapper remapper = new Remapper(FabricLoader.getInstance().getMappingResolver());
 		
@@ -136,19 +155,15 @@ public class MixinConnector implements IMixinConfigPlugin {
 			
 			for (MethodNode method : targetClass.methods) {
 				if (method.name.equals(target) && method.desc.equals(desc)) {
-//					AbstractInsnNode targetNode = null;
 					// TODO: try to find a way to figure out a more specific target
 					ArrayList<AbstractInsnNode> targetNodes = new ArrayList<>();
 					for (AbstractInsnNode instruction : method.instructions) {
 						if (instruction instanceof MethodInsnNode methodNode) {
 							if (methodNode.owner.equals(refOwner) && methodNode.name.equals(ref) && methodNode.desc.equals(refDesc)) {
 								targetNodes.add(methodNode);
-//								targetNode = methodNode;
-//								break;
 							}
 						}
 					}
-//					if (targetNode != null) {
 					for (AbstractInsnNode targetNode : targetNodes) {
 						InsnList list = new InsnList();
 						list.add(
@@ -160,7 +175,6 @@ public class MixinConnector implements IMixinConfigPlugin {
 						);
 						method.instructions.insertBefore(targetNode, list);
 					}
-//					}
 				}
 			}
 		}
@@ -168,21 +182,21 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-		) {
-			try {
-				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
-				ClassWriter writer = new ClassWriter(0);
-				targetClass.accept(writer);
-				outputStream.write(writer.toByteArray());
-				outputStream.flush();
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if (
+//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+//		) {
+//			try {
+//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
+//				ClassWriter writer = new ClassWriter(0);
+//				targetClass.accept(writer);
+//				outputStream.write(writer.toByteArray());
+//				outputStream.flush();
+//				outputStream.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 }

@@ -180,8 +180,6 @@ public class UnitSpace {
 				
 				// TODO: allow for optimization?
 				wld = new RenderWorld(getMyLevel(), getOffsetPos(new BlockPos(0, 0, 0)), upb);
-			} else {
-				throw new RuntimeException("Unit Space managed to get created without any level");
 			}
 			loadWorld(tag);
 		}

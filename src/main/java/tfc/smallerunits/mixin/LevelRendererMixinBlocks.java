@@ -94,6 +94,7 @@ public abstract class LevelRendererMixinBlocks {
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
 		
 		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
+		if (capability == null) return instance.getCompiledChunk();
 		
 		UnitSpace[] spaces = capability.getUnits();
 		// no reason to do SU related rendering in chunks where SU has not been used

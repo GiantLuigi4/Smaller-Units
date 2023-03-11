@@ -81,15 +81,18 @@ public class UnitSpaceItem extends Item {
 		super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
 	}
 	
-	@Override
-	public void fillItemCategory(CreativeModeTab pCategory, NonNullList<ItemStack> pItems) {
-		if (this.allowdedIn(pCategory)) {
+	public void SU$fillItemCategory(CreativeModeTab pCategory, List<ItemStack> pItems) {
+		if (pCategory == null || this.allowdedIn(pCategory)) {
 			for (int i = 2; i <= 16; i++) {
 				ItemStack stack = new ItemStack(this);
 				stack.getOrCreateTag().putInt("upb", i);
 				pItems.add(stack);
 			}
 		}
-//		super.fillItemCategory(pCategory, pItems);
+	}
+	
+	@Override
+	public void fillItemCategory(CreativeModeTab pCategory, NonNullList<ItemStack> pItems) {
+		SU$fillItemCategory(pCategory, pItems);
 	}
 }

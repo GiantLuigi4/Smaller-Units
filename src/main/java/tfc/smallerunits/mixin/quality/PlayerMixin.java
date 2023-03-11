@@ -10,11 +10,11 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 
 @Mixin(Player.class)
 public abstract class PlayerMixin {
-//	@Inject(at = @At("TAIL"), method = "getDestroySpeed", remap = false, cancellable = true)
-//	public void afflictMiningSpeed(BlockState blockState, CallbackInfoReturnable<Float> cir) {
-//		//noinspection ConstantConditions
-//		if (((Player) (Object) this).level instanceof ITickerLevel tickerWorld) {
-//			cir.setReturnValue(cir.getReturnValue() * tickerWorld.getUPB());
-//		}
-//	}
+	@Inject(at = @At("TAIL"), method = "getDestroySpeed", cancellable = true)
+	public void afflictMiningSpeed(BlockState blockState, CallbackInfoReturnable<Float> cir) {
+		//noinspection ConstantConditions
+		if (((Player) (Object) this).level instanceof ITickerLevel tickerWorld) {
+			cir.setReturnValue(cir.getReturnValue() * tickerWorld.getUPB());
+		}
+	}
 }

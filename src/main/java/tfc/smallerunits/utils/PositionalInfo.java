@@ -1,5 +1,6 @@
 package tfc.smallerunits.utils;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -34,6 +35,10 @@ public class PositionalInfo {
 	}
 	
 	public PositionalInfo(Entity pEntity, boolean cacheParticleEngine) {
+		if (!(RenderSystem.isOnGameThread() || RenderSystem.isOnRenderThread())) {
+			throw new RuntimeException("what");
+		}
+		
 		pos = new Vec3(pEntity.getX(), pEntity.getY(), pEntity.getZ());
 		lvl = pEntity.level;
 		box = pEntity.getBoundingBox();
