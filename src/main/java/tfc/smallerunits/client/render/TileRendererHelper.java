@@ -32,6 +32,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
@@ -322,28 +323,38 @@ public class TileRendererHelper {
 		BlockPos bp = pos.toBlockPos();
 		
 		float scl = 1f / (((FakeClientLevel) valueLevel).getUPB());
-//		PoseStack mdlViewStk = RenderSystem.getModelViewStack();
-//		mdlViewStk.pushPose();
 		
 		PoseStack stack = new PoseStack();
 		stack.last().pose().multiply(pPoseStack.last().pose());
+		
+		if (!PlatformUtils.isLoaded("sodium")) SmallerUnits.tesselScale = scl;
+		
+		if (Tesselator.getInstance() instanceof SUTesselator suTesselator) {
+			suTesselator.setOffset(bp.getX(), bp.getY(), bp.getZ());
+			// TODO: use forge method or smth
+			((FakeClientLevel) valueLevel).getParticleEngine().render(
+					stack, renderBuffers.bufferSource(),
+					pLightTexture, pCamera, pPartialTick
+			);
+			SmallerUnits.tesselScale = 0;
+		} else {
+//			PoseStack mdlViewStk = RenderSystem.getModelViewStack();
+//			mdlViewStk.pushPose();
+			
+			SmallerUnits.tesselScale = 0;
+			
+			stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
+			stack.translate(bp.getX(), bp.getY(), bp.getZ());
+			stack.scale(scl, scl, scl);
+			stack.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
+			
+			((FakeClientLevel) valueLevel).getParticleEngine().render(
+					stack, renderBuffers.bufferSource(),
+					pLightTexture, pCamera, pPartialTick
+			);
 
-//		stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
-//		stack.translate(bp.getX(), bp.getY(), bp.getZ());
-//		stack.scale(scl, scl, scl);
-//		stack.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
-		
-		SmallerUnits.tesselScale = scl;
-		((SUTesselator) Tesselator.getInstance()).setOffset(bp.getX(), bp.getY(), bp.getZ());
-		
-		// TODO: use forge method or smth
-		((FakeClientLevel) valueLevel).getParticleEngine().render(
-				stack, renderBuffers.bufferSource(),
-				pLightTexture, pCamera, pPartialTick
-		);
-		
-		SmallerUnits.tesselScale = 1;
-//		mdlViewStk.popPose();
+//			mdlViewStk.popPose();
+		}
 	}
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {

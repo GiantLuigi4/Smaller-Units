@@ -3,8 +3,6 @@ package tfc.smallerunits.mixin.compat.sodium;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
-import qouteall.imm_ptl.core.ClientWorldLoader;
-import qouteall.imm_ptl.core.portal.Portal;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 

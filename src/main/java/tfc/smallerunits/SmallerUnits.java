@@ -35,7 +35,7 @@ import tfc.smallerunits.utils.scale.PehkuiSupport;
 
 // The value here should match an entry in the META-INF/mods.toml file
 public class SmallerUnits implements ModInitializer {
-	public static float tesselScale = 1;
+	public static float tesselScale = 0;
 	private static boolean isVivecraftPresent;
 	private static boolean isVFEPresent;
 	private static boolean isOFPresent;
