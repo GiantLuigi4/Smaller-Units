@@ -3,7 +3,9 @@ package tfc.smallerunits.networking.hackery;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -163,7 +165,14 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		));
 		
 		try {
-			context.pkt.handle(ctx.getNetworkManager().getPacketListener());
+			PacketListener listener = ctx.getNetworkManager().getPacketListener();
+			if (context.pkt instanceof ClientboundCustomPayloadPacket clientboundCustomPayloadPacket) {
+				if (!net.minecraftforge.network.NetworkHooks.onCustomPayload(clientboundCustomPayloadPacket, context.connection)) {
+					context.pkt.handle(listener);
+				}
+			} else {
+				context.pkt.handle(listener);
+			}
 		} catch (Throwable ignored) {
 			Loggers.PACKET_HACKS_LOGGER.error("-- A wrapped packet has encountered an error: desyncs are imminent --");
 			ignored.printStackTrace();
@@ -174,7 +183,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			if (old != newV) {
 				if (newV != context.player.inventoryMenu) {
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+					((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
 				}
 			}
 		} else {
@@ -182,7 +191,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			if (old != newV) {
 				if (newV != null) {
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+					((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
 				}
 			}
 		}

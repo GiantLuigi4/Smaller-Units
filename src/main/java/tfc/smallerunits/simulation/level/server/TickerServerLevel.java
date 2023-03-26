@@ -1008,7 +1008,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public String toString() {
-		return "TickerServerLevel[" + ((ServerLevelData) this.getLevelData()).getLevelName() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
+		return "TickerServerLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
 	// TODO: try to optimize or shrink this?
@@ -1141,7 +1141,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (!isLoaded) return;
 		if (!getServer().isReady()) return;
 		
-		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(getDescriptor());
 		
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);

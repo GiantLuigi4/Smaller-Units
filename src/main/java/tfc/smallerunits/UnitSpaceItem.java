@@ -13,6 +13,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import net.minecraftforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
@@ -29,6 +30,12 @@ public class UnitSpaceItem extends Item {
 				new Properties().tab(Registry.tab)
 						.rarity(Rarity.create("su", ChatFormatting.GREEN))
 		);
+	}
+	
+	@Override
+	public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+		super.initializeClient(consumer);
+		consumer.accept(new SUItemRenderProperties());
 	}
 	
 	@Override

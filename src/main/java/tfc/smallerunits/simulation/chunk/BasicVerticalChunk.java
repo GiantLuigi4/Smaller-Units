@@ -354,10 +354,13 @@ public class BasicVerticalChunk extends LevelChunk {
 		LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 		UnitSpace space = null;
 		BlockState oldState = section.getBlockState(j, k, l);
+	
 		if (ac instanceof FastCapabilityHandler capabilityHandler) {
 			space = capabilityHandler.getSUCapability().getUnit(parentPos);
+			
 			if (space == null) {
 				BlockState state = ac.getBlockState(parentPos);
+				
 				if (state.isAir()) { // TODO: do this better
 					if (!pState.isAir()) {
 						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
@@ -366,30 +369,48 @@ public class BasicVerticalChunk extends LevelChunk {
 						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
 						space.setUpb(((ITickerLevel) level).getUPB());
+						// setup network
+						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+						if (descriptor != null)
+							NetworkingHacks.setPos(descriptor.parent());
+						// send unit to client
 						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+						// reset network
+						NetworkingHacks.unitPos.set(descriptor);
 					}
 				}
 			}
 		}
+		
 		BlockState output = setBlockState$$(pPos, pState, pIsMoving);
+		
 		if (ac instanceof FastCapabilityHandler capabilityHandler) {
 			ac.setUnsaved(true);
+			
 			if (space != null) {
 				space.removeState(oldState);
 				space.addState(pState);
+				
 				if (space.isEmpty() && space.isNatural) {
 					space.clear();
+					
+					// setup network
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					NetworkingHacks.unitPos.remove();
+					if (descriptor != null)
+						NetworkingHacks.setPos(descriptor.parent());
+					// remove unit space
 					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
 					BlockState state = ac.getBlockState(parentPos);
 					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+					// remove unit
 					capabilityHandler.getSUCapability().removeUnit(parentPos);
+					// reset network
 					if (descriptor != null)
 						NetworkingHacks.setPos(descriptor);
 				}
 			}
 		}
+	
 		return output;
 	}
 	

@@ -43,4 +43,10 @@ public class HitboxScaling {
 		coord += level.getRegion().pos.z;
 		return coord;
 	}
+	
+	public static void scale(Vec3 start, ITickerLevel level) {
+		start.x = scaleX(level, start.x);
+		start.y = scaleX(level, start.y);
+		start.z = scaleX(level, start.z);
+	}
 }

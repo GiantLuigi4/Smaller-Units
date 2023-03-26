@@ -30,7 +30,6 @@ import tfc.smallerunits.utils.math.HitboxScaling;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -153,23 +152,6 @@ public class UnitShape extends VoxelShape {
 		return oMaxY > tMinY && oMinY < tMaxY && oMaxZ > tMinZ && oMinZ < tMaxZ;
 	}
 	
-	public void addBox(UnitBox box) {
-//		if (boxes.contains(box)) return;
-		boxesTrace.add(box);
-		if (totalBB == null) {
-			totalBB = box;
-		} else {
-			totalBB = new AABB(
-					Math.min(totalBB.minX, box.minX),
-					Math.min(totalBB.minY, box.minY),
-					Math.min(totalBB.minZ, box.minZ),
-					Math.max(totalBB.maxX, box.maxX),
-					Math.max(totalBB.maxY, box.maxY),
-					Math.max(totalBB.maxZ, box.maxZ)
-			);
-		}
-	}
-	
 	@Override
 	public boolean isEmpty() {
 //		return boxes.isEmpty();
@@ -251,8 +233,10 @@ public class UnitShape extends VoxelShape {
 		if (vec3.lengthSqr() < 1.0E-7D) return null;
 		Vec3 vec31 = pStartVec.add(vec3.scale(0.001D));
 		
-		double upbDouble = space.unitsPerBlock;
-		// TODO: make this not rely on block pos, maybe?
+		double divisor = 1d / space.unitsPerBlock;
+		
+		ArrayList<ScaledShape> scaledShapes = new ArrayList<>();
+		
 		collectShape((box) -> {
 			return box.contains(pStartVec) || box.clip(vec31, pEndVec).isPresent();
 		}, (pos, state) -> {
@@ -262,62 +246,29 @@ public class UnitShape extends VoxelShape {
 			VoxelShape sp;
 			if (visual) sp = state.getVisualShape(space.getMyLevel(), space.getOffsetPos(pos), collisionContext);
 			else sp = state.getShape(space.getMyLevel(), space.getOffsetPos(pos), collisionContext);
-			for (AABB toAabb : sp.toAabbs()) {
-				toAabb = toAabb.move(x, y, z).move(offset);
-				UnitBox b = (UnitBox) new UnitBox(
-						toAabb.minX / upbDouble,
-						toAabb.minY / upbDouble,
-						toAabb.minZ / upbDouble,
-						toAabb.maxX / upbDouble,
-						toAabb.maxY / upbDouble,
-						toAabb.maxZ / upbDouble,
-						new BlockPos(x, y, z)
-				);
-				addBox(b);
-			}
+			
+			scaledShapes.add(new ScaledShape(
+					pos.immutable(), sp,
+					new Vec3(x * divisor + offset.x, y * divisor + offset.y, z * divisor + offset.z),
+					divisor
+			));
 		}, space, pPos);
 		
-		if (this.isEmpty()) {
-			return computeEdgeResult(pStartVec, pEndVec, pPos);
-		}
+		BlockHitResult closest = null;
+		double bestDist = Double.POSITIVE_INFINITY;
 		
-		if (totalBB != null && this.totalBB.contains(pStartVec.subtract(pPos.getX(), pPos.getY(), pPos.getZ()))) {
-			for (UnitBox box : boxesTrace) {
-				box = (UnitBox) box.move(pPos);
-				if (box.contains(pStartVec)) {
-					Optional<Vec3> vec = box.clip(vec31, pEndVec);
-					return new UnitHitResult(
-							vec.orElse(vec31),
-							Direction.getNearest(vec3.x, vec3.y, vec3.z).getOpposite(),
-							pPos,
-							true,
-							box.pos, box
-					);
+		for (ScaledShape scaledShape : scaledShapes) {
+			BlockHitResult r = scaledShape.clip(pPos, pStartVec, pEndVec);
+			if (r != null) {
+				double dist = r.getLocation().distanceTo(pStartVec);
+				if (dist <= bestDist) {
+					bestDist = dist;
+					closest = r;
 				}
 			}
 		}
 		
-		UnitHitResult h = null;
-		double dbest = Double.POSITIVE_INFINITY;
-		double[] percent = {1};
-		double d0 = pEndVec.x - pStartVec.x;
-		double d1 = pEndVec.y - pStartVec.y;
-		double d2 = pEndVec.z - pStartVec.z;
-		
-		for (UnitBox box : boxesTrace) {
-			box = (UnitBox) box.move(pPos);
-			Direction direction = AABB.getDirection(box, pStartVec, percent, (Direction) null, d0, d1, d2);
-			double percentile = percent[0];
-			percent[0] = 1;
-			if (direction == null) continue;
-			Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
-			double d = vec.distanceTo(pStartVec);
-			if (d < dbest) {
-				h = new UnitHitResult(vec, direction, pPos, true, box.pos, box);
-				dbest = d;
-			}
-		}
-		if (h != null) return h;
+		if (closest != null) return closest;
 		
 		return computeEdgeResult(pStartVec, pEndVec, pPos);
 	}
@@ -386,8 +337,6 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public VoxelShape optimize() {
-		UnitShape copy = new UnitShape(space, visual, collisionContext);
-		for (AABB box : boxesTrace) copy.addBox((UnitBox) box);
 		return this;
 	}
 	
@@ -505,7 +454,6 @@ public class UnitShape extends VoxelShape {
 	public VoxelShape move(double pXOffset, double pYOffset, double pZOffset) {
 		UnitShape copy = new UnitShape(space, visual, collisionContext);
 		copy.offset = offset.add(pXOffset, pYOffset, pZOffset);
-		for (AABB box : boxesTrace) copy.addBox((UnitBox) box.move(pXOffset, pYOffset, pZOffset));
 		return copy;
 	}
 	
@@ -662,26 +610,20 @@ public class UnitShape extends VoxelShape {
 			for (int xo = 0; xo < space.unitsPerBlock; xo++) {
 				for (int zo = 0; zo < space.unitsPerBlock; zo++) {
 					double x;
-					double xSize = 1;
 					double y;
-					double ySize = 1;
 					double z;
-					double zSize = 1;
 					if (value.equals(Direction.WEST) || value.equals(Direction.EAST)) {
 						x = value.equals(Direction.EAST) ? (space.unitsPerBlock - 0.999) : -0.001;
-						xSize = 0.001;
 						y = xo;
 						z = zo;
 					} else if (value.equals(Direction.UP) || value.equals(Direction.DOWN)) {
 						x = xo;
 						y = value.equals(Direction.UP) ? (space.unitsPerBlock - 0.999) : -0.001;
-						ySize = 0.001;
 						z = zo;
 					} else {
 						x = xo;
 						y = zo;
 						z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
-						zSize = 0.001;
 					}
 					box.set(
 							x / upbDouble, y / upbDouble, z / upbDouble,
@@ -711,12 +653,7 @@ public class UnitShape extends VoxelShape {
 							if (d < dbest) {
 								h = new UnitHitResult(
 										vec, direction, pPos, true, box1.pos,
-//										new AABB(
-//												x / upbDouble, y / upbDouble, z / upbDouble,
-//												(x + xSize) / upbDouble, (y + ySize) / upbDouble, (z + zSize) / upbDouble
-//										)
 										null
-//										box
 								);
 							}
 						}
@@ -741,5 +678,12 @@ public class UnitShape extends VoxelShape {
 				neighbors[value.ordinal()] = Shapes.empty();
 			}
 		}
+	}
+	
+	public static boolean intersects(AABB box, Vec3 start, double d0, double d1, double d2, double[] adouble) {
+		adouble[0] = 1;
+		// TODO: use a specialized ray-box intersection algorithm which doesn't go over all directions but instead just goes until it finds a hit
+		AABB.getDirection(box, start, adouble, null, d0, d1, d2);
+		return adouble[0] != 1;
 	}
 }

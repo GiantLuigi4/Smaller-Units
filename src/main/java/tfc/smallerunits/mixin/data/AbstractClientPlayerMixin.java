@@ -42,12 +42,12 @@ public class AbstractClientPlayerMixin implements ICanUseUnits {
 				if (hit instanceof BlockHitResult result) {
 					ISUCapability capability = SUCapabilityManager.getCapability(lvl, new ChunkPos(result.getBlockPos()));
 					UnitSpace space = capability.getUnit(result.getBlockPos());
-					if (space.isEmpty()) {
+					if (space != null && space.isEmpty()) {
 //						capability.removeUnit(result.getBlockPos());
 						lvl.removeBlock(result.getBlockPos(), false);
 						// TODO: move the networking hacks position to the parent world (if I setup my networking hacks to support recursion)
 						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-						NetworkingHacks.unitPos.remove();
+						NetworkingHacks.setPos(descriptor.parent());
 						SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(new RemoveUnitPacketC2S(result.getBlockPos()));
 						NetworkingHacks.setPos(descriptor);
 					}

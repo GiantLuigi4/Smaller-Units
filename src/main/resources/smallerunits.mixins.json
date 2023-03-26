@@ -30,6 +30,7 @@
     "data.regions.ChunkHolderSizeTracker",
     "data.regions.ChunkMapMixin",
     "data.regions.ServerLevelMixin",
+    "debug.MojangCanYouJustPrintToError",
     "optimization.LevelMixin",
     "optimization.ShapesMixin",
     "optimization.VoxelShapeAccessor",

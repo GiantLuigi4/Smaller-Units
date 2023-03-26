@@ -178,12 +178,12 @@ public class Region {
 		for (Level level : levels) {
 			try {
 				if (level != null) {
-					MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level));
-					level.close();
 					if (level instanceof TickerServerLevel) {
 						((TickerServerLevel) level).saveWorld.saveLevel();
 						((TickerServerLevel) level).saveWorld.saveAllChunks();
 					}
+					MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level));
+					level.close();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

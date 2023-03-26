@@ -1,7 +1,5 @@
 package tfc.smallerunits.mixin.optimization;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -10,7 +8,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import tfc.smallerunits.utils.selection.UnitBox;
 import tfc.smallerunits.utils.selection.UnitShape;
 
 @Mixin(Shapes.class)
@@ -61,14 +58,15 @@ public class ShapesMixin {
 	
 	@Unique
 	private static VoxelShape su_or(UnitShape first, VoxelShape other) {
-		UnitShape sp = new UnitShape(first.space, first.visual, first.collisionContext);
-		for (AABB toAabb : other.toAabbs()) {
-			if (toAabb instanceof UnitBox) sp.addBox((UnitBox) toAabb);
-			else
-				sp.addBox(new UnitBox(toAabb.minX, toAabb.minY, toAabb.minZ, toAabb.maxX, toAabb.maxY, toAabb.maxZ, new BlockPos(0, 0, 0)));
-		}
-		for (AABB toAabb : first.toAabbs()) sp.addBox((UnitBox) toAabb);
-		return sp;
+//		UnitShape sp = new UnitShape(first.space, first.visual, first.collisionContext);
+//		for (AABB toAabb : other.toAabbs()) {
+//			if (toAabb instanceof UnitBox) sp.addBox((UnitBox) toAabb);
+//			else
+//				sp.addBox(new UnitBox(toAabb.minX, toAabb.minY, toAabb.minZ, toAabb.maxX, toAabb.maxY, toAabb.maxZ, new BlockPos(0, 0, 0)));
+//		}
+//		for (AABB toAabb : first.toAabbs()) sp.addBox((UnitBox) toAabb);
+//		return sp;
+		return first; // TODO
 	}
 	
 	// Testing purposes only
