@@ -36,14 +36,14 @@ import java.util.function.Supplier;
 
 public class UnitChunkMap extends ChunkMap {
 	ServerLevel lvl;
-
+	
 	public UnitChunkMap(ServerLevel p_214836_, LevelStorageSource.LevelStorageAccess p_214837_, DataFixer p_214838_, StructureTemplateManager p_214839_, Executor p_214840_, BlockableEventLoop<Runnable> p_214841_, LightChunkGetter p_214842_, ChunkGenerator p_214843_, ChunkProgressListener p_214844_, ChunkStatusUpdateListener p_214845_, Supplier<DimensionDataStorage> p_214846_, int p_214847_, boolean p_214848_) {
 		super(p_214836_, p_214837_, p_214838_, p_214839_, p_214840_, p_214841_, p_214842_, p_214843_, p_214844_, p_214845_, p_214846_, p_214847_, p_214848_);
 		this.distanceManager = new ButcheredDistMap(p_214840_, p_214841_);
 		this.poiManager = new BlankPOIManager(new NoPath(), p_214838_, p_214848_ /* I don't know */, p_214836_.registryAccess(), p_214836_);
 		lvl = p_214836_;
 	}
-
+	
 	@Override
 	public List<ServerPlayer> getPlayers(ChunkPos pPos, boolean pBoundaryOnly) {
 		// TODO: filter for chunk
@@ -143,7 +143,7 @@ public class UnitChunkMap extends ChunkMap {
 	
 	@Override
 	public void move(ServerPlayer pPlayer) {
-		for(ChunkMap.TrackedEntity chunkmap$trackedentity : this.entityMap.values()) {
+		for (ChunkMap.TrackedEntity chunkmap$trackedentity : this.entityMap.values()) {
 			if (chunkmap$trackedentity.entity == pPlayer) {
 				chunkmap$trackedentity.updatePlayers(lvl.players());
 			} else {

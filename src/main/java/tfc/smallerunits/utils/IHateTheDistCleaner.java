@@ -148,4 +148,8 @@ public class IHateTheDistCleaner {
 	public static boolean isClientPlayer(Player player) {
 		return player.getUUID().equals(Minecraft.getInstance().player.getUUID());
 	}
+	
+	public static void setClientLevel(Level clientLevel) {
+		Minecraft.getInstance().level = (ClientLevel) clientLevel;
+	}
 }

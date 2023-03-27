@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Mixin(Level.class)
 public class LevelMixin {
-
+    
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lnet/minecraft/core/Holder;unwrapKey()Ljava/util/Optional;"))
     private java.util.Optional<net.minecraft.resources.ResourceKey<DimensionType>> whyDimTypeBorked(Holder instance) {
         if((Object) this instanceof ITickerLevel) {

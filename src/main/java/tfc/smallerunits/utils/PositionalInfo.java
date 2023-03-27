@@ -27,6 +27,7 @@ import java.util.UUID;
 public class PositionalInfo {
 	public final Vec3 pos;
 	public final Level lvl;
+	private final Level clientLevel; // immersive portals compat
 	public final AABB box;
 	public final float eyeHeight;
 	public static final UUID SU_REACH_UUID = new UUID(new Random(847329).nextLong(), new Random(426324).nextLong());
@@ -46,13 +47,18 @@ public class PositionalInfo {
 		eyeHeight = pEntity.eyeHeight;
 		oPos = new Vec3(pEntity.xo, pEntity.yo, pEntity.zo);
 		oldPos = new Vec3(pEntity.xOld, pEntity.yOld, pEntity.zOld);
-		if (FMLEnvironment.dist.isClient() && cacheParticleEngine) {
+		Level clvl = null;
+		if (FMLEnvironment.dist.isClient()) {
 			if (pEntity.getLevel().isClientSide) {
 				if (pEntity instanceof Player player) {
-					particleEngine = IHateTheDistCleaner.getParticleEngine(player);
+					if (cacheParticleEngine) {
+						particleEngine = IHateTheDistCleaner.getParticleEngine(player);
+					}
+					clvl = IHateTheDistCleaner.getClientLevel();
 				}
 			}
 		}
+		clientLevel = clvl;
 	}
 	
 	public void scalePlayerReach(Player pPlayer, int upb) {
@@ -152,6 +158,7 @@ public class PositionalInfo {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
 				IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
+				if (clientLevel != null) IHateTheDistCleaner.setClientLevel(clientLevel);
 			}
 		}
 	}

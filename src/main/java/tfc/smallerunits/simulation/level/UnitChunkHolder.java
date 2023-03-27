@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Either;
 import it.unimi.dsi.fastutil.shorts.ShortSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.server.level.ChunkHolder;
@@ -17,17 +18,21 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.lighting.LevelLightEngine;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.data.access.ChunkHolderAccessor;
+import tfc.smallerunits.logging.Loggers;
 
 import java.util.concurrent.CompletableFuture;
 
 public class UnitChunkHolder extends ChunkHolder {
 	LevelChunk chunk;
 	int yPos;
+	PlayerProvider provider;
 	
 	public UnitChunkHolder(ChunkPos p_142986_, int p_142987_, LevelHeightAccessor p_142988_, LevelLightEngine p_142989_, LevelChangeListener p_142990_, PlayerProvider p_142991_, LevelChunk chunk, int yPos) {
 		super(p_142986_, p_142987_, p_142988_, p_142989_, p_142990_, p_142991_);
 		this.chunk = chunk;
 		this.yPos = yPos;
+		this.provider = p_142991_;
 	}
 	
 	@Override
@@ -104,12 +109,12 @@ public class UnitChunkHolder extends ChunkHolder {
 					if (shortset.size() == 1) {
 						BlockPos blockpos = sectionpos.relativeToBlockPos(shortset.iterator().nextShort());
 						BlockState blockstate = level.getBlockState(blockpos);
-						this.broadcast(new ClientboundBlockUpdatePacket(blockpos, blockstate), false);
+						compatBroadcast(new ClientboundBlockUpdatePacket(blockpos, blockstate), false);
 						this.broadcastBlockEntityIfNeeded(level, blockpos, blockstate);
 					} else {
 						LevelChunkSection levelchunksection = pChunk.getSection(yPos);
 						ClientboundSectionBlocksUpdatePacket clientboundsectionblocksupdatepacket = new ClientboundSectionBlocksUpdatePacket(sectionpos, shortset, levelchunksection, false);
-						this.broadcast(clientboundsectionblocksupdatepacket, false);
+						compatBroadcast(clientboundsectionblocksupdatepacket, false);
 						clientboundsectionblocksupdatepacket.runUpdates((p_140078_, p_140079_) -> {
 							this.broadcastBlockEntityIfNeeded(level, p_140078_, p_140079_);
 						});
@@ -121,5 +126,37 @@ public class UnitChunkHolder extends ChunkHolder {
 			
 			this.hasChangedSections = false;
 		}
+	}
+	
+	protected void compatBroadcast(Packet<?> packet, boolean bl) {
+//		if (SmallerUnits.isImmersivePortalsPresent()) {
+//			if (packet == null) return;
+//
+//			ChunkPos pos = getPos();
+//
+//			BlockPos bp = PositionUtils.getParentPos(pos.getWorldPosition(), (ITickerLevel) chunk.level);
+//			pos = new ChunkPos(bp);
+//
+//			ResourceKey<Level> dimension = chunk.level.dimension();
+//			Packet<?> wrappedPacket = packet;
+//			Consumer<ServerPlayer> func = player -> PacketRedirection.sendRedirectedMessage(player, dimension, wrappedPacket);
+//			Stream<ServerPlayer> players;
+//			NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+//			NetworkingHacks.unitPos.set(null);
+//			if (bl) {
+//				players = NewChunkTrackingGraph.getFarWatchers(dimension, pos.x, pos.z);
+//			} else {
+//				players = NewChunkTrackingGraph.getPlayersViewingChunk(dimension, pos.x, pos.z);
+//			}
+//			NetworkingHacks.unitPos.set(descriptor);
+//			players.forEach(func);
+//		} else {
+//		}
+		
+		if (packet == null) {
+			Loggers.SU_LOGGER.warn("what");
+			return;
+		}
+		((ChunkHolderAccessor) this).SU$call_broadcast(packet, bl);
 	}
 }

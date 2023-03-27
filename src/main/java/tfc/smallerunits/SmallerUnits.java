@@ -42,6 +42,7 @@ public class SmallerUnits {
 	private static boolean isVivecraftPresent;
 	private static boolean isVFEPresent;
 	private static boolean isOFPresent;
+	private static final boolean isImmPrtlPresent = ModList.get().isLoaded("imm_ptl_core");
 	
 	public SmallerUnits() {
 		SUNetworkRegistry.init();
@@ -56,8 +57,7 @@ public class SmallerUnits {
 		modBus.addListener(this::setup);
 		/* in game events */
 		if (FMLEnvironment.dist.isClient()) forgeBus.addListener(SyncPacketS2C::tick);
-		forgeBus.addListener(SUCapabilityManager::onChunkWatchEvent);
-//		forgeBus.addListener(this::connect0);
+//		forgeBus.addListener(SUCapabilityManager::onChunkWatchEvent);
 		forgeBus.addListener(this::connect1);
 		forgeBus.addGenericListener(LevelChunk.class, SUCapabilityManager::onAttachCapabilities);
 		
@@ -142,6 +142,10 @@ public class SmallerUnits {
 					});
 			}
 		}
+	}
+	
+	public static boolean isImmersivePortalsPresent() {
+		return isImmPrtlPresent;
 	}
 	
 	private void setup(final FMLCommonSetupEvent event) {

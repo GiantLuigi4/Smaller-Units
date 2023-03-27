@@ -28,6 +28,11 @@ public class MixinConnector implements IMixinConfigPlugin {
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
 		}
+//		{
+//			ArrayList<String> incompat = new ArrayList<>();
+//			incompat.add("qouteall.imm_ptl.core.network.PacketRedirection");
+//			incompatibilityMap.put("tfc.smallerunits.mixin.core.ConnectionMixin", incompat);
+//		}
 	}
 	
 	@Override

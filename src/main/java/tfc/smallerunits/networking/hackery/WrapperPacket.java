@@ -6,11 +6,16 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.NetworkEvent;
+import qouteall.imm_ptl.core.ClientWorldLoader;
+import qouteall.imm_ptl.core.network.PacketRedirectionClient;
 import sun.misc.Unsafe;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.logging.Loggers;
@@ -54,7 +59,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 				additionalInfo.put(name, tg);
 			}
 		}
-		if (wrapped instanceof FriendlyByteBuf) wrapped = read((FriendlyByteBuf) wrapped);
+		if (wrapped instanceof FriendlyByteBuf) this.wrapped = read((FriendlyByteBuf) wrapped);
 		else this.wrapped = wrapped;
 	}
 	
@@ -130,13 +135,63 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			}
 		} else {
 			pExecutor = (BlockableEventLoop<?>) IHateTheDistCleaner.getMinecraft();
+			player = IHateTheDistCleaner.getPlayer();
 		}
+		
+		if (SmallerUnits.isImmersivePortalsPresent()) {
+			// immersive portals compat
+			ipHandle(ctx, pExecutor, player);
+		} else {
+			// vanilla
+			if (!pExecutor.isSameThread()) {
+				pExecutor.executeIfPossible(() -> {
+					doHandle(ctx);
+				});
+			} else doHandle(ctx);
+		}
+	}
+	
+	protected void ipHandle(NetworkEvent.Context ctx, BlockableEventLoop<?> pExecutor, Player player) {
+		ResourceKey<Level> lvl = PacketRedirectionClient.clientTaskRedirection.get();
 		if (!pExecutor.isSameThread()) {
 			pExecutor.executeIfPossible(() -> {
-				doHandle(ctx);
+				if (player == null) {
+					// TODO: sometimes this happens, I'm not yet sure as to why
+					Loggers.SU_LOGGER.warn("Player was null while handling packet " + wrapped + " on " + (checkClient(ctx) ? "client" : "server") + ".");
+					Loggers.SU_LOGGER.warn("This should not happen.");
+					return;
+				}
+				
+				Level lvl1;
+				if (lvl != null && FMLEnvironment.dist.isClient() && player.level.isClientSide)
+					lvl1 = ClientWorldLoader.getOptionalWorld(lvl);
+				else lvl1 = player.level;
+				
+				if (lvl1 != null) {
+					PositionalInfo inf = new PositionalInfo(player);
+					player.level = lvl1;
+					doHandle(ctx);
+					inf.reset(player);
+				} else doHandle(ctx);
 			});
 		} else {
-			doHandle(ctx);
+			if (player == null) {
+				Loggers.SU_LOGGER.warn("Player was null while handling packet " + wrapped + " on " + (checkClient(ctx) ? "client" : "server") + ".");
+				Loggers.SU_LOGGER.warn("This should not happen.");
+				return;
+			}
+			
+			Level lvl1;
+			if (lvl != null && FMLEnvironment.dist.isClient() && player.level.isClientSide)
+				lvl1 = ClientWorldLoader.getOptionalWorld(lvl);
+			else lvl1 = player.level;
+			
+			if (lvl1 != null) {
+				PositionalInfo inf = new PositionalInfo(player);
+				player.level = lvl1;
+				doHandle(ctx);
+				inf.reset(player);
+			} else doHandle(ctx);
 		}
 	}
 	

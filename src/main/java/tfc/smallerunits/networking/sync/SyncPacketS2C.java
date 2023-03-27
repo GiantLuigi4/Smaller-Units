@@ -83,6 +83,7 @@ public class SyncPacketS2C extends Packet {
 		if (Minecraft.getInstance().levelRenderer.level == null) return;
 		Pair<Level, SyncPacketS2C>[] packets;
 		synchronized (deferred) {
+			//noinspection unchecked
 			packets = deferred.toArray(new Pair[0]);
 			
 			for (Pair<Level, SyncPacketS2C> pair : packets) {

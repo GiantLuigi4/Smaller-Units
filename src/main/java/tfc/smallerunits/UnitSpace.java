@@ -4,6 +4,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -15,7 +17,9 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.PacketDistributor;
+import qouteall.imm_ptl.core.network.PacketRedirection;
 import tfc.smallerunits.client.render.util.RenderWorld;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -359,6 +363,22 @@ public class UnitSpace {
 	public void sendSync(PacketDistributor.PacketTarget target) {
 		SyncPacketS2C pkt = new SyncPacketS2C(this);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
+	}
+	
+	// ip compatibility method
+	public void sendRedirectableSync(PacketDistributor.PacketTarget target) {
+		SyncPacketS2C pkt = new SyncPacketS2C(this);
+		if (SmallerUnits.isImmersivePortalsPresent()) {
+			if (PacketRedirection.getForceRedirectDimension() != null) {
+				//noinspection unchecked
+				target.send(PacketRedirection.createRedirectedMessage(
+						PacketRedirection.getForceRedirectDimension(),
+						(Packet<ClientGamePacketListener>) SUNetworkRegistry.NETWORK_INSTANCE.toVanillaPacket(pkt, NetworkDirection.PLAY_TO_CLIENT)
+				));
+			}
+		} else {
+			SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
+		}
 	}
 	
 	public void removeState(BlockState block) {

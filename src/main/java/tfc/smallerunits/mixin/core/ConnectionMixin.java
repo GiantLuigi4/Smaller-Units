@@ -1,13 +1,13 @@
 package tfc.smallerunits.mixin.core;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import net.minecraft.network.Connection;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.PacketDistributor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,6 +15,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import qouteall.imm_ptl.core.ducks.IECustomPayloadPacket;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
@@ -36,8 +38,29 @@ public abstract class ConnectionMixin {
 		} catch (Throwable ignored) {
 			return;
 		}
+
+//		if (SmallerUnits.isImmersivePortalsPresent() && this.getDirection().equals(PacketFlow.SERVERBOUND)) {
+//			// for some reason, IP does not redirect packets being sent to the server
+//			return;
+//		}
+		
 		if (!isSending.get()) {
 			isSending.set(true);
+			if (SmallerUnits.isImmersivePortalsPresent() && this.getDirection().equals(PacketFlow.SERVERBOUND)) {
+				if (p_129515_ instanceof IECustomPayloadPacket packet) {
+					Packet<?> pkt = maybeWrap(packet.ip_getRedirectedPacket());
+					if (pkt instanceof WrapperPacket) {
+						packet.ip_setRedirectedPacket(
+								(Packet<ClientGamePacketListener>) SUNetworkRegistry.NETWORK_INSTANCE.toVanillaPacket(
+										pkt,
+										NetworkDirection.PLAY_TO_CLIENT
+								)
+						);
+					}
+					isSending.remove();
+					return;
+				}
+			}
 			p_129515_ = maybeWrap(p_129515_);
 			if (p_129515_ instanceof WrapperPacket) {
 				if (this.getDirection().equals(PacketFlow.SERVERBOUND)) {
