@@ -5,9 +5,7 @@ import net.minecraft.network.PacketListener;
 import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.PacketDistributor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,11 +13,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import qouteall.imm_ptl.core.ducks.IECustomPayloadPacket;
 import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
+import tfc.smallerunits.utils.asm.IPCompat;
 
 @Mixin(Connection.class)
 public abstract class ConnectionMixin {
@@ -47,19 +45,8 @@ public abstract class ConnectionMixin {
 		if (!isSending.get()) {
 			isSending.set(true);
 			if (SmallerUnits.isImmersivePortalsPresent() && this.getDirection().equals(PacketFlow.SERVERBOUND)) {
-				if (p_129515_ instanceof IECustomPayloadPacket packet) {
-					Packet<?> pkt = maybeWrap(packet.ip_getRedirectedPacket());
-					if (pkt instanceof WrapperPacket) {
-						packet.ip_setRedirectedPacket(
-								(Packet<ClientGamePacketListener>) SUNetworkRegistry.NETWORK_INSTANCE.toVanillaPacket(
-										pkt,
-										NetworkDirection.PLAY_TO_CLIENT
-								)
-						);
-					}
-					isSending.remove();
+				if (IPCompat.runPacketModifications(p_129515_, isSending, ci))
 					return;
-				}
 			}
 			p_129515_ = maybeWrap(p_129515_);
 			if (p_129515_ instanceof WrapperPacket) {

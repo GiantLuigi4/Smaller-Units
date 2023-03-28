@@ -118,14 +118,10 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
-		double scl = 1f / upb;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.get().playSound(pPlayer, pEntity, pEvent, pCategory, (float) (pVolume * finalScl), pPitch);
-		});
+		playLocalSound(
+				pEntity.getX(), pEntity.getY(), pEntity.getZ(),
+				pEvent, pCategory, pVolume, pPitch, false
+		);
 	}
 	
 	@Override
@@ -148,6 +144,33 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		completeOnTick.add(() -> {
 			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
 		});
+	}
+	
+	@Override
+	public void playSeededSound(@Nullable Player p_233621_, double p_233622_, double p_233623_, double p_233624_, SoundEvent p_233625_, SoundSource p_233626_, float p_233627_, float p_233628_, long p_233629_) {
+		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_233622_, p_233623_, p_233624_, p_233625_, p_233626_, p_233627_, p_233628_);
+		if (event.isCanceled() || event.getSound() == null) return;
+		p_233625_ = event.getSound();
+		p_233626_ = event.getSource();
+		p_233627_ = event.getNewVolume();
+		p_233628_ = event.getNewPitch();
+		if (p_233621_ == Minecraft.getInstance().player) {
+			this.playLocalSound(
+					p_233622_, p_233623_, p_233624_,
+					p_233625_, p_233626_, p_233627_,
+					p_233628_, false
+			);
+		}
+	}
+	
+	@Override
+	public void playSeededSound(@Nullable Player p_233631_, Entity p_233632_, SoundEvent p_233633_, SoundSource p_233634_, float p_233635_, float p_233636_, long p_233637_) {
+		super.playSeededSound(p_233631_, p_233632_, p_233633_, p_233634_, p_233635_, p_233636_, p_233637_);
+	}
+	
+	@Override
+	public void playLocalSound(BlockPos p_104678_, SoundEvent p_104679_, SoundSource p_104680_, float p_104681_, float p_104682_, boolean p_104683_) {
+		super.playLocalSound(p_104678_, p_104679_, p_104680_, p_104681_, p_104682_, p_104683_);
 	}
 	
 	public FakeClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
@@ -589,7 +612,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 //			BlockPos parentPos = rp.offset(xo, yo, zo);
 			ChunkAccess ac;
 			ac = parent.get().getChunkAt(parentPos);
-			if  (ac != null) {
+			if (ac != null) {
 				ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 				if (cap != null) {
 					UnitSpace space = cap.getUnit(parentPos);

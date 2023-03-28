@@ -1,5 +1,4 @@
 plugins {
-
     id 'eclipse'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '5.1.+'
@@ -104,6 +103,8 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
+    implementation fg.deobf("curse.maven:spark-361579:4057111")
+
     implementation fg.deobf("curse.maven:refinedstorage-243076:4392788")
     implementation fg.deobf("curse.maven:chisel_and_bits-231095:4402503")
     implementation fg.deobf("curse.maven:pehkui-319596:4408042")
@@ -111,7 +112,7 @@ dependencies {
     implementation fg.deobf("curse.maven:chisel_and_bits-231095:4402503")
 
     implementation fg.deobf("curse.maven:immprtl-355440:4385516")
-//    implementation fg.deobf("curse.maven:clothcfg-348521:3972423")
+    implementation fg.deobf("curse.maven:clothcfg-348521:3972423")
 
     compileOnly fg.deobf("curse.maven:rubidium-574856:3973894")
     compileOnly fg.deobf("curse.maven:oculus-581495:4299147")

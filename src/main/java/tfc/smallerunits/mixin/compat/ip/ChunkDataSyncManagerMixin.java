@@ -24,7 +24,7 @@ public class ChunkDataSyncManagerMixin {
 			if (chunk != null) {
 				PacketRedirection.withForceRedirect(
 						ieStorage.ip_getWorld(),
-						() -> SUCapabilityManager.onChunkWatch(chunk, player)
+						() -> SUCapabilityManager.ip$onChunkWatch(chunk, player)
 				);
 			}
 		}

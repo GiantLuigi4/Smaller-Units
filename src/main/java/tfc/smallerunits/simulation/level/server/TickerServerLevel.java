@@ -250,7 +250,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			Level lvl = parent.get();
 			if (lvl == null) return;
 			for (Player player : lvl.players()) {
-//				if (player == pPlayer) continue;
+				if (player == pPlayer) continue;
 				
 				double fScl = finalScl;
 				fScl *= 1 / ResizingUtils.getSize(player);
