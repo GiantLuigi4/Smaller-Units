@@ -704,8 +704,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void tickTime() {
-		// TODO: does this need the player position and whatnot to be setup?
+		// swap client level for IP compat
+		ClientLevel tlevel = Minecraft.getInstance().level;
+		Minecraft.getInstance().level = this;
 		particleEngine.tick();
+		Minecraft.getInstance().level = tlevel;
 		
 		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this, () -> true));
 		
