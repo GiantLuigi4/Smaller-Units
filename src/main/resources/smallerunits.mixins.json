@@ -47,6 +47,7 @@
     "LevelRendererMixinBlocks",
     "compat.ChiselAndBitMeshMixin",
     "compat.ip.PacketRedirectionClientMixin",
+    "compat.sodium.LevelMixin",
     "compat.sodium.RenderSectionManagerMixin",
     "compat.sodium.RenderSectionMixin",
     "compat.sodium.SodiumDebugOverlayMixin",

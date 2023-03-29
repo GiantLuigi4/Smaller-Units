@@ -60,6 +60,10 @@ public abstract class LevelRendererMixinBlocks {
 	@Shadow
 	@Final
 	private Minecraft minecraft;
+	
+	@Shadow
+	protected abstract void renderChunkLayer(RenderType p_172994_, PoseStack p_172995_, double p_172996_, double p_172997_, double p_172998_, Matrix4f p_172999_);
+	
 	@Unique
 	double pCamX, pCamY, pCamZ;
 	
@@ -206,9 +210,10 @@ public abstract class LevelRendererMixinBlocks {
 		if (capable == null)
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
 		
-		if (uniform != null) {
+//		if (!capable.SU$getChunkRender().hasBuffers()) return instance.isEmpty(pRenderType);
+		
+		if (uniform != null)
 			uniform.set((float) ((double) origin.getX() - pCamX), (float) ((double) origin.getY() - pCamY), (float) ((double) origin.getZ() - pCamZ));
-		}
 		
 		SU$Frustum.set(capturedFrustum != null ? capturedFrustum : cullingFrustum);
 		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, SU$Frustum, pCamX, pCamY, pCamZ, uniform);

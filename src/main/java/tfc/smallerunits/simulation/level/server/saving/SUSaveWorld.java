@@ -245,14 +245,14 @@ public class SUSaveWorld {
 									creationTag.putInt("z", tile.getInt("z"));
 									creationTag.putString("id", tile.getString("id"));
 									
-									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), creationTag);
+									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), tile);
 								} catch (Exception err) {
-									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), tag);
+									be = BlockEntity.loadStatic(pz, shell.getBlockState(ps), tile);
 									err.printStackTrace();
 								}
 								if (be == null) continue;
 								shell.addBlockEntity$(ps, be);
-								be.load(tile);
+//								be.load(tile);
 							}
 						}
 					}
