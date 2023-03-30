@@ -21,8 +21,8 @@ public class PacketUtilsMixin {
 		PacketUtilMess.postHandlePacket(listener, packet);
 	}
 
-	//TODO does this still work
-	/*
+	// TODO: does this still work
+	// should?
 	// optifine moment
 	// for some reason, optifine renames this lambda and reverses the parameter order
 	@SuppressWarnings("MixinAnnotationTarget")
@@ -36,5 +36,4 @@ public class PacketUtilsMixin {
 	private static <T extends PacketListener> void postHandlePacketOF(Packet packet, PacketListener listener, CallbackInfo ci) {
 		PacketUtilMess.postHandlePacket(listener, packet);
 	}
-	 */
 }

@@ -8,6 +8,7 @@
   "mixins": [
     "ChunkSerializerAccessor",
     "compat.alternate_current.ACLevelAccessMixin",
+    "compat.canary.CollisionSweeperMixin",
     "compat.ip.ChunkDataSyncManagerMixin",
     "compat.ip.PacketRedirectionMixin",
     "core.ConnectionMixin",
