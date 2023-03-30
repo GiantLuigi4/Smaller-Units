@@ -195,7 +195,7 @@ public class SyncPacketS2C extends Packet {
 	
 	@Override
 	public void handle(NetworkEvent.Context ctx) {
-		if (checkClient(ctx)) {
+			if (checkClient(ctx)) {
 			ctx.enqueueWork(() -> {
 				synchronized (deferred) {
 					deferred.add(Pair.of(Minecraft.getInstance().level, this));

@@ -63,7 +63,6 @@ public class SodiumRenderer {
 		
 		for (SUCompiledChunkAttachments chunk : ((SodiumGridAttachments) level).getRenderChunks().values()) {
 			SUCapableChunk capableChunk = chunk.getSUCapable();
-//			if (!capableChunk.SU$getChunkRender().hasBuffers()) continue;
 			
 			LevelChunk chunk1 = ((LevelChunk) capableChunk);
 			su$Frustum.test(
@@ -81,9 +80,9 @@ public class SodiumRenderer {
 				if (section.hasOnlyAir()) continue;
 				
 				BlockPos pos = new BlockPos(
-						chunk1.getPos().x,
+						chunk1.getPos().getMinBlockX(),
 						section.bottomBlockY(),
-						chunk1.getPos().z
+						chunk1.getPos().getMinBlockZ()
 				);
 				
 				instance.CHUNK_OFFSET.set(

@@ -1290,4 +1290,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
 	}
+	
+	// compat: lithium
+	// reason: un-inline
+	public int getSectionYFromSectionIndex(int p_151569_) {
+		return p_151569_ + this.getMinSection();
+	}
 }

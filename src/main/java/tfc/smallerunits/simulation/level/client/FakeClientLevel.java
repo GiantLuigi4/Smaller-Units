@@ -1048,4 +1048,10 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
 	}
+	
+	// compat: lithium
+	// reason: un-inline
+	public int getSectionYFromSectionIndex(int p_151569_) {
+		return p_151569_ + this.getMinSection();
+	}
 }
