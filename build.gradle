@@ -206,8 +206,8 @@ dependencies {
 
 //    addMod "curse.maven:terrafirmacraft-302973:4395178", "Misc"
 
-//    addMod "curse.maven:quark-243121:3840125", "Misc"
-//    addLib autoRegLib
+    addMod "curse.maven:quark-243121:3840125", "Misc"
+    addLib autoRegLib
     addMod "curse.maven:supplementaries-412082:3800501", "Misc"
     addLib selene
 //    addMod "curse.maven:immweather-592449:3800547", "Misc"

@@ -714,7 +714,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public boolean isOutsideBuildHeight(int pY) {
-		return false;
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pY, upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
 	}
 	
 	@Override

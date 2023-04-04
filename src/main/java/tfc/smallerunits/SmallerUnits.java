@@ -56,7 +56,7 @@ public class SmallerUnits {
 		modBus.addListener(this::setup);
 		/* in game events */
 		forgeBus.addListener(SyncPacketS2C::tick);
-		forgeBus.addListener(SUCapabilityManager::onChunkWatchEvent);
+//		forgeBus.addListener(SUCapabilityManager::onChunkWatchEvent);
 //		forgeBus.addListener(this::connect0);
 		forgeBus.addListener(this::connect1);
 		forgeBus.addGenericListener(LevelChunk.class, SUCapabilityManager::onAttachCapabilities);

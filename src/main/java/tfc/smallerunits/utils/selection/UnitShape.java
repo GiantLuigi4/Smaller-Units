@@ -167,11 +167,13 @@ public class UnitShape extends VoxelShape {
 	
 	@Override
 	public double min(Direction.Axis pAxis) {
+		if (totalBB == null) return pAxis.choose(offset.x, offset.y, offset.z);
 		return totalBB.min(pAxis);
 	}
 	
 	@Override
 	public double max(Direction.Axis pAxis) {
+		if (totalBB == null) return pAxis.choose(offset.x, offset.y, offset.z) + 1;
 		return totalBB.max(pAxis);
 	}
 	

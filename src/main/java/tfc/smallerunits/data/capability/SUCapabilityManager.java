@@ -1,6 +1,7 @@
 package tfc.smallerunits.data.capability;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -10,7 +11,6 @@ import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.world.ChunkWatchEvent;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
@@ -101,13 +101,24 @@ public class SUCapabilityManager {
 	 *
 	 * @param event the event saying that the chunk has started to be tracked
 	 */
-	public static void onChunkWatchEvent(ChunkWatchEvent.Watch event) {
-		if (event.getPlayer() != null) {
-			ISUCapability capability = SUCapabilityManager.getCapability(event.getWorld(), event.getPos());
+//	public static void onChunkWatchEvent(ChunkWatchEvent.Watch event) {
+//		if (event.getPlayer() != null) {
+//			ISUCapability capability = SUCapabilityManager.getCapability(event.getWorld(), event.getPos());
+//			if (capability == null) return;
+//			for (UnitSpace unit : capability.getUnits()) {
+//				if (unit == null) continue;
+//				unit.sendSync(PacketDistributor.PLAYER.with(event::getPlayer));
+//			}
+//		}
+//	}
+	
+	public static void onChunkWatch(LevelChunk chunk, ServerPlayer player) {
+		if (player != null) {
+			ISUCapability capability = SUCapabilityManager.getCapability(chunk);
 			if (capability == null) return;
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;
-				unit.sendSync(PacketDistributor.PLAYER.with(event::getPlayer));
+				unit.sendSync(PacketDistributor.PLAYER.with(() -> player));
 			}
 		}
 	}
