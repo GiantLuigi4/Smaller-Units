@@ -111,6 +111,10 @@ public class SUCapabilityManager {
 //			}
 //		}
 //	}
+	public static void onChunkLoad(LevelChunk chunk) {
+		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
+		for (UnitSpace unit : capability.getUnits()) unit.tick();
+	}
 	
 	public static void onChunkWatch(LevelChunk chunk, ServerPlayer player) {
 		if (player != null) {

@@ -106,6 +106,8 @@ public class SmallerUnits {
 	
 	private static void onChunkLoaded(ChunkEvent.Load loadEvent) {
 		if (loadEvent.getLevel() instanceof ServerLevel lvl) {
+			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) SUCapabilityManager.onChunkLoad(lvlChk);
+			
 			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 				ChunkAccess access = loadEvent.getChunk();
 				int min = access.getMinBuildHeight();

@@ -111,15 +111,17 @@ dependencies {
     implementation fg.deobf("curse.maven:refinedstorage-243076:4392788")
     implementation fg.deobf("curse.maven:chisel_and_bits-231095:4402503")
     implementation fg.deobf("curse.maven:pehkui-319596:4408042")
-    implementation fg.deobf("curse.maven:alternate_current-548115:4406066")
+    compileOnly fg.deobf("curse.maven:alternate_current-548115:4406066")
     implementation fg.deobf("curse.maven:chisel_and_bits-231095:4402503")
+
+    implementation fg.deobf("curse.maven:shimmer-627824:4082047")
 
     compileOnly fg.deobf("curse.maven:immprtl-355440:4385516")
     implementation fg.deobf("curse.maven:clothcfg-348521:3972423")
 
-    implementation fg.deobf("curse.maven:canary-665658:4421576")
+    compileOnly fg.deobf("curse.maven:canary-665658:4421576")
     implementation fg.deobf("curse.maven:rubidium-574856:3973894")
-    implementation fg.deobf("curse.maven:oculus-581495:4299147")
+    compileOnly fg.deobf("curse.maven:oculus-581495:4299147")
 
     compileOnly fg.deobf("curse.maven:vivecraft-667903:4409427")
     compileOnly fg.deobf("curse.maven:vfe-325360:3949338")

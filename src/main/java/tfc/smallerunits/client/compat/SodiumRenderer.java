@@ -166,16 +166,18 @@ public class SodiumRenderer {
 		for (UnitSpace unit : capability.getUnits()) {
 			if (unit != null) {
 				ITickerLevel world = (ITickerLevel) unit.getMyLevel();
-				for (BreakData integer : world.getBreakData().values()) {
-					BlockPos minPos = unit.getOffsetPos(new BlockPos(0, 0, 0));
-					BlockPos maxPos = unit.getOffsetPos(new BlockPos(unit.unitsPerBlock, unit.unitsPerBlock, unit.unitsPerBlock));
-					BlockPos posInQuestion = integer.pos;
-					if (
-							maxPos.getX() > posInQuestion.getX() && posInQuestion.getX() >= minPos.getX() &&
-									maxPos.getY() > posInQuestion.getY() && posInQuestion.getY() >= minPos.getY() &&
-									maxPos.getZ() > posInQuestion.getZ() && posInQuestion.getZ() >= minPos.getZ()
-					)
-						TileRendererHelper.drawBreakingOutline(integer.prog, bufferBuilders, stk, unit.getMyLevel(), integer.pos, ((Level) world).getBlockState(integer.pos), client);
+				if (world != null) {
+					for (BreakData integer : world.getBreakData().values()) {
+						BlockPos minPos = unit.getOffsetPos(new BlockPos(0, 0, 0));
+						BlockPos maxPos = unit.getOffsetPos(new BlockPos(unit.unitsPerBlock, unit.unitsPerBlock, unit.unitsPerBlock));
+						BlockPos posInQuestion = integer.pos;
+						if (
+								maxPos.getX() > posInQuestion.getX() && posInQuestion.getX() >= minPos.getX() &&
+										maxPos.getY() > posInQuestion.getY() && posInQuestion.getY() >= minPos.getY() &&
+										maxPos.getZ() > posInQuestion.getZ() && posInQuestion.getZ() >= minPos.getZ()
+						)
+							TileRendererHelper.drawBreakingOutline(integer.prog, bufferBuilders, stk, unit.getMyLevel(), integer.pos, ((Level) world).getBlockState(integer.pos), client);
+					}
 				}
 			}
 		}
@@ -198,7 +200,7 @@ public class SodiumRenderer {
 	
 	public static void renderTEs(PoseStack matrices, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
 		BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos();
-		for (Map.Entry<RenderRegion, List<RenderSection>> renderRegionListEntry : ((RenderSectionManagerAccessor) renderSectionManager).getChunkRenderList().sorted(false)) {
+		for (Map.Entry<RenderRegion, List<RenderSection>> renderRegionListEntry : ((RenderSectionManagerAccessor) renderSectionManager).SU$getChunkRenderList().sorted(false)) {
 			for (RenderSection renderSection : renderRegionListEntry.getValue()) {
 				origin.set(
 						(renderSection.getChunkX() << 4),

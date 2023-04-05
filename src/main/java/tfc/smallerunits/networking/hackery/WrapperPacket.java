@@ -1,5 +1,6 @@
 package tfc.smallerunits.networking.hackery;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -202,7 +203,24 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		PositionalInfo info = new PositionalInfo(context.player);
 		
 		preRead(context);
-		PacketUtilMess.preHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
+		try {
+			PacketUtilMess.preHandlePacket(ctx.getNetworkManager().getPacketListener(), context.pkt);
+		} catch (Throwable err) {
+			if (err instanceof ClassCastException) {
+//				if (castException.toString().startsWith("class net.minecraft.client.multiplayer.ClientLevel cannot be cast to class tfc.smallerunits.simulation.level.ITickerLevel")) {
+//					if (err.getStackTrace()[0].getLineNumber() == 47) {
+//						// fully recoverable in this scenario, for some reason
+//						Loggers.SU_LOGGER.warn("Failed to handle packet " + wrapped + ".\nHowever, this should be recoverable.");
+//						return;
+//					}
+//				}
+				if (!(Minecraft.getInstance().level instanceof ITickerLevel)) {
+					Loggers.SU_LOGGER.warn("Failed to handle packet " + wrapped + ".\nHowever, this should be recoverable.");
+					return;
+				}
+			}
+			throw new RuntimeException(err);
+		}
 		
 		Object old = null;
 		boolean toServer = ctx.getDirection().getReceptionSide().isServer();

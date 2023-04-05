@@ -135,6 +135,7 @@ public class SUVBOEmitter {
 		stk.last().pose().load(stack.last().pose());
 		stk.last().normal().load(stack.last().normal());
 		BlockPos.MutableBlockPos blockPosMut = new BlockPos.MutableBlockPos();
+		
 		for (int x = 0; x < upb; x++) {
 			for (int y = 0; y < upb; y++) {
 				for (int z = 0; z < upb; z++) {

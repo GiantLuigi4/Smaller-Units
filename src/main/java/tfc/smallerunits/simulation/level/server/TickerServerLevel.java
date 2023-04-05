@@ -77,6 +77,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
@@ -404,21 +405,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public float getShade(Direction pDirection, boolean pShade) {
 		return parent.get().getShade(pDirection, pShade);
-	}
-	
-	@Override
-	public boolean isOutsideBuildHeight(int pY) {
-		return false;
-	}
-	
-	@Override
-	public int getMinBuildHeight() {
-		return -32;
-	}
-	
-	@Override
-	public int getMaxBuildHeight() {
-		return upb * 512 + 32;
 	}
 	
 	@Override
@@ -1295,5 +1281,35 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	// reason: un-inline
 	public int getSectionYFromSectionIndex(int p_151569_) {
 		return p_151569_ + this.getMinSection();
+	}
+	
+	@Override
+	public boolean isOutsideBuildHeight(int pY) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pY, upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	// compat: lithium
+	// reason: un-inline
+	@Override
+	public boolean isOutsideBuildHeight(BlockPos pos) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pos.getY(), upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	@Override
+	public int getMinBuildHeight() {
+		return -32;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+		return upb * 512 + 32;
 	}
 }

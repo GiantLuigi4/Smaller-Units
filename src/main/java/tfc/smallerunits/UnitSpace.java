@@ -75,7 +75,7 @@ public class UnitSpace {
 				Math1D.regionMod(pos.getZ()) * upb
 		);
 		myLevel = null;
-		tick();
+//		tick();
 	}
 	
 	public static UnitSpace fromNBT(CompoundTag tag, Level lvl) {
@@ -98,6 +98,7 @@ public class UnitSpace {
 	
 	private void loadWorld(CompoundTag tag) {
 		if (myLevel == null || tag == null) return;
+		if (!level.isLoaded(pos)) return;
 		
 		// ensures that chunks are loaded
 		for (int x = 0; x < unitsPerBlock; x += 15) {
@@ -151,6 +152,15 @@ public class UnitSpace {
 			((ITickerLevel) myLevel).setLoaded();
 		}
 		
+		if (tag.contains("countBlocks", Tag.TAG_INT)) {
+			numBlocks = tag.getInt("countBlocks");
+		} else {
+			for (BlockState block : getBlocks()) {
+				if (!block.isAir())
+					addState(block);
+			}
+		}
+		
 		this.tag = null;
 	}
 	
@@ -165,8 +175,7 @@ public class UnitSpace {
 				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
 				if (r == null) {
 //					if (level.isLoaded(pos))
-					if (!FMLEnvironment.production)
-						Loggers.UNITSPACE_LOGGER.error("Region@" + new RegionPos(pos) + " was null");
+					Loggers.UNITSPACE_LOGGER.error("Server: Region@" + new RegionPos(pos) + " was null");
 					return;
 				}
 				if (myLevel != null)
@@ -176,7 +185,8 @@ public class UnitSpace {
 			} else if (level instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
 				if (r == null) {
-					Loggers.UNITSPACE_LOGGER.error("Region@" + new RegionPos(pos) + " was null");
+					if (!FMLEnvironment.production)
+						Loggers.UNITSPACE_LOGGER.error("Client: Region@" + new RegionPos(pos) + " was null");
 					return;
 				}
 				if (myLevel != null)
@@ -352,6 +362,7 @@ public class UnitSpace {
 		tag.putInt("z", pos.getZ());
 		tag.putInt("upb", unitsPerBlock);
 		tag.putBoolean("natural", isNatural);
+		tag.putInt("countBlocks", numBlocks);
 		
 		return tag;
 	}

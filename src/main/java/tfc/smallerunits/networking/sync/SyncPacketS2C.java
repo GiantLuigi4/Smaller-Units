@@ -93,7 +93,6 @@ public class SyncPacketS2C extends Packet {
 				if (!(access instanceof LevelChunk chunk)) continue;
 				ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 				UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
-				if (space.getMyLevel() == null) continue;
 				
 				// TODO: adjust player position and whatnot
 				
@@ -109,6 +108,10 @@ public class SyncPacketS2C extends Packet {
 				space.unitsPerBlock = syncPacket.upb;
 				space.setUpb(space.unitsPerBlock);
 				space.isNatural = syncPacket.natural;
+				
+				if (space.getMyLevel() == null) space.tick();
+				if (space.getMyLevel() == null) continue;
+				
 				HashSet<BlockPos> positionsWithBE = new HashSet<>();
 				space.loadPallet(syncPacket.pallet, positionsWithBE);
 				if (cap.getUnit(syncPacket.realPos) != null)
