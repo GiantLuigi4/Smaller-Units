@@ -1,3 +1,4 @@
+# curseforge dependencies
 curse:
   template: "curse.maven:$l-$r0:$r1"
   file: "deps/curse.yaml"

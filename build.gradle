@@ -22,7 +22,7 @@ class Vars {
 }
 
 void init() {
-    FileInputStream stream = new FileInputStream(project.file("yadle/runs/all.csv"))
+    FileInputStream stream = new FileInputStream(project.file("yaml_gradle/runs/all.csv"))
     byte[] data = stream.readAllBytes()
     stream.close()
     Vars.defaultRun = new CSV(new String(data))
@@ -36,7 +36,7 @@ import net.minecraftforge.gradle.common.util.RunConfig
 void configure(String name, RunConfig cfg) {
     cfg.workingDirectory project.file('run')
 
-    File fl = project.file("yadle/runs/" + name + ".csv")
+    File fl = project.file("yaml_gradle/runs/" + name + ".csv")
     if (fl.exists()) {
         FileInputStream stream = new FileInputStream(fl)
         byte[] data = stream.readAllBytes()
@@ -71,7 +71,7 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    FileInputStream stream = new FileInputStream(project.file("yadle/repositories.yaml"))
+    FileInputStream stream = new FileInputStream(project.file("yaml_gradle/repositories.yaml"))
     byte[] data = stream.readAllBytes()
     stream.close()
     String text = new String(data)
@@ -104,7 +104,8 @@ repositories {
     }
 }
 
-static String transformLine(String template, String name, String right) {
+static String transformLine(boolean isCompileOnly, String template, String name, String right) {
+    if (isCompileOnly) name = name.substring(1, name.length() - 1)
     String t = template.replace('$l', name)
     String[] split = right.split(" ")
     for (int i = 0; i < split.length; i++)
@@ -118,7 +119,7 @@ dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     // TODO: parse dependencies.yaml
-    FileInputStream stream = new FileInputStream(project.file("yadle/dependencies.yaml"))
+    FileInputStream stream = new FileInputStream(project.file("yaml_gradle/dependencies.yaml"))
     byte[] data = stream.readAllBytes()
     stream.close()
     Yaml deps = new Yaml(new String(data))
@@ -131,12 +132,14 @@ dependencies {
         boolean isDeobf = Boolean.parseBoolean(entry.getText("deobf"))
         String template = entry.getText("template")
 
-        stream = new FileInputStream(project.file("yadle/" + entry.getText("file").replace('"', "")))
+        stream = new FileInputStream(project.file("yaml_gradle/" + entry.getText("file").replace('"', "")))
         data = stream.readAllBytes()
         stream.close()
         Yaml fl = new Yaml(new String(data))
 
         for (String key : fl.keys()) {
+            System.out.println((String) ("| " + key))
+
             Yaml depYaml = fl.getYaml(key)
             for (String name : depYaml.keys()) {
                 if (name.startsWith("-")) {
@@ -145,7 +148,7 @@ dependencies {
                 }
 
                 boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
-                String dep = transformLine(template, name, depYaml.getText(name))
+                String dep = transformLine(isCompileOnly, template, name, depYaml.getText(name))
                 System.out.println((String) ("|-| " + dep))
                 if (isDeobf) {
                     if (isCompileOnly) compileOnly fg.deobf(dep)
@@ -166,7 +169,7 @@ dependencies {
         boolean isDeobf = ((Boolean) line[3]).booleanValue()
 
         boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
-        String dep = transformLine(template, name.substring(1), depYaml.getText(name))
+        String dep = transformLine(isCompileOnly, template, name.substring(1), depYaml.getText(name))
         System.out.println((String) (":-| " + dep))
         if (isDeobf) {
             if (isCompileOnly) compileOnly fg.deobf(dep)
