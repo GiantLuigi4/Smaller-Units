@@ -1,24 +1,24 @@
 plugins {
     id 'eclipse'
-    id 'maven-publish'
     id 'net.minecraftforge.gradle' version '5.1.+'
     id 'org.spongepowered.mixin' version '0.7.+'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
 
-archivesBaseName = project.archives_base_name
-version = project.mod_version
-group = project.maven_group
+group = 'tfc'
+version = '2.1.1'
 
-// JENKINS STUFF! LEAVE THIS ALONE!
-if (System.getenv('BUILD_NUMBER') != null) {
-    version = "${version}." + System.getenv('BUILD_NUMBER')
+String gameVersion = '1.19.2'
+String forgeVersion = "43.2.3"
+String parchmentVersion = "2022.08.14-$gameVersion"
+
+java {
+    archivesBaseName = "smallerunits-$gameVersion-forge"
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
-    mappings channel: 'official', version: '1.19.2'
+    mappings channel: 'parchment', version: parchmentVersion
 
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
@@ -101,30 +101,72 @@ repositories {
     }
 }
 
+static String transformLine(String line) {
+    String[] split = line.split(":", 2)
+    String left = split[0]
+    if (left.startsWith("-"))
+        left = left.substring(1)
+    String right = split[1]
+
+    return "curse.maven:" + left + "-" + right.trim().replace(" ", ":")
+}
+
 dependencies {
-    minecraft "net.minecraftforge:forge:1.19.2-${forge_version}"
+    minecraft "net.minecraftforge:forge:$gameVersion-$forgeVersion"
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    implementation fg.deobf("curse.maven:spark-361579:4057111")
+    FileInputStream stream = new FileInputStream("curse.yaml")
+    byte[] data = stream.readAllBytes()
+    stream.close()
 
-    implementation fg.deobf("curse.maven:refinedstorage-243076:4392788")
-    implementation fg.deobf("curse.maven:chisel_and_bits-231095:4402503")
-    implementation fg.deobf("curse.maven:pehkui-319596:4408042")
-    compileOnly fg.deobf("curse.maven:alternate_current-548115:4406066")
-    implementation fg.deobf("curse.maven:chisel_and_bits-231095:4402503")
+    ArrayList<String> libraryLines = new ArrayList<>();
 
-    implementation fg.deobf("curse.maven:shimmer-627824:4082047")
+    String text = new String(data)
+    for (String line : text.split("\n")) {
+        if (line.startsWith("#")) continue
+        if (line.trim().isEmpty()) continue
 
-    compileOnly fg.deobf("curse.maven:immprtl-355440:4385516")
-    implementation fg.deobf("curse.maven:clothcfg-348521:3972423")
+        if (line.trim().startsWith("-"))
+            libraryLines.add(line)
 
-    compileOnly fg.deobf("curse.maven:canary-665658:4421576")
-    implementation fg.deobf("curse.maven:rubidium-574856:3973894")
-    compileOnly fg.deobf("curse.maven:oculus-581495:4299147")
+        if (line.charAt(0) <= ' '.charAt(0)) {
+            line = line.trim()
 
-    compileOnly fg.deobf("curse.maven:vivecraft-667903:4409427")
-    compileOnly fg.deobf("curse.maven:vfe-325360:3949338")
+            boolean compileOnly = false
+            if (line.startsWith("(") && line.endsWith(")")) {
+                compileOnly = true
+                line = line.substring(1, line.length() - 1)
+            }
+
+            String dep = transformLine(line)
+
+            if (compileOnly) compileOnly fg.deobf(dep)
+            else implementation fg.deobf(dep)
+
+            System.out.println((String) ("|-| " + dep))
+        } else {
+            System.out.println((String) ("| " + line.replace(":", "")))
+        }
+    }
+
+    System.out.println(": Libraries")
+    for (String line : libraryLines) {
+        line = line.trim()
+
+        boolean compileOnly = false
+        if (line.startsWith("(") && line.endsWith(")")) {
+            compileOnly = true
+            line = line.substring(1, line.length() - 1)
+        }
+
+        String dep = transformLine(line)
+
+        if (compileOnly) compileOnly fg.deobf(dep)
+        else implementation fg.deobf(dep)
+
+        System.out.println((String) (":-| " + dep))
+    }
 
     if (new File("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar").exists()) {
         compileOnly files("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar")
@@ -154,19 +196,28 @@ jar {
 
 jar.finalizedBy('reobfJar')
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifact jar
-        }
-    }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/mcmodsrepo"
-        }
-    }
-}
+// I debug stuff a lot, and I mess with ATs a lot
+// everytime I change ATs, I need to reswap the game jar for the recomp jar
+System.out.println("Swap for recomp jar")
+String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
+File fl = new File((String) ("/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion"))
+if (fl.exists()) {
+    File fl1 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion" + ".jar"))
+    File fl2 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion-recomp.jar"))
+    if (fl2.exists()) {
+        if (fl1.length() != fl2.length()) {
+            if (fl1.exists())
+                fl1.delete()
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
+            FileInputStream inputStream = new FileInputStream(fl2)
+            byte[] bytes = inputStream.readAllBytes()
+            fl1.createNewFile()
+            FileOutputStream outputStream = new FileOutputStream(fl1)
+            outputStream.write(bytes)
+            outputStream.flush()
+            outputStream.close()
+            inputStream.close()
+        }
+    }
 }
+System.out.println("Swapped")

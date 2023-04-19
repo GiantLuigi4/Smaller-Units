@@ -210,11 +210,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(this));
 	}
 	
-	// forge is stupid and does not account for there being more than 1 world at once
-	
-	//TODO where is class?
-//	public final SUModelDataManager modelDataManager = new SUModelDataManager();
-	
 	public UnitParticleEngine getParticleEngine() {
 		return particleEngine;
 	}

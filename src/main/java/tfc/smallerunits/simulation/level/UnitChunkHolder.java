@@ -26,13 +26,11 @@ import java.util.concurrent.CompletableFuture;
 public class UnitChunkHolder extends ChunkHolder {
 	LevelChunk chunk;
 	int yPos;
-	PlayerProvider provider;
 	
 	public UnitChunkHolder(ChunkPos p_142986_, int p_142987_, LevelHeightAccessor p_142988_, LevelLightEngine p_142989_, LevelChangeListener p_142990_, PlayerProvider p_142991_, LevelChunk chunk, int yPos) {
 		super(p_142986_, p_142987_, p_142988_, p_142989_, p_142990_, p_142991_);
 		this.chunk = chunk;
 		this.yPos = yPos;
-		this.provider = p_142991_;
 	}
 	
 	@Override

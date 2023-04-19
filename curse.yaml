@@ -1,0 +1,25 @@
+# format: [name]: [project id] [file id]
+compile:
+  chisel_and_bits: 231095 4402503
+  pehkui: 319596 4408042
+  alternate_current: 548115 4406066
+  refinedstorage: 243076 4392788
+
+graphics:
+  shimmer: 627824 4082047
+  oculus: 581495 4299147
+
+optimization:
+  canary: 665658 4421576
+  rubidium: 574856 3973894
+
+invasive:
+  immprtl: 355440 4385516
+  -clothcfg: 348521 3972423
+
+vr:
+  vivecraft: 667903 4409427
+  vfe: 325360 3949338
+
+debug:
+  spark: 361579 4057111

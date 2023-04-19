@@ -13,7 +13,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.network.NetworkEvent;
-import qouteall.imm_ptl.core.ClientWorldLoader;
 import qouteall.imm_ptl.core.network.PacketRedirectionClient;
 import sun.misc.Unsafe;
 import tfc.smallerunits.SmallerUnits;
@@ -165,7 +164,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 				
 				Level lvl1;
 				if (lvl != null && FMLEnvironment.dist.isClient() && player.level.isClientSide)
-					lvl1 = ClientWorldLoader.getOptionalWorld(lvl);
+					lvl1 = IHateTheDistCleaner.getOptionalIPWorld(lvl);
 				else lvl1 = player.level;
 				
 				if (lvl1 != null) {
@@ -184,7 +183,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			
 			Level lvl1;
 			if (lvl != null && FMLEnvironment.dist.isClient() && player.level.isClientSide)
-				lvl1 = ClientWorldLoader.getOptionalWorld(lvl);
+				lvl1 = IHateTheDistCleaner.getOptionalIPWorld(lvl);
 			else lvl1 = player.level;
 			
 			if (lvl1 != null) {
