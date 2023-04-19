@@ -1,5 +1,6 @@
 package tfc.smallerunits.utils;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -12,7 +13,11 @@ import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.access.EntityAccessor;
+import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.logging.Loggers;
+import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
@@ -22,6 +27,7 @@ import java.util.UUID;
 public class PositionalInfo {
 	public final Vec3 pos;
 	public final Level lvl;
+	private final Level clientLevel; // immersive portals compat
 	public final AABB box;
 	public final float eyeHeight;
 	public static final UUID SU_REACH_UUID = new UUID(new Random(847329).nextLong(), new Random(426324).nextLong());
@@ -41,13 +47,18 @@ public class PositionalInfo {
 		eyeHeight = pEntity.eyeHeight;
 		oPos = new Vec3(pEntity.xo, pEntity.yo, pEntity.zo);
 		oldPos = new Vec3(pEntity.xOld, pEntity.yOld, pEntity.zOld);
-		if (FMLEnvironment.dist.isClient() && cacheParticleEngine) {
+		Level clvl = null;
+		if (FMLEnvironment.dist.isClient()) {
 			if (pEntity.getLevel().isClientSide) {
 				if (pEntity instanceof Player player) {
-					particleEngine = IHateTheDistCleaner.getParticleEngine(player);
+					if (cacheParticleEngine) {
+						particleEngine = IHateTheDistCleaner.getParticleEngine(player);
+					}
+					clvl = IHateTheDistCleaner.getClientLevel();
 				}
 			}
 		}
+		clientLevel = clvl;
 	}
 	
 	public void scalePlayerReach(Player pPlayer, int upb) {
@@ -71,9 +82,28 @@ public class PositionalInfo {
 		adjust(pEntity, level, upb, regionPos, true);
 	}
 	
+	public void adjust(Entity pEntity, Level parent, NetworkingHacks.LevelDescriptor descriptor, boolean server) {
+		if (descriptor == null) {
+			Loggers.SU_LOGGER.warn("Positional Info got a null descriptor in recursive adjust");
+			return;
+		}
+		if (descriptor.parent() != null) adjust(pEntity, parent, descriptor.parent(), server);
+		
+		RegionalAttachments attachments = (RegionalAttachments) pEntity.level;
+		Region region = attachments.SU$getRegion(descriptor.pos());
+		if (region == null) return;
+		Level spaceLevel;
+		if (server)
+			spaceLevel = region.getServerWorld(pEntity.getServer(), (ServerLevel) pEntity.getLevel(), descriptor.upb());
+		else
+			spaceLevel = region.getClientWorld(pEntity.getLevel(), descriptor.upb());
+		
+		adjust(pEntity, spaceLevel, descriptor.upb(), descriptor.pos(), false);
+	}
+	
 	public void adjust(Entity pEntity, Level level, int upb, RegionPos regionPos, boolean updateParticleEngine) {
 		AABB scaledBB;
-		pEntity.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(this.box, this.pos, upb, regionPos));
+		pEntity.setBoundingBox(scaledBB = HitboxScaling.getOffsetAndScaledBox(pEntity.getBoundingBox(), pEntity.getPosition(1), upb, regionPos));
 		pEntity.eyeHeight = (float) (this.eyeHeight * upb);
 		((EntityAccessor) pEntity).setPosRawNoUpdate(scaledBB.getCenter().x, scaledBB.minY, scaledBB.getCenter().z);
 		if (pEntity instanceof Player player)
@@ -128,6 +158,7 @@ public class PositionalInfo {
 		if (FMLEnvironment.dist.isClient()) {
 			if (player.level.isClientSide) {
 				IHateTheDistCleaner.resetClient(player, lvl, particleEngine);
+				if (clientLevel != null) IHateTheDistCleaner.setClientLevel(clientLevel);
 			}
 		}
 	}

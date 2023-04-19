@@ -142,9 +142,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 repositories {
     maven { url = "https://jitpack.io" }
     maven { url = "https://www.cursemaven.com" }
-    if (new File("libs").exists()) {
-        flatDir { dirs 'libs' }
-    }
+    if (new File("libs").exists()) flatDir { dirs 'libs' }
 }
 
 configurations {
@@ -163,7 +161,10 @@ dependencies {
     api fg.deobf("curse.maven:pehkui-319596:3808012")
     api fg.deobf("curse.maven:alternate_current-548115:3789218")
     api fg.deobf("curse.maven:vivecraft-667903:3984471")
-    compileOnly fg.deobf("curse.maven:rubidium-574856:4024781")
+    implementation fg.deobf("curse.maven:immprtl-355440:4488791")
+    implementation fg.deobf("curse.maven:clthcfg-348521:3972426")
+    api fg.deobf("curse.maven:canary-665658:4421910")
+    implementation fg.deobf("curse.maven:rubidium-574856:4024781")
     compileOnly fg.deobf("curse.maven:oculus-581495:4354939")
     compileOnly fg.deobf("curse.maven:vfe-325360:3893747")
 
@@ -256,7 +257,7 @@ dependencies {
 
     System.out.println("Inheritance")
     configurations.compileOnly.extendsFrom(configurations.api)
-    configurations.runtimeOnly.extendsFrom(configurations.api)
+//    configurations.runtimeOnly.extendsFrom(configurations.api)
 }
 
 jar {

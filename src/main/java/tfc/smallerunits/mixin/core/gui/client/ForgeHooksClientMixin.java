@@ -29,8 +29,8 @@ public class ForgeHooksClientMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				screenAttachments.update(Minecraft.getInstance().player);
-				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
+				NetworkingHacks.setPos(((ITickerLevel) screenAttachments.getTarget()).getDescriptor());
+				info.adjust(Minecraft.getInstance().player, Minecraft.getInstance().level, screenAttachments.getDescriptor(), false);
 			}
 		}
 	}
@@ -46,7 +46,7 @@ public class ForgeHooksClientMixin {
 				
 				if (Minecraft.getInstance().screen != null && Minecraft.getInstance().screen != currentScreen.get()) {
 					SUScreenAttachments attachments = (SUScreenAttachments) Minecraft.getInstance().screen;
-					attachments.setup(info, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+					attachments.setup(screenAttachments);
 				}
 			}
 		}
@@ -59,8 +59,8 @@ public class ForgeHooksClientMixin {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) screen);
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
-				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
+				NetworkingHacks.setPos(((ITickerLevel) screenAttachments.getTarget()).getDescriptor());
+				info.adjust(Minecraft.getInstance().player, Minecraft.getInstance().level, screenAttachments.getDescriptor(), false);
 			}
 		}
 	}
@@ -76,7 +76,7 @@ public class ForgeHooksClientMixin {
 				
 				if (Minecraft.getInstance().screen != null && Minecraft.getInstance().screen != currentScreen.get()) {
 					SUScreenAttachments attachments = (SUScreenAttachments) Minecraft.getInstance().screen;
-					attachments.setup(info, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+					attachments.setup(screenAttachments);
 				}
 			}
 		}

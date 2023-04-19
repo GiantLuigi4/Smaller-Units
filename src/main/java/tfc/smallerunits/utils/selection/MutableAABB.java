@@ -62,4 +62,14 @@ public class MutableAABB extends AABB {
 		maxZ += pPos.getZ();
 		return this;
 	}
+	
+	public AABB scale(double scale) {
+		minX *= scale;
+		minY *= scale;
+		minZ *= scale;
+		maxX *= scale;
+		maxY *= scale;
+		maxZ *= scale;
+		return this;
+	}
 }

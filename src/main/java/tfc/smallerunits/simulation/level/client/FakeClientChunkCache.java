@@ -13,6 +13,8 @@ import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.ChunkEvent;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
@@ -168,6 +170,8 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		allChunks.add(ck[i]);
 		ck[i].setClientLightReady(true);
 		getLightEngine().enableLightSources(new ChunkPos(pChunkX, pChunkZ), true);
+		((ClientLevel) level).onChunkLoaded(ckPos);
+		MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(ck[i]));
 		
 		return ck[i];
 	}

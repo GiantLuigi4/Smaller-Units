@@ -371,25 +371,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
-	public boolean isOutsideBuildHeight(int pY) {
-		Level parent = this.parent.get();
-		if (parent == null) return true;
-		int yo = Math1D.getChunkOffset(pY, upb);
-		yo = region.pos.toBlockPos().getY() + yo;
-		return parent.isOutsideBuildHeight(yo);
-	}
-	
-	@Override
-	public int getMinBuildHeight() {
-		return -32;
-	}
-	
-	@Override
-	public int getMaxBuildHeight() {
-		return upb * 512 + 32;
-	}
-	
-	@Override
 	public int getSectionsCount() {
 		return getMaxSection() - getMinSection();
 	}
@@ -1001,7 +982,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public String toString() {
-		return "TickerServerLevel[" + ((ServerLevelData) this.getLevelData()).getLevelName() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
+		return "TickerServerLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
 	// TODO: try to optimize or shrink this?
@@ -1154,7 +1135,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (!isLoaded) return;
 		if (!getServer().isReady()) return;
 		
-		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(getDescriptor());
 		
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
@@ -1331,5 +1312,41 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			((EntityAccessor) entitiesOfClass).setMotionScalar(1);
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
+	}
+	
+	// compat: lithium
+	// reason: un-inline
+	public int getSectionYFromSectionIndex(int p_151569_) {
+		return p_151569_ + this.getMinSection();
+	}
+	
+	@Override
+	public boolean isOutsideBuildHeight(int pY) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pY, upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	// compat: lithium
+	// reason: un-inline
+	@Override
+	public boolean isOutsideBuildHeight(BlockPos pos) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pos.getY(), upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	@Override
+	public int getMinBuildHeight() {
+		return -32;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+		return upb * 512 + 32;
 	}
 }

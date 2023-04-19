@@ -327,6 +327,8 @@ public class TileRendererHelper {
 		
 		if (!ModList.get().isLoaded("rubidium")) SmallerUnits.tesselScale = scl;
 		
+		ClientLevel clvl = Minecraft.getInstance().level;
+		Minecraft.getInstance().level = (ClientLevel) valueLevel;
 		if (Tesselator.getInstance() instanceof SUTesselator suTesselator) {
 			suTesselator.setOffset(bp.getX(), bp.getY(), bp.getZ());
 			// TODO: use forge method or smth
@@ -336,9 +338,6 @@ public class TileRendererHelper {
 			);
 			SmallerUnits.tesselScale = 0;
 		} else {
-//			PoseStack mdlViewStk = RenderSystem.getModelViewStack();
-//			mdlViewStk.pushPose();
-			
 			SmallerUnits.tesselScale = 0;
 			
 			stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
@@ -350,9 +349,8 @@ public class TileRendererHelper {
 					stack, renderBuffers.bufferSource(),
 					pLightTexture, pCamera, pPartialTick
 			);
-
-//			mdlViewStk.popPose();
 		}
+		Minecraft.getInstance().level = clvl;
 	}
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {

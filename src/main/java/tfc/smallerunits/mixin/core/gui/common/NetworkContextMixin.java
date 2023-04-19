@@ -34,8 +34,11 @@ public class NetworkContextMixin {
 			NetworkingHacks.increaseBlockPosPrecision.set(true);
 			NetworkingHacks.setPos(descriptor);
 			NetworkingHacks.currentContext.set(nhcontext);
-			
-			info.adjust(context.player, nhcontext.targetLevel, descriptor.upb(), descriptor.pos());
+
+//			info.adjust(context.player, nhcontext.targetLevel, descriptor.upb(), descriptor.pos());
+			if (context.player.level != nhcontext.targetLevel) {
+				info.adjust(context.player, context.player.level, descriptor, direction.getReceptionSide().isServer());
+			}
 			
 			Object old = null;
 			boolean toServer = direction.getReceptionSide().isServer();
@@ -54,14 +57,14 @@ public class NetworkContextMixin {
 				Object newV = context.player.containerMenu;
 				if (old != newV) {
 					if (newV != context.player.inventoryMenu) {
-						((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+						((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
 					}
 				}
 			} else {
 				Object newV = IHateTheDistCleaner.getScreen();
 				if (old != newV) {
 					if (newV != null) {
-						((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+						((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
 					}
 				}
 			}

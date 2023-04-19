@@ -9,6 +9,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import qouteall.imm_ptl.core.ClientWorldLoader;
 import tfc.smallerunits.TileResizingItem;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
@@ -147,5 +149,13 @@ public class IHateTheDistCleaner {
 	
 	public static boolean isClientPlayer(Player player) {
 		return player.getUUID().equals(Minecraft.getInstance().player.getUUID());
+	}
+	
+	public static void setClientLevel(Level clientLevel) {
+		Minecraft.getInstance().level = (ClientLevel) clientLevel;
+	}
+	
+	public static Level getOptionalIPWorld(ResourceKey<Level> lvl) {
+		return ClientWorldLoader.getOptionalWorld(lvl);
 	}
 }

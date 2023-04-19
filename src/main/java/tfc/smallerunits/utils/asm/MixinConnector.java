@@ -28,6 +28,11 @@ public class MixinConnector implements IMixinConfigPlugin {
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
 		}
+//		{
+//			ArrayList<String> incompat = new ArrayList<>();
+//			incompat.add("qouteall.imm_ptl.core.network.PacketRedirection");
+//			incompatibilityMap.put("tfc.smallerunits.mixin.core.ConnectionMixin", incompat);
+//		}
 	}
 	
 	@Override
@@ -95,9 +100,8 @@ public class MixinConnector implements IMixinConfigPlugin {
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
 		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixinBlocks") ||
+						mixinClassName.equals("tfc.smallerunits.mixin.core.gui.client.expansion.DebugScreenOverlayMixin")
 		) {
 			try {
 				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
@@ -147,8 +151,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
 		if (
 				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
+						mixinClassName.equals("tfc.smallerunits.mixin.core.gui.client.expansion.DebugScreenOverlayMixin")
 		) {
 			try {
 				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");

@@ -13,8 +13,11 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 
 @Mixin(ChunkMap.class)
 public abstract class ChunkMapMixin {
-	@Inject(at = @At("HEAD"), method = "playerLoadedChunk")
+	@Inject(at = @At("RETURN"), method = "playerLoadedChunk")
 	public void onLoad(ServerPlayer pPlaer, MutableObject<ClientboundLevelChunkWithLightPacket> pPacketCache, LevelChunk pChunk, CallbackInfo ci) {
+		// so... the forge method doesn't actually provide the chunk itself
+		// which is... EXTREMELY bad for performance
+		// and I don't know why nobody has changed that
 		SUCapabilityManager.onChunkWatch(pChunk, pPlaer);
 	}
 }

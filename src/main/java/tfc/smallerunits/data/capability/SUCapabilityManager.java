@@ -111,6 +111,10 @@ public class SUCapabilityManager {
 //			}
 //		}
 //	}
+	public static void onChunkLoad(LevelChunk chunk) {
+		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
+		for (UnitSpace unit : capability.getUnits()) unit.tick();
+	}
 	
 	public static void onChunkWatch(LevelChunk chunk, ServerPlayer player) {
 		if (player != null) {
@@ -119,6 +123,17 @@ public class SUCapabilityManager {
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;
 				unit.sendSync(PacketDistributor.PLAYER.with(() -> player));
+			}
+		}
+	}
+	
+	public static void ip$onChunkWatch(LevelChunk chunk, ServerPlayer player) {
+		if (player != null) {
+			ISUCapability capability = SUCapabilityManager.getCapability(chunk);
+			if (capability == null) return;
+			for (UnitSpace unit : capability.getUnits()) {
+				if (unit == null) continue;
+				unit.sendRedirectableSync(PacketDistributor.PLAYER.with(() -> player));
 			}
 		}
 	}

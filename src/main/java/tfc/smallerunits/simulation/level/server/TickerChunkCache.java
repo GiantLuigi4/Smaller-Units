@@ -20,6 +20,8 @@ import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.ChunkEvent;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
@@ -261,7 +263,14 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			holders.add(holder);
 		}
 		bvc.holder = holder;
+		MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(bvc));
+		
 		return bvc;
+	}
+	
+	@Override
+	public void save(boolean p_8420_) {
+//		((TickerServerLevel)level).saveWorld.saveAllChunks();
 	}
 	
 	@Override

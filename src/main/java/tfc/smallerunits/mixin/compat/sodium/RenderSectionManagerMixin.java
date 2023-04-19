@@ -14,7 +14,7 @@ public class RenderSectionManagerMixin implements RenderSectionManagerAccessor {
 	private ChunkRenderList chunkRenderList;
 	
 	@Override
-	public ChunkRenderList getChunkRenderList() {
+	public ChunkRenderList SU$getChunkRenderList() {
 		return chunkRenderList;
 	}
 }

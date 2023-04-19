@@ -7,7 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.access.SUScreenAttachments;
-import tfc.smallerunits.data.storage.RegionPos;
+import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 
 @Mixin(AbstractContainerMenu.class)
@@ -17,9 +18,7 @@ public class AbstractContainerMenuMixin implements SUScreenAttachments {
 	@Unique
 	Level targetLevel;
 	@Unique
-	int upb;
-	@Unique
-	RegionPos regionPos;
+	NetworkingHacks.LevelDescriptor descriptor;
 	
 	@Override
 	public void update(Player player) {
@@ -29,21 +28,25 @@ public class AbstractContainerMenuMixin implements SUScreenAttachments {
 			}
 		}
 	}
-	
 	@Override
 	public void setup(PositionalInfo info, UnitSpace unit) {
 		this.info = info;
 		targetLevel = unit.getMyLevel();
-		upb = unit.unitsPerBlock;
-		regionPos = unit.regionPos;
+		descriptor = ((ITickerLevel) unit.getMyLevel()).getDescriptor();
 	}
 	
 	@Override
-	public void setup(PositionalInfo info, Level targetLevel, int upb, RegionPos regionPos) {
+	public void setup(PositionalInfo info, Level targetLevel, NetworkingHacks.LevelDescriptor descriptor) {
 		this.info = info;
 		this.targetLevel = targetLevel;
-		this.upb = upb;
-		this.regionPos = regionPos;
+		this.descriptor = descriptor;
+	}
+	
+	@Override
+	public void setup(SUScreenAttachments attachments) {
+		this.info = attachments.getPositionalInfo();
+		this.targetLevel = attachments.getTarget();
+		this.descriptor = attachments.getDescriptor();
 	}
 	
 	@Override
@@ -57,12 +60,7 @@ public class AbstractContainerMenuMixin implements SUScreenAttachments {
 	}
 	
 	@Override
-	public int getUpb() {
-		return upb;
-	}
-	
-	@Override
-	public RegionPos regionPos() {
-		return regionPos;
+	public NetworkingHacks.LevelDescriptor getDescriptor() {
+		return descriptor;
 	}
 }

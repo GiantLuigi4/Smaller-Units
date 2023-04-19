@@ -36,7 +36,6 @@ public class ClientLevelMixin implements RegionalAttachments {
 			});
 	}
 	
-	// TODO: maybe get a better way of doing this?
 	@Inject(at = @At("HEAD"), method = "onChunkLoaded")
 	public void onLoadChunk(ChunkPos pChunkPos, CallbackInfo ci) {
 		int min = ((Level) (Object) this).getMinBuildHeight();
