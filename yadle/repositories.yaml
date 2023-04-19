@@ -1,0 +1,5 @@
+flatdir: "libs"
+
+maven:
+  cursemaven: "https://www.cursemaven.com"
+  jitpack: "https://jitpack.io"

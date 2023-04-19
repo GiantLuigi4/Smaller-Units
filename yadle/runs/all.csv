@@ -1,0 +1,3 @@
+forge.logging.markers,REGISTRIES
+forge.logging.console.level,debug
+forge.enabledGameTestNamespaces,smallerunits

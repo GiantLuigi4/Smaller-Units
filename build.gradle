@@ -17,87 +17,88 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
 }
 
+class Vars {
+    static CSV defaultRun
+}
+
+void init() {
+    FileInputStream stream = new FileInputStream(project.file("yadle/runs/all.csv"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+    Vars.defaultRun = new CSV(new String(data))
+}
+init()
+
+import net.minecraftforge.gradle.common.util.RunConfig
+
+void configure(String name, RunConfig cfg) {
+    cfg.workingDirectory project.file('run')
+
+    File fl = project.file("yadle/runs/" + name + ".csv")
+    if (fl.exists()) {
+        FileInputStream stream = new FileInputStream(fl)
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        CSV thisRun = new CSV(new String(data))
+
+        for (String[] line : thisRun.text) cfg.property line[0], line[1]
+    }
+
+    for (String[] line : Vars.defaultRun.text) cfg.property line[0], line[1]
+
+    cfg.mods {
+        smallerunits {
+            source sourceSets.main
+        }
+    }
+}
+
 minecraft {
     mappings channel: 'parchment', version: parchmentVersion
 
     accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     runs {
-        client {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            property 'forge.logging.console.level', 'debug'
-
-            property 'forge.enabledGameTestNamespaces', 'examplemod'
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            property 'forge.logging.console.level', 'debug'
-
-            property 'forge.enabledGameTestNamespaces', 'examplemod'
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        gameTestServer {
-            workingDirectory project.file('run')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            property 'forge.logging.console.level', 'debug'
-
-            property 'forge.enabledGameTestNamespaces', 'examplemod'
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        data {
-            workingDirectory project.file('run')
-
-            property 'forge.logging.markers', 'REGISTRIES'
-
-            property 'forge.logging.console.level', 'debug'
-
-            args '--mod', 'smallerunits', '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-
-            mods {
-                smallerunits {
-                    source sourceSets.main
-                }
-            }
-        }
+        client { configure("client", (RunConfig) it) }
+        server { configure("server", (RunConfig) it) }
+        gameTestServer { configure("gameTestServer", (RunConfig) it) }
+        data { configure("data", (RunConfig) it) }
     }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-    maven { url 'https://jitpack.io' }
-    maven {
-        name = "cursemaven"
-        url = "https://www.cursemaven.com"
-    }
-    flatDir {
-        dirs 'run/mods'
+    FileInputStream stream = new FileInputStream(project.file("yadle/repositories.yaml"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+    String text = new String(data)
+
+    String parsing = ""
+    for (String s : text.split("\n")) {
+        if (s.trim().isEmpty()) continue
+
+        String[] split = s.split(":", 2)
+        if (split[0] == "flatdir") {
+            flatDir {
+                dirs split[1].trim()
+            }
+            continue
+        }
+
+        if (split[0].charAt(0) > ' '.charAt(0)) {
+            parsing = split[0]
+        } else {
+            split[0] = split[0].trim()
+            split[1] = split[1].trim().replace("\"", "")
+
+            if (parsing == "maven") {
+                maven {
+                    name = split[0]
+                    url = split[1]
+                }
+            }
+        }
     }
 }
 
@@ -116,7 +117,8 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    FileInputStream stream = new FileInputStream("curse.yaml")
+    // TODO: parse dependencies.yaml
+    FileInputStream stream = new FileInputStream(project.file("yadle/deps/curse.yaml"))
     byte[] data = stream.readAllBytes()
     stream.close()
 
@@ -221,3 +223,19 @@ if (fl.exists()) {
     }
 }
 System.out.println("Swapped")
+
+class CSV {
+    public String[][] text
+
+    CSV(String[][] text) {
+        this.text = text
+    }
+
+    CSV(String text) {
+        ArrayList<String[]> lines = new ArrayList<>();
+        for (String s : text.split("\n"))
+            if (!s.isEmpty())
+                lines.add(s.split(","))
+        this.text = lines.toArray(new String[0][])
+    }
+}
