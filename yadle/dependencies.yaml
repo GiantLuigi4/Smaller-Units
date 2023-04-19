@@ -1,4 +1,4 @@
 curse:
-  template: "curse.maven:$l-$r1:$r1"
+  template: "curse.maven:$l-$r0:$r1"
   file: "deps/curse.yaml"
   deobf: true

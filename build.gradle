@@ -27,7 +27,9 @@ void init() {
     stream.close()
     Vars.defaultRun = new CSV(new String(data))
 }
+
 init()
+
 
 import net.minecraftforge.gradle.common.util.RunConfig
 
@@ -102,14 +104,12 @@ repositories {
     }
 }
 
-static String transformLine(String line) {
-    String[] split = line.split(":", 2)
-    String left = split[0]
-    if (left.startsWith("-"))
-        left = left.substring(1)
-    String right = split[1]
-
-    return "curse.maven:" + left + "-" + right.trim().replace(" ", ":")
+static String transformLine(String template, String name, String right) {
+    String t = template.replace('$l', name)
+    String[] split = right.split(" ")
+    for (int i = 0; i < split.length; i++)
+        t = t.replace((String) ('$r' + i), split[i])
+    return t.replace('"', "")
 }
 
 dependencies {
@@ -118,56 +118,63 @@ dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     // TODO: parse dependencies.yaml
-    FileInputStream stream = new FileInputStream(project.file("yadle/deps/curse.yaml"))
+    FileInputStream stream = new FileInputStream(project.file("yadle/dependencies.yaml"))
     byte[] data = stream.readAllBytes()
     stream.close()
+    Yaml deps = new Yaml(new String(data))
 
-    ArrayList<String> libraryLines = new ArrayList<>();
+    ArrayList<Object[]> libraryLines = new ArrayList<>();
 
-    String text = new String(data)
-    for (String line : text.split("\n")) {
-        if (line.startsWith("#")) continue
-        if (line.trim().isEmpty()) continue
+    for (String s : deps.keys()) {
+        Yaml entry = deps.getYaml(s)
 
-        if (line.trim().startsWith("-"))
-            libraryLines.add(line)
+        boolean isDeobf = Boolean.parseBoolean(entry.getText("deobf"))
+        String template = entry.getText("template")
 
-        if (line.charAt(0) <= ' '.charAt(0)) {
-            line = line.trim()
+        stream = new FileInputStream(project.file("yadle/" + entry.getText("file").replace('"', "")))
+        data = stream.readAllBytes()
+        stream.close()
+        Yaml fl = new Yaml(new String(data))
 
-            boolean compileOnly = false
-            if (line.startsWith("(") && line.endsWith(")")) {
-                compileOnly = true
-                line = line.substring(1, line.length() - 1)
+        for (String key : fl.keys()) {
+            Yaml depYaml = fl.getYaml(key)
+            for (String name : depYaml.keys()) {
+                if (name.startsWith("-")) {
+                    libraryLines.add(new Object[]{depYaml, template, name, Boolean.valueOf(isDeobf)})
+                    continue
+                }
+
+                boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
+                String dep = transformLine(template, name, depYaml.getText(name))
+                System.out.println((String) ("|-| " + dep))
+                if (isDeobf) {
+                    if (isCompileOnly) compileOnly fg.deobf(dep)
+                    else implementation fg.deobf(dep)
+                } else {
+                    if (isCompileOnly) compileOnly dep
+                    else implementation dep
+                }
             }
-
-            String dep = transformLine(line)
-
-            if (compileOnly) compileOnly fg.deobf(dep)
-            else implementation fg.deobf(dep)
-
-            System.out.println((String) ("|-| " + dep))
-        } else {
-            System.out.println((String) ("| " + line.replace(":", "")))
         }
     }
 
     System.out.println(": Libraries")
-    for (String line : libraryLines) {
-        line = line.trim()
+    for (Object[] line : libraryLines) {
+        Yaml depYaml = (Yaml) line[0]
+        String template = (String) line[1]
+        String name = ((String) line[2])
+        boolean isDeobf = ((Boolean) line[3]).booleanValue()
 
-        boolean compileOnly = false
-        if (line.startsWith("(") && line.endsWith(")")) {
-            compileOnly = true
-            line = line.substring(1, line.length() - 1)
-        }
-
-        String dep = transformLine(line)
-
-        if (compileOnly) compileOnly fg.deobf(dep)
-        else implementation fg.deobf(dep)
-
+        boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
+        String dep = transformLine(template, name.substring(1), depYaml.getText(name))
         System.out.println((String) (":-| " + dep))
+        if (isDeobf) {
+            if (isCompileOnly) compileOnly fg.deobf(dep)
+            else implementation fg.deobf(dep)
+        } else {
+            if (isCompileOnly) compileOnly dep
+            else implementation dep
+        }
     }
 
     if (new File("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar").exists()) {
@@ -237,5 +244,80 @@ class CSV {
             if (!s.isEmpty())
                 lines.add(s.split(","))
         this.text = lines.toArray(new String[0][])
+    }
+}
+
+abstract class YamlEntry {}
+
+class YamlString extends YamlEntry {
+    String value
+
+    YamlString(String value) {
+        this.value = value
+    }
+
+    @Override
+    String toString() {
+        return value
+    }
+}
+
+class Yaml extends YamlEntry {
+    Map<String, YamlEntry> entries = new HashMap<>()
+
+    Set<String> keys() {
+        return entries.keySet()
+    }
+
+    Yaml getYaml(String key) {
+        try {
+            return (Yaml) entries.get(key)
+        } catch (Throwable err) {
+            System.out.println("Failed to get entry " + key)
+            throw new RuntimeException()
+        }
+    }
+
+    String getText(String key) {
+        return entries.get(key).toString()
+    }
+
+    static int countIndent(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) > ' '.charAt(0))
+                return i
+        }
+        return line.length()
+    }
+
+    Yaml(String[] text, int indent, int[] currentLine) {
+        for (int i = currentLine[0]; i < text.length; i++) {
+            if (text[i].trim().isEmpty()) continue
+            if (text[i].trim().charAt(0) == '#'.charAt(0)) continue
+
+            if (countIndent(text[i]) < indent) {
+                currentLine[0] = i
+                return
+            }
+
+            String[] split = text[i].trim().split(":", 2)
+            if (split.length == 1 || split[1].isEmpty()) {
+                i += 1
+                currentLine[0] = i
+                Yaml subYaml = new Yaml(text, countIndent(text[i]), currentLine)
+                i = currentLine[0] - 1
+
+                entries.put(split[0], subYaml)
+            } else {
+                entries.put(split[0], new YamlString(split[1].trim()))
+            }
+
+            currentLine[0] = i
+        }
+        currentLine[0] += 1
+    }
+
+    Yaml(String text) {
+        this(text.split("\n"), 0, new int[]{0})
     }
 }
