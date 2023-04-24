@@ -4,9 +4,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
-import tfc.smallerunits.networking.core.UnitInteractionPacket;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
-import tfc.smallerunits.networking.sync.*;
+import tfc.smallerunits.networking.sync.RemoveUnitPacketC2S;
+import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
+import tfc.smallerunits.networking.sync.SyncPacketS2C;
 
 import java.util.ArrayList;
 
@@ -25,15 +26,8 @@ public class SUNetworkRegistry {
 //		};
 		ArrayList<NetworkEntry<?>> entries = new ArrayList<>();
 		entries.add(new NetworkEntry<>(SyncPacketS2C.class, SyncPacketS2C::new));
-		entries.add(new NetworkEntry<>(UpdateStatesS2C.class, UpdateStatesS2C::new));
-		entries.add(new NetworkEntry<>(RemoveUnitPacketS2C.class, RemoveUnitPacketS2C::new));
-		entries.add(new NetworkEntry<>(SpawningBlockEntitiesS2C.class, SpawningBlockEntitiesS2C::new));
-		entries.add(new NetworkEntry<>(DeleteBlockEntityS2C.class, DeleteBlockEntityS2C::new));
-		entries.add(new NetworkEntry<>(SpawnEntityPacketS2C.class, SpawnEntityPacketS2C::new));
-		entries.add(new NetworkEntry<>(SyncEntityPacketS2C.class, SyncEntityPacketS2C::new));
-		entries.add(new NetworkEntry<>(RemoveEntityPacketS2C.class, RemoveEntityPacketS2C::new));
-		entries.add(new NetworkEntry<>(UnitInteractionPacket.class, UnitInteractionPacket::new));
 		entries.add(new NetworkEntry<>(DestroyUnitPacket.class, DestroyUnitPacket::new));
+		entries.add(new NetworkEntry<>(RemoveUnitPacketS2C.class, RemoveUnitPacketS2C::new));
 		entries.add(new NetworkEntry<>(RemoveUnitPacketC2S.class, RemoveUnitPacketC2S::new));
 		
 		entries.add(new NetworkEntry<>(WrapperPacket.class, WrapperPacket::new));

@@ -19,9 +19,7 @@ public class ScaledShape {
 	boolean cube;
 	private static final Class<?> ARRAY = ArrayVoxelShape.class;
 	private static final Class<?> CUBE = CubeVoxelShape.class;
-	private static final BlockPos ZERO = new BlockPos(0, 0, 0);
 	
-	SingletonList<AABB> list = new SingletonList<>();
 	MutableAABB worker = new MutableAABB(0, 0, 0, 1, 1, 1);
 	
 	public ScaledShape(BlockPos pos, VoxelShape src, Vec3 offset, double scale) {
@@ -71,8 +69,6 @@ public class ScaledShape {
 			
 			for (AABB aabb : src.toAabbs()) {
 				worker.set(aabb).scale(scale).move(offset).move(actualPos);
-				
-				list.set(worker);
 				
 				double[] percent = {1};
 				double d0 = end.x - start.x;
