@@ -1,8 +1,8 @@
 import java.util.function.Consumer
 
 plugins {
-//    id 'fabric-loom' version '1.1-SNAPSHOT'
-    id 'org.quiltmc.loom' version '1.0.+'
+    id 'fabric-loom' version '1.1-SNAPSHOT'
+//    id 'org.quiltmc.loom' version '1.0.+'
     id 'maven-publish'
 }
 
@@ -27,6 +27,7 @@ maven "https://repo1.maven.org/maven2/"
 maven "https://ladysnake.jfrog.io/artifactory/mods"
 maven "https://jitpack.io"
 maven "https://maven.architectury.dev/"
+maven "https://maven.quiltmc.org/repository/release"
 
 repositories {
     maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
@@ -62,7 +63,7 @@ dependencies {
     // TODO: is there a fabric equivalent?
     curseCompile "vfe", "325360", "3893747"
 
-    modImplementation "maven.modrinth:lithium:mc1.18.2-0.10.3"
+    modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
     modImplementation "maven.modrinth:sodium:mc1.18.2-0.4.1"
     modImplementation "maven.modrinth:indium:1.0.7+mc1.18.2"
     modImplementation "maven.modrinth:iris:1.18.x-v1.4.0"

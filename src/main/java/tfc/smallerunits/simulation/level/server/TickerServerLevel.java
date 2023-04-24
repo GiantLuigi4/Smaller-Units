@@ -1022,11 +1022,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
 		
-		if (blockEntityTickers.size() != 0) {
-			System.out.println(blockEntityTickers.size());
-			this.tickBlockEntities();
-		}
-		
 		PlatformUtils.preTick(this);
 		
 		randomTickCount = Integer.MIN_VALUE;
