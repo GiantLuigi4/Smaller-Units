@@ -19,7 +19,6 @@ public class ScaledShape {
 	boolean cube;
 	private static final Class<?> ARRAY = ArrayVoxelShape.class;
 	private static final Class<?> CUBE = CubeVoxelShape.class;
-	private static final BlockPos ZERO = new BlockPos(0, 0, 0);
 	
 	MutableAABB worker = new MutableAABB(0, 0, 0, 1, 1, 1);
 	

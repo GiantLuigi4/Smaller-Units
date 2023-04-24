@@ -44,7 +44,7 @@ public class PacketRegister {
 	}
 	
 	private void handlePacket(PacketListener handler, FriendlyByteBuf buf, PacketSender responseSender, Player player, NetworkDirection direction) {
-		int id = buf.readInt();
+		int id = buf.readByte();
 		PacketEntry<?> entry = entries.get(id);
 		Packet packet = entry.fabricator.apply(buf);
 		packet.handle(new NetCtx(handler, responseSender, player, direction));
@@ -69,7 +69,7 @@ public class PacketRegister {
 	public FriendlyByteBuf encode(Packet pkt) {
 		FriendlyByteBuf buf = PacketByteBufs.create();
 		int id = getId(pkt);
-		buf.writeInt(id);
+		buf.writeByte(id & 255);
 		entries.get(id).writer.accept(pkt, buf);
 		return buf;
 	}

@@ -1,6 +1,7 @@
 package tfc.smallerunits.utils;
 
 import com.mojang.math.Vector3f;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -14,6 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import qouteall.imm_ptl.core.ClientWorldLoader;
 import tfc.smallerunits.TileResizingItem;
@@ -159,5 +161,9 @@ public class IHateTheDistCleaner {
 	
 	public static Level getOptionalIPWorld(ResourceKey<Level> lvl) {
 		return ClientWorldLoader.getOptionalWorld(lvl);
+	}
+	
+	public static void loadBe(BlockEntity pBlockEntity, Level level) {
+		ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ClientLevel) level);
 	}
 }

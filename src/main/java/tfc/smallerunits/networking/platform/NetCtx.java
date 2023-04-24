@@ -8,6 +8,8 @@ import net.minecraft.network.PacketListener;
 import net.minecraft.world.entity.player.Player;
 import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.networking.SUNetworkRegistry;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
 import java.util.ArrayList;
 
@@ -46,16 +48,22 @@ public class NetCtx {
 		return direction;
 	}
 	
-	static ArrayList<Runnable> enqueued = new ArrayList<>();
+	static final ArrayList<Runnable> enqueued = new ArrayList<>();
 	
 	public void enqueueWork(Runnable r) {
-		enqueued.add(r);
+		synchronized (enqueued) {
+			enqueued.add(r);
+		}
 	}
 	
 	public static void tick() {
-		if (Minecraft.getInstance().level != null) {
-			for (Runnable runnable : enqueued)
-				runnable.run();
+		if (!PlatformUtils.isClient() || IHateTheDistCleaner.getClientLevel() != null) {
+			if (!enqueued.isEmpty()) {
+				synchronized (enqueued) {
+					for (Runnable runnable : enqueued)
+						runnable.run();
+				}
+			}
 		}
 		enqueued.clear();
 	}

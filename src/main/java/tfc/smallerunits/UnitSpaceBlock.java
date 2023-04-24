@@ -2,7 +2,6 @@ package tfc.smallerunits;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -12,10 +11,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -29,7 +25,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.EntityCollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.networking.PacketTarget;
@@ -42,9 +37,7 @@ import tfc.smallerunits.utils.platform.hooks.IScaffoldBlock;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
-import java.util.Random;
-
-public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
+public class UnitSpaceBlock extends Block implements ILadderBlock {
 	public UnitSpaceBlock() {
 		super(
 				Properties.of(Material.STONE, MaterialColor.COLOR_BLACK)
@@ -63,7 +56,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 	
 	@Override
 	public void destroy(LevelAccessor pLevel, BlockPos pPos, BlockState pState) {
-//		super.destroy(pLevel, pPos, pState);
 		ChunkAccess chunk = pLevel.getChunk(pPos);
 		if (chunk instanceof LevelChunk) {
 			ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) chunk);
@@ -80,11 +72,9 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 	@Override
 	public VoxelShape getShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
 		// nothing can really be done if it's not a full level implementation
-//		if (!(pLevel instanceof Level)) return super.getShape(pState, pLevel, pPos, pContext);
 		if (!(pLevel instanceof Level)) return Shapes.empty();
 		if (pContext instanceof EntityCollisionContext) {
 			Entity entity = ((EntityCollisionContext) pContext).getEntity();
-//			if (entity == null) return super.getShape(pState, pLevel, pPos, pContext);
 			if (entity == null) return Shapes.empty();
 			
 			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
@@ -104,11 +94,9 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 	@Override
 	public VoxelShape getVisualShape(BlockState pState, BlockGetter pLevel, BlockPos pPos, CollisionContext pContext) {
 		// nothing can really be done if it's not a full level implementation
-//		if (!(pLevel instanceof Level)) return super.getShape(pState, pLevel, pPos, pContext);
 		if (!(pLevel instanceof Level)) return Shapes.empty();
 		if (pContext instanceof EntityCollisionContext) {
 			Entity entity = ((EntityCollisionContext) pContext).getEntity();
-//			if (entity == null) return super.getShape(pState, pLevel, pPos, pContext);
 			if (entity == null) return Shapes.empty();
 			
 			ChunkAccess access = ((Level) pLevel).getChunk(pPos);
@@ -151,7 +139,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 	
 	@Override
 	public void onPlace(BlockState pState, Level pLevel, BlockPos pPos, BlockState pOldState, boolean pIsMoving) {
-//		super.onPlace(pState, pLevel, pPos, pOldState, pIsMoving);
 		ChunkAccess chunk = pLevel.getChunk(pPos);
 		if (chunk instanceof LevelChunk asLevelChunk) {
 			ISUCapability capability = SUCapabilityManager.getCapability(asLevelChunk);
@@ -165,41 +152,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 		}
 	}
 	
-	// I might wind up needing a tile entity for sake of setting up world capabilities
-	@Nullable
-	@Override
-	public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState) {
-		return null;
-	}
-	
-	@Override
-	public void tick(BlockState pState, ServerLevel pLevel, BlockPos pPos, Random pRandom) {
-//		pLevel.scheduleTick(pPos, this, 1);
-//		LevelChunk chnk = pLevel.getChunkAt(pPos);
-//		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-//		if (space == null) return;
-//		space.tick();
-		super.tick(pState, pLevel, pPos, pRandom);
-	}
-
-//	// TODO: port
-//	@Override
-//	public boolean onDestroyedByPlayer(BlockState state, Level pLevel, BlockPos pPos, Player player, boolean willHarvest, FluidState fluid) {
-//		return false;
-//	}
-	
-	@Override
-	// relative block hardness
-	public float getDestroyProgress(BlockState pState, Player pPlayer, BlockGetter pLevel, BlockPos pPos) {
-		return super.getDestroyProgress(pState, pPlayer, pLevel, pPos);
-	}
-	
-	// TODO: port
-//	@Override
-//	public boolean canEntityDestroy(BlockState state, BlockGetter level, BlockPos pos, Entity entity) {
-//		return false;
-//	}
-	
 	@Override
 	public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
 		LevelChunk chnk = pLevel.getChunkAt(pPos);
@@ -209,7 +161,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 		SUCapabilityManager.getCapability(chnk).removeUnit(pPos);
 		RemoveUnitPacketS2C pckt = new RemoveUnitPacketS2C(pPos, space == null ? 4 : space.unitsPerBlock);
 		SUNetworkRegistry.send(PacketTarget.trackingChunk(pLevel.getChunkAt(pPos)), pckt);
-//		super.onRemove(pState, pLevel, pPos, pNewState, pIsMoving);
 	}
 	
 	// the *proper* parameters
@@ -218,7 +169,6 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 //		UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(blockPos);
 //		BlockPos pos = result.geetBlockPos();
 //		space.setState(pos, Blocks.AIR);
-		onRemove(blockState, lvl, blockPos, Blocks.AIR.defaultBlockState(), false);
 	}
 	
 	@Override
@@ -228,16 +178,16 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 			UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
 			if (space == null) return false;
 			if (space.myLevel == null) return false;
-
+			
 			PositionalInfo info = new PositionalInfo(entity, false);
 			info.adjust(entity, space);
 			if (entity instanceof Player player)
 				info.scalePlayerReach(player, space.unitsPerBlock);
-
+			
 			AABB scaledBox = entity.getBoundingBox();
-
+			
 			BlockPos bp = space.getOffsetPos(new BlockPos(0, 0, 0));
-
+			
 			int minX = (int) (scaledBox.minX);
 			minX = Math.max(bp.getX(), minX);
 			int minY = (int) (scaledBox.minY);
@@ -250,7 +200,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 			maxY = Math.min(bp.getY() + space.unitsPerBlock, maxY);
 			int maxZ = (int) Math.floor(scaledBox.maxZ);
 			maxZ = Math.min(bp.getZ() + space.unitsPerBlock, maxZ);
-
+			
 			Level smallWorld = space.myLevel;
 			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
 			double motY = entity.getDeltaMovement().y;
@@ -264,9 +214,9 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 			boolean onScaffold = IScaffoldBlock.isBlockAScaffold(blockOn, smallWorld, posOn, entity);
 			boolean inScaffold = IScaffoldBlock.isBlockAScaffold(feetState, smallWorld, entity.blockPosition(), entity);
 			boolean legScaffold = IScaffoldBlock.isBlockAScaffold(legState, smallWorld, legPos, entity);
-
+			
 			Vec3 center = scaledBox.getCenter();
-
+			
 			for (int x = minX; x <= maxX; x++) {
 				for (int z = minZ; z <= maxZ; z++) {
 					int pX = SectionPos.blockToSectionCoord(x);
@@ -280,7 +230,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 						}
 						continue;
 					}
-
+					
 					for (int y = minY; y <= maxY; y++) {
 						int sectionIndex = chunk.getSectionIndex(y);
 						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
@@ -292,16 +242,16 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 							}
 							continue;
 						}
-
+						
 						if (center.x > x + 1) continue;
 						if (scaledBox.minY > y + 1) continue;
 						if (center.z > z + 1) continue;
 						if (center.x < x) continue;
 						if (center.y < y) continue;
 						if (center.z < z) continue;
-
+						
 						mutableBlockPos.set(x, y, z);
-
+						
 						BlockState state1 = chunk.getBlockState(mutableBlockPos);
 						if (ILadderBlock.isBlockALadder(state1, smallWorld, mutableBlockPos.immutable(), entity)) {
 							if (onScaffold) {
@@ -325,7 +275,7 @@ public class UnitSpaceBlock extends Block implements EntityBlock, ILadderBlock {
 					}
 				}
 			}
-
+			
 			info.reset(entity);
 		}
 		return false;
