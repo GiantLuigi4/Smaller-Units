@@ -8,6 +8,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,6 +31,8 @@ public abstract class ConnectionMixin {
 	@Shadow
 	public abstract PacketFlow getDirection();
 	
+	@Shadow @Final private PacketFlow receiving;
+	
 	@Inject(at = @At("HEAD"), method = "send(Lnet/minecraft/network/protocol/Packet;Lio/netty/util/concurrent/GenericFutureListener;)V", cancellable = true)
 	public void preSend(Packet<?> p_129515_, GenericFutureListener<? extends Future<? super Void>> p_129516_, CallbackInfo ci) {
 		try {
@@ -45,13 +48,15 @@ public abstract class ConnectionMixin {
 		
 		if (!isSending.get()) {
 			isSending.set(true);
-			if (SmallerUnits.isImmersivePortalsPresent() && this.getDirection().equals(PacketFlow.SERVERBOUND)) {
-				if (IPCompat.runPacketModifications(p_129515_, isSending, ci))
+			if (SmallerUnits.isImmersivePortalsPresent() && receiving.equals(PacketFlow.SERVERBOUND)) {
+				if (IPCompat.runPacketModifications(p_129515_, isSending, ci)) {
+					isSending.remove();
 					return;
+				}
 			}
 			p_129515_ = maybeWrap(p_129515_);
 			if (p_129515_ instanceof WrapperPacket) {
-				if (this.getDirection().equals(PacketFlow.SERVERBOUND)) {
+				if (receiving.equals(PacketFlow.SERVERBOUND)) {
 					SUNetworkRegistry.NETWORK_INSTANCE.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) ((PacketListenerAccessor) this.packetListener).getPlayer()), p_129515_);
 				} else {
 					SUNetworkRegistry.NETWORK_INSTANCE.sendToServer(p_129515_);

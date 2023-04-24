@@ -314,12 +314,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		super.removeBlockEntity(pPos);
 	}
 	
-	public void removeBlockEntityTicker(BlockPos pPos) {
-		if (yPos != 0)
-			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
-		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
-	}
-	
 	public void addBlockEntity$(BlockPos pos, BlockEntity pBlockEntity) {
 		this.setBlockEntity$(pBlockEntity);
 		if (isLoaded() || level.isClientSide) {
@@ -327,6 +321,12 @@ public class BasicVerticalChunk extends LevelChunk {
 			this.updateBlockEntityTicker(pBlockEntity);
 			pBlockEntity.onLoad();
 		}
+	}
+	
+	public void removeBlockEntityTicker(BlockPos pPos) {
+		if (yPos != 0)
+			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
+		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
 	}
 	
 	@Override
