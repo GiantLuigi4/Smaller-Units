@@ -61,14 +61,15 @@ public class ShapesMixin {
 	
 	@Unique
 	private static VoxelShape su_or(UnitShape first, VoxelShape other) {
-		UnitShape sp = new UnitShape(first.space, first.visual, first.collisionContext);
-		for (AABB toAabb : other.toAabbs()) {
-			if (toAabb instanceof UnitBox) sp.addBox((UnitBox) toAabb);
-			else
-				sp.addBox(new UnitBox(toAabb.minX, toAabb.minY, toAabb.minZ, toAabb.maxX, toAabb.maxY, toAabb.maxZ, new BlockPos(0, 0, 0)));
-		}
-		for (AABB toAabb : first.toAabbs()) sp.addBox((UnitBox) toAabb);
-		return sp;
+//		UnitShape sp = new UnitShape(first.space, first.visual, first.collisionContext);
+//		for (AABB toAabb : other.toAabbs()) {
+//			if (toAabb instanceof UnitBox) sp.addBox((UnitBox) toAabb);
+//			else
+//				sp.addBox(new UnitBox(toAabb.minX, toAabb.minY, toAabb.minZ, toAabb.maxX, toAabb.maxY, toAabb.maxZ, new BlockPos(0, 0, 0)));
+//		}
+//		for (AABB toAabb : first.toAabbs()) sp.addBox((UnitBox) toAabb);
+//		return sp;
+		return first; // TODO
 	}
 	
 	// Testing purposes only

@@ -1,6 +1,7 @@
 package tfc.smallerunits.networking.hackery;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import tfc.smallerunits.data.storage.RegionPos;
 
@@ -26,14 +27,17 @@ public class NetworkingHacks {
 		unitPos.set(descriptor);
 	}
 	
-	public record LevelDescriptor(RegionPos pos, int upb) {
+	public record LevelDescriptor(RegionPos pos, int upb, LevelDescriptor parent) {
 		public static LevelDescriptor read(CompoundTag tg) {
+			LevelDescriptor parent = null;
+			if (tg.contains("parent", Tag.TAG_COMPOUND)) parent = read(tg.getCompound("parent"));
 			return new LevelDescriptor(
 					new RegionPos(
 							tg.getInt("x"),
 							tg.getInt("y"),
 							tg.getInt("z")
-					), tg.getInt("upb")
+					), tg.getInt("upb"),
+					parent
 			);
 		}
 		
@@ -42,6 +46,17 @@ public class NetworkingHacks {
 			tg.putInt("y", pos.y);
 			tg.putInt("z", pos.z);
 			tg.putInt("upb", upb);
+			if (parent != null) {
+				CompoundTag parentTag = new CompoundTag();
+				parent.write(parentTag);
+				tg.put("parent", parentTag);
+			}
+		}
+		
+		public int getReachScale() {
+			int mul = 1;
+			if (parent != null) mul = parent.getReachScale();
+			return upb * mul;
 		}
 	}
 }

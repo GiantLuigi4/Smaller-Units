@@ -51,6 +51,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.asm.AssortedQol;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -110,60 +111,15 @@ public abstract class LevelRendererMixin {
 	
 	@Inject(at = @At("HEAD"), method = "renderHitOutline", cancellable = true)
 	public void preRenderOutline(PoseStack pPoseStack, VertexConsumer pConsumer, Entity pEntity, double pCamX, double pCamY, double pCamZ, BlockPos pPos, BlockState pState, CallbackInfo ci) {
-		if (pState.getBlock() instanceof UnitSpaceBlock) {
-			VoxelShape shape = pState.getShape(this.level, pPos, CollisionContext.of(pEntity));
-			if (shape instanceof UnitShape) {
-				ci.cancel();
-				HitResult result = Minecraft.getInstance().hitResult;
-				if (result instanceof UnitHitResult) {
-					BlockPos pos = ((UnitHitResult) result).geetBlockPos();
-					LevelChunk chnk = level.getChunkAt(pPos);
-					UnitSpace space = SUCapabilityManager.getCapability(chnk).getUnit(pPos);
-					BlockState state = space.getBlock(pos.getX(), pos.getY(), pos.getZ());
-					
-					pPoseStack.pushPose();
-					pPoseStack.translate(
-							(double) pPos.getX() - pCamX,
-							(double) pPos.getY() - pCamY,
-							(double) pPos.getZ() - pCamZ
-					);
-					// TODO: better handling
-					VoxelShape shape1 = state.getShape(space.getMyLevel(), pos, CollisionContext.of(pEntity));
-					if (shape1.isEmpty() || state.getBlock() instanceof UnitEdge) {
-						int x = pos.getX();
-						int y = pos.getY();
-						int z = pos.getZ();
-						double upbDouble = space.unitsPerBlock;
-						AABB box = ((UnitHitResult) result).getSpecificBox();
-						if (box == null) {
-							box = new AABB(
-									x / upbDouble, y / upbDouble, z / upbDouble,
-									(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
-							);
-						}
-						shape1 = Shapes.create(box);
-						renderShape(
-								pPoseStack,
-								pConsumer,
-								shape1,
-								0, 0, 0,
-								0.0F, 0.0F, 0.0F, 0.4F
-						);
-					} else {
-						pPoseStack.scale(1f / space.unitsPerBlock, 1f / space.unitsPerBlock, 1f / space.unitsPerBlock);
-						pPoseStack.translate(pos.getX(), pos.getY(), pos.getZ());
-						renderShape(
-								pPoseStack,
-								pConsumer,
-								shape1,
-								0, 0, 0,
-								0.0F, 0.0F, 0.0F, 0.4F
-						);
-					}
-					pPoseStack.popPose();
-				}
-			}
-		}
+		AssortedQol.handleRenderOutline((shape1) -> {
+			renderShape(
+					pPoseStack,
+					pConsumer,
+					shape1,
+					0, 0, 0,
+					0.0F, 0.0F, 0.0F, 0.4F
+			);
+		}, this.level, pPoseStack, pConsumer, pEntity, pCamX, pCamY, pCamZ, pPos, pState, ci);
 	}
 	
 	// ok that's a long injection target

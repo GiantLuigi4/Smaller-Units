@@ -14,10 +14,12 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
+import tfc.smallerunits.utils.asm.IPCompat;
 
 @Mixin(Connection.class)
 public abstract class ConnectionMixin {
@@ -37,6 +39,12 @@ public abstract class ConnectionMixin {
 		}
 		if (!isSending.get()) {
 			isSending.set(true);
+			if (SmallerUnits.isImmersivePortalsPresent() && receiving.equals(PacketFlow.SERVERBOUND)) {
+				if (IPCompat.runPacketModifications(p_129515_, isSending, ci)) {
+					isSending.remove();
+					return;
+				}
+			}
 			p_129515_ = maybeWrap(p_129515_);
 			if (p_129515_ instanceof WrapperPacket) {
 				if (receiving.equals(PacketFlow.SERVERBOUND)) {

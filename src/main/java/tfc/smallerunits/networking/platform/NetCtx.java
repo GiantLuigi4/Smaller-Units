@@ -2,11 +2,14 @@ package tfc.smallerunits.networking.platform;
 
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
 import net.minecraft.world.entity.player.Player;
 import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.networking.SUNetworkRegistry;
+
+import java.util.ArrayList;
 
 public class NetCtx {
 	Player sender;
@@ -41,5 +44,19 @@ public class NetCtx {
 	
 	public NetworkDirection getDirection() {
 		return direction;
+	}
+	
+	static ArrayList<Runnable> enqueued = new ArrayList<>();
+	
+	public void enqueueWork(Runnable r) {
+		enqueued.add(r);
+	}
+	
+	public static void tick() {
+		if (Minecraft.getInstance().level != null) {
+			for (Runnable runnable : enqueued)
+				runnable.run();
+		}
+		enqueued.clear();
 	}
 }

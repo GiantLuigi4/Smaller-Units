@@ -40,18 +40,22 @@ public class RemoveUnitPacketS2C extends Packet {
 //			Region r = ((RegionalAttachments) Minecraft.getInstance().level).SU$getRegion(new RegionPos(position));
 //			Level lvl = r.getClientWorld(Minecraft.getInstance().level, upb);
 //			r.getClientWorld(Minecraft.getInstance().level, upb);
-			ChunkAccess access = Minecraft.getInstance().level.getChunk(position);
-			if (access instanceof EmptyLevelChunk) return;
-			if (!(access instanceof LevelChunk chunk)) return;
-			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
-//			UnitSpace space = new UnitSpace(position, chunk.getLevel());
-			UnitSpace space = cap.getUnit(position);
-			if (space != null) {
-				space.clear();
-				((SUCapableChunk) access).SU$markGone(position);
-				ctx.setPacketHandled(true);
-			}
-			cap.removeUnit(position);
+			ctx.enqueueWork(() -> {
+				ChunkAccess access = Minecraft.getInstance().level.getChunk(position);
+				if (access instanceof EmptyLevelChunk)
+					return;
+				if (!(access instanceof LevelChunk chunk))
+					return;
+				ISUCapability cap = SUCapabilityManager.getCapability(chunk);
+//				UnitSpace space = new UnitSpace(position, chunk.getLevel());
+				UnitSpace space = cap.getUnit(position);
+				if (space != null) {
+					space.clear();
+					((SUCapableChunk) access).SU$markGone(position);
+				}
+				cap.removeUnit(position);
+			});
+			ctx.setPacketHandled(true);
 		}
 	}
 }

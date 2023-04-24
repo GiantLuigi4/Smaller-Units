@@ -1,5 +1,6 @@
 package tfc.smallerunits.networking.sync;
 
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -23,13 +24,13 @@ import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.networking.Packet;
 import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.utils.platform.PlatformUtils;
+import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
 public class SyncPacketS2C extends Packet {
-	private static final ArrayList<SyncPacketS2C> deferred = new ArrayList<>();
+	private static final ArrayList<Pair<Level, SyncPacketS2C>> deferred = new ArrayList<>();
 	UnitPallet pallet;
 	BlockPos realPos;
 	int upb;
@@ -54,7 +55,7 @@ public class SyncPacketS2C extends Packet {
 					tg.putInt("x", tile.getBlockPos().getX());
 					tg.putInt("y", tile.getBlockPos().getY());
 					tg.putInt("z", tile.getBlockPos().getZ());
-					tg.putString("id", PlatformUtils.getRegistryName(tile).toString());
+					tg.putString("id", tile.getType().toString());
 					beData.add(tg);
 				}
 			}
@@ -75,41 +76,49 @@ public class SyncPacketS2C extends Packet {
 	}
 	
 	public static void tick() {
-		ArrayList<SyncPacketS2C> toRemove = new ArrayList<>();
+		ArrayList<Pair<Level, SyncPacketS2C>> toRemove = new ArrayList<>();
 		if (Minecraft.getInstance().screen != null) return;
 		if (Minecraft.getInstance().player == null) return;
 //		if (Minecraft.getInstance().levelRenderer == null) return;
 		if (Minecraft.getInstance().levelRenderer.level == null) return;
-		SyncPacketS2C[] packets;
+		Pair<Level, SyncPacketS2C>[] packets;
 		synchronized (deferred) {
-			packets = deferred.toArray(new SyncPacketS2C[0]);
+			//noinspection unchecked
+			packets = deferred.toArray(new Pair[0]);
 			
-			for (SyncPacketS2C syncPacket : packets) {
-				ChunkAccess access = Minecraft.getInstance().level.getChunk(syncPacket.realPos);
+			for (Pair<Level, SyncPacketS2C> pair : packets) {
+				SyncPacketS2C syncPacket = pair.getSecond();
+				ChunkAccess access = pair.getFirst().getChunk(syncPacket.realPos);
 				if (access instanceof EmptyLevelChunk) continue;
 				if (!(access instanceof LevelChunk chunk)) continue;
 				ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 				UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
-				if (space.getMyLevel() == null) continue;
 				
 				// TODO: adjust player position and whatnot
 				
 				{
 					BlockState state = chunk.getBlockState(syncPacket.realPos);
-					chunk.setBlockState(syncPacket.realPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
-					chunk.getLevel().sendBlockUpdated(syncPacket.realPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+					try {
+						chunk.setBlockState(syncPacket.realPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+						chunk.getLevel().sendBlockUpdated(syncPacket.realPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+					} catch (Throwable ignored) {
+					}
 				}
 				
 				space.unitsPerBlock = syncPacket.upb;
 				space.setUpb(space.unitsPerBlock);
 				space.isNatural = syncPacket.natural;
+				
+				if (space.getMyLevel() == null) space.tick();
+				if (space.getMyLevel() == null) continue;
+				
 				HashSet<BlockPos> positionsWithBE = new HashSet<>();
 				space.loadPallet(syncPacket.pallet, positionsWithBE);
 				if (cap.getUnit(syncPacket.realPos) != null)
 					cap.removeUnit(syncPacket.realPos);
 				cap.setUnit(syncPacket.realPos, space);
 				((SUCapableChunk) chunk).SU$markDirty(syncPacket.realPos);
-				toRemove.add(syncPacket);
+				toRemove.add(pair);
 				
 				Level lvl = space.getMyLevel();
 				
@@ -135,7 +144,7 @@ public class SyncPacketS2C extends Packet {
 						lvl.setBlockEntity(be);
 					}
 					
-					be.load(tag);
+					PlatformUtilsClient.recieveBeData(be, tag);
 					
 					// TODO: this is like 90% redundant
 					BlockPos rp = ((ITickerLevel) lvl).getRegion().pos.toBlockPos();
@@ -165,8 +174,9 @@ public class SyncPacketS2C extends Packet {
 				
 				Minecraft.getInstance().level = clvl;
 			}
+			
+			deferred.removeAll(toRemove);
 		}
-		deferred.removeAll(toRemove);
 //		toRemove.forEach(deferred::remove);
 	}
 	
@@ -184,7 +194,11 @@ public class SyncPacketS2C extends Packet {
 	@Override
 	public void handle(NetCtx ctx) {
 		if (checkClient(ctx)) {
-			deferred.add(this);
+			ctx.enqueueWork(() -> {
+				synchronized (deferred) {
+					deferred.add(Pair.of(Minecraft.getInstance().level, this));
+				}
+			});
 			ctx.setPacketHandled(true);
 		}
 	}

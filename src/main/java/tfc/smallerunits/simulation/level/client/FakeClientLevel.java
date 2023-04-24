@@ -69,6 +69,8 @@ import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.selection.MutableAABB;
+import tfc.smallerunits.utils.selection.UnitShape;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 
@@ -221,14 +223,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void sendPacketToServer(Packet<?> pPacket) {
-		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(getDescriptor());
 		parent.get().sendPacketToServer(pPacket);
 		NetworkingHacks.unitPos.remove();
 	}
 	
 	@Override
 	public void disconnect() {
-		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(getDescriptor());
 		parent.get().disconnect();
 		NetworkingHacks.unitPos.remove();
 	}
@@ -395,15 +397,19 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
 		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
 		
+		MutableAABB bb = new MutableAABB(0, 0, 0, 1, 1, 1);
+		Collection<AABB> singleton = Collections.singleton(new AABB(0, 0, 0, 1, 1, 1));
+		
 		// TODO: there are better ways to do this
+		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
 		for (int x = minX; x < maxX; x += 16) {
 			for (int z = minZ; z < maxZ; z += 16) {
 				for (int y = minY; y < maxY; y += 16) {
-					AABB box = new AABB(
+					bb.set(
 							x, y, z,
 							x + 16, y + 16, z + 16
 					);
-					if (simpleChecker.apply(box)) {
+					if (simpleChecker.apply(bb)) {
 						for (int x0 = 0; x0 < 16; x0++) {
 							int x1 = x + x0;
 							for (int z0 = 0; z0 < 16; z0++) {
@@ -416,23 +422,27 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 									if (parent != null) {
 										for (int y0 = 0; y0 < 16; y0++) {
 											int y1 = y + y0;
-											box = new AABB(
+											bb.set(
 													x1, y1, z1,
 													x1 + 1, y1 + 1, z1 + 1
 											);
-											if (simpleChecker.apply(box)) {
+											if (simpleChecker.apply(bb)) {
 												BlockPos pos = new BlockPos(x1, y1, z1);
 												BlockPos pos1 = PositionUtils.getParentPos(pos, this);
-//												BlockState state = lookup.getState(pos1);
 												
-												BlockState state = parent.getBlockState(pos1);
+												BlockState state = localCache.get(pos1);
+												if (state == null) {
+													state = parent.getBlockState(pos1);
+													localCache.put(pos1.immutable(), state);
+												}
+												
 												if (state.isAir()) continue;
-												// TODO: do this better
 												BlockHitResult result = AABB.clip(
-														Collections.singleton(new AABB(0, 0, 0, 1, 1, 1)),
+														singleton,
 														start, end,
 														pos
 												);
+												// result should always be non-null, but just incase
 												if (result != null) {
 													double dd = result.getLocation().distanceTo(start);
 													if (dd < d) {
@@ -448,20 +458,28 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 								
 								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;
-									box = new AABB(
+									bb.set(
 											x1, y1, z1,
 											x1 + 1, y1 + 1, z1 + 1
 									);
-									if (simpleChecker.apply(box)) {
+									if (simpleChecker.apply(bb)) {
 										BlockPos pos = new BlockPos(x1, y1, z1);
 										BlockState state = chunk.getBlockState(pos);
 										if (state.isAir()) continue;
 										BlockHitResult result = boxFiller.apply(pos, state);
 										if (result != null) {
 											double dd = result.getLocation().distanceTo(start);
-											if (dd < d) {
-												d = dd;
-												closest = result;
+											boolean lenient = state.getBlock().equals(tfc.smallerunits.Registry.UNIT_EDGE.get());
+											if (lenient) {
+												if (dd < d) {
+													d = dd;
+													closest = result;
+												}
+											} else {
+												if (dd <= d) {
+													d = dd;
+													closest = result;
+												}
 											}
 										}
 									}
@@ -479,13 +497,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
 		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
-		if (result == null) return result;
+		if (result == null) return null;
+		
 		if (!result.getType().equals(HitResult.Type.MISS)) {
 			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-			off = off.normalize().scale(0.1);
+			off = off.normalize().scale(1d / upb);
 			Vec3 st = result.getLocation().add(off);
 			Vec3 ed = result.getLocation().subtract(off);
-//						return sp.clip(st, pContext.getTo(), pos);
 			return sp.clip(st, ed, pos);
 		}
 		return result;
@@ -496,11 +514,18 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		// I prefer this method over vanilla's method
 		Vec3 fStartVec = pContext.getFrom();
 		Vec3 endVec = pContext.getTo();
+		
+		double d0 = endVec.x - fStartVec.x;
+		double d1 = endVec.y - fStartVec.y;
+		double d2 = endVec.z - fStartVec.z;
+		double[] adouble = new double[]{1.0D};
+		
 		return collectShape(
 				pContext.getFrom(),
 				pContext.getTo(),
 				(box) -> {
-					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
+					if (box.contains(fStartVec)) return true;
+					return UnitShape.intersects(box, fStartVec, d0, d1, d2, adouble);
 				}, (pos, state) -> {
 					VoxelShape sp = switch (pContext.block) {
 						case VISUAL -> state.getVisualShape(this, pos, pContext.collisionContext);
@@ -565,11 +590,14 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 //			BlockPos parentPos = rp.offset(xo, yo, zo);
 			ChunkAccess ac;
 			ac = parent.get().getChunkAt(parentPos);
-			
-			ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
-			UnitSpace space = cap.getUnit(parentPos);
-			if (space != null) {
-				((SUCapableChunk) ac).SU$markDirty(parentPos);
+			if  (ac != null) {
+				ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
+				if (cap != null) {
+					UnitSpace space = cap.getUnit(parentPos);
+					if (space != null) {
+						((SUCapableChunk) ac).SU$markDirty(parentPos);
+					}
+				}
 			}
 //			if (space == null) {
 //				space = cap.getOrMakeUnit(parentPos);
@@ -660,8 +688,11 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public void tickTime() {
-		// TODO: does this need the player position and whatnot to be setup?
+		// swap client level for IP compat
+		ClientLevel tlevel = Minecraft.getInstance().level;
+		Minecraft.getInstance().level = this;
 		particleEngine.tick();
+		Minecraft.getInstance().level = tlevel;
 		
 		PlatformUtilsClient.preTick(this);
 		
@@ -700,21 +731,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
 		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
 //		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
-	}
-	
-	@Override
-	public boolean isOutsideBuildHeight(int pY) {
-		return false;
-	}
-	
-	@Override
-	public int getMinBuildHeight() {
-		return -32;
-	}
-	
-	@Override
-	public int getMaxBuildHeight() {
-		return upb * 512 + 32;
 	}
 	
 	@Override
@@ -805,7 +821,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	
 	@Override
 	public String toString() {
-		return "FakeClientLevel@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
+		return "TickerClientLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
 	@Override
@@ -962,5 +978,43 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			((EntityAccessor) entitiesOfClass).setMotionScalar(1);
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
+	}
+	
+	
+	
+	// compat: lithium
+	// reason: un-inline
+	public int getSectionYFromSectionIndex(int p_151569_) {
+		return p_151569_ + this.getMinSection();
+	}
+	
+	@Override
+	public boolean isOutsideBuildHeight(int pY) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pY, upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	// compat: lithium
+	// reason: un-inline
+	@Override
+	public boolean isOutsideBuildHeight(BlockPos pos) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pos.getY(), upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	@Override
+	public int getMinBuildHeight() {
+		return -32;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+		return upb * 512 + 32;
 	}
 }

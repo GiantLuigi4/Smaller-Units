@@ -8,5 +8,5 @@ import java.util.List;
 import java.util.Map;
 
 public interface RenderSectionManagerAccessor {
-	ChunkRenderList getChunkRenderList();
+	ChunkRenderList SU$getChunkRenderList();
 }

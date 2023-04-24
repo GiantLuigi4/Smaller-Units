@@ -57,6 +57,11 @@ public class SUCapabilityManager {
 	// as for the BE tracking stuff, I believe this would come in handy,
 	// https://github.com/OnyxStudios/Cardinal-Components-API/blob/d059688e5329be0e6e3dc9f09af9c165767701e6/cardinal-components-chunk/src/main/java/dev/onyxstudios/cca/api/v3/chunk/ChunkSyncCallback.java#L35-L39
 	
+	public static void onChunkLoad(LevelChunk chunk) {
+		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
+		for (UnitSpace unit : capability.getUnits()) unit.tick();
+	}
+	
 	/**
 	 * Tracks when a player starts to watch a chunk
 	 * When this occurs, take whichever server level is used for that specific region file
@@ -67,13 +72,24 @@ public class SUCapabilityManager {
 	 * Actually no, that's not finally
 	 * *Finally*, iterate through every small block entity and tell the tile that the player has started to track it
 	 */
-	public static void onChunkWatchEvent(ServerPlayer player, LevelChunk chunk) {
+	public static void onChunkWatch(ServerPlayer player, LevelChunk chunk) {
 		if (player != null) {
 			ISUCapability capability = SUCapabilityManager.getCapability(chunk);
 			if (capability == null) return;
 			for (UnitSpace unit : capability.getUnits()) {
 				if (unit == null) continue;
-				unit.sendSync(PacketTarget.trackingChunk(chunk));
+				unit.sendSync(PacketTarget.player(player));
+			}
+		}
+	}
+	
+	public static void ip$onChunkWatch(ServerPlayer player, LevelChunk chunk) {
+		if (player != null) {
+			ISUCapability capability = SUCapabilityManager.getCapability(chunk);
+			if (capability == null) return;
+			for (UnitSpace unit : capability.getUnits()) {
+				if (unit == null) continue;
+				unit.sendRedirectableSync(player);
 			}
 		}
 	}

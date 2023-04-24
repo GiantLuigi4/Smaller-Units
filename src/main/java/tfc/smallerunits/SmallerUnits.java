@@ -27,6 +27,7 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.config.ServerConfig;
@@ -39,6 +40,7 @@ public class SmallerUnits implements ModInitializer {
 	private static boolean isVivecraftPresent;
 	private static boolean isVFEPresent;
 	private static boolean isOFPresent;
+	private static final boolean isImmPrtlPresent = PlatformUtils.isLoaded("imm_ptl_core");
 	
 	@Override
 	public void onInitialize() {
@@ -55,7 +57,7 @@ public class SmallerUnits implements ModInitializer {
 			ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
 		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setupCfg());
 		/* in game events */
-		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatchEvent);
+		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatch);
 		ServerPlayConnectionEvents.INIT.register((handler, server) -> {
 			setupConnectionButchery(handler.player, handler.connection, handler.connection.channel.pipeline());
 		});
@@ -88,6 +90,7 @@ public class SmallerUnits implements ModInitializer {
 		if (PlatformUtils.isClient()) {
 			ClientTickEvents.START_CLIENT_TICK.register((i) -> {
 				SyncPacketS2C.tick();
+				NetCtx.tick();
 			});
 			SpriteRegistryCallbackHolder.EVENT_GLOBAL.register((listener, whatdoyouwantfabric) -> {
 				if (listener.location().equals(TextureAtlas.LOCATION_BLOCKS)) {
@@ -120,6 +123,8 @@ public class SmallerUnits implements ModInitializer {
 	
 	private void onChunkLoaded(ServerLevel world, LevelChunk chunk) {
 		if (world.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
+			SUCapabilityManager.onChunkLoad(chunk);
+			
 			ChunkAccess access = chunk;
 			int min = access.getMinBuildHeight();
 			int max = access.getMaxBuildHeight();
@@ -179,5 +184,9 @@ public class SmallerUnits implements ModInitializer {
 	
 	public static boolean isIsOFPresent() {
 		return isOFPresent;
+	}
+	
+	public static boolean isImmersivePortalsPresent() {
+		return isImmPrtlPresent;
 	}
 }

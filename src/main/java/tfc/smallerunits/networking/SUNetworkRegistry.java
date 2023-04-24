@@ -1,9 +1,13 @@
 package tfc.smallerunits.networking;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
 import tfc.smallerunits.networking.core.UnitInteractionPacket;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
+import tfc.smallerunits.networking.platform.NetworkDirection;
 import tfc.smallerunits.networking.platform.PacketRegister;
 import tfc.smallerunits.networking.sync.*;
 
@@ -118,5 +122,13 @@ public class SUNetworkRegistry {
 	
 	public static void send(PacketTarget target, Packet pkt) {
 		target.send(pkt, NETWORK_INSTANCE);
+	}
+	
+	public static net.minecraft.network.protocol.Packet<?> toVanillaPacket(Packet wrapperPacket, NetworkDirection toClient) {
+		FriendlyByteBuf buf = NETWORK_INSTANCE.encode(wrapperPacket);
+		return switch (toClient) {
+			case TO_CLIENT -> ServerPlayNetworking.createS2CPacket(NETWORK_INSTANCE.channel, buf);
+			case TO_SERVER -> ClientPlayNetworking.createC2SPacket(NETWORK_INSTANCE.channel, buf);
+		};
 	}
 }

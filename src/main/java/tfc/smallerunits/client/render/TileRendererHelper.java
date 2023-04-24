@@ -6,12 +6,8 @@ import com.mojang.math.Matrix4f;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.RenderBuffers;
-import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
@@ -22,6 +18,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.client.abstraction.IFrustum;
@@ -33,6 +30,7 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.platform.PlatformUtils;
+import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
@@ -50,13 +48,13 @@ public class TileRendererHelper {
 			);
 			stk.scale(scl, scl, scl);
 		}
-
-//		if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && !FMLEnvironment.production) {
-//			LevelRenderer.renderLineBox(
-//					stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
-//					tile.getRenderBoundingBox(), 1, 1, 1, 1
-//			);
-//		}
+		
+		if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && PlatformUtils.isDevEnv()) {
+			LevelRenderer.renderLineBox(
+					stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+					PlatformUtils.getRenderBox(tile), 1, 1, 1, 1
+			);
+		}
 		stk.translate(
 				tile.getBlockPos().getX(),
 				tile.getBlockPos().getY(),
@@ -329,6 +327,8 @@ public class TileRendererHelper {
 		
 		if (!PlatformUtils.isLoaded("sodium")) SmallerUnits.tesselScale = scl;
 		
+		ClientLevel clvl = Minecraft.getInstance().level;
+		Minecraft.getInstance().level = (ClientLevel) valueLevel;
 		if (Tesselator.getInstance() instanceof SUTesselator suTesselator) {
 			suTesselator.setOffset(bp.getX(), bp.getY(), bp.getZ());
 			// TODO: use forge method or smth
@@ -338,9 +338,6 @@ public class TileRendererHelper {
 			);
 			SmallerUnits.tesselScale = 0;
 		} else {
-//			PoseStack mdlViewStk = RenderSystem.getModelViewStack();
-//			mdlViewStk.pushPose();
-			
 			SmallerUnits.tesselScale = 0;
 			
 			stack.translate(-pCamera.getPosition().x, -pCamera.getPosition().y, -pCamera.getPosition().z);
@@ -352,9 +349,8 @@ public class TileRendererHelper {
 					stack, renderBuffers.bufferSource(),
 					pLightTexture, pCamera, pPartialTick
 			);
-
-//			mdlViewStk.popPose();
 		}
+		Minecraft.getInstance().level = clvl;
 	}
 	
 	public static void drawBreakingOutline(int progr, RenderBuffers renderBuffers, PoseStack pPoseStack, Level level, BlockPos pos, BlockState state, Minecraft minecraft) {
@@ -385,27 +381,36 @@ public class TileRendererHelper {
 			
 			if (y < origin.getY() + 16 &&
 					y >= origin.getY()) {
-//				AABB renderBox = tile.getRenderBoundingBox();
+				
+				AABB renderBox = PlatformUtils.getRenderBox(tile);
 				if (tile.getLevel() instanceof ITickerLevel tkLvl) {
 					int upb = tkLvl.getUPB();
 					float scl = 1f / upb;
-//					renderBox = new AABB(
-//							renderBox.minX * scl + regionOrigin.getX(),
-//							renderBox.minY * scl + regionOrigin.getY(),
-//							renderBox.minZ * scl + regionOrigin.getZ(),
-//							renderBox.maxX * scl + regionOrigin.getX(),
-//							renderBox.maxY * scl + regionOrigin.getY(),
-//							renderBox.maxZ * scl + regionOrigin.getZ()
-//					);
+					renderBox = new AABB(
+							renderBox.minX * scl + regionOrigin.getX(),
+							renderBox.minY * scl + regionOrigin.getY(),
+							renderBox.minZ * scl + regionOrigin.getZ(),
+							renderBox.maxX * scl + regionOrigin.getX(),
+							renderBox.maxY * scl + regionOrigin.getY(),
+							renderBox.maxZ * scl + regionOrigin.getZ()
+					);
 				}
-//				if (frustum.isVisible(renderBox)) {
-				TileRendererHelper.setupStack(stk, tile, origin);
-				blockEntityRenderDispatcher.render(
-						tile, pct,
-						stk, Minecraft.getInstance().renderBuffers().bufferSource()
-				);
-				stk.popPose();
+//				if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && !FMLEnvironment.production) {
+//					stk.pushPose();
+//					LevelRenderer.renderLineBox(
+//							stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+//							renderBox, 1, 1, 1, 1
+//					);
+//					stk.popPose();
 //				}
+				if (frustum.test(renderBox)) {
+					TileRendererHelper.setupStack(stk, tile, origin);
+					blockEntityRenderDispatcher.render(
+							tile, pct,
+							stk, Minecraft.getInstance().renderBuffers().bufferSource()
+					);
+					stk.popPose();
+				}
 			}
 		}
 	}

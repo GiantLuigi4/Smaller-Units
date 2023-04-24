@@ -2,6 +2,7 @@ package tfc.smallerunits.simulation.level.client;
 
 import it.unimi.dsi.fastutil.BigList;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
@@ -168,6 +169,7 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		allChunks.add(ck[i]);
 		ck[i].setClientLightReady(true);
 		getLightEngine().enableLightSources(new ChunkPos(pChunkX, pChunkZ), true);
+		ClientChunkEvents.CHUNK_LOAD.invoker().onChunkLoad((ClientLevel) level, ck[i]);
 		
 		return ck[i];
 	}

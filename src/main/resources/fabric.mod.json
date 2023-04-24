@@ -34,6 +34,9 @@
     "cardinal-components-chunk": "*",
     "cardinal-components-world": "*"
   },
+  "breaks": {
+    "immersiveportals": "<1.14.11"
+  },
   "suggests": {
     "cloth-config2": "*"
   },

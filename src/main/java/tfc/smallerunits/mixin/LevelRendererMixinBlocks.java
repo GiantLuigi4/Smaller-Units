@@ -38,6 +38,7 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.asm.AssortedQol;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixinBlocks {
@@ -122,15 +123,31 @@ public abstract class LevelRendererMixinBlocks {
 		
 		boolean hammerHeld = IHateTheDistCleaner.isHammerHeld();
 		for (UnitSpace unit : spaces) {
-			if (unit != null) {
-				TileRendererHelper.drawUnit(
-						SU$Frustum,
-						unit.pos, unit.unitsPerBlock, unit.isNatural,
-						hammerHeld, unit.isEmpty(), null, stk,
-//						LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
-						LightTexture.pack(0, 0),
-						origin.getX(), origin.getY(), origin.getZ()
-				);
+			if (AssortedQol.isInSection(unit, origin)) {
+				if (unit != null) {
+					TileRendererHelper.drawUnit(
+							SU$Frustum,
+							unit.pos, unit.unitsPerBlock, unit.isNatural,
+							hammerHeld, unit.isEmpty(), null, stk,
+//							LightTexture.pack(level.getBrightness(LightLayer.BLOCK, unit.pos), level.getBrightness(LightLayer.SKY, unit.pos)),
+							LightTexture.pack(0, 0),
+							origin.getX(), origin.getY(), origin.getZ()
+					);
+				}
+			}
+		}
+		for (UnitSpace space : spaces) {
+			if (AssortedQol.isInSection(space, origin)) {
+				stk.pushPose();
+				AssortedQol.setupMatrix(space, stk);
+				for (UnitSpace[] nestedSpace : space.getPotentiallyNestedSpaces()) {
+					for (UnitSpace unitSpace : nestedSpace) {
+						if (space.contains(unitSpace)) {
+							AssortedQol.drawIndicatorsRecursive(unitSpace, origin, hammerHeld, stk, SU$Frustum);
+						}
+					}
+				}
+				stk.popPose();
 			}
 		}
 		

@@ -53,6 +53,17 @@ public class MutableAABB extends AABB {
 	}
 	
 	@Override
+	public AABB expandTowards(double x, double y, double z) {
+		if (x < 0) minX += x;
+		else maxX += x;
+		if (y < 0) minY += y;
+		else maxY += y;
+		if (z < 0) minZ += z;
+		else maxZ += z;
+		return this;
+	}
+	
+	@Override
 	public AABB move(BlockPos pPos) {
 		minX += pPos.getX();
 		minY += pPos.getY();
@@ -60,6 +71,16 @@ public class MutableAABB extends AABB {
 		maxX += pPos.getX();
 		maxY += pPos.getY();
 		maxZ += pPos.getZ();
+		return this;
+	}
+	
+	public AABB scale(double scale) {
+		minX *= scale;
+		minY *= scale;
+		minZ *= scale;
+		maxX *= scale;
+		maxY *= scale;
+		maxZ *= scale;
 		return this;
 	}
 }

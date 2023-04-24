@@ -1,13 +1,20 @@
 package tfc.smallerunits.networking.hackery;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import qouteall.imm_ptl.core.network.PacketRedirectionClient;
 import sun.misc.Unsafe;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.logging.Loggers;
@@ -15,6 +22,8 @@ import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.platform.PlatformUtils;
+import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -52,7 +61,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 				additionalInfo.put(name, tg);
 			}
 		}
-		if (wrapped instanceof FriendlyByteBuf) wrapped = read((FriendlyByteBuf) wrapped);
+		if (wrapped instanceof FriendlyByteBuf) this.wrapped = read((FriendlyByteBuf) wrapped);
 		else this.wrapped = wrapped;
 	}
 	
@@ -128,13 +137,64 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			}
 		} else {
 			pExecutor = (BlockableEventLoop<?>) IHateTheDistCleaner.getMinecraft();
+			player = IHateTheDistCleaner.getPlayer();
 		}
+		
+		if (SmallerUnits.isImmersivePortalsPresent()) {
+			// immersive portals compat
+			ipHandle(ctx, pExecutor, player);
+		} else {
+			// vanilla
+			if (!pExecutor.isSameThread()) {
+				pExecutor.executeIfPossible(() -> {
+					doHandle(ctx);
+				});
+			} else doHandle(ctx);
+		}
+	}
+	
+	
+	protected void ipHandle(NetCtx ctx, BlockableEventLoop<?> pExecutor, Player player) {
+		ResourceKey<Level> lvl = PacketRedirectionClient.clientTaskRedirection.get();
 		if (!pExecutor.isSameThread()) {
 			pExecutor.executeIfPossible(() -> {
-				doHandle(ctx);
+				if (player == null) {
+					// TODO: sometimes this happens, I'm not yet sure as to why
+					Loggers.SU_LOGGER.warn("Player was null while handling packet " + wrapped + " on " + (checkClient(ctx) ? "client" : "server") + ".");
+					Loggers.SU_LOGGER.warn("This should not happen.");
+					return;
+				}
+				
+				Level lvl1;
+				if (lvl != null && PlatformUtils.isClient() && player.level.isClientSide)
+					lvl1 = IHateTheDistCleaner.getOptionalIPWorld(lvl);
+				else lvl1 = player.level;
+				
+				if (lvl1 != null) {
+					PositionalInfo inf = new PositionalInfo(player);
+					player.level = lvl1;
+					doHandle(ctx);
+					inf.reset(player);
+				} else doHandle(ctx);
 			});
 		} else {
-			doHandle(ctx);
+			if (player == null) {
+				Loggers.SU_LOGGER.warn("Player was null while handling packet " + wrapped + " on " + (checkClient(ctx) ? "client" : "server") + ".");
+				Loggers.SU_LOGGER.warn("This should not happen.");
+				return;
+			}
+			
+			Level lvl1;
+			if (lvl != null && PlatformUtils.isClient() && player.level.isClientSide)
+				lvl1 = IHateTheDistCleaner.getOptionalIPWorld(lvl);
+			else lvl1 = player.level;
+			
+			if (lvl1 != null) {
+				PositionalInfo inf = new PositionalInfo(player);
+				player.level = lvl1;
+				doHandle(ctx);
+				inf.reset(player);
+			} else doHandle(ctx);
 		}
 	}
 	
@@ -145,7 +205,24 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		PositionalInfo info = new PositionalInfo(context.player);
 		
 		preRead(context);
-		PacketUtilMess.preHandlePacket(ctx.getHandler(), context.pkt);
+		try {
+			PacketUtilMess.preHandlePacket(ctx.getHandler().getConnection().getPacketListener(), context.pkt);
+		} catch (Throwable err) {
+			if (err instanceof ClassCastException) {
+//				if (castException.toString().startsWith("class net.minecraft.client.multiplayer.ClientLevel cannot be cast to class tfc.smallerunits.simulation.level.ITickerLevel")) {
+//					if (err.getStackTrace()[0].getLineNumber() == 47) {
+//						// fully recoverable in this scenario, for some reason
+//						Loggers.SU_LOGGER.warn("Failed to handle packet " + wrapped + ".\nHowever, this should be recoverable.");
+//						return;
+//					}
+//				}
+				if (!(Minecraft.getInstance().level instanceof ITickerLevel)) {
+					Loggers.SU_LOGGER.warn("Failed to handle packet " + wrapped + ".\nHowever, this should be recoverable.");
+					return;
+				}
+			}
+			throw new RuntimeException(err);
+		}
 		
 		Object old = null;
 		boolean toServer = checkServer(ctx);
@@ -163,7 +240,12 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		));
 		
 		try {
-			context.pkt.handle(ctx.getHandler());
+			PacketListener listener = ctx.getHandler().getConnection().getPacketListener();
+			if (context.pkt instanceof ClientboundCustomPayloadPacket clientboundCustomPayloadPacket) {
+				PlatformUtilsClient.handlePacketClient((ClientGamePacketListener) listener, clientboundCustomPayloadPacket);
+			} else {
+				context.pkt.handle(listener);
+			}
 		} catch (Throwable ignored) {
 			Loggers.PACKET_HACKS_LOGGER.error("-- A wrapped packet has encountered an error: desyncs are imminent --");
 			ignored.printStackTrace();
@@ -174,7 +256,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			if (old != newV) {
 				if (newV != context.player.inventoryMenu) {
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+					((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
 				}
 			}
 		} else {
@@ -182,7 +264,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 			if (old != newV) {
 				if (newV != null) {
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					((SUScreenAttachments) newV).setup(info, preHandleLevel, upb, descriptor.pos());
+					((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
 				}
 			}
 		}

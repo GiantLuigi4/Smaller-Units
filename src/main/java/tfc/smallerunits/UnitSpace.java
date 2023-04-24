@@ -4,8 +4,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -14,7 +19,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunkSection;
+import qouteall.imm_ptl.core.network.PacketRedirection;
 import tfc.smallerunits.client.render.util.RenderWorld;
+import tfc.smallerunits.data.capability.ISUCapability;
+import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.storage.UnitPallet;
@@ -23,15 +31,15 @@ import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
+import tfc.smallerunits.networking.platform.NetworkDirection;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class UnitSpace {
 	// TODO: migrate to chunk class
@@ -71,7 +79,7 @@ public class UnitSpace {
 				Math1D.regionMod(pos.getZ()) * upb
 		);
 		myLevel = null;
-		tick();
+//		tick();
 	}
 	
 	public static UnitSpace fromNBT(CompoundTag tag, Level lvl) {
@@ -94,6 +102,7 @@ public class UnitSpace {
 	
 	private void loadWorld(CompoundTag tag) {
 		if (myLevel == null || tag == null) return;
+		if (!level.isLoaded(pos)) return;
 		
 		// ensures that chunks are loaded
 		for (int x = 0; x < unitsPerBlock; x += 15) {
@@ -147,6 +156,15 @@ public class UnitSpace {
 			((ITickerLevel) myLevel).setLoaded();
 		}
 		
+		if (tag.contains("countBlocks", Tag.TAG_INT)) {
+			numBlocks = tag.getInt("countBlocks");
+		} else {
+			for (BlockState block : getBlocks()) {
+				if (!block.isAir())
+					addState(block);
+			}
+		}
+		
 		this.tag = null;
 	}
 	
@@ -161,7 +179,7 @@ public class UnitSpace {
 				Region r = ((RegionalAttachments) cm).SU$getRegion(new RegionPos(pos));
 				if (r == null) {
 //					if (level.isLoaded(pos))
-//					Loggers.UNITSPACE_LOGGER.error("Region@" + new RegionPos(pos) + " was null");
+					Loggers.UNITSPACE_LOGGER.error("Server: Region@" + new RegionPos(pos) + " was null");
 					return;
 				}
 				if (myLevel != null)
@@ -171,7 +189,8 @@ public class UnitSpace {
 			} else if (level instanceof RegionalAttachments) {
 				Region r = ((RegionalAttachments) level).SU$getRegion(new RegionPos(pos));
 				if (r == null) {
-					Loggers.UNITSPACE_LOGGER.error("Region@" + new RegionPos(pos) + " was null");
+					if (PlatformUtils.isDevEnv())
+						Loggers.UNITSPACE_LOGGER.error("Client: Region@" + new RegionPos(pos) + " was null");
 					return;
 				}
 				if (myLevel != null)
@@ -201,17 +220,24 @@ public class UnitSpace {
 				for (int y = 0; y < unitsPerBlock; y++) {
 					int sectionIndex = vc.getSectionIndex(y + myPosInTheLevel.getY());
 					LevelChunkSection section = vc.getSectionNullable(sectionIndex);
-//					if (section == null || section.hasOnlyAir()) {
-//						if (y == (y >> 4) << 4) {
-//							y += 15;
-//						} else {
-//							y = ((y >> 4) << 4) + 15;
-//						}
-//						continue;
-//					}
+					
+					if (section == null || section.hasOnlyAir()) {
+						int trg;
+						if (y == (y >> 4) << 4) trg = y + 15;
+						else trg = ((y >> 4) << 4) + 15;
+						if (trg > (unitsPerBlock - 1)) trg = (unitsPerBlock - 1);
+						
+						while (y < trg) {
+							states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
+							y++;
+						}
+						states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
+						
+						continue;
+					}
 					
 					blockPos.set(x + myPosInTheLevel.getX(), y + myPosInTheLevel.getY(), z + myPosInTheLevel.getZ());
-					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = vc.getBlockStateSmallOnly(blockPos);
+					BlockState state = states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = section.getBlockState(blockPos.getX() & 15, blockPos.getY() & 15, blockPos.getZ() & 15);
 					addState(state);
 				}
 			}
@@ -340,6 +366,7 @@ public class UnitSpace {
 		tag.putInt("z", pos.getZ());
 		tag.putInt("upb", unitsPerBlock);
 		tag.putBoolean("natural", isNatural);
+		tag.putInt("countBlocks", numBlocks);
 		
 		return tag;
 	}
@@ -349,12 +376,25 @@ public class UnitSpace {
 	}
 	
 	public void sendSync(PacketTarget target) {
-		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-		NetworkingHacks.unitPos.remove();
 		SyncPacketS2C pkt = new SyncPacketS2C(this);
 		SUNetworkRegistry.send(target, pkt);
-		if (descriptor != null)
-			NetworkingHacks.setPos(descriptor);
+	}
+	
+	// ip compatibility method
+	public void sendRedirectableSync(ServerPlayer target) {
+		SyncPacketS2C pkt = new SyncPacketS2C(this);
+		if (SmallerUnits.isImmersivePortalsPresent()) {
+			if (PacketRedirection.getForceRedirectDimension() != null) {
+				//noinspection unchecked
+				PacketRedirection.sendRedirectedPacket(
+						(ServerGamePacketListenerImpl) target.connection.connection.getPacketListener(),
+						(Packet<ClientGamePacketListener>) SUNetworkRegistry.toVanillaPacket(pkt, NetworkDirection.TO_CLIENT),
+						PacketRedirection.getForceRedirectDimension()
+				);
+			}
+		} else {
+			SUNetworkRegistry.NETWORK_INSTANCE.send(PacketTarget.player(target), pkt);
+		}
 	}
 	
 	public void removeState(BlockState block) {
@@ -394,5 +434,26 @@ public class UnitSpace {
 			}
 		}
 		return chunks;
+	}
+	
+	public List<UnitSpace[]> getPotentiallyNestedSpaces() {
+		ArrayList<UnitSpace[]> nestedSpaces = new ArrayList<>();
+		for (BasicVerticalChunk chunk : getChunks()) {
+			ISUCapability cap = SUCapabilityManager.getCapability(chunk);
+			nestedSpaces.add(cap.getUnits());
+		}
+		return nestedSpaces;
+	}
+	
+	public boolean contains(UnitSpace unitSpace) {
+		if (unitSpace.level == myLevel) {
+			return unitSpace.pos.getX() >= myPosInTheLevel.getX() &&
+					unitSpace.pos.getY() >= myPosInTheLevel.getY() &&
+					unitSpace.pos.getZ() >= myPosInTheLevel.getZ() &&
+					unitSpace.pos.getX() < myPosInTheLevel.getX() + unitsPerBlock &&
+					unitSpace.pos.getY() < myPosInTheLevel.getY() + unitsPerBlock &&
+					unitSpace.pos.getZ() < myPosInTheLevel.getZ() + unitsPerBlock;
+		}
+		return false;
 	}
 }

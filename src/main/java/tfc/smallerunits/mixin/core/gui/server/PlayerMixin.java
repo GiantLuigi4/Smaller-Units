@@ -1,5 +1,6 @@
 package tfc.smallerunits.mixin.core.gui.server;
 
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -16,8 +17,8 @@ public class PlayerMixin {
 		PositionalInfo info = screenAttachments.getPositionalInfo();
 		if (info != null) {
 			screenAttachments.update((Player) (Object) this);
-			info.scalePlayerReach(((Player) (Object) this), screenAttachments.getUpb());
-			info.adjust((Player) (Object) this, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+			info.scalePlayerReach(((Player) (Object) this), screenAttachments.getDescriptor().getReachScale());
+			info.adjust((Player) (Object) this, ((Player) (Object) this).getLevel(), screenAttachments.getDescriptor(), !((Entity) (Object) this).getLevel().isClientSide);
 		}
 	}
 	

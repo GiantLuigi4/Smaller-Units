@@ -1,6 +1,5 @@
 package tfc.smallerunits.mixin.core.gui.client;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
@@ -11,7 +10,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.level.ITickerLevel;
@@ -19,7 +17,9 @@ import tfc.smallerunits.utils.PositionalInfo;
 
 @Mixin(value = GameRenderer.class)
 public class GameRendererMixin {
-	@Shadow @Final private Minecraft minecraft;
+	@Shadow
+	@Final
+	private Minecraft minecraft;
 	@Unique
 	private static final ThreadLocal<Screen> currentScreen = new ThreadLocal<>();
 	
@@ -31,8 +31,8 @@ public class GameRendererMixin {
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				screenAttachments.update(Minecraft.getInstance().player);
-				NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(((ITickerLevel) screenAttachments.getTarget()).getRegion().pos, screenAttachments.getUpb()));
-				info.adjust(Minecraft.getInstance().player, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos(), false);
+				NetworkingHacks.setPos(((ITickerLevel) screenAttachments.getTarget()).getDescriptor());
+				info.adjust(Minecraft.getInstance().player, Minecraft.getInstance().level, screenAttachments.getDescriptor(), false);
 			}
 		}
 	}
@@ -48,7 +48,7 @@ public class GameRendererMixin {
 				
 				if (Minecraft.getInstance().screen != null && Minecraft.getInstance().screen != currentScreen.get()) {
 					SUScreenAttachments attachments = (SUScreenAttachments) Minecraft.getInstance().screen;
-					attachments.setup(info, screenAttachments.getTarget(), screenAttachments.getUpb(), screenAttachments.regionPos());
+					attachments.setup(screenAttachments);
 				}
 			}
 		}

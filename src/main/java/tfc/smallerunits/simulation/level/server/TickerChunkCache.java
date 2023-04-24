@@ -2,6 +2,9 @@ package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashBigSet;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.*;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
@@ -261,7 +264,14 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			holders.add(holder);
 		}
 		bvc.holder = holder;
+		ServerChunkEvents.CHUNK_LOAD.invoker().onChunkLoad((ServerLevel) level, bvc);
+		
 		return bvc;
+	}
+	
+	@Override
+	public void save(boolean p_8420_) {
+//		((TickerServerLevel)level).saveWorld.saveAllChunks();
 	}
 	
 	@Override

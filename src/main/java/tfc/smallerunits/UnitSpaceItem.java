@@ -62,6 +62,9 @@ public class UnitSpaceItem extends Item {
 				chunk.setUnsaved(true);
 				if (chunk.getLevel() instanceof ServerLevel)
 					space.sendSync(PacketTarget.trackingChunk(chunk));
+				space.isNatural = false;
+				space.tick();
+				
 				return InteractionResult.SUCCESS;
 			}
 		}

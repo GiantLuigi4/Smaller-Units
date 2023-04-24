@@ -19,6 +19,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -28,6 +29,7 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -69,6 +71,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
@@ -352,21 +355,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
-	public boolean isOutsideBuildHeight(int pY) {
-		return false;
-	}
-	
-	@Override
-	public int getMinBuildHeight() {
-		return -32;
-	}
-	
-	@Override
-	public int getMaxBuildHeight() {
-		return upb * 512 + 32;
-	}
-	
-	@Override
 	public int getSectionsCount() {
 		return getMaxSection() - getMinSection();
 	}
@@ -451,7 +439,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (lvl == null) return false;
 		
 		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-		NetworkingHacks.setPos(null);
+		NetworkingHacks.setPos(descriptor.parent());
 		
 		((EntityAccessor) pEntity).setPortalInfo(PlatformUtils.createPortalInfo(pEntity, this));
 		ResizingUtils.resizeForUnit(pEntity, 1f / upb);
@@ -1034,6 +1022,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
 		
+		if (blockEntityTickers.size() != 0) {
+			System.out.println(blockEntityTickers.size());
+			this.tickBlockEntities();
+		}
+		
 		PlatformUtils.preTick(this);
 		
 		randomTickCount = Integer.MIN_VALUE;
@@ -1041,7 +1034,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		if (!isLoaded) return;
 		if (!getServer().isReady()) return;
 		
-		NetworkingHacks.setPos(new NetworkingHacks.LevelDescriptor(region.pos, upb));
+		NetworkingHacks.setPos(getDescriptor());
 		
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
@@ -1190,5 +1183,42 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			((EntityAccessor) entitiesOfClass).setMotionScalar(1);
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
+	}
+	
+	
+	// compat: lithium
+	// reason: un-inline
+	public int getSectionYFromSectionIndex(int p_151569_) {
+		return p_151569_ + this.getMinSection();
+	}
+	
+	@Override
+	public boolean isOutsideBuildHeight(int pY) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pY, upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	// compat: lithium
+	// reason: un-inline
+	@Override
+	public boolean isOutsideBuildHeight(BlockPos pos) {
+		Level parent = this.parent.get();
+		if (parent == null) return true;
+		int yo = Math1D.getChunkOffset(pos.getY(), upb);
+		yo = region.pos.toBlockPos().getY() + yo;
+		return parent.isOutsideBuildHeight(yo);
+	}
+	
+	@Override
+	public int getMinBuildHeight() {
+		return -32;
+	}
+	
+	@Override
+	public int getMaxBuildHeight() {
+		return upb * 512 + 32;
 	}
 }

@@ -3,11 +3,15 @@ package tfc.smallerunits.utils.platform;
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import dev.onyxstudios.cca.api.v3.component.ComponentProvider;
 import net.fabricmc.api.EnvType;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Registry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -16,9 +20,14 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.EnderChestBlock;
+import net.minecraft.world.level.block.TrappedChestBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.LidBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -28,6 +37,8 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.asm.MixinConnector;
+import tfc.smallerunits.utils.platform.hooks.ICullableBE;
+import tfc.smallerunits.utils.selection.MutableAABB;
 
 import java.util.ArrayList;
 
@@ -48,9 +59,9 @@ public class PlatformUtils {
 		return Registry.BLOCK_ENTITY_TYPE.getKey(be.getType());
 	}
 	
-	public static double getReach(Player sender) {
+	public static double getReach(LivingEntity entity) {
 		double reach = 7;
-		AttributeInstance instance = sender.getAttribute(ReachEntityAttributes.REACH);
+		AttributeInstance instance = entity.getAttribute(ReachEntityAttributes.REACH);
 		if (instance == null) return reach;
 		AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
 		
@@ -86,9 +97,7 @@ public class PlatformUtils {
 	}
 	
 	public static <T extends BlockEntity> AABB getRenderBox(T pBlockEntity) {
-		VoxelShape shape = pBlockEntity.getBlockState().getShape(pBlockEntity.getLevel(), pBlockEntity.getBlockPos());
-		if (shape == Shapes.empty() || shape.isEmpty()) return new AABB(pBlockEntity.getBlockPos());
-		return shape.bounds();
+		return ICullableBE.getCullingBB(pBlockEntity);
 	}
 	
 	public static AttributeInstance getReachAttrib(LivingEntity livingEntity) {
@@ -142,5 +151,13 @@ public class PlatformUtils {
 	
 	private static boolean hasConfigLib() {
 		return !MixinConnector.isFabric || isLoaded("cloth-config2");
+	}
+	
+	public static void beLoaded(BlockEntity pBlockEntity, Level level) {
+		if (level.isClientSide)
+			ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ClientLevel) level);
+		else
+			ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ServerLevel) level);
+		// noop
 	}
 }

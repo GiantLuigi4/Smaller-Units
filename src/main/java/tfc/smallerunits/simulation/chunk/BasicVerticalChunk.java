@@ -263,7 +263,8 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	public BlockEntity createBlockEntity(BlockPos pPos) {
 		BlockState blockstate = this.getBlockState(pPos);
-		return !blockstate.hasBlockEntity() ? null : ((EntityBlock) blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
+		return !blockstate.hasBlockEntity() ? null :
+				((EntityBlock) blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
 	}
 	
 	public void setBlockEntity$(BlockEntity pBlockEntity) {
@@ -274,9 +275,9 @@ public class BasicVerticalChunk extends LevelChunk {
 			pBlockEntity.setLevel(this.level);
 			pBlockEntity.clearRemoved();
 			BlockEntity blockentity = this.blockEntities.put(blockpos, pBlockEntity);
-			if (blockentity != null && blockentity != pBlockEntity) {
+			if (blockentity != null && blockentity != pBlockEntity)
 				blockentity.setRemoved();
-			}
+			PlatformUtils.beLoaded(pBlockEntity, level);
 		}
 		
 		if (!level.isClientSide) return;
@@ -315,18 +316,18 @@ public class BasicVerticalChunk extends LevelChunk {
 		super.removeBlockEntity(pPos);
 	}
 	
-	public void removeBlockEntityTicker(BlockPos pPos) {
-		if (yPos != 0)
-			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
-		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
-	}
-	
 	public void addBlockEntity$(BlockPos pos, BlockEntity pBlockEntity) {
 		this.setBlockEntity$(pBlockEntity);
 		if (isLoaded() || level.isClientSide) {
 			super.addGameEventListener(pBlockEntity);
 			this.updateBlockEntityTicker(pBlockEntity);
 		}
+	}
+	
+	public void removeBlockEntityTicker(BlockPos pPos) {
+		if (yPos != 0)
+			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
+		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
 	}
 	
 	@Override
@@ -356,10 +357,13 @@ public class BasicVerticalChunk extends LevelChunk {
 		LevelChunk ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
 		UnitSpace space = null;
 		BlockState oldState = section.getBlockState(j, k, l);
+		
 		if (ac instanceof FastCapabilityHandler capabilityHandler) {
 			space = capabilityHandler.getSUCapability().getUnit(parentPos);
+			
 			if (space == null) {
 				BlockState state = ac.getBlockState(parentPos);
+				
 				if (state.isAir()) { // TODO: do this better
 					if (!pState.isAir()) {
 						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
@@ -368,30 +372,48 @@ public class BasicVerticalChunk extends LevelChunk {
 						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
 						space.setUpb(((ITickerLevel) level).getUPB());
+						// setup network
+						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
+						if (descriptor != null)
+							NetworkingHacks.setPos(descriptor.parent());
+						// send unit to client
 						space.sendSync(PacketTarget.trackingChunk(ac));
+						// reset network
+						NetworkingHacks.unitPos.set(descriptor);
 					}
 				}
 			}
 		}
+		
 		BlockState output = setBlockState$$(pPos, pState, pIsMoving);
+		
 		if (ac instanceof FastCapabilityHandler capabilityHandler) {
 			ac.setUnsaved(true);
+			
 			if (space != null) {
 				space.removeState(oldState);
 				space.addState(pState);
+				
 				if (space.isEmpty() && space.isNatural) {
 					space.clear();
+					
+					// setup network
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
-					NetworkingHacks.unitPos.remove();
+					if (descriptor != null)
+						NetworkingHacks.setPos(descriptor.parent());
+					// remove unit space
 					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
 					BlockState state = ac.getBlockState(parentPos);
 					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+					// remove unit
 					capabilityHandler.getSUCapability().removeUnit(parentPos);
+					// reset network
 					if (descriptor != null)
 						NetworkingHacks.setPos(descriptor);
 				}
 			}
 		}
+		
 		return output;
 	}
 	
@@ -539,34 +561,31 @@ public class BasicVerticalChunk extends LevelChunk {
 		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
 		
 		SectionPos pPosAsSectionPos = SectionPos.of(parentPos);
-		ChunkAccess ac = chunkCache.get(pPosAsSectionPos);
-		if (ac == null) {
-			ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
-			chunkCache.put(pPosAsSectionPos, ac);
-		}
+		BlockState oldState = section.setBlockState(j, k, l, state);
 		
-		if (!state.isAir()) {
-			ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
-			UnitSpace space = capability.getOrMakeUnit(parentPos);
-			if (space != null) {
-				space.removeState(section.getBlockState(j, k, l));
-				space.addState(state);
-				
-				section.setBlockState(j, k, l, state);
-			} else {
-				Loggers.SU_LOGGER.warn("Unit space @" + parentPos + " did not exist");
+		if (level.isClientSide) {
+			ChunkAccess ac = chunkCache.get(pPosAsSectionPos);
+			if (ac == null) {
+				ac = ((ITickerLevel) level).getParent().getChunkAt(parentPos);
+				chunkCache.put(pPosAsSectionPos, ac);
 			}
 			
-			level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
-		} else {
-			ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
-			UnitSpace space = capability.getUnit(parentPos);
-			if (space != null) {
-				space.removeState(section.getBlockState(j, k, l));
+			if (!state.isAir()) {
+				ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
+				UnitSpace space = capability.getOrMakeUnit(parentPos);
+				if (space != null) {
+					space.removeState(oldState);
+					space.addState(state);
+				} else Loggers.SU_LOGGER.warn("Unit space @" + parentPos + " did not exist");
 				
 				section.setBlockState(j, k, l, state);
+				
+				level.getLightEngine().checkBlock(chunkPos.getWorldPosition().offset(pos).offset(0, yPos * 16, 0));
 			} else {
-				Loggers.SU_LOGGER.warn("Unit space @" + parentPos + " did not exist");
+				ISUCapability capability = SUCapabilityManager.getCapability(((ITickerLevel) level).getParent(), ac);
+				UnitSpace space = capability.getUnit(parentPos);
+				if (space != null) space.removeState(section.getBlockState(j, k, l));
+				else Loggers.SU_LOGGER.warn("Unit space @" + parentPos + " did not exist");
 			}
 		}
 	}
