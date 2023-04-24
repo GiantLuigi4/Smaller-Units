@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'tfc'
-version = '2.1.1'
+version = '2.1.3'
 
 String gameVersion = '1.19.2'
 String forgeVersion = "43.2.3"
