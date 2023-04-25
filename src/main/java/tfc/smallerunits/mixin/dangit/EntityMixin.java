@@ -137,13 +137,13 @@ public abstract class EntityMixin implements EntityAccessor {
 		moveIn();
 	}
 	
-	@Inject(at = @At("HEAD"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;)V")
-	public void preRemove(GameEvent pEvent, Entity pEntity, BlockPos pPos, CallbackInfo ci) {
+	@Inject(at = @At("HEAD"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;)V")
+	public void preRemove(GameEvent p_146853_, Entity p_146854_, CallbackInfo ci) {
 		moveOut();
 	}
 	
-	@Inject(at = @At("RETURN"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/core/BlockPos;)V")
-	public void postRemove(GameEvent pEvent, Entity pEntity, BlockPos pPos, CallbackInfo ci) {
+	@Inject(at = @At("RETURN"), method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;)V")
+	public void postRemove(GameEvent p_146853_, Entity p_146854_, CallbackInfo ci) {
 		moveIn();
 	}
 }

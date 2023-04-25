@@ -4,13 +4,13 @@
 
 # mods that SU compiles against
 compile:
-  bits_and_chisels: 420709 3841599
-  chisel_and_bits: 561059 4449159
-  pehkui: 319596 4492272
-  alternate_current: 548115 4406080
+  (bits_and_chisels): 420709 3841599
+  (chisel_and_bits): 561059 4449159
+  (pehkui): 319596 4492272
+  (alternate_current): 548115 4406080
 
 vr:
-  vivecraft: 667903 4462665
+  (vivecraft): 667903 4462665
 
 debug:
   spark: 361579 4057112

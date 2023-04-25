@@ -1,8 +1,16 @@
+// fabric
 plugins {
     id 'fabric-loom' version '1.1-SNAPSHOT'
 //    id 'org.quiltmc.loom' version '1.0.+'
     id 'maven-publish'
 }
+// forge
+//plugins {
+//    id 'eclipse'
+//    id 'net.minecraftforge.gradle' version '5.1.+'
+//    id 'org.spongepowered.mixin' version '0.7.+'
+//    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+//}
 
 class Vars {
     static CSV defaultRun
@@ -114,6 +122,8 @@ if (Vars.isFabric) {
             data { configureForge("data", it) }
         }
     }
+
+    sourceSets.main.resources { srcDir 'src/generated/resources' }
 }
 
 repositories {
@@ -153,8 +163,7 @@ repositories {
     }
 }
 
-static String transformLine(boolean isCompileOnly, String template, String name, String right) {
-    if (isCompileOnly) name = name.substring(1, name.length() - 1)
+static String transformLine(String template, String name, String right) {
     String t = template.replace('$l', name)
     String[] split = right.split(" ")
     for (int i = 0; i < split.length; i++)
@@ -178,8 +187,8 @@ void apply(boolean isJiJ, boolean isDeobf, boolean isCompileOnly, String dep, De
                 }
             }
         } else {
-            if (isCompileOnly) compileOnly fg.deobf(dep)
-            else implementation fg.deobf(dep)
+            if (isCompileOnly) o = handler.compileOnly fg.deobf(dep)
+            else o = handler.implementation fg.deobf(dep)
         }
     } else {
         if (isCompileOnly) o = handler.compileOnly dep
@@ -232,13 +241,12 @@ dependencies {
                 }
 
                 String trueName = name
-                if (trueName.startsWith("+")) trueName = trueName.substring(1)
-                if (trueName.startsWith("(") && trueName.endsWith(")")) trueName = trueName.substring(1, trueName.length() - 1)
+                boolean isJiJ = trueName.startsWith("+")
+                if (isJiJ) trueName = trueName.substring(1)
+                boolean isCompileOnly = trueName.charAt(0) == '('.charAt(0) && trueName.charAt(trueName.length() - 1) == ')'.charAt(0)
+                if (isCompileOnly) trueName = trueName.substring(1, trueName.length() - 1)
 
-                boolean isJiJ = name.startsWith("+")
-                boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
-
-                String dep = transformLine(isCompileOnly, template, trueName, depYaml.getText(name))
+                String dep = transformLine(template, trueName, depYaml.getText(name))
                 System.out.println((String) ("|-| " + dep))
                 apply(isJiJ, isDeobf, isCompileOnly, dep, it)
             }
@@ -250,17 +258,17 @@ dependencies {
         Yaml depYaml = (Yaml) line[0]
         String template = (String) line[1]
         String name = ((String) line[2])
+        boolean isDeobf = ((Boolean) line[3])
 
         String trueName = name
         if (trueName.startsWith("-")) trueName = trueName.substring(1)
-        if (trueName.startsWith("+")) trueName = trueName.substring(1)
-        if (trueName.startsWith("(") && trueName.endsWith(")")) trueName = trueName.substring(1, trueName.length() - 1)
 
-        boolean isDeobf = ((Boolean) line[3]).booleanValue()
-        boolean isJiJ = name.startsWith("+")
-        boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
+        boolean isJiJ = trueName.startsWith("+")
+        if (isJiJ) trueName = trueName.substring(1)
+        boolean isCompileOnly = trueName.charAt(0) == '('.charAt(0) && trueName.charAt(trueName.length() - 1) == ')'.charAt(0)
+        if (isCompileOnly) trueName = trueName.substring(1, trueName.length() - 1)
 
-        String dep = transformLine(isCompileOnly, template, trueName, depYaml.getText(name))
+        String dep = transformLine(template, trueName, depYaml.getText(name))
         System.out.println((String) (":-| " + dep))
         apply(isJiJ, isDeobf, isCompileOnly, dep, it)
     }
@@ -271,46 +279,79 @@ dependencies {
     }
 }
 
-processResources {
-    inputs.property "version", project.version
+if (Vars.isFabric) {
+    processResources {
+        inputs.property "version", project.version
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version
-    }
-}
-
-tasks.withType(JavaCompile).configureEach {
-    it.options.release = 17
-}
-
-java {
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
-    withSourcesJar()
-}
-
-jar {
-    from("LICENSE") {
-        rename { "${it}_${project.archivesBaseName}" }
-    }
-}
-
-// configure the maven publication
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
+        filesMatching("fabric.mod.json") {
+            expand "version": project.version
         }
     }
 
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-    repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
+    tasks.withType(JavaCompile).configureEach {
+        it.options.release = 17
     }
+
+    java {
+        // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+        // if it is present.
+        // If you remove this line, sources will not be generated.
+        withSourcesJar()
+    }
+
+    jar {
+        from("LICENSE") {
+            rename { "${it}_${project.archivesBaseName}" }
+        }
+    }
+} else {
+    jar {
+        manifest {
+            attributes([
+                    "Specification-Title"     : "smallerunits",
+                    "Specification-Vendor"    : "GiantLuigi4",
+                    "Specification-Version"   : "1",
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : project.jar.archiveVersion,
+                    "Implementation-Vendor"   : "GiantLuigi4",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            ])
+        }
+    }
+
+    jar.finalizedBy('reobfJar')
+
+    tasks.register("swapMcJar") {
+        doLast {
+            // I debug stuff a lot, and I mess with ATs a lot
+            // everytime I change ATs, I need to reswap the game jar for the recomp jar
+            System.out.println("Swap for recomp jar")
+            String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
+            File fl = new File((String) ("/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion"))
+            if (fl.exists()) {
+                File fl1 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion" + ".jar"))
+                File fl2 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion-recomp.jar"))
+                if (fl2.exists()) {
+                    if (fl1.length() != fl2.length()) {
+                        if (fl1.exists())
+                            fl1.delete()
+
+                        FileInputStream inputStream = new FileInputStream(fl2)
+                        byte[] bytes = inputStream.readAllBytes()
+                        fl1.createNewFile()
+                        FileOutputStream outputStream = new FileOutputStream(fl1)
+                        outputStream.write(bytes)
+                        outputStream.flush()
+                        outputStream.close()
+                        inputStream.close()
+                    }
+                }
+            }
+            System.out.println("Swapped")
+        }
+    }
+
+    buildEnvironment.finalizedBy('swapMcJar')
 }
 
 class CSV {

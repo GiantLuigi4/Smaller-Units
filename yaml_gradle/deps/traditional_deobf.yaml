@@ -4,12 +4,13 @@ deps:
   # jij: reach attribute
   +reach-entity-attributes: com.jamieswhiteshirt 2.3.0
   # immersive portals
-  -imm_ptl_core: com.github.iPortalTeam.ImmersivePortalsMod v2.4.8-mc1.19.3
-  -q_misc_util: com.github.iPortalTeam.ImmersivePortalsMod v2.4.8-mc1.19.3
+  -(imm_ptl_core): com.github.iPortalTeam.ImmersivePortalsMod v2.4.8-mc1.19.3
+  -(q_misc_util): com.github.iPortalTeam.ImmersivePortalsMod v2.4.8-mc1.19.3
   # config
-  -cloth-config-fabric: me.shedaniel.cloth 9.0.94
+  -cloth-config-fabric: me.shedaniel.cloth 8.2.88
+  -basic-math: me.shedaniel.cloth 0.6.1
   # pehkui
   -KanosConfig: com.github.Virtuoel 0.4.0
   # C&B
-  -scena-fabric: com.communi-suggestu.scena 1.0.97
-  -saecularia-caudices-fabric: com.communi-suggestu.saecularia-caudices 1.0.15
+  -(scena-fabric): com.communi-suggestu.scena 1.0.95
+  -(saecularia-caudices-fabric): com.communi-suggestu.saecularia-caudices 1.0.16
