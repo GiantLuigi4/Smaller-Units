@@ -1,0 +1,7 @@
+# format: [name]: [project id] [file id]
+# format: -[libname]: [project id] [file id]
+# format: ([compileOnlyDepName]): [project id] [file id]
+
+# mods that SU compiles against
+vr:
+  (vfe): 325360 3949338

@@ -5,7 +5,6 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.TranslatableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.CreativeModeTab;
@@ -80,12 +79,12 @@ public class UnitSpaceItem extends Item {
 				upb = tag.getInt("upb");
 			}
 		}
-		pTooltipComponents.add(new TranslatableComponent("smallerunits.tooltip.scale", upb));
+		pTooltipComponents.add(Component.translatable("smallerunits.tooltip.scale", upb));
 		super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
 	}
 	
 	public void SU$fillItemCategory(CreativeModeTab pCategory, List<ItemStack> pItems) {
-		if (pCategory == null || this.allowdedIn(pCategory)) {
+		if (pCategory == null || this.allowedIn(pCategory)) {
 			for (int i = 2; i <= 16; i++) {
 				ItemStack stack = new ItemStack(this);
 				stack.getOrCreateTag().putInt("upb", i);

@@ -35,9 +35,10 @@ public class BufferStorage {
 	}
 	
 	public void upload(RenderType type, BufferBuilder buffer) {
-		if (buffer.building()) buffer.end();
 		VertexBuffer buffer1 = getBuffer(type);
-		buffer1.upload(buffer);
+		buffer1.bind();
+		buffer1.upload(buffer.end());
+		VertexBuffer.unbind();
 		buffer.clear();
 		
 		if (RenderTypeData.isSortable(type)) {

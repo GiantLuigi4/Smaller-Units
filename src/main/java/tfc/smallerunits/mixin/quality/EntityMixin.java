@@ -7,7 +7,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.GameEventListenerRegistrar;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -50,9 +49,6 @@ public abstract class EntityMixin {
 	
 	@Shadow
 	public abstract Vec3 getPosition(float pPartialTicks);
-	
-	@Shadow
-	public abstract GameEventListenerRegistrar getGameEventListenerRegistrar();
 	
 	@Shadow
 	public abstract boolean isSprinting();

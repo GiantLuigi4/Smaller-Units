@@ -252,9 +252,11 @@ public class TileRendererHelper {
 		stk.popPose();
 		
 		if (builder != null) {
-			builder.end();
 			buffers[upb - 1] = new VertexBuffer();
-			buffers[upb - 1].upload(builder);
+			buffers[upb - 1].bind();
+			buffers[upb - 1].upload(builder.end());
+			DefaultVertexFormat.POSITION_COLOR.setupBufferState();
+			VertexBuffer.unbind();
 			builder.discard();
 		}
 	}

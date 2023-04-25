@@ -84,6 +84,11 @@ public class EntityManager<T extends EntityAccess> extends PersistentEntitySecti
 		public void onTrackingEnd(T pEntity) {
 			p_157504_.onTickingEnd(pEntity);
 		}
+		
+		@Override
+		public void onSectionChange(T p_223609_) {
+			p_157504_.onSectionChange(p_223609_);
+		}
 	}
 	
 	public EntityManager(ITickerLevel wld, Class<T> p_157503_, LevelCallback<T> p_157504_, EntityPersistentStorage<T> p_157505_) {

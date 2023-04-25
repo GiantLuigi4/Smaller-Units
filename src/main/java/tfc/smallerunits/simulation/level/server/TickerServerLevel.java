@@ -37,6 +37,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.storage.EntityStorage;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -148,9 +149,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				noAccess,
 				data,
 				p_8575_,
-				Holder.direct(dimType),
+				new LevelStem(Holder.direct(dimType), generator),
 				progressListener,
-				generator,
 				p_8579_,
 				p_8580_,
 				spawners,
@@ -287,6 +287,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		return i;
 	}
 	
+	@Override
 	public boolean sendParticles(ServerPlayer pPlayer, boolean pLongDistance, double pPosX, double pPosY, double pPosZ, Packet<?> pPacket) {
 		Level lvl = parent.get();
 		if (lvl == null) return false;
@@ -977,26 +978,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		
 		this.blockEvents.addAll(this.blockEventsToReschedule);
-	}
-	
-	protected void postGameEventInRadius(Entity pEntity, GameEvent pGameEvent, BlockPos pPos, int pNotificationRadius) {
-		int i = SectionPos.blockToSectionCoord(pPos.getX() - pNotificationRadius);
-		int j = SectionPos.blockToSectionCoord(pPos.getZ() - pNotificationRadius);
-		int k = SectionPos.blockToSectionCoord(pPos.getX() + pNotificationRadius);
-		int l = SectionPos.blockToSectionCoord(pPos.getZ() + pNotificationRadius);
-		int i1 = SectionPos.blockToSectionCoord(pPos.getY() - pNotificationRadius);
-		int j1 = SectionPos.blockToSectionCoord(pPos.getY() + pNotificationRadius);
-		
-		for (int k1 = i; k1 <= k; ++k1) {
-			for (int l1 = j; l1 <= l; ++l1) {
-				ChunkAccess chunkaccess = this.getChunkSource().getChunkNow(k1, l1);
-				if (chunkaccess != null) {
-					for (int i2 = i1; i2 <= j1; ++i2) {
-						chunkaccess.getEventDispatcher(i2).post(pGameEvent, pEntity, pPos);
-					}
-				}
-			}
-		}
 	}
 	
 	@Override

@@ -40,7 +40,7 @@ public class SUTesselator extends Tesselator {
 	@Override
 	public void end() {
 		this.builder.end();
-		BufferUploader.end(this.builder);
+		BufferUploader.draw(this.builder.end());
 	}
 	
 	public class TranslatingBufferBuilder extends BufferBuilder {

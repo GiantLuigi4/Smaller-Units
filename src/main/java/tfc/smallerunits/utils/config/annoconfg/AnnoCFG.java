@@ -10,7 +10,7 @@ import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.LongListEntry;
 import me.shedaniel.clothconfig2.impl.builders.*;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.Component;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.CFGSegment;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Config;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Name;
@@ -46,10 +46,10 @@ public class AnnoCFG {
 		String translationRoot = configDescriptor.path().replace("/", "_") + configDescriptor.namespace() + ":" + configDescriptor.type().name().toLowerCase();
 		
 		ConfigBuilder builder = ConfigBuilder.create()
-				.setTitle(new TranslatableComponent(translationRoot));
+				.setTitle(Component.translatable(translationRoot));
 		builder.setSavingRunnable(this::onConfigChange);
 		
-		ConfigCategory category = builder.getOrCreateCategory(new TranslatableComponent(translationRoot));
+		ConfigCategory category = builder.getOrCreateCategory(Component.translatable(translationRoot));
 		setup(translationRoot, "", builder, category::addEntry, clazz);
 		configs.add(this);
 		
@@ -98,7 +98,7 @@ public class AnnoCFG {
 							int min = range.minV();
 							int max = range.maxV();
 							
-							IntFieldBuilder fieldBuilder = builder1.startIntField(new TranslatableComponent(translationName), v);
+							IntFieldBuilder fieldBuilder = builder1.startIntField(Component.translatable(translationName), v);
 							fieldBuilder.setMin(min);
 							fieldBuilder.setDefaultValue(v);
 							fieldBuilder.setMax(max);
@@ -110,7 +110,7 @@ public class AnnoCFG {
 							category.add(entry);
 							value = entry::getValue;
 						} else {
-							IntFieldBuilder fieldBuilder = builder1.startIntField(new TranslatableComponent(translationName), v);
+							IntFieldBuilder fieldBuilder = builder1.startIntField(Component.translatable(translationName), v);
 							fieldBuilder.setDefaultValue(v);
 							fieldBuilder.setSaveConsumer((i) -> {
 							});
@@ -128,7 +128,7 @@ public class AnnoCFG {
 							long min = range.minV();
 							long max = range.maxV();
 							
-							LongFieldBuilder fieldBuilder = builder1.startLongField(new TranslatableComponent(translationName), v);
+							LongFieldBuilder fieldBuilder = builder1.startLongField(Component.translatable(translationName), v);
 							fieldBuilder.setMin(min);
 							fieldBuilder.setDefaultValue(v);
 							fieldBuilder.setMax(max);
@@ -140,7 +140,7 @@ public class AnnoCFG {
 							category.add(entry);
 							value = entry::getValue;
 						} else {
-							LongFieldBuilder fieldBuilder = builder1.startLongField(new TranslatableComponent(translationName), v);
+							LongFieldBuilder fieldBuilder = builder1.startLongField(Component.translatable(translationName), v);
 							fieldBuilder.setDefaultValue(v);
 							fieldBuilder.setSaveConsumer((i) -> {
 							});
@@ -158,7 +158,7 @@ public class AnnoCFG {
 							double min = range.minV();
 							double max = range.maxV();
 							
-							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(new TranslatableComponent(translationName), v);
+							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(Component.translatable(translationName), v);
 							fieldBuilder.setMin(min);
 							fieldBuilder.setDefaultValue(v);
 							fieldBuilder.setMax(max);
@@ -170,7 +170,7 @@ public class AnnoCFG {
 							category.add(entry);
 							value = entry::getValue;
 						} else {
-							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(new TranslatableComponent(translationName), v);
+							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(Component.translatable(translationName), v);
 							fieldBuilder.setDefaultValue(v);
 							fieldBuilder.setSaveConsumer((i) -> {
 							});
@@ -182,7 +182,7 @@ public class AnnoCFG {
 						}
 					}
 					case BOOLEAN -> {
-						BooleanToggleBuilder fieldBuilder = builder1.startBooleanToggle(new TranslatableComponent(translationName), defaultValue.valueBoolean());
+						BooleanToggleBuilder fieldBuilder = builder1.startBooleanToggle(Component.translatable(translationName), defaultValue.valueBoolean());
 						fieldBuilder.setDefaultValue(defaultValue.valueBoolean());
 						fieldBuilder.setSaveConsumer((i) -> {
 						});
@@ -226,7 +226,7 @@ public class AnnoCFG {
 			String translationName = translationRoot + "/" + dir.replace(".", "/") + "/" + name.toLowerCase();
 			translationName = translationName.replace("//", "/");
 			
-			SubCategoryBuilder builder2 = builder1.startSubCategory(new TranslatableComponent(translationName));
+			SubCategoryBuilder builder2 = builder1.startSubCategory(Component.translatable(translationName));
 			setup(translationRoot, dir + "." + name, builder, builder2::add, nestMember);
 			AbstractConfigListEntry<?> entry = builder2.build();
 			entry.setEditable(true);

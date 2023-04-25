@@ -155,7 +155,6 @@ public abstract class LevelRendererMixinBlocks {
 		shader.COLOR_MODULATOR.upload();
 		
 		VertexBuffer.unbind();
-		VertexBuffer.unbindVertexArray();
 		shader.clear();
 		RenderType.solid().clearRenderState();
 		

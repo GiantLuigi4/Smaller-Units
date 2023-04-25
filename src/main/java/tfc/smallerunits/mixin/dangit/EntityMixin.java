@@ -10,7 +10,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraft.world.level.gameevent.GameEventListenerRegistrar;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -23,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
-import tfc.smallerunits.utils.scale.ResizingUtils;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements EntityAccessor {
@@ -38,9 +36,6 @@ public abstract class EntityMixin implements EntityAccessor {
 	
 	@Shadow
 	private ChunkPos chunkPosition;
-	
-	@Shadow
-	public abstract GameEventListenerRegistrar getGameEventListenerRegistrar();
 	
 	@Shadow
 	public Level level;
@@ -94,11 +89,6 @@ public abstract class EntityMixin implements EntityAccessor {
 				if (SectionPos.blockToSectionCoord(i) != this.chunkPosition.x || SectionPos.blockToSectionCoord(k) != this.chunkPosition.z) {
 					this.chunkPosition = new ChunkPos(this.blockPosition);
 				}
-			}
-			
-			GameEventListenerRegistrar gameeventlistenerregistrar = this.getGameEventListenerRegistrar();
-			if (gameeventlistenerregistrar != null) {
-				gameeventlistenerregistrar.onListenerMove(this.level);
 			}
 		}
 	}

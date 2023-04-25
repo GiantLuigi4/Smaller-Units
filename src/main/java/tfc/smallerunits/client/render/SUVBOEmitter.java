@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import tfc.smallerunits.UnitSpace;
@@ -155,7 +156,7 @@ public class SUVBOEmitter {
 							
 							dispatcher.renderBatched(
 									block, offsetPos, wld, stk, consumer,
-									true, new Random(offsetPos.asLong())
+									true, new XoroshiroRandomSource(offsetPos.asLong())
 							);
 							
 							stk.popPose();

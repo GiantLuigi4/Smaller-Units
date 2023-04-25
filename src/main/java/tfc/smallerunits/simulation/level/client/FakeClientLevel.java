@@ -18,6 +18,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -727,7 +728,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	}
 	
 	@Override
-	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, Random pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
+	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, RandomSource pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
 		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
 		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
 //		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
@@ -756,7 +757,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	@Override
 	public Holder<Biome> getBiome(BlockPos p_204167_) {
 		Registry<Biome> reg = registryAccess().registry(Registry.BIOME_REGISTRY).get();
-		return reg.getOrCreateHolder(Biomes.THE_VOID);
+		return reg.getOrCreateHolder(Biomes.THE_VOID).get().orThrow();
 	}
 	
 	@Override

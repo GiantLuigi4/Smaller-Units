@@ -1,95 +1,274 @@
-import java.util.function.Consumer
-
 plugins {
     id 'fabric-loom' version '1.1-SNAPSHOT'
 //    id 'org.quiltmc.loom' version '1.0.+'
     id 'maven-publish'
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
-
-archivesBaseName = project.archives_base_name
-version = project.mod_version
-group = project.maven_group
-
-/* loom */
-loom {
-    loom.accessWidenerPath = file("src/main/resources/smallerunits.accesswidener")
-    loom.mixin.defaultRefmapName = "smallerunits.refmap.json"
+class Vars {
+    static CSV defaultRun
+    static Yaml project
+    static boolean isFabric
 }
 
-/* repositories */
-filteredMaven "https://maven.jamieswhiteshirt.com/libs-release", "com.jamieswhiteshirt"
-filteredMaven "https://cursemaven.com", "curse.maven"
-filteredMaven "https://api.modrinth.com/maven", "maven.modrinth"
-maven "https://repo1.maven.org/maven2/"
-maven "https://ladysnake.jfrog.io/artifactory/mods"
-maven "https://jitpack.io"
-maven "https://maven.architectury.dev/"
-maven "https://maven.quiltmc.org/repository/release"
+void init() {
+    {
+        FileInputStream stream = new FileInputStream(project.file("yaml_gradle/runs/all.csv"))
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        Vars.defaultRun = new CSV(new String(data))
+    }
+    {
+        FileInputStream stream = new FileInputStream(project.file("yaml_gradle/project.yaml"))
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        Vars.project = new Yaml(new String(data))
+
+        Yaml proj = Vars.project.getYaml("project")
+        Vars.isFabric = proj.getText("platform") == "fabric"
+    }
+}
+
+init()
+
+Yaml proj = Vars.project.getYaml("project")
+String gameVersion = proj.getText("gameVersion")
+String forgeVersion = proj.getText("forgeVersion")
+String fabricVersion = proj.getText("fabricVersion")
+String parchmentVer = proj.getText("parchmentVersion")
+String parchmentVersion = null
+
+if (Vars.isFabric) parchmentVersion = "$gameVersion:$parchmentVer"
+else parchmentVersion = "$parchmentVer-$gameVersion"
+
+
+group = 'tfc'
+version = '2.1.3'
+
+java {
+    archivesBaseName = "smallerunits-$gameVersion-forge"
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+void configureFabric(String name, Object cfg) {
+    File fl = project.file("yaml_gradle/runs/" + name + ".csv")
+    if (fl.exists()) {
+        FileInputStream stream = new FileInputStream(fl)
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        CSV thisRun = new CSV(new String(data))
+
+        for (String[] line : thisRun.text) cfg.programArgs line[0], line[1]
+    }
+
+    for (String[] line : Vars.defaultRun.text) cfg.programArgs line[0], line[1]
+}
+
+void configureForge(String name, Object cfg) {
+    cfg.workingDirectory project.file('run')
+
+    File fl = project.file("yaml_gradle/runs/" + name + ".csv")
+    if (fl.exists()) {
+        FileInputStream stream = new FileInputStream(fl)
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        CSV thisRun = new CSV(new String(data))
+
+        for (String[] line : thisRun.text) cfg.property line[0], line[1]
+    }
+
+    for (String[] line : Vars.defaultRun.text) cfg.property line[0], line[1]
+
+    cfg.mods {
+        smallerunits {
+            source sourceSets.main
+        }
+    }
+}
+
+if (Vars.isFabric) {
+    loom {
+        accessWidenerPath = file("src/main/resources/smallerunits.accesswidener")
+        mixin.defaultRefmapName = "smallerunits.refmap.json"
+
+        runs {
+            client { configureFabric("client", it) }
+            server { configureFabric("server", it) }
+        }
+    }
+} else {
+    mixin {
+        add sourceSets.main, "smallerunits.refmap.json"
+        config "smallerunits.mixins.json"
+        debug.verbose = true
+    }
+
+    minecraft {
+        mappings channel: 'parchment', version: parchmentVersion
+
+        accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+        runs {
+            client { configureForge("client", it) }
+            server { configureForge("server", it) }
+            gameTestServer { configureForge("gameTestServer", it) }
+            data { configureForge("data", it) }
+        }
+    }
+}
 
 repositories {
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+    FileInputStream stream = new FileInputStream(project.file("yaml_gradle/repositories.yaml"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+
+    // TODO: update this
+    String text = new String(data)
+
+    String parsing = ""
+    for (String s : text.split("\n")) {
+        if (s.trim().isEmpty()) continue
+        if (s.trim().charAt(0) == '#'.charAt(0)) continue
+
+        String[] split = s.split(":", 2)
+        if (split[0] == "flatdir") {
+            flatDir {
+                dirs split[1].trim()
+            }
+            continue
+        }
+
+        if (split[0].charAt(0) > ' '.charAt(0)) {
+            parsing = split[0]
+        } else {
+            split[0] = split[0].trim()
+            split[1] = split[1].trim().replace("\"", "")
+
+            if (parsing == "maven") {
+                maven {
+                    name = split[0]
+                    url = split[1]
+                }
+            }
+        }
+    }
 }
 
-String ccaVersion = "4.2.0"
+static String transformLine(boolean isCompileOnly, String template, String name, String right) {
+    if (isCompileOnly) name = name.substring(1, name.length() - 1)
+    String t = template.replace('$l', name)
+    String[] split = right.split(" ")
+    for (int i = 0; i < split.length; i++)
+        t = t.replace((String) ('$r' + i), split[i])
+    return t.replace('"', "")
+}
+
+void apply(boolean isJiJ, boolean isDeobf, boolean isCompileOnly, String dep, DependencyHandler handler) {
+    Object o = null
+    if (isDeobf) {
+        if (Vars.isFabric) {
+            if (isCompileOnly) o = handler.modCompileOnly(dep) {
+                if (!dep.startsWith("net.fabricmc.fabric-api:fabric-api")) {
+                    exclude(group: "net.fabricmc.fabric-api")
+                    transitive(false)
+                }
+            } else o = handler.modImplementation(dep) {
+                if (!dep.startsWith("net.fabricmc.fabric-api:fabric-api")) {
+                    exclude(group: "net.fabricmc.fabric-api")
+                    transitive(false)
+                }
+            }
+        } else {
+            if (isCompileOnly) compileOnly fg.deobf(dep)
+            else implementation fg.deobf(dep)
+        }
+    } else {
+        if (isCompileOnly) o = handler.compileOnly dep
+        else o = handler.implementation dep
+    }
+
+    if (isJiJ) handler.include o
+}
 
 dependencies {
-    // To change the versions see the gradle.properties file
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    /* dependencies */
-    DependencyTemplate cca = template (text) -> { modImplementation text
-    }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
-    cca.apply "module=base"
-    cca.apply "module=world"
-    cca.apply "module=chunk"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.2.0")
-
-    /* soft-deps */
-    curse "alternate_current", "548115", "4406078"
-    curse "pehkui", "319596", "4408057"
-    curse "cloth_config", "348521", "3972425"
-    curse "mod_menu", "308702", "4145213"
-    curse "chiselandbits", "561059", "4119189"
-    curse "bitsandchisel", "420709", "3841573"
-    modImplementation "me.shedaniel.cloth:basic-math:0.6.1"
-
-    curseCompile "vivecraft", "667903", "4409424"
-    // TODO: is there a fabric equivalent?
-    curseCompile "vfe", "325360", "3893747"
-
-    modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
-    modImplementation "maven.modrinth:sodium:mc1.18.2-0.4.1"
-    modImplementation "maven.modrinth:indium:1.0.7+mc1.18.2"
-    modImplementation "maven.modrinth:iris:1.18.x-v1.4.0"
-
-    modImplementation "maven.modrinth:immersiveportals:1.4.11-1.18.2"
-    modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v1.4.11-1.18') {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
-    }
-    modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v1.4.11-1.18') {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
+    if (Vars.isFabric) {
+        minecraft "com.mojang:minecraft:$gameVersion"
+        mappings loom.layered() {
+            officialMojangMappings()
+            parchment("org.parchmentmc.data:parchment-$parchmentVersion@zip")
+        }
+        modImplementation "net.fabricmc:fabric-loader:$fabricVersion"
+    } else {
+        minecraft "net.minecraftforge:forge:$gameVersion-$forgeVersion"
     }
 
-    for (File f : new File("libs").listFiles())
-        if (!f.isDirectory())
-            implementation files(f)
-    for (File f : new File("libs/deobf").listFiles())
-        modImplementation files(f)
+    FileInputStream stream = new FileInputStream(project.file("yaml_gradle/dependencies.yaml"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+    Yaml deps = new Yaml(new String(data))
 
-    modImplementation("com.github.Virtuoel:KanosConfig:0.3.1", {
-        exclude group: "net.fabricmc", module: "fabric-loader"
-        exclude group: "net.fabricmc.fabric-api"
-    })
+    ArrayList<Object[]> libraryLines = new ArrayList<>();
 
-    implementation "org.joml:joml:1.10.5"
+//    HashMap<String, ArrayList<String>> sections = new HashMap<>()
+
+    for (String s : deps.keys()) {
+        Yaml entry = deps.getYaml(s)
+
+        boolean isDeobf = Boolean.parseBoolean(entry.getText("deobf"))
+        String template = entry.getText("template")
+
+        stream = new FileInputStream(project.file("yaml_gradle/" + entry.getText("file").replace('"', "")))
+        data = stream.readAllBytes()
+        stream.close()
+        Yaml fl = new Yaml(new String(data))
+
+        for (String key : fl.keys()) {
+            System.out.println((String) ("| " + key))
+
+            Yaml depYaml = fl.getYaml(key)
+            for (String name : depYaml.keys()) {
+                if (name.startsWith("-")) {
+                    libraryLines.add(new Object[]{depYaml, template, name, Boolean.valueOf(isDeobf)})
+                    continue
+                }
+
+                String trueName = name
+                if (trueName.startsWith("+")) trueName = trueName.substring(1)
+                if (trueName.startsWith("(") && trueName.endsWith(")")) trueName = trueName.substring(1, trueName.length() - 1)
+
+                boolean isJiJ = name.startsWith("+")
+                boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
+
+                String dep = transformLine(isCompileOnly, template, trueName, depYaml.getText(name))
+                System.out.println((String) ("|-| " + dep))
+                apply(isJiJ, isDeobf, isCompileOnly, dep, it)
+            }
+        }
+    }
+
+    System.out.println(": Libraries")
+    for (Object[] line : libraryLines) {
+        Yaml depYaml = (Yaml) line[0]
+        String template = (String) line[1]
+        String name = ((String) line[2])
+
+        String trueName = name
+        if (trueName.startsWith("-")) trueName = trueName.substring(1)
+        if (trueName.startsWith("+")) trueName = trueName.substring(1)
+        if (trueName.startsWith("(") && trueName.endsWith(")")) trueName = trueName.substring(1, trueName.length() - 1)
+
+        boolean isDeobf = ((Boolean) line[3]).booleanValue()
+        boolean isJiJ = name.startsWith("+")
+        boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
+
+        String dep = transformLine(isCompileOnly, template, trueName, depYaml.getText(name))
+        System.out.println((String) (":-| " + dep))
+        apply(isJiJ, isDeobf, isCompileOnly, dep, it)
+    }
+
+    if (new File("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar").exists()) {
+        compileOnly files("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar")
+        compileOnly files("of/OptiFine_1.19.2_HD_U_I1-deobf.jar")
+    }
 }
 
 processResources {
@@ -134,63 +313,93 @@ publishing {
     }
 }
 
-void maven(String s) {
-    repositories.maven { url = s }
+class CSV {
+    public String[][] text
+
+    CSV(String[][] text) {
+        this.text = text
+    }
+
+    CSV(String text) {
+        ArrayList<String[]> lines = new ArrayList<>();
+        for (String s : text.split("\n"))
+            if (!s.isEmpty())
+                lines.add(s.split(","))
+        this.text = lines.toArray(new String[0][])
+    }
 }
 
-void maven(String s, String... groups) {
-    repositories.maven {
-        url = s
-        content {
-            for (String g : groups) {
-                includeGroup(g)
+abstract class YamlEntry {}
+
+class YamlString extends YamlEntry {
+    String value
+
+    YamlString(String value) {
+        this.value = value
+    }
+
+    @Override
+    String toString() {
+        return value
+    }
+}
+
+class Yaml extends YamlEntry {
+    Map<String, YamlEntry> entries = new HashMap<>()
+
+    Set<String> keys() {
+        return entries.keySet()
+    }
+
+    Yaml getYaml(String key) {
+        try {
+            return (Yaml) entries.get(key)
+        } catch (Throwable err) {
+            System.out.println("Failed to get entry " + key)
+            throw new RuntimeException()
+        }
+    }
+
+    String getText(String key) {
+        return entries.get(key).toString()
+    }
+
+    static int countIndent(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) > ' '.charAt(0))
+                return i
+        }
+        return line.length()
+    }
+
+    Yaml(String[] text, int indent, int[] currentLine) {
+        for (int i = currentLine[0]; i < text.length; i++) {
+            if (text[i].trim().isEmpty()) continue
+            if (text[i].trim().charAt(0) == '#'.charAt(0)) continue
+
+            if (countIndent(text[i]) < indent) {
+                currentLine[0] = i
+                return
             }
-        }
-    }
-}
 
-void filteredMaven(String s, String... groups) {
-    repositories.exclusiveContent {
-        forRepository {
-            repositories.maven {
-                url = s
+            String[] split = text[i].trim().split(":", 2)
+            if (split.length == 1 || split[1].isEmpty()) {
+                i += 1
+                currentLine[0] = i
+                Yaml subYaml = new Yaml(text, countIndent(text[i]), currentLine)
+                i = currentLine[0] - 1
+
+                entries.put(split[0], subYaml)
+            } else {
+                entries.put(split[0], new YamlString(split[1].trim()))
             }
-        }
-        filter {
-            for (String g : groups) {
-                includeGroup(g)
-            }
-        }
-    }
-}
 
-class DependencyTemplate {
-    String url
-    Consumer<String> artifactApplier
-
-    DependencyTemplate(Consumer<String> artifactApplier, String url) {
-        this.url = url
-        this.artifactApplier = artifactApplier
+            currentLine[0] = i
+        }
+        currentLine[0] += 1
     }
 
-    void apply(String... replacements) {
-        String r = url
-        for (String s : replacements) {
-            String[] split = s.split("=")
-            r = r.replace((String) ("\$" + split[0]), split[1])
-        }
-        artifactApplier.accept(r)
+    Yaml(String text) {
+        this(text.split("\n"), 0, new int[]{0})
     }
-}
-
-DependencyTemplate template(Consumer<String> artifactApplier, String txt) {
-    return new DependencyTemplate(artifactApplier, txt)
-}
-
-void curse(String name, String projId, String fileId) {
-    dependencies.modImplementation "curse.maven:$name-$projId:$fileId"
-}
-
-void curseCompile(String name, String projId, String fileId) {
-    dependencies.modCompileOnly "curse.maven:$name-$projId:$fileId"
 }

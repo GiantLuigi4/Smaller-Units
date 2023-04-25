@@ -27,8 +27,8 @@ accessible method net/minecraft/world/level/chunk/LevelChunk isTicking (Lnet/min
 extendable method net/minecraft/world/level/chunk/LevelChunk isTicking (Lnet/minecraft/core/BlockPos;)Z
 accessible method net/minecraft/world/level/chunk/LevelChunk removeBlockEntityTicker (Lnet/minecraft/core/BlockPos;)V
 extendable method net/minecraft/world/level/chunk/LevelChunk removeBlockEntityTicker (Lnet/minecraft/core/BlockPos;)V
-accessible method net/minecraft/world/level/chunk/LevelChunk addGameEventListener (Lnet/minecraft/world/level/block/entity/BlockEntity;)V
-extendable method net/minecraft/world/level/chunk/LevelChunk addGameEventListener (Lnet/minecraft/world/level/block/entity/BlockEntity;)V
+accessible method net/minecraft/world/level/chunk/LevelChunk addGameEventListener (Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/server/level/ServerLevel;)V
+extendable method net/minecraft/world/level/chunk/LevelChunk addGameEventListener (Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/server/level/ServerLevel;)V
 accessible method net/minecraft/world/level/chunk/LevelChunk createTicker (Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/level/block/entity/BlockEntityTicker;)Lnet/minecraft/world/level/block/entity/TickingBlockEntity;
 extendable method net/minecraft/world/level/chunk/LevelChunk createTicker (Lnet/minecraft/world/level/block/entity/BlockEntity;Lnet/minecraft/world/level/block/entity/BlockEntityTicker;)Lnet/minecraft/world/level/block/entity/TickingBlockEntity;
 accessible method net/minecraft/world/level/chunk/LevelChunk updateBlockEntityTicker (Lnet/minecraft/world/level/block/entity/BlockEntity;)V
@@ -105,6 +105,8 @@ accessible class net/minecraft/server/level/ServerLevel$EntityCallbacks
 extendable class net/minecraft/server/level/ServerLevel$EntityCallbacks
 accessible method net/minecraft/server/level/ServerLevel$EntityCallbacks <init> (Lnet/minecraft/server/level/ServerLevel;)V
 extendable method net/minecraft/server/level/ServerLevel$EntityCallbacks <init> (Lnet/minecraft/server/level/ServerLevel;)V
+accessible method net/minecraft/server/level/ServerLevel sendParticles (Lnet/minecraft/server/level/ServerPlayer;ZDDDLnet/minecraft/network/protocol/Packet;)Z
+extendable method net/minecraft/server/level/ServerLevel sendParticles (Lnet/minecraft/server/level/ServerPlayer;ZDDDLnet/minecraft/network/protocol/Packet;)Z
 
 accessible field net/minecraft/world/level/ClipContext block Lnet/minecraft/world/level/ClipContext$Block;
 accessible field net/minecraft/world/level/ClipContext fluid Lnet/minecraft/world/level/ClipContext$Fluid;

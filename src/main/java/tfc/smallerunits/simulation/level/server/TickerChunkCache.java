@@ -2,9 +2,7 @@ package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashBigSet;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.*;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
@@ -20,7 +18,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.jetbrains.annotations.Nullable;
@@ -49,14 +47,14 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	// TODO: make this not needed
 	int upb;
 	
-	public TickerChunkCache(ServerLevel p_184009_, LevelStorageSource.LevelStorageAccess p_184010_, DataFixer p_184011_, StructureManager p_184012_, Executor p_184013_, ChunkGenerator p_184014_, int p_184015_, int p_184016_, boolean p_184017_, ChunkProgressListener p_184018_, ChunkStatusUpdateListener p_184019_, Supplier<DimensionDataStorage> p_184020_, int upb) {
-		super(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, p_184014_, p_184015_, p_184016_, p_184017_, p_184018_, p_184019_, p_184020_);
-		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
+	public TickerChunkCache(ServerLevel p_214982_, LevelStorageSource.LevelStorageAccess p_214983_, DataFixer p_214984_, StructureTemplateManager p_214985_, Executor p_214986_, ChunkGenerator p_214987_, int p_214988_, int p_214989_, boolean p_214990_, ChunkProgressListener p_214991_, ChunkStatusUpdateListener p_214992_, Supplier<DimensionDataStorage> p_214993_, int upb) {
+		super(p_214982_, p_214983_, p_214984_, p_214985_, p_214986_, p_214987_, p_214988_, p_214989_, p_214990_, p_214991_, p_214992_, p_214993_);
+		this.chunkMap = new UnitChunkMap(p_214982_, p_214983_, p_214984_, p_214985_, p_214986_, this.mainThreadProcessor, this, p_214987_, p_214991_, p_214992_, p_214993_, p_214988_, p_214990_);
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
 		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 		lightEngine = new NotThreadedSULightManager(this, this.chunkMap, true);
-		this.dataStorage = new SUDimStorage(null, p_184011_);
+		this.dataStorage = new SUDimStorage(null, p_214984_);
 	}
 	
 	protected final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();

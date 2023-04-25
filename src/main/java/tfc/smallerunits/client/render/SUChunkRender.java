@@ -16,7 +16,6 @@ import java.util.ArrayList;
 public class SUChunkRender {
 	private final LevelChunk chunk;
 	private final ArrayList<Pair<BlockPos, BufferStorage>> buffers = new ArrayList<>();
-	
 	boolean empty = true;
 	
 	public boolean hasBuffers() {
@@ -48,10 +47,13 @@ public class SUChunkRender {
 							buffer.getFirst().getZ() + 1
 					))) {
 						VertexBuffer buffer1 = buffer.getSecond().getBuffer(type);
-						buffer1.drawChunkLayer();
+						buffer1.bind();
+						buffer1.draw();
 					}
 				}
 			}
+			
+			VertexBuffer.unbind();
 		}
 	}
 	

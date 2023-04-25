@@ -29,16 +29,16 @@
     "smallerunits.mixins.json"
   ],
   "depends": {
-    "minecraft": "~1.18.2",
+    "minecraft": "~1.19.2",
     "fabric-api": "*",
     "cardinal-components-chunk": "*",
-    "cardinal-components-world": "*"
+    "cardinal-components-world": "*",
+    "cloth-config2": "*"
   },
   "breaks": {
     "immersiveportals": "<1.14.11"
   },
   "suggests": {
-    "cloth-config2": "*"
   },
   "custom": {
     "cardinal-components": [

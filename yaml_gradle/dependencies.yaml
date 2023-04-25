@@ -1,0 +1,25 @@
+# curseforge dependencies
+curse:
+  template: "curse.maven:$l-$r0:$r1"
+  file: "deps/curse.yaml"
+  deobf: true
+
+curse_forge:
+  template: "curse.maven:$l-$r0:$r1"
+  file: "deps/curse_forge.yaml"
+  deobf: false
+
+modrinth:
+  template: "maven.modrinth:$l:$r0"
+  file: "deps/modrinth.yaml"
+  deobf: true
+
+traditional_deobf:
+  template: "$r0:$l:$r1"
+  file: "deps/traditional_deobf.yaml"
+  deobf: true
+
+cca:
+  template: "dev.onyxstudios.cardinal-components-api:cardinal-components-$l:$r0"
+  file: "deps/cca.yaml"
+  deobf: true

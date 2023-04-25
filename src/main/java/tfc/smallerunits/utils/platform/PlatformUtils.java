@@ -93,12 +93,16 @@ public class PlatformUtils {
 		return livingEntity.getAttribute(ReachEntityAttributes.REACH);
 	}
 	
-	public static CompoundTag getCapTag(ComponentProvider level) {
-		return level.getComponentContainer().toTag(new CompoundTag());
+	public static CompoundTag getCapTag(Object level) {
+		if (level instanceof ComponentProvider provider)
+			return provider.getComponentContainer().toTag(new CompoundTag());
+		throw new RuntimeException(level + " is not a component provider.");
 	}
 	
-	public static void readCaps(ComponentProvider level, CompoundTag tag) {
-		level.getComponentContainer().fromTag(tag);
+	public static void readCaps(Object level, CompoundTag tag) {
+		if (level instanceof ComponentProvider provider)
+			provider.getComponentContainer().fromTag(tag);
+		throw new RuntimeException(level + " is not a component provider.");
 	}
 	
 	public static void preTick(TickerServerLevel level) {

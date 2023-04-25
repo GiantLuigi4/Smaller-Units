@@ -1,0 +1,19 @@
+flatdir: "libs"
+
+maven:
+  # generic
+  cursemaven: "https://www.cursemaven.com"
+  modrinth: "https://api.modrinth.com/maven"
+  # immersive portals
+  jitpack: "https://jitpack.io"
+  # parchment
+  parchment: "https://maven.parchmentmc.org"
+  # entity reach attributes
+  jamies: "https://maven.jamieswhiteshirt.com/libs-release"
+  # cca
+  ladysnake: "https://ladysnake.jfrog.io/artifactory/mods"
+  # cloth config
+  shedaniel: "https://maven.shedaniel.me/"
+  terraformers: "https://maven.terraformersmc.com/releases/"
+  # C&B
+  ldteam: "https://ldtteam.jfrog.io/ldtteam/modding/"
