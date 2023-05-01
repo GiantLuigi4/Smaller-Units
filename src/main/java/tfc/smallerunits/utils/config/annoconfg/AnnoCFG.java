@@ -1,16 +1,6 @@
 package tfc.smallerunits.utils.config.annoconfg;
 
-import me.shedaniel.clothconfig2.api.AbstractConfigListEntry;
-import me.shedaniel.clothconfig2.api.ConfigBuilder;
-import me.shedaniel.clothconfig2.api.ConfigCategory;
-import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
-import me.shedaniel.clothconfig2.gui.entries.DoubleListEntry;
-import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
-import me.shedaniel.clothconfig2.gui.entries.LongListEntry;
-import me.shedaniel.clothconfig2.impl.builders.*;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.fabricmc.loader.api.FabricLoader;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.CFGSegment;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Config;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Name;
@@ -19,61 +9,50 @@ import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.DoubleRange;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.IntRange;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.LongRange;
+import tfc.smallerunits.utils.config.annoconfg.builder.CategoryBuilder;
+import tfc.smallerunits.utils.config.annoconfg.builder.CfgBuilder;
 import tfc.smallerunits.utils.config.annoconfg.handle.UnsafeHandle;
 import tfc.smallerunits.utils.config.annoconfg.util.EnumType;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 // TODO: finish this
 public class AnnoCFG {
-	private final Function<Screen, Screen> cfgScreen;
-	
 	private final HashMap<String, ConfigEntry> handles = new HashMap<>();
 	
 	private static final ArrayList<AnnoCFG> configs = new ArrayList<>();
 	
-	protected interface EntryAdder {
-		void add(AbstractConfigListEntry<?> entry);
-	}
+	tfc.smallerunits.utils.config.annoconfg.Config internal;
 	
 	public AnnoCFG(Class<?> clazz) {
 		Config configDescriptor = clazz.getAnnotation(Config.class);
 		
 		String translationRoot = configDescriptor.path().replace("/", "_") + configDescriptor.namespace() + ":" + configDescriptor.type().name().toLowerCase();
 		
-		ConfigBuilder builder = ConfigBuilder.create()
-				.setTitle(new TranslatableComponent(translationRoot));
-		builder.setSavingRunnable(this::onConfigChange);
+		CfgBuilder builder = CfgBuilder.automatic(translationRoot);
+		builder.setSaveFunction(this::onConfigChange);
 		
-		ConfigCategory category = builder.getOrCreateCategory(new TranslatableComponent(translationRoot));
-		setup(translationRoot, "", builder, category::addEntry, clazz);
+		CategoryBuilder category = builder.rootCategory();
+		setup(translationRoot, "", builder, category, clazz);
 		configs.add(this);
+		internal = builder.build();
 		
 		String pth = configDescriptor.path();
 		if (!pth.isEmpty()) pth = pth + "/";
 		switch (configDescriptor.type()) {
-			case SERVER -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_server.toml");
-			case CLIENT -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_client.toml");
-			case COMMON -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_common.toml");
+			case SERVER -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_server.json");
+			case CLIENT -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_client.json");
+			case COMMON -> create(configDescriptor.type(), pth + configDescriptor.namespace() + "_common.json");
 			default -> throw new RuntimeException("wat");
 		}
-		
-		cfgScreen = (parent) -> {
-			builder.setParentScreen(parent);
-			builder.setEditable(true);
-			return builder.build();
-		};
-		builder.build();
 	}
 	
-	public void setup(String translationRoot, String dir, ConfigBuilder builder, EntryAdder category, Class<?> clazz) {
+	public void setup(String translationRoot, String dir, CfgBuilder builder, CategoryBuilder category, Class<?> clazz) {
 		if (dir.startsWith(".")) dir = dir.substring(1);
-		
-		ConfigEntryBuilder builder1 = builder.entryBuilder();
 		
 		for (Field field : clazz.getFields()) {
 			if (field.canAccess(null)) {
@@ -98,27 +77,9 @@ public class AnnoCFG {
 							int min = range.minV();
 							int max = range.maxV();
 							
-							IntFieldBuilder fieldBuilder = builder1.startIntField(new TranslatableComponent(translationName), v);
-							fieldBuilder.setMin(min);
-							fieldBuilder.setDefaultValue(v);
-							fieldBuilder.setMax(max);
-							fieldBuilder.setSaveConsumer((i) -> {
-							});
-							
-							IntegerListEntry entry = fieldBuilder.build();
-							entry.setEditable(true);
-							category.add(entry);
-							value = entry::getValue;
+							value = category.intRange(translationName, min, v, max);
 						} else {
-							IntFieldBuilder fieldBuilder = builder1.startIntField(new TranslatableComponent(translationName), v);
-							fieldBuilder.setDefaultValue(v);
-							fieldBuilder.setSaveConsumer((i) -> {
-							});
-							
-							IntegerListEntry entry = fieldBuilder.build();
-							entry.setEditable(true);
-							category.add(entry);
-							value = entry::getValue;
+							value = category.intValue(translationName, v);
 						}
 					}
 					case LONG -> {
@@ -128,27 +89,9 @@ public class AnnoCFG {
 							long min = range.minV();
 							long max = range.maxV();
 							
-							LongFieldBuilder fieldBuilder = builder1.startLongField(new TranslatableComponent(translationName), v);
-							fieldBuilder.setMin(min);
-							fieldBuilder.setDefaultValue(v);
-							fieldBuilder.setMax(max);
-							fieldBuilder.setSaveConsumer((i) -> {
-							});
-							
-							LongListEntry entry = fieldBuilder.build();
-							entry.setEditable(true);
-							category.add(entry);
-							value = entry::getValue;
+							value = category.longRange(translationName, min, v, max);
 						} else {
-							LongFieldBuilder fieldBuilder = builder1.startLongField(new TranslatableComponent(translationName), v);
-							fieldBuilder.setDefaultValue(v);
-							fieldBuilder.setSaveConsumer((i) -> {
-							});
-							
-							LongListEntry entry = fieldBuilder.build();
-							entry.setEditable(true);
-							category.add(entry);
-							value = entry::getValue;
+							value = category.longValue(translationName, v);
 						}
 					}
 					case DOUBLE -> {
@@ -158,43 +101,15 @@ public class AnnoCFG {
 							double min = range.minV();
 							double max = range.maxV();
 							
-							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(new TranslatableComponent(translationName), v);
-							fieldBuilder.setMin(min);
-							fieldBuilder.setDefaultValue(v);
-							fieldBuilder.setMax(max);
-							fieldBuilder.setSaveConsumer((i) -> {
-							});
-							
-							DoubleListEntry entry = fieldBuilder.build();
-							entry.setEditable(true);
-							category.add(entry);
-							value = entry::getValue;
+							value = category.doubleRange(translationName, min, v, max);
 						} else {
-							DoubleFieldBuilder fieldBuilder = builder1.startDoubleField(new TranslatableComponent(translationName), v);
-							fieldBuilder.setDefaultValue(v);
-							fieldBuilder.setSaveConsumer((i) -> {
-							});
-							
-							DoubleListEntry entry = fieldBuilder.build();
-							entry.setEditable(true);
-							category.add(entry);
-							value = entry::getValue;
+							value = category.doubleValue(translationName, v);
 						}
 					}
 					case BOOLEAN -> {
-						BooleanToggleBuilder fieldBuilder = builder1.startBooleanToggle(new TranslatableComponent(translationName), defaultValue.valueBoolean());
-						fieldBuilder.setDefaultValue(defaultValue.valueBoolean());
-						fieldBuilder.setSaveConsumer((i) -> {
-						});
-						
-						BooleanListEntry entry = fieldBuilder.build();
-						entry.setEditable(true);
-						category.add(entry);
-						value = entry::getValue;
+						value = category.boolValue(translationName, defaultValue.valueBoolean());
 					}
-					default -> {
-						throw new RuntimeException("Invalid config entry (type: " + EnumType.forClass(clazz) + "): " + nameStr + " in " + clazz.getName());
-					}
+					default -> throw new RuntimeException("Invalid config entry (type: " + EnumType.forClass(clazz) + "): " + nameStr + " in " + clazz.getName());
 				}
 				
 				Object o = null;
@@ -226,11 +141,9 @@ public class AnnoCFG {
 			String translationName = translationRoot + "/" + dir.replace(".", "/") + "/" + name.toLowerCase();
 			translationName = translationName.replace("//", "/");
 			
-			SubCategoryBuilder builder2 = builder1.startSubCategory(new TranslatableComponent(translationName));
-			setup(translationRoot, dir + "." + name, builder, builder2::add, nestMember);
-			AbstractConfigListEntry<?> entry = builder2.build();
-			entry.setEditable(true);
-			category.add(entry);
+			CategoryBuilder builder2 = category.subcategory(translationName);
+			setup(translationRoot, dir + "." + name, builder, builder2, nestMember);
+			category.finish(builder2);
 		}
 	}
 	
@@ -242,9 +155,10 @@ public class AnnoCFG {
 	}
 	
 	public void create(ConfigSide type, String file) {
-	}
-	
-	public Screen getScreen(Screen screen) {
-		return cfgScreen.apply(screen);
+		File fl = new File(FabricLoader.getInstance().getConfigDir() + "/" + file);
+		if (fl.exists()) internal.read(fl);
+		else internal.write(fl);
+		
+		onConfigChange();
 	}
 }

@@ -24,10 +24,6 @@ public class ServerConfig {
 		return v;
 	}
 	
-	public static Screen getScreen(Screen screen) {
-		return CFG.getScreen(screen);
-	}
-	
 	@Comment({
 			"Restrictions on Units Per Block",
 			"Serverside, this has relatively little impact",
