@@ -18,7 +18,7 @@ pluginManagement {
     }
 
     plugins {
-        id("xyz.deftu.gradle.multiversion-root") version("1.11.0")
+        id("xyz.deftu.gradle.multiversion-root") version("1.12.4")
     }
 }
 
@@ -31,7 +31,4 @@ Arrays.asList(
     ProjectDescriptor it = project(":$version")
     it.projectDir = file("versions/$version")
     it.buildFileName = "../../version.gradle"
-    it.properties.put("game_version", version)
-    it.properties.put("isForge", version.endsWith("forge"))
-    it.properties.put("isFabric", version.endsWith("fabric"))
 })
