@@ -7,7 +7,6 @@ deps:
   -(imm_ptl_core): com.github.iPortalTeam.ImmersivePortalsMod v2.4.8-mc1.19.3
   -(q_misc_util): com.github.iPortalTeam.ImmersivePortalsMod v2.4.8-mc1.19.3
   # config
-  -cloth-config-fabric: me.shedaniel.cloth 8.2.88
   -basic-math: me.shedaniel.cloth 0.6.1
   # pehkui
   -KanosConfig: com.github.Virtuoel 0.4.0

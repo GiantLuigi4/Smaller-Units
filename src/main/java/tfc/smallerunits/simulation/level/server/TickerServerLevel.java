@@ -19,7 +19,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -29,7 +28,6 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.TickingBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
@@ -40,7 +38,6 @@ import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
-import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
@@ -225,6 +222,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
+	// TODO: look into correcting this?
 	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
@@ -465,25 +463,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		return null;
 	}
-
-//	@Override
-//	public void removeEntityComplete(Entity p_8865_, boolean keepData) {
-//		if (p_8865_ == null) {
-//			Loggers.WORLD_LOGGER.warn("Removing a null entity, this should not happen");
-//			return;
-//			// TODO: log stacktrace
-//		}
-//		if (entities.contains(p_8865_)) entities.remove(p_8865_);
-//		if (!entitiesRemoved.contains(p_8865_)) entitiesRemoved.add(p_8865_);
-//		super.removeEntityComplete(p_8865_, keepData);
-//	}
-//
-//	@Override
-//	public void removeEntity(Entity p_8868_, boolean keepData) {
-//		if (entities.contains(p_8868_)) entities.remove(p_8868_);
-//		if (!entitiesRemoved.contains(p_8868_)) entitiesRemoved.add(p_8868_);
-//		super.removeEntity(p_8868_, keepData);
-//	}
 	
 	@Override
 	public LevelEntityGetter<Entity> getEntities() {
@@ -1015,11 +994,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		resetEmptyTime();
 		super.tick(pHasTimeLeft);
 		getChunkSource().pollTask();
-		
-		for (Entity entity : entitiesRemoved) {
-			entities.remove(entity);
-		}
-		entitiesRemoved.clear();
 		
 		// TODO: optimize this
 		HashMap<ServerPlayer, PositionalInfo> infoMap = new HashMap<>();

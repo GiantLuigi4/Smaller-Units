@@ -157,6 +157,8 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		this.upb = upb;
 		this.isClientSide = true;
 		
+		this.blockStatePredictionHandler = new BigWorldPredictionHandler();
+		
 		particleEngine.setLevel(this);
 		
 		
@@ -823,11 +825,6 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	@Override
 	public String toString() {
 		return "TickerClientLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
-	}
-	
-	@Override
-	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
-		return super.setBlock(pPos, pState, pFlags, pRecursionLeft);
 	}
 	
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {

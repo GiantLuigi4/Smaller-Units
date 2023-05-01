@@ -2,10 +2,12 @@ package tfc.smallerunits.mixin.quality.fabric;
 
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -37,5 +39,16 @@ public class ReachEntityAttributesMixin {
 				}
 			}
 		}
+	}
+	
+	/**
+	 * original code does not do what I need it to do
+	 * so at least until this gets brought into entity reach attributes, it's staying this way
+	 *
+	 * @author
+	 */
+	@Overwrite
+	public static double getReachDistance(LivingEntity par1, double par2) { /* compiled code */
+		return PlatformUtils.getReach(par1, par2);
 	}
 }

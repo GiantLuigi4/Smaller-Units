@@ -21,6 +21,7 @@ import tfc.smallerunits.simulation.level.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.platform.PlatformUtils;
+import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -49,6 +50,7 @@ public class Region {
 	public TickerServerLevel getServerWorld(MinecraftServer srv, ServerLevel parent, int upb) {
 		if (levels[upb] == null) {
 			try {
+				ThreadLocals.levelLocal.set(parent);
 				levels[upb] = new TickerServerLevel(
 						srv,
 						// TODO: wrap level data
@@ -91,6 +93,7 @@ public class Region {
 //		if (!(parent instanceof ClientLevel)) return null;
 		if (levels[upb] == null) {
 			try {
+				ThreadLocals.levelLocal.set(parent);
 				levels[upb] = new FakeClientLevel(
 						(ClientLevel) parent,
 						null, ((ClientLevel) parent).getLevelData(),

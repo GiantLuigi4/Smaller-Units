@@ -48,8 +48,7 @@ public class PlatformUtils {
 		return Registry.BLOCK_ENTITY_TYPE.getKey(be.getType());
 	}
 	
-	public static double getReach(LivingEntity entity) {
-		double reach = 7;
+	public static double getReach(LivingEntity entity, double reach) {
 		AttributeInstance instance = entity.getAttribute(ReachEntityAttributes.REACH);
 		if (instance == null) return reach;
 		AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
@@ -71,6 +70,10 @@ public class PlatformUtils {
 			reach *= modifier.getAmount();
 		
 		return reach;
+	}
+	
+	public static double getReach(LivingEntity entity) {
+		return getReach(entity, 7);
 	}
 	
 	public static boolean shouldCaptureBlockSnapshots(Level level) {

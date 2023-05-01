@@ -22,7 +22,6 @@ import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.client.abstraction.IFrustum;
-import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.SUTesselator;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
@@ -30,7 +29,6 @@ import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.FakeClientLevel;
 import tfc.smallerunits.utils.platform.PlatformUtils;
-import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
@@ -76,8 +74,6 @@ public class TileRendererHelper {
 	
 	//	public static void drawUnit(UnitSpace unit, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
 	public static void drawUnit(IFrustum frustum, BlockPos pos, int upb, boolean natural, boolean forceIndicators, boolean isEmpty, VertexConsumer consumer, PoseStack stk, int light, int ox, int oy, int oz) {
-//		if (true) return;
-		
 		float r = 1;
 		float g = 1;
 		float b = 0;
@@ -94,13 +90,13 @@ public class TileRendererHelper {
 			return;
 		}
 		
+		if (lastScale == -1)
+			GameRenderer.getPositionColorShader().apply();
+		
 		if (consumer == null) {
 			if (buffers[upb - 1] != null) {
 				if (lastScale != upb) {
-					((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
 					buffers[upb - 1].bind();
-					DefaultVertexFormat.POSITION_COLOR.setupBufferState();
-					GameRenderer.getPositionColorShader().apply();
 					lastScale = upb;
 				}
 				
@@ -120,14 +116,11 @@ public class TileRendererHelper {
 					instance.MODEL_VIEW_MATRIX.set(stk.last().pose());
 					instance.MODEL_VIEW_MATRIX.upload();
 				}
+				
 				buffers[upb - 1].draw();
 				
 				stk.popPose();
-
-//				if (buffers[upb - 1] != null) {
-//					buffers[upb - 1].close();
-//					buffers[upb - 1] = null;
-//				}
+				
 				return;
 			}
 		}

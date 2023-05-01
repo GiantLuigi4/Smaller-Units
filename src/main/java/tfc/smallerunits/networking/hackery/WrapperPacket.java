@@ -155,7 +155,15 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 	
 	
 	protected void ipHandle(NetCtx ctx, BlockableEventLoop<?> pExecutor, Player player) {
-		ResourceKey<Level> lvl = PacketRedirectionClient.clientTaskRedirection.get();
+		ResourceKey<Level> lvl;
+		
+		{
+			ResourceKey<Level> lvl1 = null;
+			if (PlatformUtils.isClient())
+				lvl1 = PacketRedirectionClient.clientTaskRedirection.get();
+			lvl = lvl1;
+		}
+		
 		if (!pExecutor.isSameThread()) {
 			pExecutor.executeIfPossible(() -> {
 				if (player == null) {
