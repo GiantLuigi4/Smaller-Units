@@ -100,7 +100,7 @@ public abstract class EntityMixin {
 	}
 	
 	// TODO
-	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing", cancellable = true)
+	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing(Lnet/minecraft/tags/TagKey;D)Z", cancellable = true)
 	public void postCheckInFluid(TagKey<Fluid> fluids, double something, CallbackInfoReturnable<Boolean> cir) {
 		boolean wasInFluid = cir.getReturnValueZ();
 		final boolean[] inFluid = {wasInFluid};

@@ -1,0 +1,321 @@
+plugins {
+    id("java")
+    id("xyz.deftu.gradle.multiversion")
+    id("xyz.deftu.gradle.tools")
+    id("xyz.deftu.gradle.tools.blossom")
+    id("xyz.deftu.gradle.tools.minecraft.loom")
+    id("xyz.deftu.gradle.tools.minecraft.releases")
+    id("xyz.deftu.gradle.tools.shadow")
+    id("io.github.juuxel.loom-quiltflower") version "1.8.0"
+}
+
+class Vars {
+    static CSV defaultRun
+    static Yaml project
+}
+
+final String loader = mcData.loader.theName
+final boolean isForge = loader.equals("forge")
+final boolean isFabric = loader.equals("fabric")
+
+final String yamdle_path = "../../yamdle/" + (isForge ? "forge" : (isFabric ? "fabric" : "quilt"))
+
+void init() {
+    String path = "../../yamdle"
+
+    FileInputStream stream = new FileInputStream(project.file("$path/runs/all.csv"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+    Vars.defaultRun = new CSV(new String(data))
+
+    stream = new FileInputStream(project.file("$path/project.yaml"))
+    data = stream.readAllBytes()
+    stream.close()
+    Vars.project = new Yaml(new String(data))
+}
+
+init()
+Yaml proj = Vars.project.getYaml("project")
+String fabricVersion = proj.getText("fabricVersion")
+
+String gameVersion = proj.getText("gameVersion")
+String parchmentVer = proj.getText("parchmentVersion")
+properties.put("version", "2.1.1+$gameVersion")
+
+String parchmentVersion = "$gameVersion:$parchmentVer"
+
+repositories {
+    FileInputStream stream = new FileInputStream(project.file("$yamdle_path/repositories.yaml"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+
+    // TODO: update this
+    String text = new String(data)
+
+    String parsing = ""
+    for (String s : text.split("\n")) {
+        if (s.trim().isEmpty()) continue
+        if (s.trim().charAt(0) == '#'.charAt(0)) continue
+
+        String[] split = s.split(":", 2)
+        if (split[0] == "flatdir") {
+            flatDir {
+                dirs split[1].trim()
+            }
+            continue
+        }
+
+        if (split[0].charAt(0) > ' '.charAt(0)) {
+            parsing = split[0]
+        } else {
+            split[0] = split[0].trim()
+            split[1] = split[1].trim().replace("\"", "")
+
+            if (parsing == "maven") {
+                maven {
+                    name = split[0]
+                    url = split[1]
+                }
+            }
+        }
+    }
+}
+
+static String transformLine(String template, String name, String right) {
+    String t = template.replace('$l', name)
+    String[] split = right.split(" ")
+    for (int i = 0; i < split.length; i++)
+        t = t.replace((String) ('$r' + i), split[i])
+    return t.replace('"', "")
+}
+
+void apply(boolean isFabric, boolean isJiJ, boolean isDeobf, boolean isCompileOnly, String dep, DependencyHandler handler) {
+    Object o = null
+    if (isDeobf) {
+        if (isFabric) {
+            if (isCompileOnly) o = handler.modCompileOnly(dep) {
+                if (!dep.startsWith("net.fabricmc.fabric-api:fabric-api")) {
+                    exclude(group: "net.fabricmc.fabric-api")
+                    transitive(false)
+                }
+            } else o = handler.modImplementation(dep) {
+                if (!dep.startsWith("net.fabricmc.fabric-api:fabric-api")) {
+                    exclude(group: "net.fabricmc.fabric-api")
+                    transitive(false)
+                }
+            }
+        } else {
+            if (isCompileOnly) o = handler.compileOnly (dep)
+            else o = handler.implementation (dep)
+        }
+    } else {
+        if (isCompileOnly) o = handler.compileOnly dep
+        else o = handler.implementation dep
+    }
+
+    if (isJiJ) handler.include o
+}
+
+dependencies {
+    mappings(loom.layered {
+        officialMojangMappings()
+        parchment("org.parchmentmc.data:parchment-$parchmentVersion@zip")
+    })
+
+    if (isFabric) {
+        modImplementation("net.fabricmc:fabric-loader:$fabricVersion")
+    }
+
+    FileInputStream stream = new FileInputStream(project.file("$yamdle_path/dependencies.yaml"))
+    byte[] data = stream.readAllBytes()
+    stream.close()
+    Yaml deps = new Yaml(new String(data))
+
+    ArrayList<Object[]> libraryLines = new ArrayList<>();
+
+//    HashMap<String, ArrayList<String>> sections = new HashMap<>()
+
+    for (String s : deps.keys()) {
+        Yaml entry = deps.getYaml(s)
+
+        boolean isDeobf = Boolean.parseBoolean(entry.getText("deobf"))
+        String template = entry.getText("template")
+
+        stream = new FileInputStream(project.file("$yamdle_path/" + entry.getText("file").replace('"', "")))
+        data = stream.readAllBytes()
+        stream.close()
+        Yaml fl = new Yaml(new String(data))
+
+        for (String key : fl.keys()) {
+            System.out.println((String) ("| " + key))
+
+            Yaml depYaml = fl.getYaml(key)
+            for (String name : depYaml.keys()) {
+                if (name.startsWith("-")) {
+                    libraryLines.add(new Object[]{depYaml, template, name, Boolean.valueOf(isDeobf)})
+                    continue
+                }
+
+                String trueName = name
+                boolean isJiJ = trueName.startsWith("+")
+                if (isJiJ) trueName = trueName.substring(1)
+                boolean isCompileOnly = trueName.charAt(0) == '('.charAt(0) && trueName.charAt(trueName.length() - 1) == ')'.charAt(0)
+                if (isCompileOnly) trueName = trueName.substring(1, trueName.length() - 1)
+
+                String dep = transformLine(template, trueName, depYaml.getText(name))
+                System.out.println((String) ("|-| " + dep))
+                apply(isFabric, isJiJ, isDeobf, isCompileOnly, dep, it)
+            }
+        }
+    }
+
+    System.out.println(": Libraries")
+    for (Object[] line : libraryLines) {
+        Yaml depYaml = (Yaml) line[0]
+        String template = (String) line[1]
+        String name = ((String) line[2])
+        boolean isDeobf = ((Boolean) line[3])
+
+        String trueName = name
+        if (trueName.startsWith("-")) trueName = trueName.substring(1)
+
+        boolean isJiJ = trueName.startsWith("+")
+        if (isJiJ) trueName = trueName.substring(1)
+        boolean isCompileOnly = trueName.charAt(0) == '('.charAt(0) && trueName.charAt(trueName.length() - 1) == ')'.charAt(0)
+        if (isCompileOnly) trueName = trueName.substring(1, trueName.length() - 1)
+
+        String dep = transformLine(template, trueName, depYaml.getText(name))
+        System.out.println((String) (":-| " + dep))
+        apply(isFabric, isJiJ, isDeobf, isCompileOnly, dep, it)
+    }
+
+    if (new File("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar").exists()) {
+        compileOnly files("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar")
+        compileOnly files("of/OptiFine_1.19.2_HD_U_I1-deobf.jar")
+    }
+}
+
+java {
+    archivesBaseName = "smallerunits-$version"
+    withSourcesJar()
+}
+
+loom {
+    if (isForge) {
+        forge {
+            mixinConfig("smallerunits.mixins.json")
+        }
+    }
+
+    accessWidenerPath = file("../../src/main/resources/smallerunits.accesswidener")
+    mixin.defaultRefmapName.set("smallerunits.refmap.json")
+}
+
+System.out.println(properties)
+
+//tasks.processResources {
+//    doLast {
+//        var resources = "$buildDir/resources/main"
+//        if (isForge) {
+//            copy {
+//                from(file("$resources/assets/smallerunits/icon.png"))
+//                into(resources)
+//            }
+//            delete(file("$resources/assets/smallerunits/icon.png"))
+//        } else {
+//            delete(file("$resources/pack.mcmeta"))
+//        }
+//    }
+//}
+
+
+class CSV {
+    public String[][] text
+
+    CSV(String[][] text) {
+        this.text = text
+    }
+
+    CSV(String text) {
+        ArrayList<String[]> lines = new ArrayList<>();
+        for (String s : text.split("\n"))
+            if (!s.isEmpty())
+                lines.add(s.split(","))
+        this.text = lines.toArray(new String[0][])
+    }
+}
+
+abstract class YamlEntry {}
+
+class YamlString extends YamlEntry {
+    String value
+
+    YamlString(String value) {
+        this.value = value
+    }
+
+    @Override
+    String toString() {
+        return value
+    }
+}
+
+class Yaml extends YamlEntry {
+    Map<String, YamlEntry> entries = new HashMap<>()
+
+    Set<String> keys() {
+        return entries.keySet()
+    }
+
+    Yaml getYaml(String key) {
+        try {
+            return (Yaml) entries.get(key)
+        } catch (Throwable err) {
+            System.out.println("Failed to get entry " + key)
+            throw new RuntimeException()
+        }
+    }
+
+    String getText(String key) {
+        return entries.get(key).toString()
+    }
+
+    static int countIndent(String line) {
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) > ' '.charAt(0))
+                return i
+        }
+        return line.length()
+    }
+
+    Yaml(String[] text, int indent, int[] currentLine) {
+        for (int i = currentLine[0]; i < text.length; i++) {
+            if (text[i].trim().isEmpty()) continue
+            if (text[i].trim().charAt(0) == '#'.charAt(0)) continue
+
+            if (countIndent(text[i]) < indent) {
+                currentLine[0] = i
+                return
+            }
+
+            String[] split = text[i].trim().split(":", 2)
+            if (split.length == 1 || split[1].isEmpty()) {
+                i += 1
+                currentLine[0] = i
+                Yaml subYaml = new Yaml(text, countIndent(text[i]), currentLine)
+                i = currentLine[0] - 1
+
+                entries.put(split[0], subYaml)
+            } else {
+                entries.put(split[0], new YamlString(split[1].trim()))
+            }
+
+            currentLine[0] = i
+        }
+        currentLine[0] += 1
+    }
+
+    Yaml(String text) {
+        this(text.split("\n"), 0, new int[]{0})
+    }
+}

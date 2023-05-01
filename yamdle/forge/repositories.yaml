@@ -1,0 +1,6 @@
+flatdir: "libs"
+
+maven:
+  parchment: "https://maven.parchmentmc.org"
+  cursemaven: "https://www.cursemaven.com"
+  jitpack: "https://jitpack.io"

@@ -1,3 +1,5 @@
+import org.gradle.initialization.DefaultProjectDescriptor
+
 pluginManagement {
     repositories {
         maven {
@@ -8,6 +10,28 @@ pluginManagement {
             name = 'Quilt'
             url = 'https://maven.quiltmc.org/repository/release'
         }
+        maven { url = "https://maven.deftu.xyz/releases" }
+        maven { url = "https://maven.architectury.dev/" }
+        maven { url = "https://maven.minecraftforge.net" }
+        maven { url = "https://repo.essential.gg/repository/maven-public" }
         gradlePluginPortal()
     }
+
+    plugins {
+        id("xyz.deftu.gradle.multiversion-root") version("1.11.0")
+    }
 }
+
+String ver = "1.19.2"
+Arrays.asList(
+        "$ver-forge",
+        "$ver-fabric",
+).forEach((version) -> {
+    include(":$version")
+    ProjectDescriptor it = project(":$version")
+    it.projectDir = file("versions/$version")
+    it.buildFileName = "../../version.gradle"
+    it.properties.put("game_version", version)
+    it.properties.put("isForge", version.endsWith("forge"))
+    it.properties.put("isFabric", version.endsWith("fabric"))
+})

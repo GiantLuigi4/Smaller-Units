@@ -57,7 +57,7 @@ public abstract class EntityMixin implements EntityAccessor {
 		this.target = trg;
 	}
 	
-	@Inject(at = @At("HEAD"), method = "changeDimension", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "changeDimension(Lnet/minecraft/server/level/ServerLevel;)Lnet/minecraft/world/entity/Entity;", cancellable = true)
 	public void preFindTeleportTarget(ServerLevel serverLevel, CallbackInfoReturnable<Entity> cir) {
 		if (target != null) {
 			Entity entity = this.getType().create(serverLevel);

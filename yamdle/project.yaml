@@ -3,4 +3,3 @@ project:
   forgeVersion: 43.2.3
   fabricVersion: 0.14.19
   parchmentVersion: 2022.11.27
-  platform: fabric
