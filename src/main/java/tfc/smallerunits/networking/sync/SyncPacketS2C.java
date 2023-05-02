@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.event.TickEvent;
 import tfc.smallerunits.Registry;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.api.PositionUtils;
@@ -75,7 +76,11 @@ public class SyncPacketS2C extends Packet {
 		for (int i = 0; i < count; i++) beData[i] = buf.readNbt();
 	}
 	
-	public static void tick() {
+	public static void tick(
+			//#if FORGE==1
+			TickEvent.ClientTickEvent event
+			//#endif
+	) {
 		ArrayList<Pair<Level, SyncPacketS2C>> toRemove = new ArrayList<>();
 		if (Minecraft.getInstance().screen != null) return;
 		if (Minecraft.getInstance().player == null) return;

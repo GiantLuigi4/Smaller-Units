@@ -1,7 +1,5 @@
 package tfc.smallerunits;
 
-import net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -22,9 +20,18 @@ public class Registry {
 	// TODO: don't register this, maybe?
 	public static final Supplier<UnitEdge> UNIT_EDGE = BLOCK_REGISTER.register("unit_edge", UnitEdge::new);
 	
-	public static final CreativeModeTab tab = FabricItemGroupBuilder.create(new ResourceLocation("smallerunits:inventory_tab")).icon(() -> new ItemStack(SHRINKER.get())).appendItems((list) -> {
-		UNIT_SPACE_ITEM.get().SU$fillItemCategory(null, list);
-		list.add(new ItemStack(SHRINKER.get()));
-		list.add(new ItemStack(GROWER.get()));
-	}).build();
+	//#if FABRIC==1
+	//$$public static final CreativeModeTab tab = net.fabricmc.fabric.api.client.itemgroup.FabricItemGroupBuilder.create(new net.minecraft.resources.ResourceLocation("smallerunits:inventory_tab")).icon(() -> new ItemStack(SHRINKER.get())).appendItems((list) -> {
+	//$$	UNIT_SPACE_ITEM.get().SU$fillItemCategory(null, list);
+	//$$	list.add(new ItemStack(SHRINKER.get()));
+	//$$	list.add(new ItemStack(GROWER.get()));
+	//$$}).build();
+	//#else
+	public static final CreativeModeTab tab = new CreativeModeTab("Smaller Units") {
+		@Override
+		public ItemStack makeIcon() {
+			return new ItemStack(SHRINKER.get());
+		}
+	};
+	//#endif
 }

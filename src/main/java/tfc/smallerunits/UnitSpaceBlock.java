@@ -27,7 +27,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
-import tfc.smallerunits.networking.PacketTarget;
+import tfc.smallerunits.networking.platform.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;

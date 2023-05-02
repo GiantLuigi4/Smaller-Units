@@ -1,6 +1,5 @@
 package tfc.smallerunits.utils.platform.registry;
 
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Registry;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import tfc.smallerunits.utils.asm.MappingInfo;
@@ -11,7 +10,7 @@ import java.util.function.Supplier;
 
 public class RecipeRegister<T extends RecipeSerializer<?>> {
 	String namespace;
-	Remapper remapper = new Remapper(FabricLoader.getInstance().getMappingResolver());
+	Remapper remapper = new Remapper();
 	
 	public RecipeRegister(String namespace) {
 		this.namespace = namespace;

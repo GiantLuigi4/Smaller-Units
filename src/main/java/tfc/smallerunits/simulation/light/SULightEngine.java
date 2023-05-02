@@ -244,4 +244,11 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 	public boolean hasLightWork() {
 		return !positionsToUpdate.isEmpty();
 	}
+	
+	//#if FORGE==1
+	@Override
+	//#endif
+	public int queuedUpdateSize() {
+		return positionsToUpdate.size();
+	}
 }

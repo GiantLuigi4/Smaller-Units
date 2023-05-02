@@ -18,7 +18,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
-import tfc.smallerunits.networking.PacketTarget;
+import tfc.smallerunits.networking.platform.PacketTarget;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.config.ServerConfig;
 

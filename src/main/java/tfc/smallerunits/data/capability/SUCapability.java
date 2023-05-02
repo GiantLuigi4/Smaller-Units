@@ -13,9 +13,9 @@ import tfc.smallerunits.UnitSpace;
 
 public class SUCapability implements ISUCapability,
 		//#if FABRIC==1
-		dev.onyxstudios.cca.api.v3.component.ComponentV3
+		//$$dev.onyxstudios.cca.api.v3.component.ComponentV3
 		//#else
-		//$$net.minecraftforge.common.util.INBTSerializable<CompoundTag>
+		net.minecraftforge.common.util.INBTSerializable<CompoundTag>
 		//#endif
 {
 	Level level;
@@ -32,18 +32,18 @@ public class SUCapability implements ISUCapability,
 	boolean modified = false;
 	
 	//#if FABRIC==1
-	@Override
-	public void readFromNbt(CompoundTag tag) {
-		deserializeNBT(tag);
-	}
-	
-	@Override
-	public void writeToNbt(CompoundTag tag) {
-		CompoundTag nbt = serializeNBT();
-		for (String allKey : nbt.getAllKeys()) {
-			tag.put(allKey, nbt.get(allKey));
-		}
-	}
+	//$$@Override
+	//$$public void readFromNbt(CompoundTag tag) {
+	//$$	deserializeNBT(tag);
+	//$$}
+	//$$
+	//$$@Override
+	//$$public void writeToNbt(CompoundTag tag) {
+	//$$	CompoundTag nbt = serializeNBT();
+	//$$	for (String allKey : nbt.getAllKeys()) {
+	//$$		tag.put(allKey, nbt.get(allKey));
+	//$$	}
+	//$$}
 	//#endif
 	
 	@Override

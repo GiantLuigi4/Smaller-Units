@@ -1,7 +1,5 @@
 package tfc.smallerunits.mixin.core;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import net.minecraft.network.Connection;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.PacketSendListener;
@@ -17,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
-import tfc.smallerunits.networking.PacketTarget;
+import tfc.smallerunits.networking.platform.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
 import tfc.smallerunits.utils.asm.IPCompat;

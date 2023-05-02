@@ -205,10 +205,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
 		//#if FABRIC==1
-		net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.LOAD.invoker().onWorldLoad(this.getServer(), this);
+		//$$net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.LOAD.invoker().onWorldLoad(this.getServer(), this);
 		//#else
-		//$$net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
-		//$$		new net.minecraftforge.event.level.LevelEvent.Unload(this));
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+				new net.minecraftforge.event.level.LevelEvent.Unload(this));
 		//#endif
 	}
 	
@@ -1177,6 +1177,6 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	//#if FORGE==1
-	//$$public net.minecraftforge.common.capabilities.CapabilityDispatcher getCaps() { return getCapabilities(); }
+	public net.minecraftforge.common.capabilities.CapabilityDispatcher getCaps() { return getCapabilities(); }
 	//#endif
 }

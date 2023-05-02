@@ -19,7 +19,7 @@
       "tfc.smallerunits.SmallerUnits"
     ],
     "cardinal-components": [
-      "tfc.smallerunits.data.capability.ComponentRegistry"
+      "tfc.smallerunits.data.capability.AttachmentRegistry"
     ],
     "modmenu": [
       "tfc.smallerunits.utils.config.fabric.ConfigMenu"

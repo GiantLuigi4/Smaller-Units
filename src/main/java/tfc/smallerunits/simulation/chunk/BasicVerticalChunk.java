@@ -35,7 +35,7 @@ import tfc.smallerunits.data.access.ChunkAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.logging.Loggers;
-import tfc.smallerunits.networking.PacketTarget;
+import tfc.smallerunits.networking.platform.PacketTarget;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;

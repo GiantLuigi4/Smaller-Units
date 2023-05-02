@@ -12,7 +12,7 @@ import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.tracking.ICanUseUnits;
-import tfc.smallerunits.networking.PacketTarget;
+import tfc.smallerunits.networking.platform.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketC2S;

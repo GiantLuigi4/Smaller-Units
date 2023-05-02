@@ -1,13 +1,9 @@
 package tfc.smallerunits.utils.asm;
 
-import net.fabricmc.loader.api.FabricLoader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,7 +15,11 @@ public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
 	
-	public static final boolean isFabric;
+	//#if FABRIC==1
+	//$$public static final boolean isFabric = true;
+	//#else
+	public static final boolean isFabric = false;
+	//#endif
 	
 	static {
 		pkgLookup.add("tfc.smallerunits.mixin.compat.");
@@ -29,22 +29,6 @@ public class MixinConnector implements IMixinConfigPlugin {
 			ArrayList<String> incompat = new ArrayList<>();
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
-		}
-		
-		{
-			boolean fabric = true;
-			
-			ClassLoader loader = MixinConnector.class.getClassLoader();
-			InputStream stream = loader.getResourceAsStream("net/minecraftforge/fml/loading/FMLEnvironment.class");
-			if (stream != null) {
-				try {
-					stream.close();
-				} catch (Throwable ignored) {
-				}
-				fabric = false;
-			}
-			
-			isFabric = fabric;
 		}
 	}
 	
@@ -66,9 +50,8 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		if (mixinClassName.contains(".fabric.")) {
-			return isFabric;
-		}
+		if (mixinClassName.contains(".fabric.")) return isFabric;
+		
 		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -111,45 +94,47 @@ public class MixinConnector implements IMixinConfigPlugin {
 		return null;
 	}
 	
+	//#if FABRIC==1
+	//$$private static final String updateChunkDesc = "(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;";
+	//$$private static final MappingInfo renderChunkLayer = new MappingInfo(
+	//$$		"net/minecraft/class_761",
+	//$$		"method_3251",
+	//$$		"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLnet/minecraft/class_1159;)V"
+	//$$);
+	//$$private static final String getCompiledChunkOwner = "net/minecraft/class_846$class_851";
+	//$$private static final MappingInfo getCompiledChunk = new MappingInfo(
+	//$$		getCompiledChunkOwner,
+	//$$		"method_3677",
+	//$$		"()Lnet/minecraft/class_846$class_849;"
+	//$$);
+	//#else
+	private static final String updateChunkDesc = "(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;";
+	private static final MappingInfo renderChunkLayer = new MappingInfo(
+			"net/minecraft/client/renderer/LevelRenderer",
+			"m_172993_",
+			"(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"
+	);
+	private static final String getCompiledChunkOwner = "net/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk";
+	private static final MappingInfo getCompiledChunk = new MappingInfo(
+			getCompiledChunkOwner,
+			"m_112835_",
+			"()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"
+	);
+	//#endif
+	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-//		if (
-//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-//		) {
-//			try {
-//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
-//				ClassWriter writer = new ClassWriter(0);
-//				targetClass.accept(writer);
-//				outputStream.write(writer.toByteArray());
-//				outputStream.flush();
-//				outputStream.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
-		
-		Remapper remapper = new Remapper(FabricLoader.getInstance().getMappingResolver());
+		Remapper remapper = new Remapper();
 		
 		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
 			// renderChunkLayer
-			String target = remapper.mapMethod(new MappingInfo(
-					"net/minecraft/class_761",
-					"method_3251",
-					"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLnet/minecraft/class_1159;)V"
-			));
+			String target = remapper.mapMethod(renderChunkLayer);
 			String desc = "(" + target.split("\\(")[1];
 			target = target.split("\\(")[0];
 			
 			// getCompiledChunk
-			String refOwner = "net/minecraft/class_846$class_851";
-			String ref = remapper.mapMethod(new MappingInfo(
-					refOwner,
-					"method_3677",
-					"()Lnet/minecraft/class_846$class_849;"
-			));
-			refOwner = remapper.mapClass(refOwner);
+			String ref = remapper.mapMethod(getCompiledChunk);
+			String refOwner = remapper.mapClass(getCompiledChunkOwner);
 			String refDesc = "(" + ref.split("\\(")[1];
 			ref = ref.split("\\(")[0];
 			
@@ -169,8 +154,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 						list.add(
 								remapper.buildMethodCall(
 										"tfc/smallerunits/utils/IHateTheDistCleaner",
-										"updateRenderChunk",
-										"(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;"
+										"updateRenderChunk", updateChunkDesc
 								)
 						);
 						method.instructions.insertBefore(targetNode, list);
@@ -182,21 +166,5 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-//		if (
-//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.core.PacketUtilsMixin") ||
-//						mixinClassName.equals("tfc.smallerunits.mixin.data.regions.ChunkMapMixin")
-//		) {
-//			try {
-//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
-//				ClassWriter writer = new ClassWriter(0);
-//				targetClass.accept(writer);
-//				outputStream.write(writer.toByteArray());
-//				outputStream.flush();
-//				outputStream.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
 	}
 }

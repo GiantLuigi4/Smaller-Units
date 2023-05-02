@@ -1,7 +1,5 @@
 package tfc.smallerunits.networking.platform;
 
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
@@ -31,10 +29,7 @@ public class NetCtx {
 	}
 	
 	public void respond(Packet packet) {
-		FriendlyByteBuf buf = PacketByteBufs.create();
-		buf.writeInt(SUNetworkRegistry.NETWORK_INSTANCE.getId(packet));
-		packet.write(buf);
-		responseSender.sendPacket(SUNetworkRegistry.NAME, buf);
+		responseSender.send(packet);
 	}
 	
 	public PacketListener getHandler() {

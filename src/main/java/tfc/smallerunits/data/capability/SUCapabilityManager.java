@@ -7,7 +7,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.FastCapabilityHandler;
-import tfc.smallerunits.networking.PacketTarget;
+import tfc.smallerunits.networking.platform.PacketTarget;
 
 // so I mostly just abandoned any documentation that I was given and write this
 // CCA's readme is actually extremely good
@@ -49,9 +49,9 @@ public class SUCapabilityManager {
 	
 	private static ISUCapability getCap(LevelChunk chunk) {
 		//#if FABRIC==1
-		return ((dev.onyxstudios.cca.api.v3.component.ComponentProvider) chunk).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
+		//$$return ((dev.onyxstudios.cca.api.v3.component.ComponentProvider) chunk).getComponent(AttachmentRegistry.SU_CAPABILITY_COMPONENT_KEY);
 		//#else
-		//$$return (ISUCapability) chunk.getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null);
+		return chunk.getCapability(AttachmentRegistry.SU_CAPABILITY_TOKEN).orElse(null);
 		//#endif
 	}
 	

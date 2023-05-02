@@ -1,13 +1,10 @@
 package tfc.smallerunits.networking;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
 import tfc.smallerunits.networking.hackery.WrapperPacket;
-import tfc.smallerunits.networking.platform.NetworkDirection;
 import tfc.smallerunits.networking.platform.PacketRegister;
+import tfc.smallerunits.networking.platform.PacketTarget;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketC2S;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
@@ -18,12 +15,11 @@ public class SUNetworkRegistry {
 	public static final String networkingVersion = "1.0.0";
 	protected static String serverVersion = "";
 	public static final ResourceLocation NAME = new ResourceLocation("smallerunits:main");
-	//	public static final PacketRegister NETWORK_INSTANCE = PacketRegister.setup(
-//			() -> networkingVersion,
-//			(s) -> compareVersionsClient(networkingVersion, s),
-//			(s) -> compareVersionsServer(networkingVersion, s)
-//	);
-	public static final PacketRegister NETWORK_INSTANCE = new PacketRegister(NAME);
+	public static final PacketRegister NETWORK_INSTANCE = new PacketRegister(
+			NAME, networkingVersion,
+			(s) -> compareVersionsClient(networkingVersion, s),
+			(s) -> compareVersionsServer(networkingVersion, s)
+	);
 	
 	static {
 		ArrayList<NetworkEntry<?>> entries = new ArrayList<>();

@@ -1,6 +1,6 @@
 package tfc.smallerunits.utils.asm;
 
-import net.fabricmc.loader.api.MappingResolver;
+import net.minecraftforge.coremod.api.ASMAPI;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -10,15 +10,29 @@ import java.util.ArrayList;
 // so ASM is encouraged with fabric, yeah?
 // so why isn't this a thing in FAPI by itself?
 public class Remapper {
-	MappingResolver resolver;
-	
-	public Remapper(MappingResolver resolver) {
-		this.resolver = resolver;
-	}
-	
-	public String mapClass(String clz) {
-		return resolver.mapClassName("intermediary", clz.replace("/", ".")).replace(".", "/");
-	}
+	//@formatter:off
+	//#if FABRIC==1
+	//$$net.fabricmc.loader.api.MappingResolver resolver;
+	//$$public Remapper() { this(net.fabricmc.loader.api.FabricLoader.getInstance().getMappingResolver()); }
+	//$$public Remapper(net.fabricmc.loader.api.MappingResolver resolver) {
+	//$$	this.resolver = resolver;
+	//$$}
+	//$$public String mapClass(String clz) {
+	//$$	return resolver.mapClassName("intermediary", clz.replace("/", ".")).replace(".", "/");
+	//$$}
+	//$$public String mapMethod(MappingInfo info) {
+	//$$	return resolver.mapMethodName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapDesc(info.desc());
+	//$$}
+	//$$public String mapField(MappingInfo info) {
+	//$$	return resolver.mapFieldName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapType(info.desc());
+	//$$}
+	//#else
+	public Remapper() { }
+	public String mapClass(String clz) { return clz; }
+	public String mapMethod(MappingInfo info) { return ASMAPI.mapMethod(info.method()); }
+	public String mapField(MappingInfo info) { return ASMAPI.mapField(info.method()); }
+	//#endif
+	//@formatter:on
 	
 	public String mapType(String desc) {
 		if (desc.startsWith("L")) return "L" + mapClass(desc.substring(1, desc.length() - 1)) + ";";
@@ -51,14 +65,6 @@ public class Remapper {
 		}
 		
 		return mapType(desc);
-	}
-	
-	public String mapMethod(MappingInfo info) {
-		return resolver.mapMethodName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapDesc(info.desc());
-	}
-	
-	public String mapField(MappingInfo info) {
-		return resolver.mapFieldName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapType(info.desc());
 	}
 	
 	public AbstractInsnNode buildMethodCall(String owner, String methodName, String desc) {

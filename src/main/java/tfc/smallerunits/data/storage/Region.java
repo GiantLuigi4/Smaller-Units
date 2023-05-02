@@ -186,11 +186,11 @@ public class Region {
 					}
 					
 					//#if FABRIC==1
-					if (level instanceof ServerLevel serverLevel)
-					net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.UNLOAD.invoker().onWorldUnload(serverLevel.getServer(), serverLevel);
+					//$$if (level instanceof ServerLevel serverLevel)
+					//$$net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.UNLOAD.invoker().onWorldUnload(serverLevel.getServer(), serverLevel);
 					//#else
-					//$$net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
-					//$$		new net.minecraftforge.event.level.LevelEvent.Unload(level));
+					net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+							new net.minecraftforge.event.level.LevelEvent.Unload(level));
 					//#endif
 					level.close();
 				}
