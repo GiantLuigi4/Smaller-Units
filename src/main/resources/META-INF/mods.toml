@@ -1,0 +1,43 @@
+modLoader="javafml"
+loaderVersion="[43,)"
+
+license="MIT"
+# A URL to refer people to when problems occur with this mod
+#issueTrackerURL="http://my.issue.tracker/"
+[[mods]]
+modId="smallerunits"
+version = "${mod_version}"
+displayName = "SmallerUnits"
+
+# A URL to query for updates for this mod. See the JSON update specification <here>
+#updateJSONURL="http://myurl.me/"
+# A URL for the "homepage" for this mod, displayed in the mod UI
+#displayURL="http://example.com/"
+
+logoFile = "su_ico.png"
+logoBlur = false
+credits = '''Moony, for the two hammer textures,
+Lorenzo for Italian translations,
+Space Lover for Russian translations,
+Mohatax for Spanish translations,
+Mysticpasta1 for Porting 1.19.2 and maintaining it
+https://advancements.thedestruc7i0n.ca/ for advancments generator'''
+
+authors = "GiantLuigi4"
+description = '''
+A mod about bending space to make blocks smaller
+'''
+
+[[dependencies.smallerunits]]
+   modId="forge"
+   mandatory=true
+   versionRange="[43,)"
+   ordering="NONE"
+   side="BOTH"
+
+[[dependencies.smallerunits]]
+   modId="minecraft"
+   mandatory=true
+   versionRange="[1.19.2,1.19.4)"
+   ordering="NONE"
+   side="BOTH"
