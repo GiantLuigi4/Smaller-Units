@@ -1,6 +1,5 @@
 package tfc.smallerunits.mixin.compat.lithium;
 
-import me.jellysquid.mods.lithium.common.entity.movement.ChunkAwareBlockCollisionSweeper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.CollisionGetter;
 import net.minecraft.world.phys.AABB;
@@ -15,7 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 // TODO
-@Mixin(value = ChunkAwareBlockCollisionSweeper.class, remap = false)
+//#if FABRIC
+//@Mixin(value = me.jellysquid.mods.lithium.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
+//#else
+@Mixin(value = com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
+//#endif
 public class CollisionSweeperMixin {
 	@Shadow
 	@Final

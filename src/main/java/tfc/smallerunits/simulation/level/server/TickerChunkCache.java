@@ -2,7 +2,6 @@ package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.DataFixer;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashBigSet;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.minecraft.core.*;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundAnimatePacket;
@@ -40,6 +39,8 @@ import java.lang.ref.WeakReference;
 import java.util.concurrent.Executor;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+
+;
 
 public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCache {
 	public final BasicVerticalChunk[][] columns;
@@ -262,7 +263,11 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			holders.add(holder);
 		}
 		bvc.holder = holder;
-		ServerChunkEvents.CHUNK_LOAD.invoker().onChunkLoad((ServerLevel) level, bvc);
+		//#if FABRIC
+		//net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents.CHUNK_LOAD.invoker().onChunkLoad((ServerLevel) level, bvc);
+		//#else
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.level.ChunkEvent.Load(bvc));
+		//#endif
 		
 		return bvc;
 	}

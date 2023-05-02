@@ -2,7 +2,10 @@ plugins {
     id("java")
     id("xyz.deftu.gradle.multiversion")
     id("xyz.deftu.gradle.tools")
+    id("xyz.deftu.gradle.tools.blossom")
     id("xyz.deftu.gradle.tools.minecraft.loom")
+    id("xyz.deftu.gradle.tools.minecraft.releases")
+    id("xyz.deftu.gradle.tools.shadow")
     id("io.github.juuxel.loom-quiltflower") version "1.8.0"
 }
 
@@ -102,8 +105,8 @@ void apply(boolean isFabric, boolean isJiJ, boolean isDeobf, boolean isCompileOn
                 }
             }
         } else {
-            if (isCompileOnly) o = handler.compileOnly (dep)
-            else o = handler.implementation (dep)
+            if (isCompileOnly) o = handler.compileOnly(dep)
+            else o = handler.implementation(dep)
         }
     } else {
         if (isCompileOnly) o = handler.compileOnly dep
@@ -209,6 +212,12 @@ loom {
 }
 
 System.out.println(properties)
+
+tasks.forEach(it -> {
+    if (it.name == "setCoreVersion") {
+        it.group("deftu")
+    }
+})
 
 //tasks.processResources {
 //    doLast {

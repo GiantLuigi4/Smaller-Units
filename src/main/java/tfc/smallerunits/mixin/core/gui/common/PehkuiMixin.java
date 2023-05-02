@@ -13,7 +13,11 @@ import tfc.smallerunits.utils.platform.PlatformUtils;
 import virtuoel.pehkui.util.ScaleUtils;
 
 // TODO: this is temporary
-@Mixin(ScaleUtils.class)
+//#if FABRIC
+//@Mixin(ScaleUtils.class)
+//#else
+@Mixin(value = ScaleUtils.class, remap = false)
+//#endif
 public class PehkuiMixin {
 	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;F)F", cancellable = true)
 	private static void modifyReach(Entity entity, float tickDelta, CallbackInfoReturnable<Float> cir) {

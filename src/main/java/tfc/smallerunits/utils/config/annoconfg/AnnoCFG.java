@@ -1,6 +1,5 @@
 package tfc.smallerunits.utils.config.annoconfg;
 
-import net.fabricmc.loader.api.FabricLoader;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.CFGSegment;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Config;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Name;
@@ -14,7 +13,6 @@ import tfc.smallerunits.utils.config.annoconfg.builder.CfgBuilder;
 import tfc.smallerunits.utils.config.annoconfg.handle.UnsafeHandle;
 import tfc.smallerunits.utils.config.annoconfg.util.EnumType;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -155,10 +153,18 @@ public class AnnoCFG {
 	}
 	
 	public void create(ConfigSide type, String file) {
-		File fl = new File(FabricLoader.getInstance().getConfigDir() + "/" + file);
-		if (fl.exists()) internal.read(fl);
-		else internal.write(fl);
-		
-		onConfigChange();
+		//#if FABRIC
+		//File fl = new File(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir() + "/" + file);
+		//if (fl.exists()) internal.read(fl);
+		//else internal.write(fl);
+		//
+		//onConfigChange();
+		//#else
+		net.minecraftforge.fml.ModLoadingContext.get().registerConfig(switch (type) {
+			case SERVER -> net.minecraftforge.fml.config.ModConfig.Type.SERVER;
+			case COMMON -> net.minecraftforge.fml.config.ModConfig.Type.COMMON;
+			case CLIENT -> net.minecraftforge.fml.config.ModConfig.Type.CLIENT;
+		}, (()internal).getSpec(), file);
+		//#endif
 	}
 }

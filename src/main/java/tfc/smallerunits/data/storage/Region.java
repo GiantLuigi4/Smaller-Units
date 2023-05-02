@@ -1,6 +1,5 @@
 package tfc.smallerunits.data.storage;
 
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -186,8 +185,14 @@ public class Region {
 						((TickerServerLevel) level).saveWorld.saveAllChunks();
 					}
 					
-					if (level instanceof ServerLevel serverLevel)
-						ServerWorldEvents.UNLOAD.invoker().onWorldUnload(serverLevel.getServer(), serverLevel);
+					//#if FABRIC
+					//if (level instanceof ServerLevel serverLevel)
+					//net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.UNLOAD.invoker().onWorldUnload(serverLevel.getServer(), serverLevel);
+					//#else
+					net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+							new net.minecraftforge.event.level.LevelEvent.Unload(level));
+					//#endif
+					level.close();
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

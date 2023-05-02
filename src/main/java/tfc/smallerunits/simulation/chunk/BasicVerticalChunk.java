@@ -277,7 +277,9 @@ public class BasicVerticalChunk extends LevelChunk {
 			BlockEntity blockentity = this.blockEntities.put(blockpos, pBlockEntity);
 			if (blockentity != null && blockentity != pBlockEntity)
 				blockentity.setRemoved();
-			PlatformUtils.beLoaded(pBlockEntity, level);
+			//#if FABRIC
+			//PlatformUtils.beLoaded(pBlockEntity, level);
+			//#endif
 		}
 		
 		if (!level.isClientSide) return;
@@ -321,6 +323,9 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (isLoaded() || level.isClientSide) {
 			super.addAndRegisterBlockEntity(pBlockEntity);
 			this.updateBlockEntityTicker(pBlockEntity);
+			//#if FORGE
+			PlatformUtils.beLoaded(pBlockEntity, level);
+			//#endif
 		}
 	}
 	

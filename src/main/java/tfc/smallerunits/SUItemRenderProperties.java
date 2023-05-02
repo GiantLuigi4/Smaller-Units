@@ -1,17 +1,24 @@
 package tfc.smallerunits;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry;
-import net.fabricmc.fabric.impl.client.rendering.BuiltinItemRendererRegistryImpl;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
-public class SUItemRenderProperties {
+public class SUItemRenderProperties
+		//#if FORGE
+		implements IClientItemExtensions
+		//#endif
+{
 	private static final SUItemRenderer renderer = new SUItemRenderer();
 	
-	public static void init() {
-		// amazingly pointless wrapper class
-		BuiltinItemRendererRegistryImpl.INSTANCE.register(Registry.UNIT_SPACE_ITEM.get(), (stack, mode, matrices, vertexConsumers, light, overlay) -> renderer.renderByItem(stack, mode, matrices, vertexConsumers, light, overlay));
+	//#if FABRIC
+	//public static void init() {
+	//	// amazingly pointless wrapper class
+	//	net.fabricmc.fabric.impl.client.rendering.BuiltinItemRendererRegistryImpl.INSTANCE.register(Registry.UNIT_SPACE_ITEM.get(), (stack, mode, matrices, vertexConsumers, light, overlay) -> renderer.renderByItem(stack, mode, matrices, vertexConsumers, light, overlay));
+	//}
+	//#else
+	@Override
+	public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+		return renderer;
 	}
+	//#endif
 }

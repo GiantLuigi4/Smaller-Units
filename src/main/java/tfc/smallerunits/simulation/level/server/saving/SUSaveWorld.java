@@ -1,7 +1,6 @@
 package tfc.smallerunits.simulation.level.server.saving;
 
 import com.mojang.datafixers.util.Pair;
-import dev.onyxstudios.cca.api.v3.component.ComponentContainer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;

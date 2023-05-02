@@ -18,7 +18,11 @@
     "core.access.ChunkAccessMixin",
     "core.access.ServerPacketListenerMixin",
     "core.gui.common.PehkuiMixin",
-    "core.gui.common.ServerPlayNetworkingMixin",
+    //#if FABRIC
+    //"core.gui.common.ServerPlayNetworkingMixin",
+    //"quality.fabric.ReachEntityAttributesMixin",
+    //"quality.fabric.LivingEntityMixin",
+    //#endif
     "core.gui.server.AbstractContainerMenuMixin",
     "core.gui.server.PlayerMixin",
     "core.gui.server.ServerPlayerMixin",
@@ -40,8 +44,6 @@
     "optimization.VoxelShapeAccessor",
     "quality.EntityMixin",
     "quality.PlayerMixin",
-    "quality.fabric.LivingEntityMixin",
-    "quality.fabric.ReachEntityAttributesMixin",
     "quality.vr.PistonMixin"
   ],
   "client": [
@@ -66,7 +68,9 @@
     "core.gui.client.MouseHandlerMixin",
     "core.gui.client.ScreenMixin",
     "core.gui.client.expansion.DebugScreenOverlayMixin",
-    "core.gui.common.ClientPlayNetworkingMixin",
+    //#if FABRIC
+    //"core.gui.common.ClientPlayNetworkingMixin",
+    //#endif
     "dangit.ClientLevelMixin",
     "data.AbstractClientPlayerMixin",
     "data.CompiledChunkMixin",

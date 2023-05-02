@@ -1,7 +1,6 @@
 package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.util.Pair;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.core.particles.ParticleOptions;
@@ -205,7 +204,12 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
 		
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
-		ServerWorldEvents.LOAD.invoker().onWorldLoad(this.getServer(), this);
+		//#if FABRIC
+		//net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.LOAD.invoker().onWorldLoad(this.getServer(), this);
+		//#else
+		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+				new net.minecraftforge.event.level.LevelEvent.Unload(this));
+		//#endif
 	}
 	
 	@Override
@@ -1171,4 +1175,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public int getMaxBuildHeight() {
 		return upb * 512 + 32;
 	}
+	
+	//#if FORGE
+	public net.minecraftforge.common.capabilities.CapabilityDispatcher getCaps() {
+		return getCapabilities();
+	}
+	//#endif
 }
