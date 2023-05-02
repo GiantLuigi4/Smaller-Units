@@ -266,7 +266,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		//#if FABRIC
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents.CHUNK_LOAD.invoker().onChunkLoad((ServerLevel) level, bvc);
 		//#else
-		//net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.level.ChunkEvent.Load(bvc));
+		//$$net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.level.ChunkEvent.Load(bvc));
 		//#endif
 		
 		return bvc;

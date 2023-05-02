@@ -161,11 +161,7 @@ public class AnnoCFG {
 
 		onConfigChange();
 		//#else
-		//net.minecraftforge.fml.ModLoadingContext.get().registerConfig(switch (type) {
-		//	case SERVER -> net.minecraftforge.fml.config.ModConfig.Type.SERVER;
-		//	case COMMON -> net.minecraftforge.fml.config.ModConfig.Type.COMMON;
-		//	case CLIENT -> net.minecraftforge.fml.config.ModConfig.Type.CLIENT;
-		//}, (()internal).getSpec(), file);
+
 		//#endif
 	}
 }

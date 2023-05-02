@@ -17,10 +17,10 @@ public abstract class FastCapabilityChunkMixin implements FastCapabilityHandler 
 	public ISUCapability getSUCapability() {
 		if (((Object) this) instanceof EmptyLevelChunk) return null;
 		if (capability == null)
-			//#if FABRIC
+			//#if FABRIC==1
 			return capability = ((dev.onyxstudios.cca.api.v3.component.ComponentProvider) this).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
 			//#else
-			//return capability = (ISUCapability) ((LevelChunk) (Object) this).getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null));
+			//$$return capability = (ISUCapability) ((LevelChunk) (Object) this).getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null);
 			//#endif
 		return capability;
 	}

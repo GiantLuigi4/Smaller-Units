@@ -51,7 +51,7 @@ public class SUCapabilityManager {
 		//#if FABRIC==1
 		return ((dev.onyxstudios.cca.api.v3.component.ComponentProvider) chunk).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
 		//#else
-		//return (ISUCapability) chunk.getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null);
+		//$$return (ISUCapability) chunk.getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null);
 		//#endif
 	}
 	

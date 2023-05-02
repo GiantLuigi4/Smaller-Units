@@ -1,4 +1,4 @@
-//#if FABRIC
+//#if FABRIC==1
 package tfc.smallerunits.mixin.quality.fabric;
 
 import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
