@@ -1,6 +1,5 @@
 package tfc.smallerunits.networking.platform;
 
-import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.network.FriendlyByteBuf;
@@ -13,11 +12,16 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-//#if FORGE==1
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
 import tfc.smallerunits.utils.platform.PlatformUtils;
+
+//#if FORGE==1
+//$$import net.minecraftforge.network.NetworkRegistry;
+//$$import net.minecraftforge.network.PacketDistributor;
+//$$import net.minecraftforge.network.simple.SimpleChannel;
+//#else
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import tfc.smallerunits.data.access.PacketListenerAccessor;
 //#endif
 
 public class PacketRegister {
@@ -26,7 +30,7 @@ public class PacketRegister {
 	Object2IntOpenHashMap<Class<? extends Packet>> class2IdMap = new Object2IntOpenHashMap<>();
 	
 	//#if FORGE==1
-	final SimpleChannel NETWORK_INSTANCE;
+	//$$final SimpleChannel NETWORK_INSTANCE;
 	//#endif
 	
 	public PacketRegister(
@@ -38,41 +42,41 @@ public class PacketRegister {
 		this.channel = name;
 		
 		//#if FORGE==1
-		NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
-				new ResourceLocation("smaller_units", "main"),
-				() -> networkVersion,
-				clientChecker, serverChecker
-		);
-		//#else
-		//$$if (PlatformUtils.isClient()) {
-		//$$	ClientPlayNetworking.registerGlobalReceiver(
-		//$$			name,
-		//$$			((client, handler, buf, responseSender) -> {
-		//$$				handlePacket(handler, buf, responseSender, ((PacketListenerAccessor) handler).getPlayer(), NetworkDirection.TO_CLIENT);
-		//$$			})
-		//$$	);
-		//$$}
-		//$$ServerPlayNetworking.registerGlobalReceiver(
-		//$$		name,
-		//$$		((server, player, handler, buf, responseSender) -> {
-		//$$			handlePacket(handler, buf, responseSender, player, NetworkDirection.TO_SERVER);
-		//$$		})
+		//$$NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
+		//$$		new ResourceLocation("smaller_units", "main"),
+		//$$		() -> networkVersion,
+		//$$		clientChecker, serverChecker
 		//$$);
+		//#else
+		if (PlatformUtils.isClient()) {
+			ClientPlayNetworking.registerGlobalReceiver(
+					name,
+					((client, handler, buf, responseSender) -> {
+						handlePacket(handler, buf, new PacketSender(this, (pkt) -> responseSender.sendPacket(name, encode(pkt))), ((PacketListenerAccessor) handler).getPlayer(), NetworkDirection.TO_SERVER);
+					})
+			);
+		}
+		ServerPlayNetworking.registerGlobalReceiver(
+				name,
+				((server, player, handler, buf, responseSender) -> {
+					handlePacket(handler, buf, new PacketSender(this, (pkt) -> responseSender.sendPacket(name, encode(pkt))), player, NetworkDirection.TO_SERVER);
+				})
+		);
 		//#endif
 	}
 	
 	public net.minecraft.network.protocol.Packet<?> toVanillaPacket(Packet wrapperPacket, NetworkDirection toClient) {
 		//#if FORGE==1
-		return switch (toClient) {
-			case TO_CLIENT -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
-			case TO_SERVER -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER);
-		};
-		//#else
-		//$$FriendlyByteBuf buf = encode(wrapperPacket);
 		//$$return switch (toClient) {
-		//$$	case TO_CLIENT -> ServerPlayNetworking.createS2CPacket(channel, buf);
-		//$$	case TO_SERVER -> ClientPlayNetworking.createC2SPacket(channel, buf);
+		//$$	case TO_CLIENT -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+		//$$	case TO_SERVER -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER);
 		//$$};
+		//#else
+		FriendlyByteBuf buf = encode(wrapperPacket);
+		return switch (toClient) {
+			case TO_CLIENT -> ServerPlayNetworking.createS2CPacket(channel, buf);
+			case TO_SERVER -> ClientPlayNetworking.createC2SPacket(channel, buf);
+		};
 		//#endif
 	}
 	
@@ -89,33 +93,33 @@ public class PacketRegister {
 				new PacketEntry<>(clazz, writer, fabricator, handler)
 		);
 		//#if FORGE==1
-		NETWORK_INSTANCE.registerMessage(
-				indx,
-				clazz,
-				writer::accept,
-				fabricator,
-				(pkt, ctx) -> {
-					NetCtx ctx1 = new NetCtx(
-							ctx.get().getNetworkManager().getPacketListener(),
-							new PacketSender(this, (pkt1) -> {
-								if (ctx.get().getDirection().getReceptionSide().isServer()) {
-									NETWORK_INSTANCE.send(
-											PacketDistributor.PLAYER.with(() -> ctx.get().getSender()),
-											pkt1
-									);
-								} else {
-									NETWORK_INSTANCE.sendToServer(pkt1);
-								}
-							}),
-							ctx.get().getSender(),
-							switch (ctx.get().getDirection()) {
-								case PLAY_TO_CLIENT, LOGIN_TO_CLIENT -> NetworkDirection.TO_CLIENT;
-								case PLAY_TO_SERVER, LOGIN_TO_SERVER -> NetworkDirection.TO_SERVER;
-							}
-					);
-					handler.accept(pkt, ctx1);
-				}
-		);
+		//$$NETWORK_INSTANCE.registerMessage(
+		//$$		indx,
+		//$$		clazz,
+		//$$		writer::accept,
+		//$$		fabricator,
+		//$$		(pkt, ctx) -> {
+		//$$			NetCtx ctx1 = new NetCtx(
+		//$$					ctx.get().getNetworkManager().getPacketListener(),
+		//$$					new PacketSender(this, (pkt1) -> {
+		//$$						if (ctx.get().getDirection().getReceptionSide().isServer()) {
+		//$$							NETWORK_INSTANCE.send(
+		//$$									PacketDistributor.PLAYER.with(() -> ctx.get().getSender()),
+		//$$									pkt1
+		//$$							);
+		//$$						} else {
+		//$$							NETWORK_INSTANCE.sendToServer(pkt1);
+		//$$						}
+		//$$					}),
+		//$$					ctx.get().getSender(),
+		//$$					switch (ctx.get().getDirection()) {
+		//$$						case PLAY_TO_CLIENT, LOGIN_TO_CLIENT -> NetworkDirection.TO_CLIENT;
+		//$$						case PLAY_TO_SERVER, LOGIN_TO_SERVER -> NetworkDirection.TO_SERVER;
+		//$$					}
+		//$$			);
+		//$$			handler.accept(pkt, ctx1);
+		//$$		}
+		//$$);
 		//#endif
 		class2IdMap.put(clazz, indx);
 	}
@@ -131,11 +135,11 @@ public class PacketRegister {
 	public FriendlyByteBuf encode(Packet pkt) {
 		FriendlyByteBuf buf = PlatformUtils.newByteBuf();
 		//#if FORGE==1
-		NETWORK_INSTANCE.encodeMessage(pkt, buf);
+		//$$NETWORK_INSTANCE.encodeMessage(pkt, buf);
 		//#else
-		//$$int id = getId(pkt);
-		//$$buf.writeByte(id & 255);
-		//$$entries.get(id).writer.accept(pkt, buf);
+		int id = getId(pkt);
+		buf.writeByte(id & 255);
+		entries.get(id).writer.accept(pkt, buf);
 		//#endif
 		return buf;
 	}

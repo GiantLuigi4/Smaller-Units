@@ -27,27 +27,39 @@ import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
 
 //#if FABRIC==1
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+
+import dev.onyxstudios.cca.api.v3.chunk.ChunkSyncCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.impl.client.texture.SpriteRegistryCallbackHolder;
+import tfc.smallerunits.networking.platform.NetCtx;
+
+
 //#else
-import net.minecraftforge.client.event.TextureStitchEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoader;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.ModLoadingStage;
-import net.minecraftforge.fml.ModLoadingWarning;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+//$$import net.minecraftforge.client.event.TextureStitchEvent;
+//$$import net.minecraftforge.common.MinecraftForge;
+//$$import net.minecraftforge.event.level.ChunkEvent;
+//$$import net.minecraftforge.eventbus.api.IEventBus;
+//$$import net.minecraftforge.fml.ModLoader;
+//$$import net.minecraftforge.fml.ModLoadingContext;
+//$$import net.minecraftforge.fml.ModLoadingStage;
+//$$import net.minecraftforge.fml.ModLoadingWarning;
+//$$import net.minecraftforge.fml.common.Mod;
+//$$import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+//$$import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 //#endif
 
 // The value here should match an entry in the META-INF/mods.toml file
 //@formatter:off
 //#if FORGE == 1
-@Mod("smallerunits")
-public class SmallerUnits {
+//$$@Mod("smallerunits")
+//$$public class SmallerUnits {
 //#else
-//$$public class SmallerUnits implements net.fabricmc.api.ModInitializer { @Override public void onInitialize() {}
+public class SmallerUnits implements net.fabricmc.api.ModInitializer { @Override public void onInitialize() {}
 //#endif
 //@formatter:on
 	
@@ -59,8 +71,8 @@ public class SmallerUnits {
 	
 	public SmallerUnits() {
 		//#if FORGE==1
-		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
-		IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+		//$$IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+		//$$IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 		//#endif
 		
 		SUNetworkRegistry.init();
@@ -70,27 +82,27 @@ public class SmallerUnits {
 		CraftingRegistry.RECIPES.register();
 		/* mod loading events */
 		//#if FABRIC==1
-		//$$if (PlatformUtils.isClient()) ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
-		//$$else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setupCfg());
+		if (PlatformUtils.isClient()) ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
+		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setupCfg());
 		//#else
-		modBus.addListener(AttachmentRegistry::onRegisterCapabilities);
-		modBus.addListener(this::setup);
+		//$$modBus.addListener(AttachmentRegistry::onRegisterCapabilities);
+		//$$modBus.addListener(this::setup);
 		//#endif
 		/* in game events */
 		
 		//#if FABRIC==1
-		//$$ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatch);
-		//$$ServerPlayConnectionEvents.INIT.register((handler, server) -> {
-		//$$	setupConnectionButchery(handler.player, handler.connection, handler.connection.channel.pipeline());
-		//$$});
-		//$$
-		//$$ServerChunkEvents.CHUNK_LOAD.register(SmallerUnits::onChunkLoaded);
-		//$$ServerChunkEvents.CHUNK_UNLOAD.register(SmallerUnits::onChunkUnloaded);
-		//#else
-		forgeBus.addGenericListener(LevelChunk.class, AttachmentRegistry::onAttachCapabilities);
+		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatch);
+		ServerPlayConnectionEvents.INIT.register((handler, server) -> {
+			setupConnectionButchery(handler.player, handler.connection, handler.connection.channel.pipeline());
+		});
 		
-		forgeBus.addListener(SmallerUnits::onChunkLoaded);
-		forgeBus.addListener(SmallerUnits::onChunkUnloaded);
+		ServerChunkEvents.CHUNK_LOAD.register(SmallerUnits::onChunkLoaded);
+		ServerChunkEvents.CHUNK_UNLOAD.register(SmallerUnits::onChunkUnloaded);
+		//#else
+		//$$forgeBus.addGenericListener(LevelChunk.class, AttachmentRegistry::onAttachCapabilities);
+		//$$
+		//$$forgeBus.addListener(SmallerUnits::onChunkLoaded);
+		//$$forgeBus.addListener(SmallerUnits::onChunkUnloaded);
 		//#endif
 		
 		PlatformUtils.delayConfigInit(() -> {
@@ -117,19 +129,19 @@ public class SmallerUnits {
 		
 		if (PlatformUtils.isClient()) {
 			//#if FABRIC==1
-			//$$ClientTickEvents.START_CLIENT_TICK.register((i) -> {
-			//$$	SyncPacketS2C.tick();
-			//$$	NetCtx.tick();
-			//$$});
-			//$$SpriteRegistryCallbackHolder.EVENT_GLOBAL.register((listener, whatdoyouwantfabric) -> {
-			//$$	if (listener.location().equals(TextureAtlas.LOCATION_BLOCKS)) {
-			//$$		whatdoyouwantfabric.register(new ResourceLocation("smallerunits:block/white_pixel"));
-			//$$	}
-			//$$});
-			//$$SUItemRenderProperties.init();
+			ClientTickEvents.START_CLIENT_TICK.register((i) -> {
+				SyncPacketS2C.tick();
+				NetCtx.tick();
+			});
+			SpriteRegistryCallbackHolder.EVENT_GLOBAL.register((listener, whatdoyouwantfabric) -> {
+				if (listener.location().equals(TextureAtlas.LOCATION_BLOCKS)) {
+					whatdoyouwantfabric.register(new ResourceLocation("smallerunits:block/white_pixel"));
+				}
+			});
+			SUItemRenderProperties.init();
 			//#else
-			forgeBus.addListener(SyncPacketS2C::tick);
-			modBus.addListener(SmallerUnits::onTextureStitch);
+			//$$forgeBus.addListener(SyncPacketS2C::tick);
+			//$$modBus.addListener(SmallerUnits::onTextureStitch);
 			//#endif
 		}
 		
@@ -137,19 +149,19 @@ public class SmallerUnits {
 		isVFEPresent = PlatformUtils.isLoaded("vivecraftforgeextensions");
 		
 		//#if FORGE==1
-		try {
-			Class<?> clazz = Class.forName("net.optifine.Config");
-			if (clazz != null) {
-				ModLoader.get().addWarning(new ModLoadingWarning(
-						ModLoadingContext.get().getActiveContainer().getModInfo(),
-						ModLoadingStage.CONSTRUCT,
-						// TODO: translation text component
-						ChatFormatting.YELLOW + "Smaller Units" + ChatFormatting.RESET + "\nSU and Optifine are " + ChatFormatting.RED + ChatFormatting.BOLD + "highly incompatible" + ChatFormatting.RESET + " with eachother."
-				));
-				isOFPresent = true;
-			}
-		} catch (Throwable ignored) {
-		}
+		//$$try {
+		//$$	Class<?> clazz = Class.forName("net.optifine.Config");
+		//$$	if (clazz != null) {
+		//$$		ModLoader.get().addWarning(new ModLoadingWarning(
+		//$$				ModLoadingContext.get().getActiveContainer().getModInfo(),
+		//$$				ModLoadingStage.CONSTRUCT,
+		//$$				// TODO: translation text component
+		//$$				ChatFormatting.YELLOW + "Smaller Units" + ChatFormatting.RESET + "\nSU and Optifine are " + ChatFormatting.RED + ChatFormatting.BOLD + "highly incompatible" + ChatFormatting.RESET + " with eachother."
+		//$$		));
+		//$$		isOFPresent = true;
+		//$$	}
+		//$$} catch (Throwable ignored) {
+		//$$}
 		//#endif
 	}
 	
@@ -159,18 +171,18 @@ public class SmallerUnits {
 	
 	private static void onChunkLoaded(
 			//#if FABRIC==1
-			//$$ServerLevel lvl, LevelChunk lvlChk
+			ServerLevel lvl, LevelChunk lvlChk
 			//#else
-			ChunkEvent.Load loadEvent
+			//$$ChunkEvent.Load loadEvent
 			//#endif
 	) {
 		//#if FORGE==1
-		if (!(loadEvent.getLevel() instanceof ServerLevel)) return;
-		if (!(loadEvent.getChunk() instanceof LevelChunk)) return;
-		//noinspection PatternVariableCanBeUsed
-		ServerLevel lvl = (ServerLevel) loadEvent.getLevel();
-		//noinspection PatternVariableCanBeUsed
-		LevelChunk lvlChk = (LevelChunk) loadEvent.getChunk();
+		//$$if (!(loadEvent.getLevel() instanceof ServerLevel)) return;
+		//$$if (!(loadEvent.getChunk() instanceof LevelChunk)) return;
+		//$$//noinspection PatternVariableCanBeUsed
+		//$$ServerLevel lvl = (ServerLevel) loadEvent.getLevel();
+		//$$//noinspection PatternVariableCanBeUsed
+		//$$LevelChunk lvlChk = (LevelChunk) loadEvent.getChunk();
 		//#endif
 		
 		if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
@@ -187,18 +199,18 @@ public class SmallerUnits {
 	
 	private static void onChunkUnloaded(
 			//#if FABRIC==1
-			//$$ServerLevel lvl, LevelChunk lvlChk
+			ServerLevel lvl, LevelChunk lvlChk
 			//#else
-			ChunkEvent.Unload loadEvent
+			//$$ChunkEvent.Unload loadEvent
 			//#endif
 	) {
 		//#if FORGE==1
-		if (!(loadEvent.getLevel() instanceof ServerLevel)) return;
-		if (!(loadEvent.getChunk() instanceof LevelChunk)) return;
-		//noinspection PatternVariableCanBeUsed
-		ServerLevel lvl = (ServerLevel) loadEvent.getLevel();
-		//noinspection PatternVariableCanBeUsed
-		LevelChunk lvlChk = (LevelChunk) loadEvent.getChunk();
+		//$$if (!(loadEvent.getLevel() instanceof ServerLevel)) return;
+		//$$if (!(loadEvent.getChunk() instanceof LevelChunk)) return;
+		//$$//noinspection PatternVariableCanBeUsed
+		//$$ServerLevel lvl = (ServerLevel) loadEvent.getLevel();
+		//$$//noinspection PatternVariableCanBeUsed
+		//$$LevelChunk lvlChk = (LevelChunk) loadEvent.getChunk();
 		//#endif
 		
 		ISUCapability capability = SUCapabilityManager.getCapability(lvlChk);
@@ -224,7 +236,7 @@ public class SmallerUnits {
 	
 	private void setup(
 			//#if FORGE==1
-			final FMLCommonSetupEvent event
+			//$$final FMLCommonSetupEvent event
 			//#endif
 	) {
 		if (PlatformUtils.isLoaded("pehkui")) PehkuiSupport.setup();
@@ -260,10 +272,10 @@ public class SmallerUnits {
 	}
 	
 	//#if FORGE==1
-	private static void onTextureStitch(TextureStitchEvent.Pre event) {
-		if (event.getAtlas().location().equals(TextureAtlas.LOCATION_BLOCKS)) {
-			event.addSprite(new ResourceLocation("smallerunits:block/white_pixel"));
-		}
-	}
+	//$$private static void onTextureStitch(TextureStitchEvent.Pre event) {
+	//$$	if (event.getAtlas().location().equals(TextureAtlas.LOCATION_BLOCKS)) {
+	//$$		event.addSprite(new ResourceLocation("smallerunits:block/white_pixel"));
+	//$$	}
+	//$$}
 	//#endif
 }

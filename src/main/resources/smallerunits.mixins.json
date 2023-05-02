@@ -6,6 +6,10 @@
   "refmap": "smallerunits.refmap.json",
   "plugin": "tfc.smallerunits.utils.asm.MixinConnector",
   "mixins": [
+    "core.gui.common.ServerPlayNetworkingMixin",
+    "quality.fabric.ReachEntityAttributesMixin",
+    "quality.fabric.LivingEntityMixin",
+
     "ChunkSerializerAccessor",
     "compat.alternate_current.ACLevelAccessMixin",
     "compat.ip.ChunkDataSyncManagerMixin",
@@ -18,11 +22,6 @@
     "core.access.ChunkAccessMixin",
     "core.access.ServerPacketListenerMixin",
     "core.gui.common.PehkuiMixin",
-    //#if FABRIC
-    "core.gui.common.ServerPlayNetworkingMixin",
-    "quality.fabric.ReachEntityAttributesMixin",
-    "quality.fabric.LivingEntityMixin",
-    //#endif
     "core.gui.server.AbstractContainerMenuMixin",
     "core.gui.server.PlayerMixin",
     "core.gui.server.ServerPlayerMixin",
@@ -47,6 +46,8 @@
     "quality.vr.PistonMixin"
   ],
   "client": [
+    "core.gui.common.ClientPlayNetworkingMixin",
+
     "LevelRendererMixin",
     "LevelRendererMixinBlocks",
     "compat.ChiselAndBitMeshMixin",
@@ -68,9 +69,6 @@
     "core.gui.client.MouseHandlerMixin",
     "core.gui.client.ScreenMixin",
     "core.gui.client.expansion.DebugScreenOverlayMixin",
-    //#if FABRIC
-    "core.gui.common.ClientPlayNetworkingMixin",
-    //#endif
     "dangit.ClientLevelMixin",
     "data.AbstractClientPlayerMixin",
     "data.CompiledChunkMixin",

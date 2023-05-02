@@ -1,6 +1,5 @@
 package tfc.smallerunits.utils.asm;
 
-import net.minecraftforge.coremod.api.ASMAPI;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -12,25 +11,25 @@ import java.util.ArrayList;
 public class Remapper {
 	//@formatter:off
 	//#if FABRIC==1
-	//$$net.fabricmc.loader.api.MappingResolver resolver;
-	//$$public Remapper() { this(net.fabricmc.loader.api.FabricLoader.getInstance().getMappingResolver()); }
-	//$$public Remapper(net.fabricmc.loader.api.MappingResolver resolver) {
-	//$$	this.resolver = resolver;
-	//$$}
-	//$$public String mapClass(String clz) {
-	//$$	return resolver.mapClassName("intermediary", clz.replace("/", ".")).replace(".", "/");
-	//$$}
-	//$$public String mapMethod(MappingInfo info) {
-	//$$	return resolver.mapMethodName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapDesc(info.desc());
-	//$$}
-	//$$public String mapField(MappingInfo info) {
-	//$$	return resolver.mapFieldName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapType(info.desc());
-	//$$}
+	net.fabricmc.loader.api.MappingResolver resolver;
+	public Remapper() { this(net.fabricmc.loader.api.FabricLoader.getInstance().getMappingResolver()); }
+	public Remapper(net.fabricmc.loader.api.MappingResolver resolver) {
+		this.resolver = resolver;
+	}
+	public String mapClass(String clz) {
+		return resolver.mapClassName("intermediary", clz.replace("/", ".")).replace(".", "/");
+	}
+	public String mapMethod(MappingInfo info) {
+		return resolver.mapMethodName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapDesc(info.desc());
+	}
+	public String mapField(MappingInfo info) {
+		return resolver.mapFieldName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapType(info.desc());
+	}
 	//#else
-	public Remapper() { }
-	public String mapClass(String clz) { return clz; }
-	public String mapMethod(MappingInfo info) { return ASMAPI.mapMethod(info.method()); }
-	public String mapField(MappingInfo info) { return ASMAPI.mapField(info.method()); }
+	//$$public Remapper() { }
+	//$$public String mapClass(String clz) { return clz; }
+	//$$public String mapMethod(MappingInfo info) { return net.minecraftforge.coremod.api.ASMAPI.mapMethod(info.method()); }
+	//$$public String mapField(MappingInfo info) { return net.minecraftforge.coremod.api.ASMAPI.mapField(info.method()); }
 	//#endif
 	//@formatter:on
 	

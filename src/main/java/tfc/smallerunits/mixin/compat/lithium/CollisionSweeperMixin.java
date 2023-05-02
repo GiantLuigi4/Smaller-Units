@@ -15,9 +15,9 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 
 // TODO
 //#if FABRIC==1
-//$$@Mixin(value = me.jellysquid.mods.lithium.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
+@Mixin(value = me.jellysquid.mods.lithium.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
 //#else
-@Mixin(value = com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
+//$$@Mixin(value = com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
 //#endif
 public class CollisionSweeperMixin {
 	@Shadow
