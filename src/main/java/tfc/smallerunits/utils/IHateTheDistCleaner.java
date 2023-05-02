@@ -163,9 +163,9 @@ public class IHateTheDistCleaner {
 	}
 	
 	public static void loadBe(BlockEntity pBlockEntity, Level level) {
-		//#if FABRIC
-		//// easier to fully qualify due to optimize imports yeeting comments
-		//net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ClientLevel) level);
+		//#if FABRIC==1
+		// easier to fully qualify due to optimize imports yeeting comments
+		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ClientLevel) level);
 		//#endif
 	}
 }

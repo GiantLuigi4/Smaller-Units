@@ -14,9 +14,9 @@ import virtuoel.pehkui.util.ScaleUtils;
 
 // TODO: this is temporary
 //#if FABRIC
-//@Mixin(ScaleUtils.class)
+@Mixin(ScaleUtils.class)
 //#else
-@Mixin(value = ScaleUtils.class, remap = false)
+//@Mixin(value = ScaleUtils.class, remap = false)
 //#endif
 public class PehkuiMixin {
 	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;F)F", cancellable = true)

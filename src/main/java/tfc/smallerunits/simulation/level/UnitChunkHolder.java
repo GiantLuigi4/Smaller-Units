@@ -148,7 +148,7 @@ public class UnitChunkHolder extends ChunkHolder {
 			pos = new ChunkPos(bp);
 			
 			ResourceKey<Level> dimension = chunk.level.dimension();
-			Packet<?> wrappedPacket = SUNetworkRegistry.toVanillaPacket(new WrapperPacket(packet), NetworkDirection.TO_CLIENT);
+			Packet<?> wrappedPacket = SUNetworkRegistry.NETWORK_INSTANCE.toVanillaPacket(new WrapperPacket(packet), NetworkDirection.TO_CLIENT);
 			Consumer<ServerPlayer> func = player -> PacketRedirection.sendRedirectedMessage(player, dimension, wrappedPacket);
 			Stream<ServerPlayer> players;
 			if (bl) players = NewChunkTrackingGraph.getFarWatchers(dimension, pos.x, pos.z);

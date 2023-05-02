@@ -388,7 +388,7 @@ public class UnitSpace {
 				//noinspection unchecked
 				PacketRedirection.sendRedirectedPacket(
 						(ServerGamePacketListenerImpl) target.connection.connection.getPacketListener(),
-						(Packet<ClientGamePacketListener>) SUNetworkRegistry.toVanillaPacket(pkt, NetworkDirection.TO_CLIENT),
+						(Packet<ClientGamePacketListener>) SUNetworkRegistry.NETWORK_INSTANCE.toVanillaPacket(pkt, NetworkDirection.TO_CLIENT),
 						PacketRedirection.getForceRedirectDimension()
 				);
 			}

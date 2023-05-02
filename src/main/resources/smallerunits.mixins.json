@@ -19,9 +19,9 @@
     "core.access.ServerPacketListenerMixin",
     "core.gui.common.PehkuiMixin",
     //#if FABRIC
-    //"core.gui.common.ServerPlayNetworkingMixin",
-    //"quality.fabric.ReachEntityAttributesMixin",
-    //"quality.fabric.LivingEntityMixin",
+    "core.gui.common.ServerPlayNetworkingMixin",
+    "quality.fabric.ReachEntityAttributesMixin",
+    "quality.fabric.LivingEntityMixin",
     //#endif
     "core.gui.server.AbstractContainerMenuMixin",
     "core.gui.server.PlayerMixin",
@@ -69,7 +69,7 @@
     "core.gui.client.ScreenMixin",
     "core.gui.client.expansion.DebugScreenOverlayMixin",
     //#if FABRIC
-    //"core.gui.common.ClientPlayNetworkingMixin",
+    "core.gui.common.ClientPlayNetworkingMixin",
     //#endif
     "dangit.ClientLevelMixin",
     "data.AbstractClientPlayerMixin",

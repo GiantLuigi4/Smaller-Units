@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "smallerunits",
-  "version": "${version}",
+  "version": "${mod_version}",
   "name": "SmallerUnits",
   "description": "This is an example description! Tell everyone what your mod is about!",
   "authors": [
@@ -29,7 +29,7 @@
     "smallerunits.mixins.json"
   ],
   "depends": {
-    "minecraft": "${mc_version}",
+    "minecraft": "~${mc_version}",
     "fabric-api": "*",
     "cardinal-components-chunk": "*",
     "cardinal-components-world": "*"

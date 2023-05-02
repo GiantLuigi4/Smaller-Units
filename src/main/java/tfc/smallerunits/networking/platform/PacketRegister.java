@@ -1,5 +1,6 @@
 package tfc.smallerunits.networking.platform;
 
+import io.netty.buffer.Unpooled;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -43,6 +44,14 @@ public class PacketRegister {
 		);
 	}
 	
+	public net.minecraft.network.protocol.Packet<?> toVanillaPacket(Packet wrapperPacket, NetworkDirection toClient) {
+		FriendlyByteBuf buf = encode(wrapperPacket);
+		return switch (toClient) {
+			case TO_CLIENT -> ServerPlayNetworking.createS2CPacket(channel, buf);
+			case TO_SERVER -> ClientPlayNetworking.createC2SPacket(channel, buf);
+		};
+	}
+	
 	private void handlePacket(PacketListener handler, FriendlyByteBuf buf, PacketSender responseSender, Player player, NetworkDirection direction) {
 		int id = buf.readByte();
 		PacketEntry<?> entry = entries.get(id);
@@ -67,7 +76,7 @@ public class PacketRegister {
 	}
 	
 	public FriendlyByteBuf encode(Packet pkt) {
-		FriendlyByteBuf buf = PacketByteBufs.create();
+		FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
 		int id = getId(pkt);
 		buf.writeByte(id & 255);
 		entries.get(id).writer.accept(pkt, buf);

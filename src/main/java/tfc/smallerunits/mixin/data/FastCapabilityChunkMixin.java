@@ -1,6 +1,5 @@
 package tfc.smallerunits.mixin.data;
 
-import dev.onyxstudios.cca.api.v3.component.ComponentProvider;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,7 +17,11 @@ public abstract class FastCapabilityChunkMixin implements FastCapabilityHandler 
 	public ISUCapability getSUCapability() {
 		if (((Object) this) instanceof EmptyLevelChunk) return null;
 		if (capability == null)
-			capability = ((ComponentProvider) this).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
+			//#if FABRIC
+			return capability = ((dev.onyxstudios.cca.api.v3.component.ComponentProvider) this).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
+			//#else
+			//return capability = (ISUCapability) ((LevelChunk) (Object) this).getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null));
+			//#endif
 		return capability;
 	}
 }

@@ -7,7 +7,6 @@ import dev.onyxstudios.cca.api.v3.component.ComponentRegistryV3;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.ProtoChunk;
 
 public class ComponentRegistry implements ChunkComponentInitializer {
 	public static final ComponentKey<SUCapability> SU_CAPABILITY_COMPONENT_KEY =

@@ -14,10 +14,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 // TODO
-//#if FABRIC
-//@Mixin(value = me.jellysquid.mods.lithium.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
+//#if FABRIC==1
+@Mixin(value = me.jellysquid.mods.lithium.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
 //#else
-@Mixin(value = com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
+//@Mixin(value = com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
 //#endif
 public class CollisionSweeperMixin {
 	@Shadow

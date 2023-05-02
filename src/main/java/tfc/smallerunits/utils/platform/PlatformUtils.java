@@ -19,47 +19,47 @@ import tfc.smallerunits.utils.asm.MixinConnector;
 
 import java.util.ArrayList;
 
-//#if FABRIC
-//import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
-//import dev.onyxstudios.cca.api.v3.component.ComponentProvider;
-//import net.fabricmc.api.EnvType;
-//import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
-//import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-//import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
-//import net.fabricmc.loader.api.FabricLoader;
-//import tfc.smallerunits.utils.platform.hooks.ICullableBE;
-//import tfc.smallerunits.utils.IHateTheDistCleaner;
-//import tfc.smallerunits.utils.PositionalInfo;
-//import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-//import net.minecraft.server.level.ServerLevel;
+//#if FABRIC==1
+import com.jamieswhiteshirt.reachentityattributes.ReachEntityAttributes;
+import dev.onyxstudios.cca.api.v3.component.ComponentProvider;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.loader.api.FabricLoader;
+import tfc.smallerunits.utils.platform.hooks.ICullableBE;
+import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.PositionalInfo;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.server.level.ServerLevel;
 //#else
-import net.minecraftforge.common.ForgeMod;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+//import net.minecraftforge.common.ForgeMod;
+//import net.minecraftforge.common.MinecraftForge;
+//import net.minecraftforge.event.TickEvent;
+//import net.minecraftforge.event.level.LevelEvent;
+//import net.minecraftforge.fml.LogicalSide;
+//import net.minecraftforge.fml.ModList;
+//import net.minecraftforge.fml.loading.FMLEnvironment;
 //#endif
 
 public class PlatformUtils {
 	//@formatter:off
-	//#if FABRIC
-	//public static boolean isDevEnv() { return FabricLoader.getInstance().isDevelopmentEnvironment(); }
-	//public static boolean isLoaded(String mod) { return FabricLoader.getInstance().isModLoaded(mod); }
-	//public static boolean isClient() { return FabricLoader.getInstance().getEnvironmentType().equals(EnvType.CLIENT); }
-	//public static boolean shouldCaptureBlockSnapshots(Level level) { return false; }
-	//public static double getStepHeight(LocalPlayer player) { return player.maxUpStep; }
+	//#if FABRIC==1
+	public static boolean isDevEnv() { return FabricLoader.getInstance().isDevelopmentEnvironment(); }
+	public static boolean isLoaded(String mod) { return FabricLoader.getInstance().isModLoaded(mod); }
+	public static boolean isClient() { return FabricLoader.getInstance().getEnvironmentType().equals(EnvType.CLIENT); }
+	public static boolean shouldCaptureBlockSnapshots(Level level) { return false; }
+	public static double getStepHeight(LocalPlayer player) { return player.maxUpStep; }
 	//#else
-	public static boolean isDevEnv() { return !FMLEnvironment.production; }
-	public static boolean isLoaded(String mod) { return ModList.get().isLoaded(mod); }
-	public static boolean isClient() { return FMLEnvironment.dist.isClient(); }
-	public static boolean shouldCaptureBlockSnapshots(Level level) { return level.captureBlockSnapshots; }
-	public static double getStepHeight(LocalPlayer player) { return player.getStepHeight(); }
+	//public static boolean isDevEnv() { return !FMLEnvironment.production; }
+	//public static boolean isLoaded(String mod) { return ModList.get().isLoaded(mod); }
+	//public static boolean isClient() { return FMLEnvironment.dist.isClient(); }
+	//public static boolean shouldCaptureBlockSnapshots(Level level) { return level.captureBlockSnapshots; }
+	//public static double getStepHeight(LocalPlayer player) { return player.getStepHeight(); }
 	//#endif
 	//@formatter:on
 	
-	//#if FABRIC
+	//#if FABRIC==1
 	//#else
 	//#endif
 	
@@ -68,30 +68,30 @@ public class PlatformUtils {
 	}
 	
 	public static double getReach(LivingEntity entity, double reach) {
-		//#if FABRIC
-		//AttributeInstance instance = entity.getAttribute(ReachEntityAttributes.REACH);
-		//if (instance == null) return reach;
-		//AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
-		//
-		//for (AttributeModifier instanceModifier : instance.getModifiers())
-		//	if (instanceModifier.getOperation().equals(AttributeModifier.Operation.MULTIPLY_BASE))
-		//		reach *= instanceModifier.getAmount();
-		//
-		//for (AttributeModifier instanceModifier : instance.getModifiers())
-		//	if (instanceModifier.getOperation().equals(AttributeModifier.Operation.ADDITION))
-		//		reach += instanceModifier.getAmount();
-		//
-		//for (AttributeModifier instanceModifier : instance.getModifiers())
-		//	if (instanceModifier.getOperation().equals(AttributeModifier.Operation.MULTIPLY_TOTAL))
-		//		if (!instanceModifier.equals(modifier))
-		//			reach *= instanceModifier.getAmount();
-		//
-		//if (modifier != null)
-		//	reach *= modifier.getAmount();
-		//
+		//#if FABRIC==1
+		AttributeInstance instance = entity.getAttribute(ReachEntityAttributes.REACH);
+		if (instance == null) return reach;
+		AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
+
+		for (AttributeModifier instanceModifier : instance.getModifiers())
+			if (instanceModifier.getOperation().equals(AttributeModifier.Operation.MULTIPLY_BASE))
+				reach *= instanceModifier.getAmount();
+
+		for (AttributeModifier instanceModifier : instance.getModifiers())
+			if (instanceModifier.getOperation().equals(AttributeModifier.Operation.ADDITION))
+				reach += instanceModifier.getAmount();
+
+		for (AttributeModifier instanceModifier : instance.getModifiers())
+			if (instanceModifier.getOperation().equals(AttributeModifier.Operation.MULTIPLY_TOTAL))
+				if (!instanceModifier.equals(modifier))
+					reach *= instanceModifier.getAmount();
+
+		if (modifier != null)
+			reach *= modifier.getAmount();
+
 		//#else
-		if (entity.getAttributes().hasAttribute(ForgeMod.REACH_DISTANCE.get()))
-			reach = entity.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
+		//if (entity.getAttributes().hasAttribute(ForgeMod.REACH_DISTANCE.get()))
+		//	reach = entity.getAttributeValue(ForgeMod.REACH_DISTANCE.get());
 		//#endif
 		
 		return reach;
@@ -100,42 +100,42 @@ public class PlatformUtils {
 	//@formatter:off
 	public static double getReach(LivingEntity entity) { return getReach(entity, 7); }
 	
-	//#if FABRIC
-	//public static void preTick(TickerServerLevel level) { ServerTickEvents.START_WORLD_TICK.invoker().onStartTick(level); }
-	//public static void postTick(TickerServerLevel level) { ServerTickEvents.END_WORLD_TICK.invoker().onEndTick(level); }
-	//public static void postUnload(Level level) { ServerWorldEvents.UNLOAD.invoker().onWorldUnload(level.getServer(), (ServerLevel) level); }
-	//public static <T extends BlockEntity> AABB getRenderBox(T pBlockEntity) { return ICullableBE.getCullingBB(pBlockEntity); }
-	//public static AttributeInstance getReachAttrib(LivingEntity livingEntity) { return livingEntity.getAttribute(ReachEntityAttributes.REACH); }
+	//#if FABRIC==1
+	public static void preTick(TickerServerLevel level) { ServerTickEvents.START_WORLD_TICK.invoker().onStartTick(level); }
+	public static void postTick(TickerServerLevel level) { ServerTickEvents.END_WORLD_TICK.invoker().onEndTick(level); }
+	public static void postUnload(Level level) { ServerWorldEvents.UNLOAD.invoker().onWorldUnload(level.getServer(), (ServerLevel) level); }
+	public static <T extends BlockEntity> AABB getRenderBox(T pBlockEntity) { return ICullableBE.getCullingBB(pBlockEntity); }
+	public static AttributeInstance getReachAttrib(LivingEntity livingEntity) { return livingEntity.getAttribute(ReachEntityAttributes.REACH); }
 	//#else
-	public static void preTick(TickerServerLevel level) { new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, level, () -> true); }
-	public static void postTick(TickerServerLevel level) { new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, level, () -> true); }
-	public static void postUnload(Level level) { MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level)); }
-	public static <T extends BlockEntity> AABB getRenderBox(T pBlockEntity) { return pBlockEntity.getRenderBoundingBox(); }
-	public static AttributeInstance getReachAttrib(LivingEntity livingEntity) { return livingEntity.getAttribute(ForgeMod.ATTACK_RANGE.get()); }
+	//public static void preTick(TickerServerLevel level) { new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, level, () -> true); }
+	//public static void postTick(TickerServerLevel level) { new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, level, () -> true); }
+	//public static void postUnload(Level level) { MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level)); }
+	//public static <T extends BlockEntity> AABB getRenderBox(T pBlockEntity) { return pBlockEntity.getRenderBoundingBox(); }
+	//public static AttributeInstance getReachAttrib(LivingEntity livingEntity) { return livingEntity.getAttribute(ForgeMod.ATTACK_RANGE.get()); }
 	//#endif
 	//@formatter:on
 	
 	public static CompoundTag getCapTag(Object level) {
-		//#if FABRIC
-		//if (level instanceof ComponentProvider provider)
-		//	return provider.getComponentContainer().toTag(new CompoundTag());
-		//throw new RuntimeException(level + " is not a component provider.");
+		//#if FABRIC==1
+		if (level instanceof ComponentProvider provider)
+			return provider.getComponentContainer().toTag(new CompoundTag());
+		throw new RuntimeException(level + " is not a component provider.");
 		//#else
-		if (level instanceof TickerServerLevel serverLevel)
-			return serverLevel.getCaps().serializeNBT();
-		else throw new RuntimeException(level + " is not a ticker server level.");
+		//if (level instanceof TickerServerLevel serverLevel)
+		//	return serverLevel.getCaps().serializeNBT();
+		//else throw new RuntimeException(level + " is not a ticker server level.");
 		//#endif
 	}
 	
 	public static void readCaps(Object level, CompoundTag tag) {
-		//#if FABRIC
-		//if (level instanceof ComponentProvider provider)
-		//	provider.getComponentContainer().fromTag(tag);
-		//else throw new RuntimeException(level + " is not a component provider.");
+		//#if FABRIC==1
+		if (level instanceof ComponentProvider provider)
+			provider.getComponentContainer().fromTag(tag);
+		else throw new RuntimeException(level + " is not a component provider.");
 		//#else
-		if (level instanceof TickerServerLevel serverLevel)
-			serverLevel.getCaps().deserializeNBT(tag);
-		else throw new RuntimeException(level + " is not a ticker server level.");
+		//if (level instanceof TickerServerLevel serverLevel)
+		//	serverLevel.getCaps().deserializeNBT(tag);
+		//else throw new RuntimeException(level + " is not a ticker server level.");
 		//#endif
 	}
 	
@@ -173,13 +173,13 @@ public class PlatformUtils {
 	}
 	
 	public static void beLoaded(BlockEntity pBlockEntity, Level level) {
-		//#if FABRIC
-		//if (level.isClientSide)
-		//	IHateTheDistCleaner.loadBe(pBlockEntity, level);
-		//else
-		//	ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ServerLevel) level);
+		//#if FABRIC==1
+		if (level.isClientSide)
+			IHateTheDistCleaner.loadBe(pBlockEntity, level);
+		else
+			ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ServerLevel) level);
 		//#else
-		pBlockEntity.onLoad();
+		//pBlockEntity.onLoad();
 		//#endif
 	}
 }

@@ -15,7 +15,7 @@ public class IPCompat {
 			Packet<?> pkt = maybeWrap(packet.ip_getRedirectedPacket());
 			if (pkt instanceof WrapperPacket wrapperPacket) {
 				packet.ip_setRedirectedPacket(
-						(Packet<ClientGamePacketListener>) SUNetworkRegistry.toVanillaPacket(
+						(Packet<ClientGamePacketListener>) SUNetworkRegistry.NETWORK_INSTANCE.toVanillaPacket(
 								wrapperPacket,
 								NetworkDirection.TO_CLIENT
 						)

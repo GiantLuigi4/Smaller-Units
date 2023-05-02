@@ -117,12 +117,4 @@ public class SUNetworkRegistry {
 	public static void send(PacketTarget target, Packet pkt) {
 		target.send(pkt, NETWORK_INSTANCE);
 	}
-	
-	public static net.minecraft.network.protocol.Packet<?> toVanillaPacket(Packet wrapperPacket, NetworkDirection toClient) {
-		FriendlyByteBuf buf = NETWORK_INSTANCE.encode(wrapperPacket);
-		return switch (toClient) {
-			case TO_CLIENT -> ServerPlayNetworking.createS2CPacket(NETWORK_INSTANCE.channel, buf);
-			case TO_SERVER -> ClientPlayNetworking.createC2SPacket(NETWORK_INSTANCE.channel, buf);
-		};
-	}
 }

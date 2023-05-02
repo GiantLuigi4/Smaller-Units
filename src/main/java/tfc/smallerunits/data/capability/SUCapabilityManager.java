@@ -1,8 +1,5 @@
 package tfc.smallerunits.data.capability;
 
-import dev.onyxstudios.cca.api.v3.chunk.ChunkSyncCallback;
-import dev.onyxstudios.cca.api.v3.component.ComponentProvider;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -51,7 +48,11 @@ public class SUCapabilityManager {
 	}
 	
 	private static ISUCapability getCap(LevelChunk chunk) {
-		return ((ComponentProvider) chunk).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
+		//#if FABRIC==1
+		return ((dev.onyxstudios.cca.api.v3.component.ComponentProvider) chunk).getComponent(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY);
+		//#else
+		//return (ISUCapability) chunk.getCapability(ComponentRegistry.SU_CAPABILITY_COMPONENT_KEY).orElse(null);
+		//#endif
 	}
 	
 	// for CCA, most of this stuff can be automated via an AutoSyncedComponent

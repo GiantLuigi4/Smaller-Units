@@ -1,6 +1,5 @@
 package tfc.smallerunits.data.capability;
 
-import dev.onyxstudios.cca.api.v3.component.ComponentV3;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.objects.ObjectBigArrayBigList;
@@ -12,7 +11,13 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.UnitSpace;
 
-public class SUCapability implements ISUCapability, ComponentV3 {
+public class SUCapability implements ISUCapability,
+		//#if FABRIC==1
+		dev.onyxstudios.cca.api.v3.component.ComponentV3
+		//#else
+		//net.minecraftforge.common.util.INBTSerializable<CompoundTag>
+		//#endif
+{
 	Level level;
 	final ChunkAccess access;
 	
@@ -26,6 +31,7 @@ public class SUCapability implements ISUCapability, ComponentV3 {
 	UnitSpace[] allSpaces = new UnitSpace[0];
 	boolean modified = false;
 	
+	//#if FABRIC==1
 	@Override
 	public void readFromNbt(CompoundTag tag) {
 		deserializeNBT(tag);
@@ -38,6 +44,7 @@ public class SUCapability implements ISUCapability, ComponentV3 {
 			tag.put(allKey, nbt.get(allKey));
 		}
 	}
+	//#endif
 	
 	@Override
 	public boolean equals(Object o) {
