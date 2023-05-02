@@ -2,6 +2,7 @@ package tfc.smallerunits.mixin.compat.lithium;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.CollisionGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,16 +21,12 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 //$$@Mixin(value = com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper.class, remap = false)
 //#endif
 public class CollisionSweeperMixin {
-	@Shadow
-	@Final
-	private CollisionGetter view;
-	
 	@Unique
 	boolean isSmallWorld = false;
 	
 	@Inject(at = @At("TAIL"), method = "<init>")
-	public void postInit(CollisionGetter view, Entity entity, AABB box, CallbackInfo ci) {
-		isSmallWorld = view instanceof ITickerLevel;
+	public void postInit(Level world, Entity entity, AABB box, CallbackInfo ci) {
+		isSmallWorld = world instanceof ITickerLevel;
 	}
 	
 	@Inject(at = @At("HEAD"), method = "nextSection", cancellable = true)

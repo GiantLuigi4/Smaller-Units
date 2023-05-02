@@ -16,9 +16,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
 	
 	//#if FABRIC==1
-	//$$public static final boolean isFabric = true;
+	public static final boolean isFabric = true;
 	//#else
-	public static final boolean isFabric = false;
+	//$$public static final boolean isFabric = false;
 	//#endif
 	
 	static {
@@ -95,31 +95,31 @@ public class MixinConnector implements IMixinConfigPlugin {
 	}
 	
 	//#if FABRIC==1
-	//$$private static final String updateChunkDesc = "(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;";
-	//$$private static final MappingInfo renderChunkLayer = new MappingInfo(
-	//$$		"net/minecraft/class_761",
-	//$$		"method_3251",
-	//$$		"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLnet/minecraft/class_1159;)V"
-	//$$);
-	//$$private static final String getCompiledChunkOwner = "net/minecraft/class_846$class_851";
-	//$$private static final MappingInfo getCompiledChunk = new MappingInfo(
-	//$$		getCompiledChunkOwner,
-	//$$		"method_3677",
-	//$$		"()Lnet/minecraft/class_846$class_849;"
-	//$$);
-	//#else
 	private static final String updateChunkDesc = "(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;";
 	private static final MappingInfo renderChunkLayer = new MappingInfo(
-			"net/minecraft/client/renderer/LevelRenderer",
-			"m_172993_",
-			"(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"
+			"net/minecraft/class_761",
+			"method_3251",
+			"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLnet/minecraft/class_1159;)V"
 	);
-	private static final String getCompiledChunkOwner = "net/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk";
+	private static final String getCompiledChunkOwner = "net/minecraft/class_846$class_851";
 	private static final MappingInfo getCompiledChunk = new MappingInfo(
 			getCompiledChunkOwner,
-			"m_112835_",
-			"()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"
+			"method_3677",
+			"()Lnet/minecraft/class_846$class_849;"
 	);
+	//#else
+	//$$private static final String updateChunkDesc = "(Lnet/minecraft/class_846$class_851;)Lnet/minecraft/class_846$class_851;";
+	//$$private static final MappingInfo renderChunkLayer = new MappingInfo(
+	//$$		"net/minecraft/client/renderer/LevelRenderer",
+	//$$		"m_172993_",
+	//$$		"(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"
+	//$$);
+	//$$private static final String getCompiledChunkOwner = "net/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk";
+	//$$private static final MappingInfo getCompiledChunk = new MappingInfo(
+	//$$		getCompiledChunkOwner,
+	//$$		"m_112835_",
+	//$$		"()Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$CompiledChunk;"
+	//$$);
 	//#endif
 	
 	@Override
