@@ -52,7 +52,7 @@ public class PacketRegister {
 			ClientPlayNetworking.registerGlobalReceiver(
 					name,
 					((client, handler, buf, responseSender) -> {
-						handlePacket(handler, buf, new PacketSender(this, (pkt) -> responseSender.sendPacket(name, encode(pkt))), ((PacketListenerAccessor) handler).getPlayer(), NetworkDirection.TO_SERVER);
+						handlePacket(handler, buf, new PacketSender(this, (pkt) -> responseSender.sendPacket(name, encode(pkt))), ((PacketListenerAccessor) handler).getPlayer(), NetworkDirection.TO_CLIENT);
 					})
 			);
 		}

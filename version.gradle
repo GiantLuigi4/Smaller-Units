@@ -207,6 +207,24 @@ loom {
         }
     }
 
+    runs {
+        client {
+            for (String[] line : Vars.defaultRun.text) it.programArgs line[0].trim().replace("\"", ""), line[1].trim().replace("\"", "")
+
+            File fl = project.file("../../yamdle/runs/client.csv")
+            if (fl.exists()) {
+                FileInputStream stream = new FileInputStream(fl)
+                byte[] data = stream.readAllBytes()
+                stream.close()
+                CSV thisRun = new CSV(new String(data))
+
+                for (String[] line : thisRun.text) it.programArgs line[0].trim().replace("\"", ""), line[1].trim().replace("\"", "")
+            }
+
+            client()
+        }
+    }
+
     accessWidenerPath = file("../../src/main/resources/smallerunits.accesswidener")
     mixin.defaultRefmapName.set("smallerunits.refmap.json")
 }
