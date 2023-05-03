@@ -40,7 +40,7 @@ String fabricVersion = proj.getText("fabricVersion")
 
 String gameVersion = proj.getText("gameVersion")
 String parchmentVer = proj.getText("parchmentVersion")
-properties.put("version", "2.1.1+$gameVersion")
+properties.put("version", "2.1.3+$gameVersion")
 
 String parchmentVersion = "$gameVersion:$parchmentVer"
 
@@ -209,6 +209,9 @@ loom {
 
     runs {
         client {
+            runDir = "../../run"
+            source = sourceSets.main
+
             for (String[] line : Vars.defaultRun.text) it.programArgs line[0].trim().replace("\"", ""), line[1].trim().replace("\"", "")
 
             File fl = project.file("../../yamdle/runs/client.csv")
@@ -237,20 +240,36 @@ tasks.forEach(it -> {
     }
 })
 
-//tasks.processResources {
-//    doLast {
-//        var resources = "$buildDir/resources/main"
-//        if (isForge) {
-//            copy {
-//                from(file("$resources/assets/smallerunits/icon.png"))
-//                into(resources)
-//            }
-//            delete(file("$resources/assets/smallerunits/icon.png"))
-//        } else {
-//            delete(file("$resources/pack.mcmeta"))
-//        }
-//    }
-//}
+tasks.forEach(it -> {
+    String[] tasks = new String[]{
+            "genIntelliJRuns",
+            "genSourcesWithQuiltflower",
+            "genSourcesWithFernFlower",
+            "genSourcesWithCfr",
+            "runClient",
+            "runServer"
+    }
+    for (String s : tasks) {
+        if (it.name == s) {
+            it.group("loomIde")
+        }
+    }
+})
+
+tasks.processResources {
+    doLast {
+        var resources = "$buildDir/resources/main"
+        if (isForge) {
+            copy {
+                from(file("$resources/assets/smallerunits/icon.png"))
+                into(resources)
+            }
+            delete(file("$resources/assets/smallerunits/icon.png"))
+        } else {
+            delete(file("$resources/pack.mcmeta"))
+        }
+    }
+}
 
 
 class CSV {

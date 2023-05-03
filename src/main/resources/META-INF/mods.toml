@@ -14,7 +14,7 @@ displayName = "SmallerUnits"
 # A URL for the "homepage" for this mod, displayed in the mod UI
 #displayURL="http://example.com/"
 
-logoFile = "su_ico.png"
+logoFile = "icon.png"
 logoBlur = false
 credits = '''Moony, for the two hammer textures,
 Lorenzo for Italian translations,
