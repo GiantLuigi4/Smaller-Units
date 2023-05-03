@@ -77,7 +77,7 @@ public class SyncPacketS2C extends Packet {
 	
 	public static void tick(
 			//#if FORGE==1
-			//$$net.minecraftforge.event.TickEvent.ClientTickEvent event
+//$$ 			net.minecraftforge.event.TickEvent.ClientTickEvent event
 			//#endif
 	) {
 		ArrayList<Pair<Level, SyncPacketS2C>> toRemove = new ArrayList<>();

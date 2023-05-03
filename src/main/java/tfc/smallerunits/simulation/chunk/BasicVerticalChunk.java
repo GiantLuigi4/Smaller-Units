@@ -324,7 +324,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			super.addAndRegisterBlockEntity(pBlockEntity);
 			this.updateBlockEntityTicker(pBlockEntity);
 			//#if FORGE
-			PlatformUtils.beLoaded(pBlockEntity, level);
+//$$ 			PlatformUtils.beLoaded(pBlockEntity, level);
 			//#endif
 		}
 	}

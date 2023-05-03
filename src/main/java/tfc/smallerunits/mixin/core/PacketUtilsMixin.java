@@ -22,12 +22,12 @@ public class PacketUtilsMixin {
 		}
 	}
 	
-	@Inject(at = @At("HEAD"), method = {"lambda$ensureRunningOnSameThread$0(Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/protocol/Packet;)V\n", "method_11072"}, require = 0)
+	@Inject(at = @At("HEAD"), method = {"lambda$ensureRunningOnSameThread$0(Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/protocol/Packet;)V", "method_11072"}, require = 0)
 	private static <T extends PacketListener> void preHandlePacket(PacketListener listener, Packet packet, CallbackInfo ci) {
 		PacketUtilMess.preHandlePacket(listener, packet);
 	}
 	
-	@Inject(at = @At("RETURN"), method = {"lambda$ensureRunningOnSameThread$0(Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/protocol/Packet;)V\n", "method_11072"}, require = 0)
+	@Inject(at = @At("RETURN"), method = {"lambda$ensureRunningOnSameThread$0(Lnet/minecraft/network/PacketListener;Lnet/minecraft/network/protocol/Packet;)V", "method_11072"}, require = 0)
 	private static <T extends PacketListener> void postHandlePacket(PacketListener listener, Packet packet, CallbackInfo ci) {
 		PacketUtilMess.postHandlePacket(listener, packet);
 	}

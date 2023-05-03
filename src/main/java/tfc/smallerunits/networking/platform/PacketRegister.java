@@ -15,9 +15,9 @@ import java.util.function.Predicate;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 
 //#if FORGE==1
-//$$import net.minecraftforge.network.NetworkRegistry;
-//$$import net.minecraftforge.network.PacketDistributor;
-//$$import net.minecraftforge.network.simple.SimpleChannel;
+//$$ import net.minecraftforge.network.NetworkRegistry;
+//$$ import net.minecraftforge.network.PacketDistributor;
+//$$ import net.minecraftforge.network.simple.SimpleChannel;
 //#else
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -30,7 +30,7 @@ public class PacketRegister {
 	Object2IntOpenHashMap<Class<? extends Packet>> class2IdMap = new Object2IntOpenHashMap<>();
 	
 	//#if FORGE==1
-	//$$final SimpleChannel NETWORK_INSTANCE;
+//$$ 	final SimpleChannel NETWORK_INSTANCE;
 	//#endif
 	
 	public PacketRegister(
@@ -42,11 +42,11 @@ public class PacketRegister {
 		this.channel = name;
 		
 		//#if FORGE==1
-		//$$NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
-		//$$		new ResourceLocation("smaller_units", "main"),
-		//$$		() -> networkVersion,
-		//$$		clientChecker, serverChecker
-		//$$);
+//$$ 		NETWORK_INSTANCE = NetworkRegistry.newSimpleChannel(
+//$$ 				new ResourceLocation("smaller_units", "main"),
+//$$ 				() -> networkVersion,
+//$$ 				clientChecker, serverChecker
+//$$ 		);
 		//#else
 		if (PlatformUtils.isClient()) {
 			ClientPlayNetworking.registerGlobalReceiver(
@@ -67,10 +67,10 @@ public class PacketRegister {
 	
 	public net.minecraft.network.protocol.Packet<?> toVanillaPacket(Packet wrapperPacket, NetworkDirection toClient) {
 		//#if FORGE==1
-		//$$return switch (toClient) {
-		//$$	case TO_CLIENT -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
-		//$$	case TO_SERVER -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER);
-		//$$};
+//$$ 		return switch (toClient) {
+//$$ 			case TO_CLIENT -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT);
+//$$ 			case TO_SERVER -> NETWORK_INSTANCE.toVanillaPacket(wrapperPacket, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER);
+//$$ 		};
 		//#else
 		FriendlyByteBuf buf = encode(wrapperPacket);
 		return switch (toClient) {
@@ -93,33 +93,33 @@ public class PacketRegister {
 				new PacketEntry<>(clazz, writer, fabricator, handler)
 		);
 		//#if FORGE==1
-		//$$NETWORK_INSTANCE.registerMessage(
-		//$$		indx,
-		//$$		clazz,
-		//$$		writer::accept,
-		//$$		fabricator,
-		//$$		(pkt, ctx) -> {
-		//$$			NetCtx ctx1 = new NetCtx(
-		//$$					ctx.get().getNetworkManager().getPacketListener(),
-		//$$					new PacketSender(this, (pkt1) -> {
-		//$$						if (ctx.get().getDirection().getReceptionSide().isServer()) {
-		//$$							NETWORK_INSTANCE.send(
-		//$$									PacketDistributor.PLAYER.with(() -> ctx.get().getSender()),
-		//$$									pkt1
-		//$$							);
-		//$$						} else {
-		//$$							NETWORK_INSTANCE.sendToServer(pkt1);
-		//$$						}
-		//$$					}),
-		//$$					ctx.get().getSender(),
-		//$$					switch (ctx.get().getDirection()) {
-		//$$						case PLAY_TO_CLIENT, LOGIN_TO_CLIENT -> NetworkDirection.TO_CLIENT;
-		//$$						case PLAY_TO_SERVER, LOGIN_TO_SERVER -> NetworkDirection.TO_SERVER;
-		//$$					}
-		//$$			);
-		//$$			handler.accept(pkt, ctx1);
-		//$$		}
-		//$$);
+//$$ 		NETWORK_INSTANCE.registerMessage(
+//$$ 				indx,
+//$$ 				clazz,
+//$$ 				writer::accept,
+//$$ 				fabricator,
+//$$ 				(pkt, ctx) -> {
+//$$ 					NetCtx ctx1 = new NetCtx(
+//$$ 							ctx.get().getNetworkManager().getPacketListener(),
+//$$ 							new PacketSender(this, (pkt1) -> {
+//$$ 								if (ctx.get().getDirection().getReceptionSide().isServer()) {
+//$$ 									NETWORK_INSTANCE.send(
+//$$ 											PacketDistributor.PLAYER.with(() -> ctx.get().getSender()),
+//$$ 											pkt1
+//$$ 									);
+//$$ 								} else {
+//$$ 									NETWORK_INSTANCE.sendToServer(pkt1);
+//$$ 								}
+//$$ 							}),
+//$$ 							ctx.get().getSender(),
+//$$ 							switch (ctx.get().getDirection()) {
+//$$ 								case PLAY_TO_CLIENT, LOGIN_TO_CLIENT -> NetworkDirection.TO_CLIENT;
+//$$ 								case PLAY_TO_SERVER, LOGIN_TO_SERVER -> NetworkDirection.TO_SERVER;
+//$$ 							}
+//$$ 					);
+//$$ 					handler.accept(pkt, ctx1);
+//$$ 				}
+//$$ 		);
 		//#endif
 		class2IdMap.put(clazz, indx);
 	}
@@ -135,7 +135,7 @@ public class PacketRegister {
 	public FriendlyByteBuf encode(Packet pkt) {
 		FriendlyByteBuf buf = PlatformUtils.newByteBuf();
 		//#if FORGE==1
-		//$$NETWORK_INSTANCE.encodeMessage(pkt, buf);
+//$$ 		NETWORK_INSTANCE.encodeMessage(pkt, buf);
 		//#else
 		int id = getId(pkt);
 		buf.writeByte(id & 255);

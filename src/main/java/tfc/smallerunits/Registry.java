@@ -27,11 +27,11 @@ public class Registry {
 		list.add(new ItemStack(GROWER.get()));
 	}).build();
 	//#else
-	//$$public static final CreativeModeTab tab = new CreativeModeTab("Smaller Units") {
-	//$$	@Override
-	//$$	public ItemStack makeIcon() {
-	//$$		return new ItemStack(SHRINKER.get());
-	//$$	}
-	//$$};
+//$$ 	public static final CreativeModeTab tab = new CreativeModeTab("Smaller Units") {
+//$$ 		@Override
+//$$ 		public ItemStack makeIcon() {
+//$$ 			return new ItemStack(SHRINKER.get());
+//$$ 		}
+//$$ 	};
 	//#endif
 }

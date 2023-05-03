@@ -5,7 +5,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.networking.Packet;
 
 //#if FORGE==1
-//$$import net.minecraftforge.network.PacketDistributor;
+//$$ import net.minecraftforge.network.PacketDistributor;
 //#endif
 
 import java.util.function.BiConsumer;
@@ -15,7 +15,7 @@ public class PacketTarget {
 		//#if FABRIC==1
 		net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(register.channel, register.encode(pkt));
 		//#else
-		//$$register.NETWORK_INSTANCE.sendToServer(pkt);
+//$$ 		register.NETWORK_INSTANCE.sendToServer(pkt);
 		//#endif
 	});
 	
@@ -32,7 +32,7 @@ public class PacketTarget {
 					e -> net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(e, register.channel, register.encode(pkt))
 			);
 			//#else
-			//$$register.NETWORK_INSTANCE.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> chunk), pkt);
+//$$ 			register.NETWORK_INSTANCE.send(net.minecraftforge.network.PacketDistributor.TRACKING_CHUNK.with(() -> chunk), pkt);
 			//#endif
 		});
 	}
@@ -42,7 +42,7 @@ public class PacketTarget {
 			//#if FABRIC==1
 			net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking.send(player, register.channel, register.encode(pkt));
 			//#else
-			//$$register.NETWORK_INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), pkt);
+//$$ 			register.NETWORK_INSTANCE.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), pkt);
 			//#endif
 		});
 	}

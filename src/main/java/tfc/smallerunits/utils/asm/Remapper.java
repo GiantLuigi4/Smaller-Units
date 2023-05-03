@@ -26,10 +26,10 @@ public class Remapper {
 		return resolver.mapFieldName("intermediary", info.owner().replace("/", "."), info.method(), info.desc()) + mapType(info.desc());
 	}
 	//#else
-	//$$public Remapper() { }
-	//$$public String mapClass(String clz) { return clz; }
-	//$$public String mapMethod(MappingInfo info) { return net.minecraftforge.coremod.api.ASMAPI.mapMethod(info.method()); }
-	//$$public String mapField(MappingInfo info) { return net.minecraftforge.coremod.api.ASMAPI.mapField(info.method()); }
+//$$ 	public Remapper() { }
+//$$ 	public String mapClass(String clz) { return clz; }
+//$$ 	public String mapMethod(MappingInfo info) { return net.minecraftforge.coremod.api.ASMAPI.mapMethod(info.method()); }
+//$$ 	public String mapField(MappingInfo info) { return net.minecraftforge.coremod.api.ASMAPI.mapField(info.method()); }
 	//#endif
 	//@formatter:on
 	

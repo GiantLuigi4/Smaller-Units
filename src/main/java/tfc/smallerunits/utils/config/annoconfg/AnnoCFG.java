@@ -157,14 +157,14 @@ public class AnnoCFG {
 		java.io.File fl = new java.io.File(net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir() + "/" + file);
 		if (fl.exists()) internal.read(fl);
 		else internal.write(fl);
-		
+
 		onConfigChange();
 		//#else
-		//$$net.minecraftforge.fml.ModLoadingContext.get().registerConfig(switch (type) {
-		//$$	case SERVER -> net.minecraftforge.fml.config.ModConfig.Type.SERVER;
-		//$$	case COMMON -> net.minecraftforge.fml.config.ModConfig.Type.COMMON;
-		//$$	case CLIENT -> net.minecraftforge.fml.config.ModConfig.Type.CLIENT;
-		//$$}, (((tfc.smallerunits.utils.config.annoconfg.forge.ForgeConfig) internal).getConfigSpec()), file);
+//$$ 		net.minecraftforge.fml.ModLoadingContext.get().registerConfig(switch (type) {
+//$$ 			case SERVER -> net.minecraftforge.fml.config.ModConfig.Type.SERVER;
+//$$ 			case COMMON -> net.minecraftforge.fml.config.ModConfig.Type.COMMON;
+//$$ 			case CLIENT -> net.minecraftforge.fml.config.ModConfig.Type.CLIENT;
+//$$ 		}, (((tfc.smallerunits.utils.config.annoconfg.forge.ForgeConfig) internal).getConfigSpec()), file);
 		//#endif
 	}
 }

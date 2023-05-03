@@ -171,8 +171,8 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		//#if FABRIC
 		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents.CHUNK_LOAD.invoker().onChunkLoad((ClientLevel) level, ck[i]);
 		//#else
-		//$$net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
-		//$$		new net.minecraftforge.event.level.ChunkEvent.Load(ck[i]));
+//$$ 		net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(
+//$$ 				new net.minecraftforge.event.level.ChunkEvent.Load(ck[i]));
 		//#endif
 		
 		return ck[i];
