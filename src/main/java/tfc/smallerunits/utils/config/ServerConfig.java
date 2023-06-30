@@ -1,6 +1,5 @@
-package tfc.smallerunits.utils.config;
+package tfc.smallerunits.utils.config.config;
 
-import net.minecraft.client.gui.screens.Screen;
 import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
 import tfc.smallerunits.utils.config.annoconfg.ConfigSide;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;

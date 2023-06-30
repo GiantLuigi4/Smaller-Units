@@ -2,7 +2,6 @@ package tfc.smallerunits.utils.config.annoconfg;
 
 import net.fabricmc.loader.api.FabricLoader;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.CFGSegment;
-import tfc.smallerunits.utils.config.annoconfg.annotation.format.Config;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Name;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.Skip;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
@@ -26,10 +25,10 @@ public class AnnoCFG {
 	
 	private static final ArrayList<AnnoCFG> configs = new ArrayList<>();
 	
-	tfc.smallerunits.utils.config.annoconfg.Config internal;
+	Config internal;
 	
 	public AnnoCFG(Class<?> clazz) {
-		Config configDescriptor = clazz.getAnnotation(Config.class);
+		tfc.smallerunits.utils.config.annoconfg.annotation.format.Config configDescriptor = clazz.getAnnotation(tfc.smallerunits.utils.config.annoconfg.annotation.format.Config.class);
 		
 		String translationRoot = configDescriptor.path().replace("/", "_") + configDescriptor.namespace() + ":" + configDescriptor.type().name().toLowerCase();
 		
