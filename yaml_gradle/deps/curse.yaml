@@ -4,8 +4,8 @@
 
 # mods that SU compiles against
 compile:
-  (bits_and_chisels): 420709 3841599
-  (chisel_and_bits): 561059 4449159
+  bits_and_chisels: 420709 3841599
+  chisel_and_bits: 561059 4449159
   pehkui: 319596 4492272
   (alternate_current): 548115 4406080
 

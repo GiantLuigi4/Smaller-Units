@@ -11,5 +11,5 @@ deps:
   # pehkui
   -KanosConfig: com.github.Virtuoel 0.4.0
   # C&B
-  -(scena-fabric): com.communi-suggestu.scena 1.0.95
-  -(saecularia-caudices-fabric): com.communi-suggestu.saecularia-caudices 1.0.16
+  -scena-fabric: com.communi-suggestu.scena 1.0.95
+  -saecularia-caudices-fabric: com.communi-suggestu.saecularia-caudices 1.0.16
