@@ -58,6 +58,7 @@ public class JsonCfgBuilder extends CfgBuilder {
 			}
 			
 			void merge(JsonObject into, JsonObject from) {
+				JsonObject dst = new JsonObject();
 				for (String s : into.keySet()) {
 					JsonElement intoEl = into.get(s);
 					JsonElement fromEl = from.get(s);
@@ -65,9 +66,12 @@ public class JsonCfgBuilder extends CfgBuilder {
 					if (intoEl.isJsonObject()) {
 						merge((JsonObject) intoEl, (JsonObject) fromEl);
 					} else {
-						into.remove(s);
-						into.add(s, fromEl);
+						dst.add(s, fromEl);
 					}
+				}
+				for (String s : dst.keySet()) {
+					into.remove(s);
+					into.add(s, dst.get(s));
 				}
 			}
 			

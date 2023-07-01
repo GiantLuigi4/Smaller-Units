@@ -1,4 +1,4 @@
-package tfc.smallerunits.utils.config.config;
+package tfc.smallerunits.utils.config;
 
 import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
 import tfc.smallerunits.utils.config.annoconfg.ConfigSide;

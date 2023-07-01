@@ -47,6 +47,10 @@ public class BigWorldPredictionHandler extends BlockStatePredictionHandler {
 		while (iterator.hasNext()) {
 			Map.Entry<BlockPos, ServerVerifiedState> entry = iterator.next();
 			ServerVerifiedState state = entry.getValue();
+			if (state == null || state.blockState == null) {
+				iterator.remove();
+				continue;
+			}
 			
 			if (state.sequenceIndex <= i) {
 				level.syncBlockState(entry.getKey(), state.blockState, state.playerPos);

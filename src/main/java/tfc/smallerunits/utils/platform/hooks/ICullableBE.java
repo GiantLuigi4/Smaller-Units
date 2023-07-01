@@ -38,30 +38,39 @@ public interface ICullableBE {
 				).move(pBlockEntity.getBlockPos());
 				
 				// account for open lids
-				if (lidBlockEntity.getOpenNess(1) != 0) {
+				float open = lidBlockEntity.getOpenNess(1);
+				if (open != 0) {
 					bb.expandTowards(
 							-dir.getStepX() * (6 / 16f),
 							(11 / 16f),
 							-dir.getStepZ() * (6 / 16f)
 					);
+				} else if (open < 0.5) {
+					bb.expandTowards(
+							dir.getStepX() / 16f,
+							0,
+							dir.getStepZ() / 16f
+					);
 				}
 				
-				ChestType type = state.getValue(ChestBlock.TYPE);
-				// fill in 1 px gap caused by using the standalone bounding box
-				if (type == ChestType.RIGHT) {
-					Direction side = dir.getCounterClockWise();
-					bb.expandTowards(
-							side.getStepX() * (1 / 16f),
-							0,
-							side.getStepZ() * (1 / 16f)
-					);
-				} else if (type == ChestType.LEFT) {
-					Direction side = dir.getClockWise();
-					bb.expandTowards(
-							side.getStepX() * (1 / 16f),
-							0,
-							side.getStepZ() * (1 / 16f)
-					);
+				if (state.hasProperty(ChestBlock.TYPE)) {
+					ChestType type = state.getValue(ChestBlock.TYPE);
+					// fill in 1 px gap caused by using the standalone bounding box
+					if (type == ChestType.RIGHT) {
+						Direction side = dir.getCounterClockWise();
+						bb.expandTowards(
+								side.getStepX() * (1 / 16f),
+								0,
+								side.getStepZ() * (1 / 16f)
+						);
+					} else if (type == ChestType.LEFT) {
+						Direction side = dir.getClockWise();
+						bb.expandTowards(
+								side.getStepX() * (1 / 16f),
+								0,
+								side.getStepZ() * (1 / 16f)
+						);
+					}
 				}
 				
 				return bb;
