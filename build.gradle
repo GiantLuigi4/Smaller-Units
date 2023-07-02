@@ -259,6 +259,30 @@ dependencies {
         }
     }
 
+    {
+        FileInputStream stream2 = new FileInputStream(project.file("yaml_gradle/repositories.yaml"))
+        byte[] data2 = stream2.readAllBytes()
+        stream2.close()
+        String text = new String(data2)
+
+        Yaml yml = new Yaml(text)
+        if (yml.getEntries().containsKey("flatdir")) {
+            String e = yml.getText("flatdir")
+            e = e.substring(1, e.length() - 1)
+            System.out.println(": Flatdirs")
+            if (new File(e).exists()) {
+                System.out.println(":-| " + e)
+                for (File f : new File(e).listFiles()) {
+                    String name = f.getName().replace(".jar", "")
+                    String[] split = name.split("-", 2)
+                    String lib = "flatdir.lib:" + split[0] + ":" + split[1]
+                    System.out.println(":-|-| " + lib)
+                    modApi lib
+                }
+            }
+        }
+    }
+
     System.out.println(": Libraries")
     for (Object[] line : libraryLines) {
         Yaml depYaml = (Yaml) line[0]

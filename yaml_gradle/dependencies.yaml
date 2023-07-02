@@ -19,6 +19,12 @@ traditional_deobf:
   file: "deps/traditional_deobf.yaml"
   deobf: true
 
+
+traditional:
+  template: "$r0:$l:$r1"
+  file: "deps/traditional.yaml"
+  deobf: false
+
 cca:
   template: "dev.onyxstudios.cardinal-components-api:cardinal-components-$l:$r0"
   file: "deps/cca.yaml"
