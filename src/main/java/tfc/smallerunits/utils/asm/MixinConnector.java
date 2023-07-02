@@ -46,7 +46,12 @@ public class MixinConnector implements IMixinConfigPlugin {
 		}
 		
 		{
-			dependencies.put("tfc.smallerunits.mixin.compat.fapi.RenderWorld", "net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.RenderWorld", "net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView");
+			// tbh I'm pretty sure these should always be present if SU's present
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ClientPlayNetworkingMixin", "net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ServerPlayNetworking", "net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ServerMixin", "net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ServerPlayNetworkingAddonMixin", "net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon");
 		}
 	}
 	

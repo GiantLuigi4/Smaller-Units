@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.fapi;
+package tfc.smallerunits.mixin.compat.fabric;
 
 import net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView;
 import org.spongepowered.asm.mixin.Mixin;

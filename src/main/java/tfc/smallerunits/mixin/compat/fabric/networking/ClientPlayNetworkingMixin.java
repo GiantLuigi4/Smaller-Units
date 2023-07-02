@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.core.gui.common;
+package tfc.smallerunits.mixin.compat.fabric.networking;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
