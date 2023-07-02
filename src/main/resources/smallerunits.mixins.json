@@ -48,6 +48,7 @@
     "LevelRendererMixin",
     "LevelRendererMixinBlocks",
     "compat.ChiselAndBitMeshMixin",
+    "compat.fapi.RenderWorldMixin",
     "compat.ip.PacketRedirectionClientMixin",
     "compat.sodium.LevelMixin",
     "compat.sodium.RenderSectionManagerMixin",

@@ -1,13 +1,10 @@
 package tfc.smallerunits.utils.asm;
 
 import net.fabricmc.loader.api.FabricLoader;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +15,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> classLookup = new ArrayList<>();
 	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
+	private static final HashMap<String, String> dependencies = new HashMap<>();
 	
 	public static final boolean isFabric;
 	
@@ -46,6 +44,10 @@ public class MixinConnector implements IMixinConfigPlugin {
 			
 			isFabric = fabric;
 		}
+		
+		{
+			dependencies.put("tfc.smallerunits.mixin.compat.fapi.RenderWorld", "net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView");
+		}
 	}
 	
 	@Override
@@ -66,9 +68,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		if (mixinClassName.contains(".fabric.")) {
+		if (mixinClassName.contains(".fabric."))
 			return isFabric;
-		}
+		
 		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -82,6 +84,21 @@ public class MixinConnector implements IMixinConfigPlugin {
 			}
 			return false;
 		}
+		
+		if (dependencies.containsKey(mixinClassName)) {
+			ClassLoader loader = MixinConnector.class.getClassLoader();
+			// tests if the classloader contains a .class file for the target
+			InputStream stream = loader.getResourceAsStream(dependencies.get(mixinClassName).replace('.', '/') + ".class");
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (Throwable ignored) {
+				}
+				return true;
+			}
+			return false;
+		}
+		
 		if (incompatibilityMap.containsKey(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -99,6 +116,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			}
 			return false;
 		}
+		
 		return true;
 	}
 	
