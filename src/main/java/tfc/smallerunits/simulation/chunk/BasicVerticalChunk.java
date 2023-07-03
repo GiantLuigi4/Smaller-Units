@@ -482,8 +482,10 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public void setUnsaved(boolean pUnsaved) {
 		if (pUnsaved) {
-			if (level instanceof TickerServerLevel) {
-				((TickerServerLevel) level).saveWorld.markForSave(this);
+			if (!super.isUnsaved()) {
+				if (level instanceof TickerServerLevel) {
+					((TickerServerLevel) level).saveWorld.markForSave(this);
+				}
 			}
 		}
 		super.setUnsaved(pUnsaved);
@@ -562,6 +564,9 @@ public class BasicVerticalChunk extends LevelChunk {
 		
 		SectionPos pPosAsSectionPos = SectionPos.of(parentPos);
 		BlockState oldState = section.setBlockState(j, k, l, state);
+		
+		if (!level.isClientSide)
+			setUnsaved(true);
 		
 		if (level.isClientSide) {
 			ChunkAccess ac = chunkCache.get(pPosAsSectionPos);
