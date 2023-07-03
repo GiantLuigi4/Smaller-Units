@@ -1171,4 +1171,9 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public int getMaxBuildHeight() {
 		return upb * 512 + 32;
 	}
+	
+	@Override
+	public boolean chunkExists(SectionPos pos) {
+		return saveWorld.chunkExists(pos);
+	}
 }

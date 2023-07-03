@@ -10,7 +10,6 @@ import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -30,7 +29,6 @@ import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.PacketTarget;
 import tfc.smallerunits.networking.SUNetworkRegistry;
-import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.platform.NetworkDirection;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -109,12 +107,24 @@ public class UnitSpace {
 			for (int z = 0; z < unitsPerBlock; z += 15) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
-				if (chunk == null) continue;
-				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
+				boolean anyExists = false;
 				for (int y = 0; y < unitsPerBlock; y += 15) {
-					vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4);
+					if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, y, pZ))) {
+						anyExists = true;
+						break;
+					}
+				}
+				if (anyExists) {
+					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+					if (chunk == null) continue;
+					BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
+					
+					for (int y = 0; y < unitsPerBlock; y += 15) {
+						if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, (y + myPosInTheLevel.getY()) >> 4, pZ))) {
+							vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4);
+						}
+					}
 				}
 			}
 		}
@@ -213,8 +223,15 @@ public class UnitSpace {
 			for (int z = 0; z < unitsPerBlock; z++) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
-				if (chunk == null) continue;
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				
+				if (chunk == null) {
+					for (int y = 0; y < unitsPerBlock; y++)
+						states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
+					
+					continue;
+				}
+				
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
 				for (int y = 0; y < unitsPerBlock; y++) {
@@ -242,6 +259,7 @@ public class UnitSpace {
 				}
 			}
 		}
+		
 		return states;
 	}
 	
@@ -265,14 +283,19 @@ public class UnitSpace {
 				for (int z = 0; z < unitsPerBlock; z++) {
 					int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 					int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
-					if (chunk == null) continue;
+					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 					BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 					
 					for (int y = 0; y < unitsPerBlock; y++) {
 						int indx = (((x * unitsPerBlock) + y) * unitsPerBlock) + z;
 						if (states[indx] == null) continue;
 						if (states[indx] == Blocks.AIR.defaultBlockState()) continue;
+						
+						if (chunk == null) {
+							chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+							vc = (BasicVerticalChunk) chunk;
+						}
+						
 						pos.set(x, y, z);
 						BlockPos pz = getOffsetPos(pos);
 						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
@@ -424,7 +447,7 @@ public class UnitSpace {
 			for (int z = 0; z < unitsPerBlock; z += 15) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 				if (chunk == null) continue;
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				

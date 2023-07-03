@@ -45,6 +45,7 @@ public interface ITickerLevel {
 	void addInteractingEntity(Entity e);
 	void removeInteractingEntity(Entity e);
 	void ungrab(Player entitiesOfClass);
+	boolean chunkExists(SectionPos pos);
 	//@formatter:on
 	
 	default NetworkingHacks.LevelDescriptor getDescriptor() {

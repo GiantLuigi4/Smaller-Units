@@ -1015,4 +1015,9 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	public int getMaxBuildHeight() {
 		return upb * 512 + 32;
 	}
+	
+	@Override
+	public boolean chunkExists(SectionPos pos) {
+		return false;
+	}
 }
