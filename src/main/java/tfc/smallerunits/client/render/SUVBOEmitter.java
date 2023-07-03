@@ -21,14 +21,11 @@ import tfc.smallerunits.client.render.util.TranslatingVertexBuilder;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.Math1D;
-import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.storage.DefaultedMap;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 
 public class SUVBOEmitter {
 	private static final ArrayList<BufferStorage> vbosFree = new ArrayList<>();
@@ -118,7 +115,7 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
-					if (block.isAir()) continue;
+					if (block == null || block.isAir()) continue;
 					
 					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {

@@ -170,7 +170,7 @@ public class UnitSpace {
 			numBlocks = tag.getInt("countBlocks");
 		} else {
 			for (BlockState block : getBlocks()) {
-				if (!block.isAir())
+				if (block != null && !block.isAir())
 					addState(block);
 			}
 		}
@@ -218,6 +218,7 @@ public class UnitSpace {
 	public BlockState[] getBlocks() {
 		numBlocks = 0;
 		final BlockState[] states = new BlockState[unitsPerBlock * unitsPerBlock * unitsPerBlock];
+		
 		BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
 		for (int x = 0; x < unitsPerBlock; x++) {
 			for (int z = 0; z < unitsPerBlock; z++) {
@@ -225,12 +226,7 @@ public class UnitSpace {
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
 				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 				
-				if (chunk == null) {
-					for (int y = 0; y < unitsPerBlock; y++)
-						states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
-					
-					continue;
-				}
+				if (chunk == null) continue;
 				
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
@@ -244,11 +240,7 @@ public class UnitSpace {
 						else trg = ((y >> 4) << 4) + 15;
 						if (trg > (unitsPerBlock - 1)) trg = (unitsPerBlock - 1);
 						
-						while (y < trg) {
-							states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
-							y++;
-						}
-						states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
+						y = trg;
 						
 						continue;
 					}
