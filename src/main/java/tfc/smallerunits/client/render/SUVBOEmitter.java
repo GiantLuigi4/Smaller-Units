@@ -144,7 +144,11 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
-					if (block.isAir()) continue;
+					if (block == null || block.isAir()) continue;
+					
+					// for some reason
+					// this single line of code causes a lot of lag
+					// TODO: what???
 					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
 						if (ItemBlockRenderTypes.canRenderInLayer(fluid, chunkBufferLayer)) {
@@ -166,7 +170,8 @@ public class SUVBOEmitter {
 							endBlock(consumer);
 						}
 					}
-					if (block.getRenderShape() != RenderShape.INVISIBLE) {
+					
+					if (block.getRenderShape() == RenderShape.MODEL) {
 						if (ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							stk.pushPose();

@@ -46,18 +46,17 @@ public class SyncPacketS2C extends Packet {
 		ArrayList<CompoundTag> beData = new ArrayList<>();
 		for (BlockEntity tile : tiles) {
 			if (tile != null) {
-				net.minecraft.network.protocol.Packet<?> pkt = tile.getUpdatePacket();
-				if (pkt instanceof ClientboundBlockEntityDataPacket) {
-					CompoundTag tag = ((ClientboundBlockEntityDataPacket) pkt).getTag();
-					if (tag == null) continue;
-					CompoundTag tg = new CompoundTag();
-					tg.put("data", tag);
-					tg.putInt("x", tile.getBlockPos().getX());
-					tg.putInt("y", tile.getBlockPos().getY());
-					tg.putInt("z", tile.getBlockPos().getZ());
-					tg.putString("id", tile.getType().toString());
-					beData.add(tg);
-				}
+				CompoundTag tag = tile.getUpdateTag();
+				
+				//noinspection ConstantConditions
+				if (tag == null || tag.isEmpty()) continue;
+				CompoundTag tg = new CompoundTag();
+				tg.put("data", tag);
+				tg.putInt("x", tile.getBlockPos().getX());
+				tg.putInt("y", tile.getBlockPos().getY());
+				tg.putInt("z", tile.getBlockPos().getZ());
+				tg.putString("id", tile.getType().toString());
+				beData.add(tg);
 			}
 		}
 		natural = space.isNatural;

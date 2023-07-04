@@ -500,6 +500,17 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		}
 		
 		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		
+		// improve precision
+		Vec3 hit = closest.getLocation();
+		Vec3 look = start.subtract(end).normalize().scale(0.5f);
+		
+		BlockPos pos = closest.getBlockPos();
+		BlockState state = getBlockState(pos);
+		VoxelShape shape = state.getShape(this, pos);
+		closest = shape.clip(hit.add(look), end.subtract(look), pos);
+		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		
 		return closest;
 	}
 	
@@ -507,12 +518,12 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
 		if (result == null) return null;
 		
+		// improve precision
 		if (!result.getType().equals(HitResult.Type.MISS)) {
 			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-			off = off.normalize().scale(1d / upb);
-			Vec3 st = result.getLocation().add(off);
-			Vec3 ed = result.getLocation().subtract(off);
-			return sp.clip(st, ed, pos);
+			off = off.normalize().scale(0.5f);
+			Vec3 hit = result.getLocation();
+			return sp.clip(hit.add(off), hit.subtract(off), pos);
 		}
 		return result;
 	}
@@ -1063,5 +1074,10 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 	@Override
 	public int getMaxBuildHeight() {
 		return upb * 512 + 32;
+	}
+	
+	@Override
+	public boolean chunkExists(SectionPos pos) {
+		return false;
 	}
 }

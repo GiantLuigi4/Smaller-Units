@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.data.access.SUScreenAttachments;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkContext;
 import tfc.smallerunits.networking.hackery.NetworkHandlingContext;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
@@ -34,40 +35,47 @@ public class NetworkContextMixin {
 			NetworkingHacks.increaseBlockPosPrecision.set(true);
 			NetworkingHacks.setPos(descriptor);
 			NetworkingHacks.currentContext.set(nhcontext);
-
-//			info.adjust(context.player, nhcontext.targetLevel, descriptor.upb(), descriptor.pos());
-			if (context.player.level != nhcontext.targetLevel) {
+			
+			Level preHandleLevel = context.player.level;
+			
+			if (context.player.level != nhcontext.targetLevel)
 				info.adjust(context.player, context.player.level, descriptor, direction.getReceptionSide().isServer());
-			}
 			
 			Object old = null;
 			boolean toServer = direction.getReceptionSide().isServer();
 			if (toServer) old = context.player.containerMenu;
 			else old = IHateTheDistCleaner.getScreen();
 			// get level
-			Level preHandleLevel = context.player.level;
 			int upb = 0;
 			if (preHandleLevel instanceof ITickerLevel tl) upb = tl.getUPB();
 			// TODO: debug this garbage
-			((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(preHandleLevel);
+			((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(context.player.level);
 			
-			src.run(); // run deferred work
+			try {
+				src.run(); // run deferred work
+			} catch (Throwable err) {
+				Loggers.PACKET_HACKS_LOGGER.error("-- A wrapped packet has encountered an error: desyncs are imminent --");
+				err.printStackTrace();
+			}
 			
 			if (toServer) {
 				Object newV = context.player.containerMenu;
 				if (old != newV) {
 					if (newV != context.player.inventoryMenu) {
-						((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
+						((SUScreenAttachments) newV).setup(info, context.player.level, descriptor);
 					}
 				}
 			} else {
 				Object newV = IHateTheDistCleaner.getScreen();
 				if (old != newV) {
 					if (newV != null) {
-						((SUScreenAttachments) newV).setup(info, preHandleLevel, descriptor);
+						((SUScreenAttachments) newV).setup(info, context.player.level, descriptor);
 					}
 				}
 			}
+			
+			info.reset(context.player);
+			((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(preHandleLevel);
 		};
 		
 		NetworkingHacks.increaseBlockPosPrecision.set(true);
