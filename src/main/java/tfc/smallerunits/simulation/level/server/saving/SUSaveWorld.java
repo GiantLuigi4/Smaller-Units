@@ -215,7 +215,7 @@ public class SUSaveWorld {
 							if (
 									!state.getBlock().equals(Blocks.AIR) ||
 											!state.getFluidState().isEmpty()
-							) shell.setBlockFast(pos, state, cache);
+							) shell.setBlockFast(false, pos, state, cache);
 						}
 					}
 				}
@@ -319,5 +319,10 @@ public class SUSaveWorld {
 		if (chunksToSave.add(basicVerticalChunk)) {
 			basicVerticalChunk.updateModificationTime(level.getLevelData().getGameTime());
 		}
+	}
+	
+	public boolean chunkExists(SectionPos pos) {
+		File fl = getFile(new ChunkPos(pos.x(), pos.z()), pos.y());
+		return fl.exists();
 	}
 }

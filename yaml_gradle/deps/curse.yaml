@@ -6,7 +6,7 @@
 compile:
   chisel_and_bits: 231095 4402503
   pehkui: 319596 4408042
-  alternate_current: 548115 4406066
+  (alternate_current): 548115 4406066
   refinedstorage: 243076 4392788
 
 # graphics enhancements
@@ -21,7 +21,7 @@ optimization:
 
 # invasive mods
 invasive:
-  immprtl: 355440 4385516
+  (immprtl): 355440 4385516
   -clothcfg: 348521 3972423
 
 # vr mods

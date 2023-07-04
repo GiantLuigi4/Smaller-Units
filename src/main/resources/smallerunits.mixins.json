@@ -26,6 +26,7 @@
     "dangit.DimensionDataStorageMixin",
     "dangit.EntityMixin",
     "dangit.MojangWhy",
+    "dangit.ServerGamePacketListenerImplMixin",
     "dangit.block_pos.FriendlyByteBufMixin",
     "dangit.block_pos.RSNetworkNodeManagerMixin",
     "data.FastCapabilityChunkMixin",

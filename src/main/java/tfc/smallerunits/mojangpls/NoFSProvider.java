@@ -4,13 +4,18 @@ import net.minecraftforge.fml.CrashReportCallables;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.channels.AsynchronousFileChannel;
+import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.*;
 import java.nio.file.attribute.*;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 public class NoFSProvider extends FileSystemProvider {
 	public static final NoFSProvider INSTANCE = new NoFSProvider();
@@ -273,5 +278,30 @@ public class NoFSProvider extends FileSystemProvider {
 	@Override
 	public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
 	
+	}
+	
+	@Override
+	public FileSystem newFileSystem(Path path, Map<String, ?> env) throws IOException {
+		return super.newFileSystem(path, env);
+	}
+	
+	@Override
+	public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
+		return super.newInputStream(path, options);
+	}
+	
+	@Override
+	public OutputStream newOutputStream(Path path, OpenOption... options) throws IOException {
+		return super.newOutputStream(path, options);
+	}
+	
+	@Override
+	public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
+		return super.newFileChannel(path, options, attrs);
+	}
+	
+	@Override
+	public AsynchronousFileChannel newAsynchronousFileChannel(Path path, Set<? extends OpenOption> options, ExecutorService executor, FileAttribute<?>... attrs) throws IOException {
+		return super.newAsynchronousFileChannel(path, options, executor, attrs);
 	}
 }

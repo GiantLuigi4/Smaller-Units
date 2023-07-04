@@ -105,12 +105,24 @@ public class UnitSpace {
 			for (int z = 0; z < unitsPerBlock; z += 15) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
-				if (chunk == null) continue;
-				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
+				boolean anyExists = false;
 				for (int y = 0; y < unitsPerBlock; y += 15) {
-					vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4);
+					if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, y, pZ))) {
+						anyExists = true;
+						break;
+					}
+				}
+				if (anyExists) {
+					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+					if (chunk == null) continue;
+					BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
+					
+					for (int y = 0; y < unitsPerBlock; y += 15) {
+						if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, (y + myPosInTheLevel.getY()) >> 4, pZ))) {
+							vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4);
+						}
+					}
 				}
 			}
 		}
@@ -156,7 +168,7 @@ public class UnitSpace {
 			numBlocks = tag.getInt("countBlocks");
 		} else {
 			for (BlockState block : getBlocks()) {
-				if (!block.isAir())
+				if (block != null && !block.isAir())
 					addState(block);
 			}
 		}
@@ -204,13 +216,16 @@ public class UnitSpace {
 	public BlockState[] getBlocks() {
 		numBlocks = 0;
 		final BlockState[] states = new BlockState[unitsPerBlock * unitsPerBlock * unitsPerBlock];
+		
 		BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
 		for (int x = 0; x < unitsPerBlock; x++) {
 			for (int z = 0; z < unitsPerBlock; z++) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
+				
 				if (chunk == null) continue;
+				
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
 				for (int y = 0; y < unitsPerBlock; y++) {
@@ -223,11 +238,7 @@ public class UnitSpace {
 						else trg = ((y >> 4) << 4) + 15;
 						if (trg > (unitsPerBlock - 1)) trg = (unitsPerBlock - 1);
 						
-						while (y < trg) {
-							states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
-							y++;
-						}
-						states[(((x * unitsPerBlock) + y) * unitsPerBlock) + z] = Blocks.AIR.defaultBlockState();
+						y = trg;
 						
 						continue;
 					}
@@ -238,6 +249,7 @@ public class UnitSpace {
 				}
 			}
 		}
+		
 		return states;
 	}
 	
@@ -261,17 +273,22 @@ public class UnitSpace {
 				for (int z = 0; z < unitsPerBlock; z++) {
 					int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 					int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
-					if (chunk == null) continue;
+					ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 					BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 					
 					for (int y = 0; y < unitsPerBlock; y++) {
 						int indx = (((x * unitsPerBlock) + y) * unitsPerBlock) + z;
 						if (states[indx] == null) continue;
 						if (states[indx] == Blocks.AIR.defaultBlockState()) continue;
+						
+						if (chunk == null) {
+							chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+							vc = (BasicVerticalChunk) chunk;
+						}
+						
 						pos.set(x, y, z);
 						BlockPos pz = getOffsetPos(pos);
-						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
+						vc.setBlockFast(false, new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
 						vc.getSubChunk(pz.getY() >> 4).setUnsaved(true);
 						
 						addState(states[indx]);
@@ -304,10 +321,10 @@ public class UnitSpace {
 		return pos.offset(myPosInTheLevel);
 	}
 	
-	public void setFast(int x, int y, int z, BlockState state) {
+	public void setFast(boolean allowSave, int x, int y, int z, BlockState state) {
 		BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 		BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-		vc.setBlockFast(new BlockPos(x, pz.getY(), z), state, new HashMap<>());
+		vc.setBlockFast(allowSave, new BlockPos(x, pz.getY(), z), state, new HashMap<>());
 	}
 	
 	public void clear() {
@@ -419,7 +436,7 @@ public class UnitSpace {
 			for (int z = 0; z < unitsPerBlock; z += 15) {
 				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
 				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
-				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, true);
+				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 				if (chunk == null) continue;
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				

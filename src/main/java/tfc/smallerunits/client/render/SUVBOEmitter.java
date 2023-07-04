@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.model.data.ModelData;
@@ -142,12 +143,13 @@ public class SUVBOEmitter {
 					blockPosMut.set(x, y, z);
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
-					if (block.isAir()) continue;
-					FluidState fluid = block.getFluidState();
+					if (block == null || block.isAir()) continue;
+					
 					BlockPos offsetPos = space.getOffsetPos(blockPosMut);
-					RandomSource randomSource = RandomSource.create(offsetPos.asLong());
-					BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
-					ModelData modelData = Objects.requireNonNull(wld.getModelDataManager()).getAt(offsetPos);
+					// for some reason
+					// this single line of code causes a lot of lag
+					// TODO: what???
+					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
 						RenderType rendertype = ItemBlockRenderTypes.getRenderLayer(fluid);
 						if (rendertype.equals(chunkBufferLayer)) {
@@ -168,7 +170,11 @@ public class SUVBOEmitter {
 							endBlock(consumer);
 						}
 					}
-					if (block.getRenderShape() != RenderShape.INVISIBLE) {
+					
+					if (block.getRenderShape() == RenderShape.MODEL) {
+						RandomSource randomSource = new XoroshiroRandomSource(offsetPos.asLong());
+						ModelData modelData = Objects.requireNonNull(wld.getModelDataManager()).getAt(offsetPos);
+						BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
 						if (model.getRenderTypes(block, randomSource, modelData).contains(chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							stk.pushPose();
@@ -176,10 +182,14 @@ public class SUVBOEmitter {
 							
 							ModelData data = wld.getModelDataManager().getAt(offsetPos);
 							if (data == null) data = ModelData.EMPTY;
+							
 							beginBlock(consumer, offsetPos, block, map, false);
-							dispatcher.renderBatched(
-									block, offsetPos, wld, stk, consumer,
-									true, randomSource, data, chunkBufferLayer
+							dispatcher.getModelRenderer().tesselateBlock(
+									wld, dispatcher.getBlockModel(block),
+									block, offsetPos, stk,
+									consumer, true,
+									randomSource,
+									0, 0
 							);
 							endBlock(consumer);
 							

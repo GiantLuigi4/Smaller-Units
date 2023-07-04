@@ -6,7 +6,6 @@ import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.multiplayer.prediction.BlockStatePredictionHandler;
 import net.minecraft.client.multiplayer.prediction.PredictiveAction;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Final;
@@ -42,9 +41,9 @@ public class MultiPlayerGameModeMixin {
 		if (result instanceof UnitHitResult) {
 			BlockStatePredictionHandler blockStatePredictionHandler = p_233730_.getBlockStatePredictionHandler();
 			int i = blockStatePredictionHandler.currentSequence() + 1;
-			if(p_233731_.predict(i) instanceof ServerboundPlayerActionPacket)
-			// don't send the packet?
-			ci.cancel();
+			if (p_233731_.predict(i) instanceof ServerboundPlayerActionPacket)
+				// don't send the packet?
+				ci.cancel();
 		}
 	}
 }

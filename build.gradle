@@ -1,3 +1,10 @@
+// fabric
+//plugins {
+//    id 'fabric-loom' version '1.1-SNAPSHOT'
+////    id 'org.quiltmc.loom' version '1.0.+'
+//    id 'maven-publish'
+//}
+// forge
 plugins {
     id 'eclipse'
     id 'net.minecraftforge.gradle' version '5.1.+'
@@ -5,35 +12,67 @@ plugins {
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
 
-group = 'tfc'
-version = '2.1.3'
-
-String gameVersion = '1.19.2'
-String forgeVersion = "43.2.3"
-String parchmentVersion = "2022.08.14-$gameVersion"
-
-java {
-    archivesBaseName = "smallerunits-$gameVersion-forge"
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
-}
-
 class Vars {
     static CSV defaultRun
+    static Yaml project
+    static boolean isFabric
 }
 
 void init() {
-    FileInputStream stream = new FileInputStream(project.file("yaml_gradle/runs/all.csv"))
-    byte[] data = stream.readAllBytes()
-    stream.close()
-    Vars.defaultRun = new CSV(new String(data))
+    {
+        FileInputStream stream = new FileInputStream(project.file("yaml_gradle/runs/all.csv"))
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        Vars.defaultRun = new CSV(new String(data))
+    }
+    {
+        FileInputStream stream = new FileInputStream(project.file("yaml_gradle/project.yaml"))
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        Vars.project = new Yaml(new String(data))
+
+        Yaml proj = Vars.project.getYaml("project")
+        Vars.isFabric = proj.getText("platform") == "fabric"
+    }
 }
 
 init()
 
+Yaml proj = Vars.project.getYaml("project")
+String platform = proj.getText("platform")
+String gameVersion = proj.getText("gameVersion")
+String forgeVersion = proj.getText("forgeVersion")
+String fabricVersion = proj.getText("fabricVersion")
+String parchmentVer = proj.getText("parchmentVersion")
+String parchmentVersion = null
 
-import net.minecraftforge.gradle.common.util.RunConfig
+if (Vars.isFabric) parchmentVersion = "$gameVersion:$parchmentVer"
+else parchmentVersion = "$parchmentVer-$gameVersion"
 
-void configure(String name, RunConfig cfg) {
+
+group = 'tfc'
+version = '2.1.3'
+
+java {
+    archivesBaseName = "smallerunits-$gameVersion-$platform"
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+void configureFabric(String name, Object cfg) {
+    File fl = project.file("yaml_gradle/runs/" + name + ".csv")
+    if (fl.exists()) {
+        FileInputStream stream = new FileInputStream(fl)
+        byte[] data = stream.readAllBytes()
+        stream.close()
+        CSV thisRun = new CSV(new String(data))
+
+        for (String[] line : thisRun.text) cfg.programArgs line[0], line[1]
+    }
+
+    for (String[] line : Vars.defaultRun.text) cfg.programArgs line[0], line[1]
+}
+
+void configureForge(String name, Object cfg) {
     cfg.workingDirectory project.file('run')
 
     File fl = project.file("yaml_gradle/runs/" + name + ".csv")
@@ -55,30 +94,51 @@ void configure(String name, RunConfig cfg) {
     }
 }
 
-minecraft {
-    mappings channel: 'parchment', version: parchmentVersion
+if (Vars.isFabric) {
+    loom {
+        accessWidenerPath = file("src/main/resources/smallerunits.accesswidener")
+        mixin.defaultRefmapName = "smallerunits.refmap.json"
 
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    runs {
-        client { configure("client", (RunConfig) it) }
-        server { configure("server", (RunConfig) it) }
-        gameTestServer { configure("gameTestServer", (RunConfig) it) }
-        data { configure("data", (RunConfig) it) }
+        runs {
+            client { configureFabric("client", it) }
+            server { configureFabric("server", it) }
+        }
     }
-}
+} else {
+    mixin {
+        add sourceSets.main, "smallerunits.refmap.json"
+        config "smallerunits.mixins.json"
+        debug.verbose = true
+    }
 
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+    minecraft {
+        mappings channel: 'parchment', version: parchmentVersion
+
+        accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+        runs {
+            client { configureForge("client", it) }
+            server { configureForge("server", it) }
+            gameTestServer { configureForge("gameTestServer", it) }
+            data { configureForge("data", it) }
+        }
+    }
+
+    sourceSets.main.resources { srcDir 'src/generated/resources' }
+}
 
 repositories {
     FileInputStream stream = new FileInputStream(project.file("yaml_gradle/repositories.yaml"))
     byte[] data = stream.readAllBytes()
     stream.close()
+
+    // TODO: update this
     String text = new String(data)
 
     String parsing = ""
     for (String s : text.split("\n")) {
         if (s.trim().isEmpty()) continue
+        if (s.trim().charAt(0) == '#'.charAt(0)) continue
 
         String[] split = s.split(":", 2)
         if (split[0] == "flatdir") {
@@ -104,8 +164,7 @@ repositories {
     }
 }
 
-static String transformLine(boolean isCompileOnly, String template, String name, String right) {
-    if (isCompileOnly) name = name.substring(1, name.length() - 1)
+static String transformLine(String template, String name, String right) {
     String t = template.replace('$l', name)
     String[] split = right.split(" ")
     for (int i = 0; i < split.length; i++)
@@ -113,18 +172,53 @@ static String transformLine(boolean isCompileOnly, String template, String name,
     return t.replace('"', "")
 }
 
+void apply(boolean isJiJ, boolean isDeobf, boolean isCompileOnly, String dep, DependencyHandler handler) {
+    Object o = null
+    if (isDeobf) {
+        if (Vars.isFabric) {
+            if (isCompileOnly) o = handler.modCompileOnly(dep) {
+                if (!dep.startsWith("net.fabricmc.fabric-api:fabric-api")) {
+                    exclude(group: "net.fabricmc.fabric-api")
+                    transitive(false)
+                }
+            } else o = handler.modImplementation(dep) {
+                if (!dep.startsWith("net.fabricmc.fabric-api:fabric-api")) {
+                    exclude(group: "net.fabricmc.fabric-api")
+                    transitive(false)
+                }
+            }
+        } else {
+            if (isCompileOnly) o = handler.compileOnly fg.deobf(dep)
+            else o = handler.implementation fg.deobf(dep)
+        }
+    } else {
+        if (isCompileOnly) o = handler.compileOnly dep
+        else o = handler.implementation dep
+    }
+
+    if (isJiJ) handler.include o
+}
+
 dependencies {
-    minecraft "net.minecraftforge:forge:$gameVersion-$forgeVersion"
+    if (Vars.isFabric) {
+        minecraft "com.mojang:minecraft:$gameVersion"
+        mappings loom.layered() {
+            officialMojangMappings()
+            parchment("org.parchmentmc.data:parchment-$parchmentVersion@zip")
+        }
+        modImplementation "net.fabricmc:fabric-loader:$fabricVersion"
+    } else {
+        minecraft "net.minecraftforge:forge:$gameVersion-$forgeVersion"
+    }
 
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-
-    // TODO: parse dependencies.yaml
     FileInputStream stream = new FileInputStream(project.file("yaml_gradle/dependencies.yaml"))
     byte[] data = stream.readAllBytes()
     stream.close()
     Yaml deps = new Yaml(new String(data))
 
     ArrayList<Object[]> libraryLines = new ArrayList<>();
+
+//    HashMap<String, ArrayList<String>> sections = new HashMap<>()
 
     for (String s : deps.keys()) {
         Yaml entry = deps.getYaml(s)
@@ -147,16 +241,15 @@ dependencies {
                     continue
                 }
 
-                boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
-                String dep = transformLine(isCompileOnly, template, name, depYaml.getText(name))
+                String trueName = name
+                boolean isJiJ = trueName.startsWith("+")
+                if (isJiJ) trueName = trueName.substring(1)
+                boolean isCompileOnly = trueName.charAt(0) == '('.charAt(0) && trueName.charAt(trueName.length() - 1) == ')'.charAt(0)
+                if (isCompileOnly) trueName = trueName.substring(1, trueName.length() - 1)
+
+                String dep = transformLine(template, trueName, depYaml.getText(name))
                 System.out.println((String) ("|-| " + dep))
-                if (isDeobf) {
-                    if (isCompileOnly) compileOnly fg.deobf(dep)
-                    else implementation fg.deobf(dep)
-                } else {
-                    if (isCompileOnly) compileOnly dep
-                    else implementation dep
-                }
+                apply(isJiJ, isDeobf, isCompileOnly, dep, it)
             }
         }
     }
@@ -166,18 +259,19 @@ dependencies {
         Yaml depYaml = (Yaml) line[0]
         String template = (String) line[1]
         String name = ((String) line[2])
-        boolean isDeobf = ((Boolean) line[3]).booleanValue()
+        boolean isDeobf = ((Boolean) line[3])
 
-        boolean isCompileOnly = name.charAt(0) == '('.charAt(0) && name.charAt(name.length() - 1) == ')'.charAt(0)
-        String dep = transformLine(isCompileOnly, template, name.substring(1), depYaml.getText(name))
+        String trueName = name
+        if (trueName.startsWith("-")) trueName = trueName.substring(1)
+
+        boolean isJiJ = trueName.startsWith("+")
+        if (isJiJ) trueName = trueName.substring(1)
+        boolean isCompileOnly = trueName.charAt(0) == '('.charAt(0) && trueName.charAt(trueName.length() - 1) == ')'.charAt(0)
+        if (isCompileOnly) trueName = trueName.substring(1, trueName.length() - 1)
+
+        String dep = transformLine(template, trueName, depYaml.getText(name))
         System.out.println((String) (":-| " + dep))
-        if (isDeobf) {
-            if (isCompileOnly) compileOnly fg.deobf(dep)
-            else implementation fg.deobf(dep)
-        } else {
-            if (isCompileOnly) compileOnly dep
-            else implementation dep
-        }
+        apply(isJiJ, isDeobf, isCompileOnly, dep, it)
     }
 
     if (new File("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar").exists()) {
@@ -186,53 +280,80 @@ dependencies {
     }
 }
 
-mixin {
-    add sourceSets.main, "smallerunits.refmap.json"
-    config "smallerunits.mixins.json"
-    debug.verbose = true
-}
+if (Vars.isFabric) {
+    processResources {
+        inputs.property "version", project.version
 
-jar {
-    manifest {
-        attributes([
-                "Specification-Title"     : "smallerunits",
-                "Specification-Vendor"    : "GiantLuigi4",
-                "Specification-Version"   : "1",
-                "Implementation-Title"    : project.name,
-                "Implementation-Version"  : project.jar.archiveVersion,
-                "Implementation-Vendor"   : "GiantLuigi4",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
-        ])
-    }
-}
-
-jar.finalizedBy('reobfJar')
-
-// I debug stuff a lot, and I mess with ATs a lot
-// everytime I change ATs, I need to reswap the game jar for the recomp jar
-System.out.println("Swap for recomp jar")
-String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
-File fl = new File((String) ("/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion"))
-if (fl.exists()) {
-    File fl1 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion" + ".jar"))
-    File fl2 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion-recomp.jar"))
-    if (fl2.exists()) {
-        if (fl1.length() != fl2.length()) {
-            if (fl1.exists())
-                fl1.delete()
-
-            FileInputStream inputStream = new FileInputStream(fl2)
-            byte[] bytes = inputStream.readAllBytes()
-            fl1.createNewFile()
-            FileOutputStream outputStream = new FileOutputStream(fl1)
-            outputStream.write(bytes)
-            outputStream.flush()
-            outputStream.close()
-            inputStream.close()
+        filesMatching("fabric.mod.json") {
+            expand "version": project.version
         }
     }
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.release = 17
+    }
+
+    java {
+        // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+        // if it is present.
+        // If you remove this line, sources will not be generated.
+        withSourcesJar()
+    }
+
+    jar {
+        from("LICENSE") {
+            rename { "${it}_${project.archivesBaseName}" }
+        }
+    }
+} else {
+    jar {
+        manifest {
+            attributes([
+                    "Specification-Title"     : "smallerunits",
+                    "Specification-Vendor"    : "GiantLuigi4",
+                    "Specification-Version"   : "1",
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : project.jar.archiveVersion,
+                    "Implementation-Vendor"   : "GiantLuigi4",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            ])
+        }
+    }
+
+    jar.finalizedBy('reobfJar')
+
+    tasks.register("swapMcJar") {
+        doLast {
+            // I debug stuff a lot, and I mess with ATs a lot
+            // everytime I change ATs, I need to reswap the game jar for the recomp jar
+            System.out.println("Swap for recomp jar")
+            String dir = project.getBuildDir().toString() + "/fg_cache/net/minecraftforge/forge";
+            File fl = new File((String) ("/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion"))
+            if (fl.exists()) {
+                File fl1 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion" + ".jar"))
+                File fl2 = new File((String) (dir + "/$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion/forge-$gameVersion-$forgeVersion" + "_mapped_parchment_$parchmentVersion-recomp.jar"))
+                if (fl2.exists()) {
+                    if (fl1.length() != fl2.length()) {
+                        if (fl1.exists())
+                            fl1.delete()
+
+                        FileInputStream inputStream = new FileInputStream(fl2)
+                        byte[] bytes = inputStream.readAllBytes()
+                        fl1.createNewFile()
+                        FileOutputStream outputStream = new FileOutputStream(fl1)
+                        outputStream.write(bytes)
+                        outputStream.flush()
+                        outputStream.close()
+                        inputStream.close()
+                    }
+                }
+            }
+            System.out.println("Swapped")
+        }
+    }
+
+    buildEnvironment.finalizedBy('swapMcJar')
 }
-System.out.println("Swapped")
 
 class CSV {
     public String[][] text

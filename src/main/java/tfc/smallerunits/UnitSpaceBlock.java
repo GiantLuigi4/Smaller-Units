@@ -218,7 +218,7 @@ public class UnitSpaceBlock extends Block {
 				for (int z = minZ; z <= maxZ; z++) {
 					int pX = SectionPos.blockToSectionCoord(x);
 					int pZ = SectionPos.blockToSectionCoord(z);
-					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, true);
+					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, false);
 					if (chunk == null) {
 						if (z == (z >> 4) << 4) {
 							z += 15;
