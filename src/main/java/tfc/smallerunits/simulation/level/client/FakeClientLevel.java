@@ -511,6 +511,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		}
 		
 		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		BlockHitResult src = closest;
 		
 		// improve precision
 		Vec3 hit = closest.getLocation();
@@ -520,7 +521,7 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 		BlockState state = getBlockState(pos);
 		VoxelShape shape = state.getShape(this, pos);
 		closest = shape.clip(hit.add(look), end.subtract(look), pos);
-		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		if (closest == null) return src;
 		
 		return closest;
 	}
