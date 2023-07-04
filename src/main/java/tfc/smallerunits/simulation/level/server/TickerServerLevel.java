@@ -72,6 +72,7 @@ import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.selection.MutableAABB;
 import tfc.smallerunits.utils.selection.UnitShape;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
@@ -754,6 +755,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		BlockHitResult closest = null;
 		double d = Double.POSITIVE_INFINITY;
 		
+		Level parent = this.parent.get();
+		
 		int minX = (int) Math.floor(Math.min(start.x, end.x)) - 1;
 		int minY = (int) Math.floor(Math.min(start.y, end.y)) - 1;
 		int minZ = (int) Math.floor(Math.min(start.z, end.z)) - 1;
@@ -761,15 +764,19 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
 		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
 		
+		MutableAABB bb = new MutableAABB(0, 0, 0, 1, 1, 1);
+		Collection<AABB> singleton = Collections.singleton(new AABB(0, 0, 0, 1, 1, 1));
+		
 		// TODO: there are better ways to do this
+		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
 		for (int x = minX; x < maxX; x += 16) {
 			for (int z = minZ; z < maxZ; z += 16) {
 				for (int y = minY; y < maxY; y += 16) {
-					AABB box = new AABB(
+					bb.set(
 							x, y, z,
 							x + 16, y + 16, z + 16
 					);
-					if (simpleChecker.apply(box)) {
+					if (simpleChecker.apply(bb)) {
 						for (int x0 = 0; x0 < 16; x0++) {
 							int x1 = x + x0;
 							for (int z0 = 0; z0 < 16; z0++) {
@@ -778,24 +785,68 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 								int pX = SectionPos.blockToSectionCoord(x1);
 								int pZ = SectionPos.blockToSectionCoord(z1);
 								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
-								if (chunk == null) continue;
+								if (chunk == null) {
+									if (parent != null) {
+										for (int y0 = 0; y0 < 16; y0++) {
+											int y1 = y + y0;
+											bb.set(
+													x1, y1, z1,
+													x1 + 1, y1 + 1, z1 + 1
+											);
+											if (simpleChecker.apply(bb)) {
+												BlockPos pos = new BlockPos(x1, y1, z1);
+												BlockPos pos1 = PositionUtils.getParentPos(pos, this);
+												
+												BlockState state = localCache.get(pos1);
+												if (state == null) {
+													state = parent.getBlockState(pos1);
+													localCache.put(pos1.immutable(), state);
+												}
+												
+												if (state.isAir()) continue;
+												BlockHitResult result = AABB.clip(
+														singleton,
+														start, end,
+														pos
+												);
+												// result should always be non-null, but just incase
+												if (result != null) {
+													double dd = result.getLocation().distanceTo(start);
+													if (dd < d) {
+														d = dd;
+														closest = result;
+													}
+												}
+											}
+										}
+									}
+									continue;
+								}
 								
 								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;
-									box = new AABB(
+									bb.set(
 											x1, y1, z1,
 											x1 + 1, y1 + 1, z1 + 1
 									);
-									if (simpleChecker.apply(box)) {
+									if (simpleChecker.apply(bb)) {
 										BlockPos pos = new BlockPos(x1, y1, z1);
 										BlockState state = chunk.getBlockState(pos);
 										if (state.isAir()) continue;
 										BlockHitResult result = boxFiller.apply(pos, state);
 										if (result != null) {
 											double dd = result.getLocation().distanceTo(start);
-											if (dd < d) {
-												d = dd;
-												closest = result;
+											boolean lenient = state.getBlock().equals(tfc.smallerunits.Registry.UNIT_EDGE.get());
+											if (lenient) {
+												if (dd < d) {
+													d = dd;
+													closest = result;
+												}
+											} else {
+												if (dd <= d) {
+													d = dd;
+													closest = result;
+												}
 											}
 										}
 									}
@@ -808,19 +859,30 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		
 		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		
+		// improve precision
+		Vec3 hit = closest.getLocation();
+		Vec3 look = start.subtract(end).normalize().scale(0.5f);
+		
+		BlockPos pos = closest.getBlockPos();
+		BlockState state = getBlockState(pos);
+		VoxelShape shape = state.getShape(this, pos);
+		closest = shape.clip(hit.add(look), end.subtract(look), pos);
+		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		
 		return closest;
 	}
 	
 	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
 		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
-		if (result == null) return result;
+		if (result == null) return null;
+		
+		// improve precision
 		if (!result.getType().equals(HitResult.Type.MISS)) {
 			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-			off = off.normalize().scale(0.1);
-			Vec3 st = result.getLocation().add(off);
-			Vec3 ed = result.getLocation().subtract(off);
-//						return sp.clip(st, pContext.getTo(), pos);
-			return sp.clip(st, ed, pos);
+			off = off.normalize().scale(0.5f);
+			Vec3 hit = result.getLocation();
+			return sp.clip(hit.add(off), hit.subtract(off), pos);
 		}
 		return result;
 	}

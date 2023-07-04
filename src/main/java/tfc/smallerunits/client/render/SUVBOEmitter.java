@@ -117,6 +117,9 @@ public class SUVBOEmitter {
 					BlockState block = states[indx];
 					if (block == null || block.isAir()) continue;
 					
+					// for some reason
+					// this single line of code causes a lot of lag
+					// TODO: what???
 					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
 						if (PlatformUtilsClient.checkRenderLayer(fluid, chunkBufferLayer)) {
@@ -136,24 +139,19 @@ public class SUVBOEmitter {
 							);
 						}
 					}
-					if (block.getRenderShape() != RenderShape.INVISIBLE) {
+					if (block.getRenderShape() == RenderShape.MODEL) {
 						if (PlatformUtilsClient.checkRenderLayer(block, chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
 							stk.pushPose();
 							stk.translate(x, y, z);
 							
 							BlockPos offsetPos = space.getOffsetPos(blockPosMut);
-//							dispatcher.getModelRenderer().tesselateWithAO(
-//									wld, dispatcher.getBlockModel(block),
-//									block, offsetPos, stk,
-//									consumer, true,
-//									new Random(offsetPos.asLong()),
-//									0, 0
-//							);
-							
-							dispatcher.renderBatched(
-									block, offsetPos, wld, stk, consumer,
-									true, new XoroshiroRandomSource(offsetPos.asLong())
+							dispatcher.getModelRenderer().tesselateBlock(
+									wld, dispatcher.getBlockModel(block),
+									block, offsetPos, stk,
+									consumer, true,
+									new XoroshiroRandomSource(offsetPos.asLong()),
+									0, 0
 							);
 							
 							stk.popPose();

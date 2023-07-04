@@ -93,32 +93,37 @@ public class AssortedQol {
 			ISUCapability capability = SUCapabilityManager.getCapability(level, new ChunkPos(result.getBlockPos()));
 			UnitSpace space = capability.getUnit(result.getBlockPos());
 			
-			Vec3 look = block.getLocation().add(Minecraft.getInstance().cameraEntity.getViewVector(0));
+			Vec3 look = block.getLocation().subtract(Minecraft.getInstance().cameraEntity.getViewVector(0)).normalize().scale(-1);
 			
-			Vec3 start;
-			Vec3 end;
+			BlockPos blockpos;
+			
 			if (ClientConfig.DebugOptions.fastF3) {
-				start = Minecraft.getInstance().cameraEntity.getEyePosition(0).subtract(look.scale(1d / space.unitsPerBlock));
-				end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(1d / space.unitsPerBlock));
+				blockpos = space.getOffsetPos(result.geetBlockPos());
 			} else {
-				start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
-				end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(20)); // TODO: figure out what exactly this should be
+				Vec3 start;
+				Vec3 end;
+				if (true) {
+					start = block.getLocation().subtract(look.scale(1d / space.unitsPerBlock));
+					end = block.getLocation().add(look.scale(1d / space.unitsPerBlock));
+				} else {
+					start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
+					end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(20)); // TODO: figure out what exactly this should be
+				}
+				
+				start = new Vec3(
+						HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), start.x),
+						HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), start.y),
+						HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), start.z)
+				);
+				end = new Vec3(
+						HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), end.x),
+						HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), end.y),
+						HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), end.z)
+				);
+				BlockHitResult result1 = space.getMyLevel().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, Minecraft.getInstance().player));
+				blockpos = result1.getBlockPos();
 			}
 			
-			start = new Vec3(
-					HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), start.x),
-					HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), start.y),
-					HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), start.z)
-			);
-			end = new Vec3(
-					HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), end.x),
-					HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), end.y),
-					HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), end.z)
-			);
-			BlockHitResult result1 = space.getMyLevel().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, Minecraft.getInstance().player));
-			
-			BlockPos blockpos = result1.getBlockPos();
-//			BlockPos blockpos = result1.getBlockPos();
 			BlockState state = space.getMyLevel().getBlockState(blockpos);
 			List<String> list = strings;
 

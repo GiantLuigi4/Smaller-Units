@@ -550,7 +550,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			BasicVerticalChunk chunk = verticalLookup.applyAbsNoLoad(yPos + yO);
 			if (chunk == null || !chunk.isLoaded())
 				return Fluids.EMPTY.defaultFluidState();
-			return chunk.getBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15)).getFluidState();
+			return chunk.getFluidState(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
 		}
 		if (section.hasOnlyAir()) return Fluids.EMPTY.defaultFluidState();
 		return getBlockState$(pos).getFluidState();
