@@ -556,7 +556,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		return getBlockState$(pos).getFluidState();
 	}
 	
-	private void setBlockFast$(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
+	private void setBlockFast$(boolean allowSave, BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		int j = pos.getX() & 15;
 		int k = pos.getY();
 		int l = pos.getZ() & 15;
@@ -565,7 +565,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		SectionPos pPosAsSectionPos = SectionPos.of(parentPos);
 		BlockState oldState = section.setBlockState(j, k, l, state);
 		
-		if (!level.isClientSide)
+		if (!level.isClientSide && allowSave)
 			setUnsaved(true);
 		
 		if (level.isClientSide) {
@@ -596,13 +596,17 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 	
 	public void setBlockFast(BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
+		setBlockFast(true, pos, state, chunkCache);
+	}
+	
+	public void setBlockFast(boolean allowSave, BlockPos pos, BlockState state, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
 		if (yO != 0) {
 			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			chunk.setBlockFast$(new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), state, chunkCache);
+			chunk.setBlockFast$(allowSave, new BlockPos(pos.getX(), pos.getY() & 15, pos.getZ()), state, chunkCache);
 			return;
 		}
-		setBlockFast$(new BlockPos(pos), state, chunkCache);
+		setBlockFast$(allowSave, new BlockPos(pos), state, chunkCache);
 	}
 	
 	ArrayList<ServerPlayer> oldPlayersTracking = new ArrayList<>();

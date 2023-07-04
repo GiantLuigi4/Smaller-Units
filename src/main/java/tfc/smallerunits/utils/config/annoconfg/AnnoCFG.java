@@ -28,7 +28,8 @@ public class AnnoCFG {
 	Config internal;
 	
 	public AnnoCFG(Class<?> clazz) {
-		tfc.smallerunits.utils.config.annoconfg.annotation.format.Config configDescriptor = clazz.getAnnotation(tfc.smallerunits.utils.config.annoconfg.annotation.format.Config.class);
+		tfc.smallerunits.utils.config.annoconfg.annotation.format.Config configDescriptor =
+				clazz.getAnnotation(tfc.smallerunits.utils.config.annoconfg.annotation.format.Config.class);
 		
 		String translationRoot = configDescriptor.path().replace("/", "_") + configDescriptor.namespace() + ":" + configDescriptor.type().name().toLowerCase();
 		

@@ -195,7 +195,7 @@ public class SUSaveWorld {
 							if (
 									!state.getBlock().equals(Blocks.AIR) ||
 											!state.getFluidState().isEmpty()
-							) shell.setBlockFast(pos, state, cache);
+							) shell.setBlockFast(false, pos, state, cache);
 						}
 					}
 				}

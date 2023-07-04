@@ -290,7 +290,7 @@ public class UnitSpace {
 						
 						pos.set(x, y, z);
 						BlockPos pz = getOffsetPos(pos);
-						vc.setBlockFast(new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
+						vc.setBlockFast(false, new BlockPos(pz.getX(), pz.getY(), pz.getZ()), states[indx], cache);
 						vc.getSubChunk(pz.getY() >> 4).setUnsaved(true);
 						
 						addState(states[indx]);
@@ -323,10 +323,10 @@ public class UnitSpace {
 		return pos.offset(myPosInTheLevel);
 	}
 	
-	public void setFast(int x, int y, int z, BlockState state) {
+	public void setFast(boolean allowSave, int x, int y, int z, BlockState state) {
 		BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 		BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);
-		vc.setBlockFast(new BlockPos(x, pz.getY(), z), state, new HashMap<>());
+		vc.setBlockFast(allowSave, new BlockPos(x, pz.getY(), z), state, new HashMap<>());
 	}
 	
 	public void clear() {

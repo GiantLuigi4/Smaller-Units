@@ -5,7 +5,6 @@ import io.netty.channel.ChannelPipeline;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -30,6 +29,7 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
+import tfc.smallerunits.utils.config.ClientConfig;
 import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
@@ -64,6 +64,9 @@ public class SmallerUnits implements ModInitializer {
 		
 		ServerChunkEvents.CHUNK_LOAD.register(this::onChunkLoaded);
 		ServerChunkEvents.CHUNK_UNLOAD.register(this::onChunkUnloaded);
+		
+		if (PlatformUtils.isClient())
+			ClientConfig.init();
 		
 		PlatformUtils.delayConfigInit(() -> {
 			//noinspection Convert2MethodRef

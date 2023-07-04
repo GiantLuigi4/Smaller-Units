@@ -42,6 +42,7 @@ import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.config.ClientConfig;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
@@ -92,8 +93,18 @@ public class AssortedQol {
 			ISUCapability capability = SUCapabilityManager.getCapability(level, new ChunkPos(result.getBlockPos()));
 			UnitSpace space = capability.getUnit(result.getBlockPos());
 			
-			Vec3 start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
-			Vec3 end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(Minecraft.getInstance().cameraEntity.getViewVector(0).scale(20)); // TODO: figure out what exactly this should be
+			Vec3 look = block.getLocation().add(Minecraft.getInstance().cameraEntity.getViewVector(0));
+			
+			Vec3 start;
+			Vec3 end;
+			if (ClientConfig.DebugOptions.fastF3) {
+				start = Minecraft.getInstance().cameraEntity.getEyePosition(0).subtract(look.scale(1d / space.unitsPerBlock));
+				end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(1d / space.unitsPerBlock));
+			} else {
+				start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
+				end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(20)); // TODO: figure out what exactly this should be
+			}
+			
 			start = new Vec3(
 					HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), start.x),
 					HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), start.y),

@@ -72,6 +72,7 @@ import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
+import tfc.smallerunits.utils.selection.UnitShape;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 
@@ -829,11 +830,18 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		// I prefer this method over vanilla's method
 		Vec3 fStartVec = pContext.getFrom();
 		Vec3 endVec = pContext.getTo();
+		
+		double d0 = endVec.x - fStartVec.x;
+		double d1 = endVec.y - fStartVec.y;
+		double d2 = endVec.z - fStartVec.z;
+		double[] adouble = new double[]{1.0D};
+		
 		return collectShape(
 				pContext.getFrom(),
 				pContext.getTo(),
 				(box) -> {
-					return box.contains(fStartVec) || box.clip(fStartVec, endVec).isPresent();
+					if (box.contains(fStartVec)) return true;
+					return UnitShape.intersects(box, fStartVec, d0, d1, d2, adouble);
 				}, (pos, state) -> {
 					VoxelShape sp = switch (pContext.block) {
 						case VISUAL -> state.getVisualShape(this, pos, pContext.collisionContext);
