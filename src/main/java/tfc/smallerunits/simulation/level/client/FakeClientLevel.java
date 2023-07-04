@@ -54,6 +54,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
@@ -910,7 +911,13 @@ public class FakeClientLevel extends ClientLevel implements ITickerLevel, Partic
 			if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) {
 				return Blocks.VOID_AIR.defaultBlockState();
 			}
-			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState();
+			
+			boolean transparent = true;
+			Level lvl = this.getParent();
+			if (parentState.isCollisionShapeFullBlock(lvl, parentPos))
+				transparent = false;
+			
+			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
 		}
 		return chunk.getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
