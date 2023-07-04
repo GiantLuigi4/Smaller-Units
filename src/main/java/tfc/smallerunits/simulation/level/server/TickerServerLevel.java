@@ -52,6 +52,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.ticks.ScheduledTick;
 import net.minecraft.world.ticks.TickPriority;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
 import tfc.smallerunits.api.PositionUtils;
@@ -859,6 +860,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 		
 		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		BlockHitResult src = closest;
 		
 		// improve precision
 		Vec3 hit = closest.getLocation();
@@ -868,7 +870,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		BlockState state = getBlockState(pos);
 		VoxelShape shape = state.getShape(this, pos);
 		closest = shape.clip(hit.add(look), end.subtract(look), pos);
-		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
+		if (closest == null) return src;
 		
 		return closest;
 	}
@@ -981,7 +983,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) {
 				return Blocks.VOID_AIR.defaultBlockState();
 			}
-			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState();
+			
+			boolean transparent = true;
+			Level lvl = this.getParent();
+			if (parentState.isCollisionShapeFullBlock(lvl, parentPos))
+				transparent = false;
+			
+			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
 		}
 		return chunk.getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
