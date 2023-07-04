@@ -27,7 +27,7 @@ public class ServerConfig {
 		@Name("DefaultUPB")
 		@Comment("The scale for the unit shrinker to default to when placed into the crafting grid alone")
 		@Translation("config.smaller_units.def_upb")
-		@IntRange(minV = 1, maxV = 128)
+		@IntRange(minV = 1, maxV = 256)
 		@Default(valueI = 4)
 		public static final int defaultScale = "".hashCode();
 		
@@ -37,7 +37,7 @@ public class ServerConfig {
 				"This should be set to the lowest divisor you want to be craftable"
 		})
 		@Translation("config.smaller_units.min_upb")
-		@IntRange(minV = 1, maxV = 128)
+		@IntRange(minV = 1, maxV = 256)
 		@Default(valueI = 2)
 		public static final int minScale = "".hashCode();
 		
@@ -47,7 +47,7 @@ public class ServerConfig {
 				"This should be set to the highest divisor you want to be craftable"
 		})
 		@Translation("config.smaller_units.max_upb")
-		@IntRange(minV = 1, maxV = 128)
+		@IntRange(minV = 1, maxV = 256)
 		@Default(valueI = 16)
 		public static final int maxScale = "".hashCode();
 	}
