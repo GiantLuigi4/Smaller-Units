@@ -64,9 +64,9 @@ dependencies {
     curseCompile "vfe", "325360", "3893747"
 
     modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
-    modImplementation "maven.modrinth:sodium:mc1.18.2-0.4.1"
-    modImplementation "maven.modrinth:indium:1.0.7+mc1.18.2"
-    modImplementation "maven.modrinth:iris:1.18.x-v1.4.0"
+    modCompileOnly "maven.modrinth:sodium:mc1.18.2-0.4.1"
+    modCompileOnly "maven.modrinth:indium:1.0.7+mc1.18.2"
+    modCompileOnly "maven.modrinth:iris:1.18.x-v1.4.0"
 
     modImplementation "maven.modrinth:immersiveportals:1.4.11-1.18.2"
     modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v1.4.11-1.18') {

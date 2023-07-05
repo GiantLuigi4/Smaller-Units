@@ -235,8 +235,14 @@ public class UnitShape extends VoxelShape {
 		
 		ArrayList<ScaledShape> scaledShapes = new ArrayList<>();
 		
+		double d0 = pEndVec.x - vec31.x;
+		double d1 = pEndVec.y - vec31.y;
+		double d2 = pEndVec.z - vec31.z;
+		double[] adouble = new double[]{1.0D};
+		
 		collectShape((box) -> {
-			return box.contains(pStartVec) || box.clip(vec31, pEndVec).isPresent();
+			if (box.contains(pStartVec)) return true;
+			return UnitShape.intersects(box, pStartVec, d0, d1, d2, adouble);
 		}, (pos, state) -> {
 			int x = pos.getX();
 			int y = pos.getY();
@@ -596,6 +602,9 @@ public class UnitShape extends VoxelShape {
 		double d1 = pEndVec.y - pStartVec.y;
 		double d2 = pEndVec.z - pStartVec.z;
 		
+		AABB traceBB = new AABB(pStartVec, pEndVec);
+		double[] doubles = new double[]{1};
+		
 		Vec3 totalOffset = new Vec3(pPos.getX() + offset.x, pPos.getY() + offset.y, pPos.getZ() + offset.z);
 		
 		MutableAABB box = new MutableAABB(0, 0, 0, 1, 1, 1);
@@ -605,11 +614,13 @@ public class UnitShape extends VoxelShape {
 			VoxelShape shape1 = neighbors[value.ordinal()];
 			if (shape1 == null || shape1.isEmpty()) continue;
 			shape1 = shape1.move(value.getStepX(), value.getStepY(), value.getStepZ());
+			
 			for (int xo = 0; xo < space.unitsPerBlock; xo++) {
 				for (int zo = 0; zo < space.unitsPerBlock; zo++) {
 					double x;
 					double y;
 					double z;
+					
 					if (value.equals(Direction.WEST) || value.equals(Direction.EAST)) {
 						x = value.equals(Direction.EAST) ? (space.unitsPerBlock - 0.999) : -0.001;
 						y = xo;
@@ -623,13 +634,24 @@ public class UnitShape extends VoxelShape {
 						y = zo;
 						z = value.equals(Direction.SOUTH) ? (space.unitsPerBlock - 0.999) : -0.001;
 					}
+					
 					box.set(
 							x / upbDouble, y / upbDouble, z / upbDouble,
 							(x + 1) / upbDouble, (y + 1) / upbDouble, (z + 1) / upbDouble
 					);
 					offsetBox.set(box).move(totalOffset);
+					
+					boolean contains = offsetBox.contains(pStartVec);
+					Direction dir = null;
+					if (!contains && traceBB.intersects(offsetBox)) dir = AABB.getDirection(
+							offsetBox, pStartVec, doubles,
+							null,
+							d0, d1, d2
+					);
+					doubles[0] = 1;
+					
 					// less expensive than voxel shape computations
-					if (offsetBox.contains(pStartVec) || offsetBox.clip(pStartVec, pEndVec).isPresent()) {
+					if (contains || dir != null) {
 						if (value.getStepX() == 1) x += 1;
 						else if (value.getStepY() == 1) y += 1;
 						else if (value.getStepZ() == 1) z += 1;
@@ -642,13 +664,12 @@ public class UnitShape extends VoxelShape {
 									toAabb.maxX, toAabb.maxY, toAabb.maxZ,
 									pos
 							);
-							Direction direction = AABB.getDirection(box1.move(totalOffset), pStartVec, percent, (Direction) null, d0, d1, d2);
+							Direction direction = AABB.getDirection(box1.move(totalOffset), pStartVec, percent, null, d0, d1, d2);
 							double percentile = percent[0];
 							percent[0] = 1;
 							if (direction == null) continue;
-							Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
-							double d = vec.distanceTo(pStartVec);
-							if (d < dbest) {
+							if (percentile < dbest) {
+								Vec3 vec = pStartVec.add(d0 * percentile, d1 * percentile, d2 * percentile);
 								h = new UnitHitResult(
 										vec, direction, pPos, true, box1.pos,
 										null
@@ -660,8 +681,7 @@ public class UnitShape extends VoxelShape {
 			}
 		}
 		
-		if (h != null) return h;
-		return null;
+		return h;
 	}
 	
 	public void setupNeigbors(BlockGetter pLevel, BlockPos pPos) {

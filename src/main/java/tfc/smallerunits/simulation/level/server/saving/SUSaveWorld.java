@@ -302,4 +302,9 @@ public class SUSaveWorld {
 			basicVerticalChunk.updateModificationTime(level.getLevelData().getGameTime());
 		}
 	}
+	
+	public boolean chunkExists(SectionPos pos) {
+		File fl = getFile(new ChunkPos(pos.x(), pos.z()), pos.y());
+		return fl.exists();
+	}
 }

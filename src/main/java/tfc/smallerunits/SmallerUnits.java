@@ -30,6 +30,7 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.platform.NetCtx;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
+import tfc.smallerunits.utils.config.ClientConfig;
 import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
@@ -55,7 +56,7 @@ public class SmallerUnits implements ModInitializer {
 		/* mod loading events */
 		if (PlatformUtils.isClient())
 			ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
-		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setupCfg());
+		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setup());
 		/* in game events */
 		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatch);
 		ServerPlayConnectionEvents.INIT.register((handler, server) -> {
@@ -65,6 +66,8 @@ public class SmallerUnits implements ModInitializer {
 		ServerChunkEvents.CHUNK_LOAD.register(this::onChunkLoaded);
 		ServerChunkEvents.CHUNK_UNLOAD.register(this::onChunkUnloaded);
 		
+		if (PlatformUtils.isClient())
+			ClientConfig.init();
 		PlatformUtils.delayConfigInit(() -> {
 			//noinspection Convert2MethodRef
 			ServerConfig.init();

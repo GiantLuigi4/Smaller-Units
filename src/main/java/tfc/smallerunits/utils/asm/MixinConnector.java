@@ -18,6 +18,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> classLookup = new ArrayList<>();
 	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
+	private static final HashMap<String, String> dependencies = new HashMap<>();
 	
 	public static final boolean isFabric;
 	
@@ -46,6 +47,15 @@ public class MixinConnector implements IMixinConfigPlugin {
 			
 			isFabric = fabric;
 		}
+		
+		{
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.RenderWorld", "net.fabricmc.fabric.api.rendering.data.v1.RenderAttachedBlockView");
+			// tbh I'm pretty sure these should always be present if SU's present
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ClientPlayNetworkingMixin", "net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ServerPlayNetworking", "net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ServerMixin", "net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon");
+			dependencies.put("tfc.smallerunits.mixin.compat.fabric.networking.ServerPlayNetworkingAddonMixin", "net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon");
+		}
 	}
 	
 	@Override
@@ -66,9 +76,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		if (mixinClassName.contains(".fabric.")) {
+		if (mixinClassName.contains(".fabric."))
 			return isFabric;
-		}
+		
 		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -82,6 +92,21 @@ public class MixinConnector implements IMixinConfigPlugin {
 			}
 			return false;
 		}
+		
+		if (dependencies.containsKey(mixinClassName)) {
+			ClassLoader loader = MixinConnector.class.getClassLoader();
+			// tests if the classloader contains a .class file for the target
+			InputStream stream = loader.getResourceAsStream(dependencies.get(mixinClassName).replace('.', '/') + ".class");
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (Throwable ignored) {
+				}
+				return true;
+			}
+			return false;
+		}
+		
 		if (incompatibilityMap.containsKey(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -99,6 +124,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			}
 			return false;
 		}
+		
 		return true;
 	}
 	
