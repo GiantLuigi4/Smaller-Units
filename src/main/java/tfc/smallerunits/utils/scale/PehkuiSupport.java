@@ -33,6 +33,7 @@ public class PehkuiSupport {
 		SUScaleModifier.set(modifier);
 		ScaleType suType = ScaleType.Builder.create()
 				.affectsDimensions()
+				.defaultTickDelay(4)
 				.addDependentModifier(SUScaleModifier.get())
 				.build();
 		ScaleRegistries.register(ScaleRegistries.SCALE_TYPES, new ResourceLocation("smallerunits:su_resize"), suType);

@@ -24,7 +24,7 @@ public class ResizingUtils {
 			if (getSize(entity) >= EntityScaleOptions.minSize)
 				newSize = (float) Math.max(getSize(entity) - (amt * EntityScaleOptions.downscaleRate), EntityScaleOptions.minSize);
 		} else if (getSize(entity) <= EntityScaleOptions.maxSize)
-			newSize = (float) Math.min(getSize(entity) - (amt / EntityScaleOptions.upscaleRate), EntityScaleOptions.maxSize);
+			newSize = (float) Math.min(getSize(entity) - (amt * EntityScaleOptions.upscaleRate), EntityScaleOptions.maxSize);
 		
 		if (SmallerUnits.isIsPehkuiPresent()) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setTargetScale(newSize);
