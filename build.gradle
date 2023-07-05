@@ -6,6 +6,8 @@ plugins {
     id 'maven-publish'
 }
 
+boolean legacy = false
+
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
 
@@ -36,60 +38,103 @@ repositories {
 String ccaVersion = "4.2.0"
 
 dependencies {
-    // To change the versions see the gradle.properties file
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    if (legacy) {
+        // To change the versions see the gradle.properties file
+        minecraft "com.mojang:minecraft:1.18.1"
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    /* dependencies */
-    DependencyTemplate cca = template (text) -> { modImplementation text
-    }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
-    cca.apply "module=base"
-    cca.apply "module=world"
-    cca.apply "module=chunk"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.2.0")
+        /* dependencies */
+        DependencyTemplate cca = template (text) -> { modImplementation text
+        }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
+        cca.apply "module=base"
+        cca.apply "module=world"
+        cca.apply "module=chunk"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:0.46.6+1.18"
+        include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.2.0")
 
-    /* soft-deps */
-    curse "alternate_current", "548115", "4406078"
-    curse "pehkui", "319596", "4408057"
-    curse "cloth_config", "348521", "3972425"
-    curse "mod_menu", "308702", "4145213"
-    curse "chiselandbits", "561059", "4119189"
-    curse "bitsandchisel", "420709", "3841573"
-    modImplementation "me.shedaniel.cloth:basic-math:0.6.1"
+        curseCompile "alternate_current", "548115", "4406078"
+        curseCompile "pehkui", "319596", "4408057"
+        curseCompile "cloth_config", "348521", "3972425"
+        curseCompile "mod_menu", "308702", "4145213"
+        curseCompile "chiselandbits", "561059", "4119189"
+        curseCompile "bitsandchisel", "420709", "3841573"
+        modCompileOnly "me.shedaniel.cloth:basic-math:0.6.1"
 
-    curseCompile "vivecraft", "667903", "4409424"
-    // TODO: is there a fabric equivalent?
-    curseCompile "vfe", "325360", "3893747"
+        curseCompile "vivecraft", "667903", "4409424"
+        // TODO: is there a fabric equivalent?
+        curseCompile "vfe", "325360", "3893747"
 
-    modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
-    modCompileOnly "maven.modrinth:sodium:mc1.18.2-0.4.1"
-    modCompileOnly "maven.modrinth:indium:1.0.7+mc1.18.2"
-    modCompileOnly "maven.modrinth:iris:1.18.x-v1.4.0"
+        modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
+        modCompileOnly "maven.modrinth:sodium:mc1.18.2-0.4.1"
+        modCompileOnly "maven.modrinth:indium:1.0.7+mc1.18.2"
+        modCompileOnly "maven.modrinth:iris:1.18.x-v1.4.0"
 
-    modImplementation "maven.modrinth:immersiveportals:1.4.11-1.18.2"
-    modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v1.4.11-1.18') {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
+        modCompileOnly "maven.modrinth:immersiveportals:1.4.11-1.18.2"
+        modCompileOnly('com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v1.4.11-1.18') {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+        modCompileOnly('com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v1.4.11-1.18') {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+    } else {
+        // To change the versions see the gradle.properties file
+        minecraft "com.mojang:minecraft:${project.minecraft_version}"
+        mappings loom.officialMojangMappings()
+        modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+        /* dependencies */
+        DependencyTemplate cca = template (text) -> { modImplementation text
+        }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
+        cca.apply "module=base"
+        cca.apply "module=world"
+        cca.apply "module=chunk"
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+        include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.2.0")
+
+        /* soft-deps */
+        curse "alternate_current", "548115", "4406078"
+        curse "pehkui", "319596", "4408057"
+        curse "cloth_config", "348521", "3972425"
+        curse "mod_menu", "308702", "4145213"
+        curse "chiselandbits", "561059", "4119189"
+        curse "bitsandchisel", "420709", "3841573"
+        modImplementation "me.shedaniel.cloth:basic-math:0.6.1"
+
+        curseCompile "vivecraft", "667903", "4409424"
+        // TODO: is there a fabric equivalent?
+        curseCompile "vfe", "325360", "3893747"
+
+        modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
+        modCompileOnly "maven.modrinth:sodium:mc1.18.2-0.4.1"
+        modCompileOnly "maven.modrinth:indium:1.0.7+mc1.18.2"
+        modCompileOnly "maven.modrinth:iris:1.18.x-v1.4.0"
+
+        modImplementation "maven.modrinth:immersiveportals:1.4.11-1.18.2"
+        modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v1.4.11-1.18') {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+        modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v1.4.11-1.18') {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+
+        for (File f : new File("libs").listFiles())
+            if (!f.isDirectory())
+                implementation files(f)
+        for (File f : new File("libs/deobf").listFiles())
+            modImplementation files(f)
+
+        modImplementation("com.github.Virtuoel:KanosConfig:0.3.1", {
+            exclude group: "net.fabricmc", module: "fabric-loader"
+            exclude group: "net.fabricmc.fabric-api"
+        })
+
+        implementation "org.joml:joml:1.10.5"
     }
-    modImplementation('com.github.iPortalTeam.ImmersivePortalsMod:q_misc_util:v1.4.11-1.18') {
-        exclude(group: "net.fabricmc.fabric-api")
-        transitive(false)
-    }
-
-    for (File f : new File("libs").listFiles())
-        if (!f.isDirectory())
-            implementation files(f)
-    for (File f : new File("libs/deobf").listFiles())
-        modImplementation files(f)
-
-    modImplementation("com.github.Virtuoel:KanosConfig:0.3.1", {
-        exclude group: "net.fabricmc", module: "fabric-loader"
-        exclude group: "net.fabricmc.fabric-api"
-    })
-
-    implementation "org.joml:joml:1.10.5"
 }
 
 processResources {
