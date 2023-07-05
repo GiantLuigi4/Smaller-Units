@@ -3,9 +3,8 @@ package tfc.smallerunits.data.storage;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Holder;
 import net.minecraft.network.PacketListener;
-import net.minecraft.network.protocol.game.ServerPacketListener;
+import net.minecraft.network.protocol.game.ServerGamePacketListener;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
@@ -94,7 +93,7 @@ public class Region {
 				levels[upb] = new FakeClientLevel(
 						(ClientLevel) parent,
 						null, ((ClientLevel) parent).getLevelData(),
-						parent.dimension(), Holder.direct(parent.dimensionType()),
+						parent.dimension(), parent.dimensionType(),
 						0, 0, parent.getProfilerSupplier(),
 						null, true, 0,
 						upb, this
@@ -160,7 +159,7 @@ public class Region {
 	}
 	
 	public Level getLevel(PacketListener listener, Player player, int upb) {
-		if (listener instanceof ServerPacketListener) {
+		if (listener instanceof ServerGamePacketListener) {
 			return getServerWorld(player.level.getServer(), (ServerLevel) player.level, upb);
 		} else {
 			return getClientWorld(player.level, upb);

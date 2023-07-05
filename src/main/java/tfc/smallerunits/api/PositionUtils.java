@@ -26,9 +26,9 @@ public class PositionUtils {
 			double x = (smallWorldPos.getX() & 15) * scl + rPos.getX();
 			double y = (smallWorldPos.getX() & 15) * scl + rPos.getY();
 			double z = (smallWorldPos.getX() & 15) * scl + rPos.getZ();
-			return actualPos.distToCenterSqr(x, y, z);
+			return actualPos.distSqr(x, y, z, true);
 		}
-		return actualPos.distToCenterSqr(smallWorldPos.getX(), smallWorldPos.getY(), smallWorldPos.getZ());
+		return actualPos.distSqr(smallWorldPos.getX(), smallWorldPos.getY(), smallWorldPos.getZ(), true);
 	}
 	
 	public static BlockPos getParentPos(BlockPos pPos, ITickerLevel tickerWorld) {

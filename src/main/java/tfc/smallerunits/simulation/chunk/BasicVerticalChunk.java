@@ -2,7 +2,6 @@ package tfc.smallerunits.simulation.chunk;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -724,7 +723,7 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 	
 	@Override
-	public Holder<Biome> getNoiseBiome(int p_204347_, int p_204348_, int p_204349_) {
+	public Biome getNoiseBiome(int p_204347_, int p_204348_, int p_204349_) {
 		return level.getBiome(
 				new BlockPos(
 						getSectionPos().minBlockX() + p_204347_,

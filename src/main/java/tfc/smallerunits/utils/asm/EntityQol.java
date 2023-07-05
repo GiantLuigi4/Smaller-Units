@@ -2,8 +2,9 @@ package tfc.smallerunits.utils.asm;
 
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Registry;
 import net.minecraft.core.SectionPos;
-import net.minecraft.tags.TagKey;
+import net.minecraft.tags.Tag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +23,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
+import java.util.HashMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -74,7 +76,7 @@ public class EntityQol {
 		return false;
 	}
 	
-	public static boolean runSUFluidCheck(Entity entity, TagKey<Fluid> fluids, double something, Level level, RegionPos regionPos, Object2DoubleMap<TagKey<Fluid>> fluidHeight) {
+	public static boolean runSUFluidCheck(Entity entity, Tag<Fluid> fluids, double something, Level level, RegionPos regionPos, Object2DoubleMap<Tag<Fluid>> fluidHeight) {
 		AABB aabb = HitboxScaling.getOffsetAndScaledBox(entity.getBoundingBox().deflate(0.001D), entity.getPosition(0), ((ITickerLevel) level).getUPB(), regionPos);
 		
 		// TODO: limit check area to only the active world
@@ -176,8 +178,7 @@ public class EntityQol {
 		return inFluid;
 	}
 	
-	public static void runSUFluidEyeCheck(Entity entity, Set<TagKey<Fluid>> fluidOnEyes, Level level, RegionPos regionPos) {
-		fluidOnEyes.clear();
+	public static Tag<Fluid> runSUFluidEyeCheck(Entity entity, Tag<Fluid> fluidOnEyes, Level level, RegionPos regionPos) {
 		// TODO: whatever the heck this is
 //		Entity mount = entity.getVehicle();
 //		if (mount instanceof Boat) {
@@ -194,9 +195,16 @@ public class EntityQol {
 		BlockPos blockpos = new BlockPos(vec.x, d0, vec.z);
 		FluidState fluidstate = level.getFluidState(blockpos);
 		double d1 = (float) blockpos.getY() + fluidstate.getHeight(level, blockpos);
+		Tag<Fluid> fluidTag = fluidOnEyes;
 		if (d1 > d0) {
-			fluidstate.getTags().forEach(fluidOnEyes::add);
+			for (Tag<Fluid> tg : level.getTagManager().getOrEmpty(Registry.FLUID_REGISTRY).getAllTags().values()) {
+				if (tg.contains(fluidstate.getType())) {
+					fluidTag = tg;
+				}
+			}
 		}
+		
+		return fluidTag;
 	}
 	
 	public static BlockState getSUBlockAtFeet(Entity entity, Level level, RegionPos regionPos) {

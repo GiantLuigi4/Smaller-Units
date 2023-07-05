@@ -6,11 +6,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientChunkEvents;
 import net.minecraft.client.multiplayer.ClientChunkCache;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Holder;
-import net.minecraft.core.Registry;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -42,7 +39,7 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
 //		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
-		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0));
 		lightEngine = new SULightManager(this, true, true);
 	}
 
@@ -60,13 +57,13 @@ public class FakeClientChunkCache extends ClientChunkCache implements ITickerChu
 	}
 	
 	@Override
-	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
+	public void tick(BooleanSupplier pHasTimeLeft) {
 //		for (int i = 0; i < allChunks.size(); i++) {
 //			LevelChunk chunk = allChunks.get(i);
 //			level.tickChunk(chunk, tickCount);
 ////			((BasicVerticalChunk) chunk).randomTick();
 //		}
-		super.tick(pHasTimeLeft, false);
+		super.tick(pHasTimeLeft);
 
 //		for (BasicVerticalChunk[] column : columns) {
 //			if (column == null) continue;

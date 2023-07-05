@@ -1,6 +1,7 @@
 package tfc.smallerunits.utils.scale;
 
 import net.minecraft.world.entity.Entity;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import virtuoel.pehkui.util.ScaleUtils;
 
@@ -25,7 +26,7 @@ public class ResizingUtils {
 		} else if (getSize(entity) <= EntityScaleOptions.maxSize)
 			newSize = (float) Math.min(getSize(entity) - (amt / EntityScaleOptions.upscaleRate), EntityScaleOptions.maxSize);
 		
-		if (PlatformUtils.isLoaded("pehkui")) {
+		if (SmallerUnits.isIsPehkuiPresent()) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setTargetScale(newSize);
 		}
 	}
@@ -33,7 +34,7 @@ public class ResizingUtils {
 	public static float getSize(Entity entity) {
 		if (entity == null) return 1;
 		AtomicReference<Float> size = new AtomicReference<>(1f);
-		if (PlatformUtils.isLoaded("pehkui"))
+		if (SmallerUnits.isIsPehkuiPresent())
 			size.set(size.get() * PehkuiSupport.SUScaleType.get().getScaleData(entity).getTargetScale());
 		return size.get();
 	}
@@ -41,7 +42,7 @@ public class ResizingUtils {
 	public static float getActualSize(Entity entity) {
 		if (entity == null) return 1;
 		AtomicReference<Float> size = new AtomicReference<>(1f);
-		if (PlatformUtils.isLoaded("pehkui"))
+		if (SmallerUnits.isIsPehkuiPresent())
 			size.set(size.get() * ScaleUtils.getBoundingBoxHeightScale(entity));
 		return size.get();
 	}
@@ -49,7 +50,7 @@ public class ResizingUtils {
 	public static void resizeForUnit(Entity entity, float amt) {
 		if (entity == null) return;
 		//TODO: chiseled me integration
-		if (PlatformUtils.isLoaded("pehkui")) {
+		if (SmallerUnits.isIsPehkuiPresent()) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setScale(amt);
 		}
 	}
@@ -59,6 +60,6 @@ public class ResizingUtils {
 //				ModList.get().isLoaded("threecore") ||
 //						ModList.get().isLoaded("shrink") ||
 //						ModList.get().isLoaded("gullivern") ||
-				PlatformUtils.isLoaded("pehkui");
+				SmallerUnits.isIsPehkuiPresent();
 	}
 }

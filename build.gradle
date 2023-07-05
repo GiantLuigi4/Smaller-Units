@@ -6,7 +6,7 @@ plugins {
     id 'maven-publish'
 }
 
-boolean legacy = false
+boolean legacy = true
 
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17
@@ -29,7 +29,6 @@ maven "https://repo1.maven.org/maven2/"
 maven "https://ladysnake.jfrog.io/artifactory/mods"
 maven "https://jitpack.io"
 maven "https://maven.architectury.dev/"
-maven "https://maven.quiltmc.org/repository/release"
 
 repositories {
     maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
@@ -45,13 +44,24 @@ dependencies {
         modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
         /* dependencies */
-        DependencyTemplate cca = template (text) -> { modImplementation text
+        DependencyTemplate cca = template (text) -> {
+            modImplementation text
         }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
         cca.apply "module=base"
         cca.apply "module=world"
         cca.apply "module=chunk"
-        modImplementation "net.fabricmc.fabric-api:fabric-api:0.46.6+1.18"
-        include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.2.0")
+        modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+        include modImplementation("com.jamieswhiteshirt:reach-entity-attributes:2.1.1") {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+
+        curse "scopic", "665350", "4611023"
+        curse "flan", "404578", "3667372"
+        modImplementation("com.github.Virtuoel:KanosConfig:0.3.1", {
+            exclude group: "net.fabricmc", module: "fabric-loader"
+            exclude group: "net.fabricmc.fabric-api"
+        })
 
         curseCompile "alternate_current", "548115", "4406078"
         curseCompile "pehkui", "319596", "4408057"
@@ -65,10 +75,22 @@ dependencies {
         // TODO: is there a fabric equivalent?
         curseCompile "vfe", "325360", "3893747"
 
-        modCompileOnly "maven.modrinth:lithium:mc1.18.2-0.10.3"
-        modCompileOnly "maven.modrinth:sodium:mc1.18.2-0.4.1"
-        modCompileOnly "maven.modrinth:indium:1.0.7+mc1.18.2"
-        modCompileOnly "maven.modrinth:iris:1.18.x-v1.4.0"
+        modCompileOnly("maven.modrinth:lithium:mc1.18.2-0.10.3") {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+        modCompileOnly("maven.modrinth:sodium:mc1.18.2-0.4.1") {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+        modCompileOnly("maven.modrinth:indium:1.0.7+mc1.18.2") {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
+        modCompileOnly("maven.modrinth:iris:1.18.x-v1.4.0") {
+            exclude(group: "net.fabricmc.fabric-api")
+            transitive(false)
+        }
 
         modCompileOnly "maven.modrinth:immersiveportals:1.4.11-1.18.2"
         modCompileOnly('com.github.iPortalTeam.ImmersivePortalsMod:imm_ptl_core:v1.4.11-1.18') {
@@ -86,7 +108,8 @@ dependencies {
         modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
         /* dependencies */
-        DependencyTemplate cca = template (text) -> { modImplementation text
+        DependencyTemplate cca = template (text) -> {
+            modImplementation text
         }, "dev.onyxstudios.cardinal-components-api:cardinal-components-\$module:$ccaVersion"
         cca.apply "module=base"
         cca.apply "module=world"

@@ -5,7 +5,6 @@ import io.netty.channel.ChannelPipeline;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -42,6 +41,7 @@ public class SmallerUnits implements ModInitializer {
 	private static boolean isVFEPresent;
 	private static boolean isOFPresent;
 	private static final boolean isImmPrtlPresent = PlatformUtils.isLoaded("imm_ptl_core");
+	private static final boolean isPehkuiPresent = PlatformUtils.isLoaded("pehkui") || PlatformUtils.isLoaded("scopic");
 	
 	@Override
 	public void onInitialize() {
@@ -161,7 +161,7 @@ public class SmallerUnits implements ModInitializer {
 	}
 	
 	private void setup() {
-		if (PlatformUtils.isLoaded("pehkui")) PehkuiSupport.setup();
+		if (isPehkuiPresent) PehkuiSupport.setup();
 		setupCfg();
 	}
 	
@@ -191,5 +191,9 @@ public class SmallerUnits implements ModInitializer {
 	
 	public static boolean isImmersivePortalsPresent() {
 		return isImmPrtlPresent;
+	}
+	
+	public static boolean isIsPehkuiPresent() {
+		return isPehkuiPresent;
 	}
 }

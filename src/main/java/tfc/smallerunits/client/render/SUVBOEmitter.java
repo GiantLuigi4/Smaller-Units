@@ -137,7 +137,7 @@ public class SUVBOEmitter {
 							);
 							dispatcher.renderLiquid(
 									offsetPos, wld, vertexBuilder,
-									block, fluid
+									fluid
 							);
 						}
 					}

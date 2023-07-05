@@ -44,7 +44,7 @@ public class MinecraftMixin {
 	ThreadLocal<Screen> previousScreen = new ThreadLocal<>();
 	
 	@Inject(at = @At("HEAD"), method = "startAttack")
-	public void preAttack(CallbackInfoReturnable<Boolean> cir) {
+	public void preAttack(CallbackInfo ci) {
 		movePlayerTo();
 	}
 	
@@ -98,7 +98,7 @@ public class MinecraftMixin {
 	}
 	
 	@Inject(at = @At("RETURN"), method = "startAttack")
-	public void postAttack(CallbackInfoReturnable<Boolean> cir) {
+	public void postAttack(CallbackInfo ci) {
 		movePlayerBack();
 	}
 	

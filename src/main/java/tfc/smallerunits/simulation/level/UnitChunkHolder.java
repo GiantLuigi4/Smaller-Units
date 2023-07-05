@@ -96,12 +96,6 @@ public class UnitChunkHolder extends ChunkHolder {
 		return chunk;
 	}
 	
-	@Nullable
-	@Override
-	public LevelChunk getFullChunk() {
-		return chunk;
-	}
-	
 	public void setBlockDirty(BlockPos pos) {
 		blockChanged(pos);
 	}

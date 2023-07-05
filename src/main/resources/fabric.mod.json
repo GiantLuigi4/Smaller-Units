@@ -29,8 +29,8 @@
     "smallerunits.mixins.json"
   ],
   "depends": {
-    "minecraft": "~1.18.2",
-    "fabric-api": "*",
+    "minecraft": "~1.18.1",
+    "fabric": "*",
     "cardinal-components-chunk": "*",
     "cardinal-components-world": "*"
   },

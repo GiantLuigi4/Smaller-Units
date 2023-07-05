@@ -61,7 +61,7 @@ public class RemoveUnitPacketC2S extends Packet {
 					else
 						Loggers.SU_LOGGER.warn(ctx.getSender().getName().getString() + " tried to remove a non-empty unit space");
 				} else {
-					Loggers.SU_LOGGER.warn(ctx.getSender().getName().getString() + " tried to remove a unit space from to far away " + position.distToCenterSqr(pos));
+					Loggers.SU_LOGGER.warn(ctx.getSender().getName().getString() + " tried to remove a unit space from to far away " + position.distSqr(pos, true));
 				}
 			}
 		});

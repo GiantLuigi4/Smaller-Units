@@ -146,7 +146,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		} else {
 			// vanilla
 			if (!pExecutor.isSameThread()) {
-				pExecutor.executeIfPossible(() -> {
+				pExecutor.execute(() -> {
 					doHandle(ctx);
 				});
 			} else doHandle(ctx);
@@ -165,7 +165,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		}
 		
 		if (!pExecutor.isSameThread()) {
-			pExecutor.executeIfPossible(() -> {
+			pExecutor.execute(() -> {
 				if (player == null) {
 					// TODO: sometimes this happens, I'm not yet sure as to why
 					Loggers.SU_LOGGER.warn("Player was null while handling packet " + wrapped + " on " + (checkClient(ctx) ? "client" : "server") + ".");

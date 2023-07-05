@@ -9,8 +9,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.tags.TagKey;
+import net.minecraft.tags.Tag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ChunkPos;
@@ -155,8 +157,12 @@ public class AssortedQol {
 				list.add(property.getName() + ": " + s);
 			}
 			
-			for (Object o : state.getTags().toArray()) {
-				list.add("#" + ((TagKey<Block>) o).location());
+			for(ResourceLocation resourceLocation : Minecraft.getInstance()
+					.getConnection()
+					.getTags()
+					.getOrEmpty(Registry.BLOCK_REGISTRY)
+					.getMatchingTags(state.getBlock())) {
+				list.add("#" + resourceLocation);
 			}
 		}
 	}

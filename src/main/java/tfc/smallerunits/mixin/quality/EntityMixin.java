@@ -3,7 +3,7 @@ package tfc.smallerunits.mixin.quality;
 import it.unimi.dsi.fastutil.objects.Object2DoubleMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.tags.TagKey;
+import net.minecraft.tags.Tag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -11,6 +11,7 @@ import net.minecraft.world.level.gameevent.GameEventListenerRegistrar;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -43,10 +44,7 @@ public abstract class EntityMixin {
 	public abstract AABB getBoundingBox();
 	
 	@Shadow
-	protected Object2DoubleMap<TagKey<Fluid>> fluidHeight;
-	@Shadow
-	@Final
-	private Set<TagKey<Fluid>> fluidOnEyes;
+	protected Object2DoubleMap<Tag<Fluid>> fluidHeight;
 	
 	@Shadow
 	public abstract Vec3 getPosition(float pPartialTicks);
@@ -68,6 +66,8 @@ public abstract class EntityMixin {
 	
 	@Shadow
 	public abstract void setSwimming(boolean pSwimming);
+	
+	@Shadow @Nullable protected Tag<Fluid> fluidOnEyes;
 	
 	@Unique
 	private void SU$runPerWorld(BiConsumer<Level, RegionPos> action) {
@@ -105,7 +105,7 @@ public abstract class EntityMixin {
 	
 	// TODO
 	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing", cancellable = true)
-	public void postCheckInFluid(TagKey<Fluid> fluids, double something, CallbackInfoReturnable<Boolean> cir) {
+	public void postCheckInFluid(Tag<Fluid> fluids, double something, CallbackInfoReturnable<Boolean> cir) {
 		boolean wasInFluid = cir.getReturnValueZ();
 		final boolean[] inFluid = {wasInFluid};
 		SU$runPerWorld((level, regionPos) -> {
@@ -118,7 +118,7 @@ public abstract class EntityMixin {
 	@Inject(at = @At("RETURN"), method = "updateFluidOnEyes")
 	public void postCheckEyeInFluid(CallbackInfo ci) {
 		SU$runPerWorld((level, regionPos) -> {
-			EntityQol.runSUFluidEyeCheck((Entity) (Object) this, fluidOnEyes, level, regionPos);
+			fluidOnEyes = EntityQol.runSUFluidEyeCheck((Entity) (Object) this, fluidOnEyes, level, regionPos);
 		});
 	}
 	

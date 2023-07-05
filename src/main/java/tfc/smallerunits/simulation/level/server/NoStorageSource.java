@@ -92,7 +92,7 @@ public class NoStorageSource extends LevelStorageSource {
 		
 		@Nullable
 		@Override
-		public WorldData getDataTag(DynamicOps<Tag> p_211748_, DataPackConfig p_211749_, Lifecycle p_211750_) {
+		public WorldData getDataTag(DynamicOps<Tag> dynamicOps, DataPackConfig dataPackConfig) {
 			return null;
 		}
 		

@@ -54,7 +54,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 		this.chunkMap = new UnitChunkMap(p_184009_, p_184010_, p_184011_, p_184012_, p_184013_, this.mainThreadProcessor, this, p_184014_, p_184018_, p_184019_, p_184020_, p_184015_, p_184017_);
 		this.upb = upb;
 		columns = new BasicVerticalChunk[33 * 33 * upb * upb][];
-		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
+		empty = new EmptyLevelChunk(this.level, new ChunkPos(0, 0));
 		lightEngine = new NotThreadedSULightManager(this, this.chunkMap, true);
 		this.dataStorage = new SUDimStorage(null, p_184011_);
 	}
@@ -108,7 +108,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 	}
 	
 	@Override
-	public void tick(BooleanSupplier pHasTimeLeft, boolean p_201914_ /* what? */) {
+	public void tick(BooleanSupplier pHasTimeLeft) {
 		int tickCount = level.getGameRules().getInt(GameRules.RULE_RANDOMTICKING);
 		synchronized (newChunks) {
 			try {
@@ -126,7 +126,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 			}
 		}
 		
-		super.tick(pHasTimeLeft, false);
+		super.tick(pHasTimeLeft);
 		((UnitChunkMap) chunkMap).tick();
 		
 		synchronized (holders) {

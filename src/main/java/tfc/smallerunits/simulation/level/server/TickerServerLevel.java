@@ -148,7 +148,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				noAccess,
 				data,
 				p_8575_,
-				Holder.direct(dimType),
+				dimType,
 				progressListener,
 				generator,
 				p_8579_,
@@ -302,7 +302,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 			pPosY += pos.getY();
 			pPosZ += pos.getZ();
 			
-			if (blockpos.closerToCenterThan(new Vec3(pPosX, pPosY, pPosZ), pLongDistance ? (512.0D * scl) : (32.0D * scl))) {
+			if (blockpos.closerThan(new Vec3(pPosX - 0.5, pPosY - 0.5, pPosZ - 0.5), pLongDistance ? (512.0D * scl) : (32.0D * scl))) {
 				pPlayer.connection.send(pPacket);
 				return true;
 			} else {
@@ -319,7 +319,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
-	public Holder<Biome> getBiome(BlockPos pos) {
+	public Biome getBiome(BlockPos pos) {
 		BlockPos bp = region.pos.toBlockPos().offset(
 				// TODO: double check this
 				Math.floor(pos.getX() / (double) upb),
