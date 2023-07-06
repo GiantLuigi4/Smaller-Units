@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
 import static tfc.smallerunits.utils.config.ServerConfig.GameplayOptions;
@@ -43,6 +44,9 @@ public class TileResizingItem extends Item {
 		if (GameplayOptions.resizeSelf) {
 			if (playerIn.isCrouching()) {
 				ResizingUtils.resize(playerIn, getScale());
+				
+				if (PlatformUtils.isLoaded("scopic"))
+					playerIn.getCooldowns().addCooldown(this, 4);
 			}
 //			System.out.println(GameplayOptions.EntityScaleOptions.downscaleRate);
 //			System.out.println(GameplayOptions.EntityScaleOptions.upscaleRate);

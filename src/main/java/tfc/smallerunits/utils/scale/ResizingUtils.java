@@ -1,6 +1,7 @@
 package tfc.smallerunits.utils.scale;
 
 import net.minecraft.world.entity.Entity;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import virtuoel.pehkui.util.ScaleUtils;
 
@@ -23,9 +24,9 @@ public class ResizingUtils {
 			if (getSize(entity) >= EntityScaleOptions.minSize)
 				newSize = (float) Math.max(getSize(entity) - (amt * EntityScaleOptions.downscaleRate), EntityScaleOptions.minSize);
 		} else if (getSize(entity) <= EntityScaleOptions.maxSize)
-			newSize = (float) Math.min(getSize(entity) - (amt / EntityScaleOptions.upscaleRate), EntityScaleOptions.maxSize);
+			newSize = (float) Math.min(getSize(entity) - (amt * EntityScaleOptions.upscaleRate), EntityScaleOptions.maxSize);
 		
-		if (PlatformUtils.isLoaded("pehkui")) {
+		if (SmallerUnits.isPehkuiPresent()) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setTargetScale(newSize);
 		}
 	}
@@ -33,7 +34,7 @@ public class ResizingUtils {
 	public static float getSize(Entity entity) {
 		if (entity == null) return 1;
 		AtomicReference<Float> size = new AtomicReference<>(1f);
-		if (PlatformUtils.isLoaded("pehkui"))
+		if (SmallerUnits.isPehkuiPresent())
 			size.set(size.get() * PehkuiSupport.SUScaleType.get().getScaleData(entity).getTargetScale());
 		return size.get();
 	}
@@ -41,7 +42,7 @@ public class ResizingUtils {
 	public static float getActualSize(Entity entity) {
 		if (entity == null) return 1;
 		AtomicReference<Float> size = new AtomicReference<>(1f);
-		if (PlatformUtils.isLoaded("pehkui"))
+		if (SmallerUnits.isPehkuiPresent())
 			size.set(size.get() * ScaleUtils.getBoundingBoxHeightScale(entity));
 		return size.get();
 	}
@@ -49,7 +50,7 @@ public class ResizingUtils {
 	public static void resizeForUnit(Entity entity, float amt) {
 		if (entity == null) return;
 		//TODO: chiseled me integration
-		if (PlatformUtils.isLoaded("pehkui")) {
+		if (SmallerUnits.isPehkuiPresent()) {
 			PehkuiSupport.SUScaleType.get().getScaleData(entity).setScale(amt);
 		}
 	}
