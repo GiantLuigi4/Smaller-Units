@@ -6,7 +6,7 @@
 compile:
   chisel_and_bits: 231095 4402503
   pehkui: 319596 4408042
-  (alternate_current): 548115 4406066
+  alternate_current: 548115 4406066
   refinedstorage: 243076 4392788
 
 # graphics enhancements
@@ -16,7 +16,7 @@ graphics:
 
 # optimization mods
 optimization:
-  canary: 665658 4421576
+  (canary): 665658 4421576
   (rubidium): 574856 3973894
 
 # invasive mods

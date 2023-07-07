@@ -432,21 +432,21 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public LevelChunk getChunkAt(BlockPos pPos) {
-		int pX = SectionPos.blockToSectionCoord(pPos.getX());
-//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
-		int pY = 0;
-		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
-		ChunkAccess chunkaccess = ((TickerChunkCache) this.getChunkSource()).getChunk(pX, pY, pZ, ChunkStatus.FULL, true);
-		return (LevelChunk) chunkaccess;
+		return (LevelChunk) ((TickerChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, true
+		);
 	}
 	
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {
-		int pX = SectionPos.blockToSectionCoord(pPos.getX());
-//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
-		int pY = 0;
-		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
-		ChunkAccess chunkaccess = ((TickerChunkCache) this.getChunkSource()).getChunk(pX, pY, pZ, ChunkStatus.FULL, false);
-		return (LevelChunk) chunkaccess;
+		return (LevelChunk) ((TickerChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, false
+		);
 	}
 	
 	@Override
@@ -1394,5 +1394,60 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public boolean chunkExists(SectionPos pos) {
 		return saveWorld.chunkExists(pos);
+	}
+	
+	/* redstone */
+	@Override
+	public int getDirectSignalTo(BlockPos pPos) {
+		return super.getDirectSignalTo(pPos);
+	}
+	
+	@Override
+	public boolean hasSignal(BlockPos pPos, Direction pSide) {
+		return super.hasSignal(pPos, pSide);
+	}
+	
+	@Override
+	public int getSignal(BlockPos pPos, Direction pFacing) {
+		BlockState blockstate = this.getBlockState(pPos);
+		int i = blockstate.getSignal(this, pPos, pFacing);
+		
+		int v = blockstate.shouldCheckWeakPower(this, pPos, pFacing) ? Math.max(i, this.getDirectSignalTo(pPos)) : i;
+		
+//		BlockPos r = pPos.relative(pFacing);
+//		BlockState state = getBlockState(r);
+//		if (state.getBlock() == tfc.smallerunits.Registry.UNIT_EDGE.get()) {
+//			Level parent = this.parent.get();
+//			if (parent == null) return 0;
+//			BlockPos parentPos = PositionUtils.getParentPos(pPos, this);
+//			BlockState bs = lookup.getState(parentPos);
+//			return bs.shouldCheckWeakPower(parent, parentPos, pFacing) ? Math.max(v, parent.getDirectSignalTo(parentPos)) : v;
+//		}
+		
+		return v;
+	}
+	
+	@Override
+	public boolean hasNeighborSignal(BlockPos pPos) {
+		return super.hasNeighborSignal(pPos);
+	}
+	
+	@Override
+	public int getBestNeighborSignal(BlockPos pPos) {
+		return super.getBestNeighborSignal(pPos);
+	}
+	
+	@Override
+	public int getDirectSignal(BlockPos pPos, Direction pDirection) {
+		BlockPos r = pPos.relative(pDirection);
+		BlockState state = getBlockState(r);
+		if (state.getBlock() == tfc.smallerunits.Registry.UNIT_EDGE.get()) {
+			Level parent = this.parent.get();
+			if (parent == null) return 0;
+			BlockPos parentPos = PositionUtils.getParentPos(pPos, this);
+			BlockState bs = lookup.getState(parentPos);
+			return bs.getDirectSignal(parent, parentPos, pDirection);
+		}
+		return getBlockState(pPos).getDirectSignal(this, pPos, pDirection);
 	}
 }

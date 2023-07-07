@@ -1,10 +1,12 @@
 package tfc.smallerunits;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
@@ -104,5 +106,10 @@ public class UnitEdge extends Block {
 			}
 		}
 		return super.getCloneItemStack(state, target, level, pos, player);
+	}
+	
+	@Override
+	public boolean shouldCheckWeakPower(BlockState state, LevelReader level, BlockPos pos, Direction side) {
+		return true;
 	}
 }

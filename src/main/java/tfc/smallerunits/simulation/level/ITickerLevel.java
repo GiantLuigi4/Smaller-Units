@@ -12,6 +12,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkStatus;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.data.storage.RegionPos;
+import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.utils.BreakData;
@@ -21,6 +23,24 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public interface ITickerLevel {
+	static void update(Level level, BlockPos blockPos) {
+		for (int x = -1; x <= 1; x++) {
+			for (int y = -1; y <= 1; y++) {
+				for (int z = -1; z <= 1; z++) {
+					RegionPos pos = new RegionPos(new BlockPos(
+							blockPos.getX() - x * 15,
+							blockPos.getY() - y * 15,
+							blockPos.getZ() - z * 15
+					));
+//					Region r = ((RegionalAttachments) this).SU$getRegion(new RegionPos(blockPos));
+					Region r = ((RegionalAttachments) level).SU$getRegion(pos);
+					if (r == null) return;
+					r.updateWorlds(blockPos);
+				}
+			}
+		}
+	}
+	
 	//@formatter:off
 	int getUPB();
 	void handleRemoval();

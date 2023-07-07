@@ -1,6 +1,7 @@
 package tfc.smallerunits;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -28,6 +29,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.network.PacketDistributor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -276,5 +278,92 @@ public class UnitSpaceBlock extends Block {
 			info.reset(entity);
 		}
 		return false;
+	}
+	
+	protected Direction getUp(Direction src) {
+		return switch (src) {
+			case NORTH, SOUTH, EAST, WEST -> Direction.UP;
+			case UP, DOWN -> Direction.NORTH;
+		};
+	}
+	
+	protected Direction getRight(Direction src) {
+		return switch (src) {
+			case NORTH -> Direction.EAST;
+			case EAST -> Direction.SOUTH;
+			case SOUTH -> Direction.EAST;
+			case WEST -> Direction.SOUTH;
+			case UP, DOWN -> Direction.EAST;
+		};
+	}
+	
+	@Override
+	public void neighborChanged(BlockState pState, Level pLevel, BlockPos pPos, Block pBlock, BlockPos pFromPos, boolean pIsMoving) {
+		ChunkAccess access = ((Level) pLevel).getChunk(pPos);
+		ISUCapability capability = SUCapabilityManager.getCapability((Level) pLevel, access);
+		UnitSpace space = capability.getUnit(pPos);
+		if (space == null || space.myLevel == null)
+			return;
+		
+		int nx = pFromPos.getX() - pPos.getX();
+		if (nx < -1) nx = 1;
+		if (nx > 1) nx = 1;
+		int ny = pFromPos.getY() - pPos.getY();
+		if (ny < -1) ny = 1;
+		if (ny > 1) ny = 1;
+		int nz = pFromPos.getZ() - pPos.getZ();
+		if (nz < -1) nz = 1;
+		if (nz > 1) nz = 1;
+		if (Math.abs(nx) + Math.abs(ny) + Math.abs(nz) != 1) {
+			Loggers.SU_LOGGER.warn("Redstone handling happened from multiple blocks away " + pPos + " " + pFromPos);
+			return;
+		}
+		Direction dir = Direction.fromNormal(nx, ny, nz);
+		
+		Direction right = getRight(dir);
+		Direction up = getUp(dir);
+		
+		BlockPos origin = space.getOffsetPos(new BlockPos(
+				Math.max(0, dir.getStepX()) * (space.unitsPerBlock - 1),
+				Math.max(0, dir.getStepY()) * (space.unitsPerBlock - 1),
+				Math.max(0, dir.getStepZ()) * (space.unitsPerBlock - 1)
+		));
+		BlockPos.MutableBlockPos mp = new BlockPos.MutableBlockPos();
+		LevelChunk current = null;
+		SectionPos sp = null;
+		for (int x = 0; x < space.unitsPerBlock; x++) {
+			for (int y = 0; y < space.unitsPerBlock; y++) {
+				mp.set(
+						origin.getX() + up.getStepX() * y + right.getStepX() * x,
+						origin.getY() + up.getStepY() * y + right.getStepY() * x,
+						origin.getZ() + up.getStepZ() * y + right.getStepZ() * x
+				);
+				
+				if (current == null) {
+					sp = SectionPos.of(mp);
+					current = space.myLevel.getChunk(sp.getX(), sp.getZ());
+				} else if (
+						current.getPos().x != SectionPos.blockToSectionCoord(mp.getX()) ||
+								current.getPos().z != SectionPos.blockToSectionCoord(mp.getZ())
+				) {
+					sp = SectionPos.of(mp);
+					current = space.myLevel.getChunk(sp.getX(), sp.getZ());
+				}
+				
+				// TODO: optimize, wheeze
+				BlockState state = current.getSection(current.getSectionIndex(mp.getY())).getBlockState(
+						mp.getX() & 15,
+						mp.getY() & 15,
+						mp.getZ() & 15
+				);
+				state.neighborChanged(
+						space.myLevel,
+						mp, Registry.UNIT_EDGE.get(),
+						mp.relative(dir), pIsMoving
+				);
+			}
+		}
+		
+		super.neighborChanged(pState, pLevel, pPos, pBlock, pFromPos, pIsMoving);
 	}
 }

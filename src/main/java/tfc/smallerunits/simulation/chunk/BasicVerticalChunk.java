@@ -363,7 +363,9 @@ public class BasicVerticalChunk extends LevelChunk {
 				
 				if (state.isAir()) { // TODO: do this better
 					if (!pState.isAir()) {
-						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+						ac.getSection(
+								SectionPos.blockToSectionCoord(ac.getSectionIndexFromSectionY(parentPos.getY()))
+						).setBlockState(parentPos.getX() & 15, parentPos.getY() & 15, parentPos.getZ() & 15, Registry.UNIT_SPACE.get().defaultBlockState());
 						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
 						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
 						// TODO: debug why space can still be null after this or what

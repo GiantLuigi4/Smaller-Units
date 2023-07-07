@@ -38,6 +38,8 @@ import tfc.smallerunits.utils.math.Math1D;
 import java.util.*;
 
 public class UnitSpace {
+	// TODO: cache a list of redstone blocks?
+	
 	// TODO: migrate to chunk class
 	public final BlockPos pos;
 	public int unitsPerBlock = 16;
