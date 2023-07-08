@@ -18,6 +18,7 @@ graphics:
 optimization:
   (canary): 665658 4421576
   (rubidium): 574856 3973894
+  distant_horizons: 508933 3923597
 
 # invasive mods
 invasive:

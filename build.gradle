@@ -278,6 +278,8 @@ dependencies {
         compileOnly files("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar")
         compileOnly files("of/OptiFine_1.19.2_HD_U_I1-deobf.jar")
     }
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 if (Vars.isFabric) {
