@@ -5,7 +5,6 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import me.jellysquid.mods.sodium.client.gl.device.RenderDevice;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager;
 import me.jellysquid.mods.sodium.client.render.chunk.region.RenderRegion;
@@ -46,8 +45,6 @@ public class SodiumRenderer {
 	}
 	
 	public static void renderVanilla(RenderType type, IFrustum su$Frustum, ClientLevel level, PoseStack poseStack, double camX, double camY, double camZ) {
-		RenderDevice.exitManagedCode();// 117
-		
 		type.setupRenderState();
 		
 		ShaderInstance instance = RenderSystem.getShader();
@@ -101,12 +98,12 @@ public class SodiumRenderer {
 			}
 		}
 		
+		instance.CHUNK_OFFSET.set(0f, 0, 0);
+		
 		instance.setSampler("Sampler0", null);
 		instance.setSampler("Sampler2", null);
 		instance.clear();
 		type.clearRenderState();
-		
-		RenderDevice.enterManagedCode();// 117
 	}
 	
 	public static void renderSection(BlockPos origin, RenderSection instance, PoseStack stk, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {

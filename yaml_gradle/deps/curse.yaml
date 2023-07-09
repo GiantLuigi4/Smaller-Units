@@ -13,12 +13,12 @@ compile:
 graphics:
   (shimmer): 627824 4082047
   (oculus): 581495 4299147
+  distant_horizons: 508933 3923597
 
 # optimization mods
 optimization:
   (canary): 665658 4421576
-  (rubidium): 574856 3973894
-  distant_horizons: 508933 3923597
+  rubidium: 574856 3973894
 
 # invasive mods
 invasive:
@@ -33,3 +33,6 @@ vr:
 # debugging mods
 debug:
   spark: 361579 4057111
+
+testing:
+  create: 328085 4625534

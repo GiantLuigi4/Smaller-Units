@@ -48,6 +48,7 @@
     "LevelRendererMixin",
     "LevelRendererMixinBlocks",
     "compat.ChiselAndBitMeshMixin",
+    "compat.distant_horizons.ForgeClientProxyMixin",
     "compat.ip.PacketRedirectionClientMixin",
     "compat.sodium.LevelMixin",
     "compat.sodium.RenderSectionManagerMixin",
