@@ -29,7 +29,7 @@ import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 
 public class TileRendererHelper {
 	public static void setupStack(PoseStack stk, BlockEntity tile, BlockPos origin) {
@@ -313,10 +313,10 @@ public class TileRendererHelper {
 	}
 	
 	public static void drawParticles(PoseStack pPoseStack, float pPartialTick, long pFinishNanoTime, boolean pRenderBlockOutline, Camera pCamera, GameRenderer pGameRenderer, LightTexture pLightTexture, Matrix4f pProjectionMatrix, Region value, Level valueLevel, RenderBuffers renderBuffers, CallbackInfo ci) {
-		RegionPos pos = ((FakeClientLevel) valueLevel).getRegion().pos;
+		RegionPos pos = ((TickerClientLevel) valueLevel).getRegion().pos;
 		BlockPos bp = pos.toBlockPos();
 		
-		float scl = 1f / (((FakeClientLevel) valueLevel).getUPB());
+		float scl = 1f / (((TickerClientLevel) valueLevel).getUPB());
 		
 		PoseStack stack = new PoseStack();
 		stack.last().pose().multiply(pPoseStack.last().pose());
@@ -328,7 +328,7 @@ public class TileRendererHelper {
 		if (Tesselator.getInstance() instanceof SUTesselator suTesselator) {
 			suTesselator.setOffset(bp.getX(), bp.getY(), bp.getZ());
 			// TODO: use forge method or smth
-			((FakeClientLevel) valueLevel).getParticleEngine().render(
+			((TickerClientLevel) valueLevel).getParticleEngine().render(
 					stack, renderBuffers.bufferSource(),
 					pLightTexture, pCamera, pPartialTick
 			);
@@ -341,7 +341,7 @@ public class TileRendererHelper {
 			stack.scale(scl, scl, scl);
 			stack.translate(pCamera.getPosition().x, pCamera.getPosition().y, pCamera.getPosition().z);
 			
-			((FakeClientLevel) valueLevel).getParticleEngine().render(
+			((TickerClientLevel) valueLevel).getParticleEngine().render(
 					stack, renderBuffers.bufferSource(),
 					pLightTexture, pCamera, pPartialTick
 			);
@@ -369,8 +369,8 @@ public class TileRendererHelper {
 	
 	public static void renderBE(BlockEntity tile, BlockPos origin, IFrustum frustum, PoseStack stk, BlockEntityRenderDispatcher blockEntityRenderDispatcher, float pct) {
 		if (tile.getLevel() == null) return; // idk how this happens, but ok?
-		if (new RegionPos(origin).equals(((FakeClientLevel) tile.getLevel()).region.pos)) {
-			int y = tile.getBlockPos().getY() / ((FakeClientLevel) tile.getLevel()).upb;
+		if (new RegionPos(origin).equals(((TickerClientLevel) tile.getLevel()).region.pos)) {
+			int y = tile.getBlockPos().getY() / ((TickerClientLevel) tile.getLevel()).upb;
 			BlockPos regionOrigin = new BlockPos(0, 0, 0);
 			if (tile.getLevel() instanceof ITickerLevel tkLvl) regionOrigin = tkLvl.getRegion().pos.toBlockPos();
 			y += regionOrigin.getY();

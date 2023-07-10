@@ -17,7 +17,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.level.LevelEvent;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 import tfc.smallerunits.simulation.level.server.LevelSourceProviderProvider;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
@@ -94,7 +94,7 @@ public class Region {
 		if (levels[upb] == null) {
 			try {
 				ThreadLocals.levelLocal.set(parent);
-				levels[upb] = new FakeClientLevel(
+				levels[upb] = new TickerClientLevel(
 						(ClientLevel) parent,
 						null, ((ClientLevel) parent).getLevelData(),
 						parent.dimension(), Holder.direct(parent.dimensionType()),

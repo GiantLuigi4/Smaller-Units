@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 
 @Mixin(value = ChiseledBlockModelDataExecutor.class, remap = false)
 public class ChiselAndBitMeshMixin {
@@ -15,7 +15,7 @@ public class ChiselAndBitMeshMixin {
 	private static void preUpdate(ChiseledBlockEntity tileEntity, CallbackInfo ci) {
 		//noinspection UnnecessaryLocalVariable
 		BlockEntity be = tileEntity; // yes, this is required... I don't now why
-		if (be.getLevel() instanceof FakeClientLevel fakeLevel) {
+		if (be.getLevel() instanceof TickerClientLevel fakeLevel) {
 			fakeLevel.getModelDataManager().requestRefresh(tileEntity);
 			fakeLevel.sendBlockUpdated(
 					be.getBlockPos(),

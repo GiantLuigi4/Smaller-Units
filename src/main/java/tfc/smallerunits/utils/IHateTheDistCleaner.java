@@ -21,7 +21,7 @@ import qouteall.imm_ptl.core.ClientWorldLoader;
 import tfc.smallerunits.TileResizingItem;
 import tfc.smallerunits.client.access.workarounds.ParticleEngineHolder;
 import tfc.smallerunits.client.render.compat.UnitParticleEngine;
-import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -102,7 +102,7 @@ public class IHateTheDistCleaner {
 			
 			if (updateParticleEngine) {
 				engine = Minecraft.getInstance().particleEngine;
-				UnitParticleEngine upe = ((FakeClientLevel) spaceLevel).getParticleEngine();
+				UnitParticleEngine upe = ((TickerClientLevel) spaceLevel).getParticleEngine();
 				if (upe != null)
 					Minecraft.getInstance().particleEngine = upe;
 			}

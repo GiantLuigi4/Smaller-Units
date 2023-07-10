@@ -23,7 +23,7 @@ import tfc.smallerunits.client.render.TileRendererHelper;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.level.ITickerLevel;
-import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 import tfc.smallerunits.utils.asm.AssortedQol;
 
 @Mixin(LevelRenderer.class)
@@ -100,7 +100,7 @@ public abstract class LevelRendererMixin {
 			// TODO: frustum checks
 			for (Level valueLevel : value.getLevels()) {
 				if (valueLevel != null) {
-					if (valueLevel instanceof FakeClientLevel) {
+					if (valueLevel instanceof TickerClientLevel) {
 						pPoseStack.pushPose();
 						TileRendererHelper.drawParticles(pPoseStack, pPartialTick, pFinishNanoTime, pRenderBlockOutline, pCamera, pGameRenderer, pLightTexture, pProjectionMatrix, value, valueLevel, renderBuffers, ci);
 						pPoseStack.popPose();
