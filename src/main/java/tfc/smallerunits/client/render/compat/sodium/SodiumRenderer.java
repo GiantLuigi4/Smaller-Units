@@ -1,7 +1,6 @@
 package tfc.smallerunits.client.render.compat.sodium;
 
 import com.jozufozu.flywheel.backend.instancing.InstancedRenderRegistry;
-import com.jozufozu.flywheel.event.RenderLayerEvent;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -22,7 +21,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.MinecraftForge;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.abstraction.IFrustum;
@@ -34,11 +32,10 @@ import tfc.smallerunits.client.render.SURenderManager;
 import tfc.smallerunits.client.render.TileRendererHelper;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
-import tfc.smallerunits.data.storage.Region;
-import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.asm.ModCompat;
 import tfc.smallerunits.utils.config.compat.ClientCompatConfig;
 
 import java.util.List;
@@ -46,12 +43,14 @@ import java.util.Map;
 import java.util.SortedSet;
 
 public class SodiumRenderer {
-	public static void render(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
+	public static void render(RenderType type, PoseStack poseStack, double camX, double camY, double camZ, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {
 		if (ClientCompatConfig.RenderCompatOptions.sodiumRenderMode == SodiumRenderMode.VANILLA) {
-			renderVanilla(renderLayer, frustum, world, matrixStack, x, y, z);
+			renderVanilla(type, frustum, level, poseStack, camX, camY, camZ);
 		} else {
 			throw new RuntimeException("Sodium renderer not implemented yet");
 		}
+		
+		ModCompat.postRenderLayer(type, poseStack, camX, camY, camZ, level);
 	}
 	
 	public static void renderVanilla(RenderType type, IFrustum su$Frustum, ClientLevel level, PoseStack poseStack, double camX, double camY, double camZ) {
@@ -114,28 +113,6 @@ public class SodiumRenderer {
 		instance.setSampler("Sampler2", null);
 		instance.clear();
 		type.clearRenderState();
-		
-		for (Region value : ((RegionalAttachments) level).SU$getRegionMap().values()) {
-			BlockPos rp = value.pos.toBlockPos();
-			for (Level valueLevel : value.getLevels()) {
-				if (valueLevel != null) {
-					poseStack.pushPose();
-					poseStack.scale(
-							1f / ((ITickerLevel) valueLevel).getUPB(),
-							1f / ((ITickerLevel) valueLevel).getUPB(),
-							1f / ((ITickerLevel) valueLevel).getUPB()
-					);
-					int mul = ((ITickerLevel) valueLevel).getUPB();
-					RenderLayerEvent event = new RenderLayerEvent(
-							(ClientLevel) valueLevel,
-							type, poseStack, Minecraft.getInstance().renderBuffers(),
-							camX * mul, camY * mul, (camZ - rp.getZ()) * mul
-					);
-					MinecraftForge.EVENT_BUS.post(event);
-					poseStack.popPose();
-				}
-			}
-		}
 	}
 	
 	public static void renderSection(BlockPos origin, RenderSection instance, PoseStack stk, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {

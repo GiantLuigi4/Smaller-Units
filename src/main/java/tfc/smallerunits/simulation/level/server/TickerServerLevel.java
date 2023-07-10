@@ -84,6 +84,7 @@ import tfc.smallerunits.utils.selection.MutableAABB;
 import tfc.smallerunits.utils.selection.UnitShape;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
+import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.io.File;
 import java.io.IOException;
@@ -1198,6 +1199,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
 		
+		Level parent = this.parent.get();
+		if (parent == null) return;
+		// compensate for create creating a level
+		ThreadLocals.levelLocal.set(parent);
+		
 		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, this, pHasTimeLeft));
 		
 		randomTickCount = Integer.MIN_VALUE;
@@ -1259,6 +1265,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		saveWorld.tick();
 		
 		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, this, pHasTimeLeft));
+		
+		ThreadLocals.levelLocal.remove();
 	}
 	
 	@Override
