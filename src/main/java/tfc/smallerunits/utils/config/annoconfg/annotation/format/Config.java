@@ -9,4 +9,5 @@ import java.lang.annotation.RetentionPolicy;
 public @interface Config {
 	ModConfig.Type type();
 	String path() default "";
+	String extra() default "";
 }

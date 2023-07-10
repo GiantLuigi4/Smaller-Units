@@ -27,7 +27,7 @@ public class ClientConfig {
 	)
 	@CFGSegment("debug")
 	public static class DebugOptions {
-		@Name("FastF3")
+		@Name("fast_f3")
 		@Comment("Whether or not F3 should use a small sample or a full sample\nSetting this to true makes F3 perform better but not necessarily be as accurate")
 		@Translation("config.smaller_units.fast_f3")
 		@Default(valueBoolean = true)

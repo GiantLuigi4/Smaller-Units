@@ -1,6 +1,5 @@
 package tfc.smallerunits.mixin.compat.sodium;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraftforge.fml.ModList;
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,6 +7,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.smallerunits.utils.config.compat.ClientCompatConfig;
 
 import java.util.List;
 
@@ -16,16 +16,16 @@ public class SodiumDebugOverlayMixin {
 	@Unique
 	private static String getSodiumName() {
 		if (ModList.get().isLoaded("sodium")) return "Sodium";
-		if (ModList.get().isLoaded("rubidium")) return "Rubidium";
-		if (ModList.get().isLoaded("magnesium")) return "Magnesium";
+		else if (ModList.get().isLoaded("rubidium")) return "Rubidium";
+		else if (ModList.get().isLoaded("magnesium")) return "Magnesium";
 		return null;
 	}
 	
 	@Unique
 	private static boolean isSodiumPresent() {
 		if (ModList.get().isLoaded("sodium")) return true;
-		if (ModList.get().isLoaded("rubidium")) return true;
-		if (ModList.get().isLoaded("magnesium")) return true;
+		else if (ModList.get().isLoaded("rubidium")) return true;
+		else if (ModList.get().isLoaded("magnesium")) return true;
 		return false;
 	}
 	
@@ -37,7 +37,8 @@ public class SodiumDebugOverlayMixin {
 			
 			List<String> strings = cir.getReturnValue();
 			boolean foundSodium = false;
-			int index = 0;
+			int index = -1;
+			
 			for (int i = 0; i < strings.size(); i++) {
 				String string = strings.get(i);
 				if (foundSodium && string.isEmpty()) {
@@ -45,8 +46,15 @@ public class SodiumDebugOverlayMixin {
 					break;
 				} else if (!foundSodium && string.startsWith(name)) foundSodium = true;
 			}
-			if (foundSodium)
-				strings.add(index, "SU Renderer: " + ChatFormatting.RED + "Vanilla Style (slow)");
+			
+			if (index == -1) index = strings.size();
+			
+			if (foundSodium) {
+				strings.add(index, "SU Renderer: " +
+						ClientCompatConfig.RenderCompatOptions.sodiumRenderMode.formatting +
+						ClientCompatConfig.RenderCompatOptions.sodiumRenderMode.f3Text
+				);
+			}
 		}
 	}
 }

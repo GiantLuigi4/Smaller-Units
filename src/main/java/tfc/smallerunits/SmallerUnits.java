@@ -65,8 +65,10 @@ public class SmallerUnits {
 		forgeBus.addListener(SmallerUnits::onChunkLoaded);
 		forgeBus.addListener(SmallerUnits::onChunkUnloaded);
 		
-		if (FMLEnvironment.dist.isClient())
+		if (FMLEnvironment.dist.isClient()) {
 			ClientConfig.init();
+//			ClientCompatConfig.init();
+		}
 		ServerConfig.init();
 		
 		InfoRegistry.register("su:world_redir", () -> {

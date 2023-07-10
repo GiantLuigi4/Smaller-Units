@@ -8,6 +8,7 @@ import net.minecraftforge.fml.event.config.ModConfigEvent;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.*;
 import tfc.smallerunits.utils.config.annoconfg.handle.UnsafeHandle;
+import tfc.smallerunits.utils.config.annoconfg.util.ConfigEnum;
 import tfc.smallerunits.utils.config.annoconfg.util.EnumType;
 
 import java.lang.reflect.AnnotatedElement;
@@ -32,11 +33,13 @@ public class AnnoCFG {
 		Config configDescriptor = clazz.getAnnotation(Config.class);
 		if (configDescriptor != null) {
 			String pth = configDescriptor.path();
+			String extra = configDescriptor.extra();
 			if (!pth.isEmpty()) pth = pth + "/";
+			if (!extra.isEmpty() && !extra.startsWith("/")) extra = "_" + extra;
 			switch (configDescriptor.type()) {
-				case SERVER -> create(ModConfig.Type.SERVER, pth + ModLoadingContext.get().getActiveNamespace() + "_server.toml");
-				case CLIENT -> create(ModConfig.Type.CLIENT, pth + ModLoadingContext.get().getActiveNamespace() + "_client.toml");
-				case COMMON -> create(ModConfig.Type.COMMON, pth + ModLoadingContext.get().getActiveNamespace() + "_common.toml");
+				case SERVER -> create(ModConfig.Type.SERVER, pth + ModLoadingContext.get().getActiveNamespace() + extra + "_server.toml");
+				case CLIENT -> create(ModConfig.Type.CLIENT, pth + ModLoadingContext.get().getActiveNamespace() + extra + "_client.toml");
+				case COMMON -> create(ModConfig.Type.COMMON, pth + ModLoadingContext.get().getActiveNamespace() + extra + "_common.toml");
 				default -> throw new RuntimeException("wat");
 			}
 		}
@@ -140,7 +143,8 @@ public class AnnoCFG {
 											txt = txt.substring(1, txt.length() - 1);
 											String[] split = txt.split(",");
 											int[] ints = new int[3];
-											for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
+											for (int i = 0; i < split.length; i++)
+												ints[i] = Integer.parseInt(split[i].trim());
 											if (ints[0] > ints[1]) return false;
 											if (ints[1] > ints[2]) return false;
 										} catch (Throwable ignored) {
@@ -157,13 +161,35 @@ public class AnnoCFG {
 								for (int i = 0; i < split.length; i++) ints[i] = Integer.parseInt(split[i].trim());
 								return new IntBounds.Bound(ints[0], ints[1], ints[2]);
 							};
+						} else if (ConfigEnum.class.isAssignableFrom(field.getType())) {
+							try {
+								ConfigEnum[] o = (ConfigEnum[]) field.getType().getDeclaredMethod("values").invoke(null);
+								
+								Supplier<String> src = builder.define(
+										nameStr, o[defaultValue.valueI()].getConfigName(), (text) -> {
+											for (ConfigEnum configEnum : o)
+												if (text.equals(configEnum.getConfigName()))
+													return true;
+											return false;
+										}
+								);
+								value = () -> {
+									String txt = src.get();
+									for (ConfigEnum configEnum : o)
+										if (txt.equals(configEnum.getConfigName()))
+											return configEnum;
+									return null;
+								};
+							} catch (Throwable err) {
+								throw new RuntimeException(err);
+							}
 						} else {
 							throw new RuntimeException("NYI " + field.getType());
 						}
 					}
 				}
 				
-				Object o = null;
+				Object o;
 				try {
 					o = field.get(null);
 				} catch (Throwable ignored) {

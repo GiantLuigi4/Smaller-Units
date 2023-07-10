@@ -13,12 +13,13 @@ compile:
 graphics:
   (shimmer): 627824 4082047
   (oculus): 581495 4299147
-  distant_horizons: 508933 3923597
+  (distant_horizons): 508933 3923597
 
 # optimization mods
 optimization:
   (canary): 665658 4421576
   rubidium: 574856 3973894
+  (flywheel): 486392 4341471
 
 # invasive mods
 invasive:
