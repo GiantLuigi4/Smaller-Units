@@ -193,18 +193,20 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				return cache.get(pos).getFirst();
 			}
 			
+			Level pArent = this.parent.get();
+			
 			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
-			if (!this.parent.get().isLoaded(pos))
+			if (!pArent.isLoaded(pos))
 				return Blocks.VOID_AIR.defaultBlockState();
 			
 			ChunkPos ckPos = new ChunkPos(pos);
 			WeakReference<LevelChunk> chunkRef = lastChunk.get();
 			LevelChunk ck;
 			if (chunkRef == null || (ck = chunkRef.get()) == null)
-				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
+				lastChunk.set(new WeakReference<>(ck = pArent.getChunkAt(pos)));
 			else if (!chunkRef.get().getPos().equals(ckPos))
-				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
+				lastChunk.set(new WeakReference<>(ck = pArent.getChunkAt(pos)));
 			
 			BlockState state = ck.getBlockState(pos);
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
@@ -1185,6 +1187,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	// nothing to do
 	public void markRenderDirty(BlockPos pLevelPos) {
+	}
+	
+	@Override
+	public void advanceWeatherCycle() {
 	}
 	
 	@Override

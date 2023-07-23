@@ -1,5 +1,6 @@
 package tfc.smallerunits.utils.asm;
 
+import com.jozufozu.flywheel.api.FlywheelWorld;
 import net.minecraftforge.coremod.api.ASMAPI;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -18,6 +19,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 	private static final ArrayList<String> classLookup = new ArrayList<>();
 	private static final ArrayList<String> pkgLookup = new ArrayList<>();
 	private static final HashMap<String, ArrayList<String>> incompatibilityMap = new HashMap<>();
+	private static final HashMap<String, String> dependencies = new HashMap<>();
 	
 	static {
 		pkgLookup.add("tfc.smallerunits.mixin.compat.");
@@ -33,6 +35,11 @@ public class MixinConnector implements IMixinConfigPlugin {
 //			incompat.add("qouteall.imm_ptl.core.network.PacketRedirection");
 //			incompatibilityMap.put("tfc.smallerunits.mixin.core.ConnectionMixin", incompat);
 //		}
+		{
+			dependencies.put("tfc.smallerunits.mixin.compat.flywheel.LevelRendererMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+			dependencies.put("tfc.smallerunits.mixin.compat.flywheel.ModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+			dependencies.put("tfc.smallerunits.mixin.compat.flywheel.TickerClientLevelMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+		}
 	}
 	
 	@Override
@@ -53,6 +60,20 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+		if (dependencies.containsKey(mixinClassName)) {
+			ClassLoader loader = MixinConnector.class.getClassLoader();
+			// tests if the classloader contains a .class file for the target
+			InputStream stream = loader.getResourceAsStream(dependencies.get(mixinClassName).replace('.', '/') + ".class");
+			if (stream != null) {
+				try {
+					stream.close();
+				} catch (Throwable ignored) {
+				}
+				return true;
+			}
+			return false;
+		}
+		
 		if (classLookup.contains(mixinClassName) || doesPkgNeedLookup(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -67,6 +88,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			}
 			return false;
 		}
+		
 		if (incompatibilityMap.containsKey(mixinClassName)) {
 			ClassLoader loader = MixinConnector.class.getClassLoader();
 			// tests if the classloader contains a .class file for the target
@@ -85,6 +107,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			}
 			return false;
 		}
+		
 		return true;
 	}
 	

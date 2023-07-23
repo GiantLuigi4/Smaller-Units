@@ -2,6 +2,7 @@ package tfc.smallerunits;
 
 import io.netty.channel.ChannelPipeline;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -35,6 +37,8 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.config.ClientConfig;
 import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
+
+import java.util.ArrayDeque;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("smallerunits")
@@ -107,11 +111,28 @@ public class SmallerUnits {
 			}
 		} catch (Throwable ignored) {
 		}
+		
+		MinecraftForge.EVENT_BUS.addListener(SmallerUnits::onTick);
+	}
+	
+	private static final ArrayDeque<Runnable> enqueued = new ArrayDeque<>();
+	
+	// this ended up being necessary, as without it, furnaces can end up deadlocing world loading
+	private static void onTick(TickEvent.ServerTickEvent event) {
+		if (event.phase == TickEvent.Phase.END) {
+			for (Runnable runnable : enqueued) {
+				runnable.run();
+			}
+		}
 	}
 	
 	private static void onChunkLoaded(ChunkEvent.Load loadEvent) {
 		if (loadEvent.getLevel() instanceof ServerLevel lvl) {
-			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) SUCapabilityManager.onChunkLoad(lvlChk);
+			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) {
+				synchronized (enqueued) {
+					enqueued.add(() -> SUCapabilityManager.onChunkLoad(lvlChk));
+				}
+			}
 			
 			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 				ChunkAccess access = loadEvent.getChunk();

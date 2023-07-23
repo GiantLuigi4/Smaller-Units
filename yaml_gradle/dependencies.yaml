@@ -3,3 +3,8 @@ curse:
   template: "curse.maven:$l-$r0:$r1"
   file: "deps/curse.yaml"
   deobf: true
+
+c2:
+  template: "curse.maven:$l-$r0:$r1"
+  file: "deps/c2.yaml"
+  deobf: true

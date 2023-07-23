@@ -4,10 +4,10 @@
 
 # mods that SU compiles against
 compile:
-  chisel_and_bits: 231095 4402503
+  (chisel_and_bits): 231095 4402503
   pehkui: 319596 4408042
-  alternate_current: 548115 4406066
-  refinedstorage: 243076 4392788
+  (alternate_current): 548115 4406066
+  (refinedstorage): 243076 4392788
 
 # graphics enhancements
 graphics:
@@ -24,16 +24,16 @@ optimization:
 # invasive mods
 invasive:
   (immprtl): 355440 4385516
-  -clothcfg: 348521 3972423
+  -(clothcfg): 348521 3972423
 
 # vr mods
 vr:
   (vivecraft): 667903 4409427
-  vfe: 325360 3949338
+  (vfe): 325360 3949338
 
 # debugging mods
 debug:
-  spark: 361579 4057111
+  (spark): 361579 4057111
 
 testing:
-  create: 328085 4625534
+  (create): 328085 4625534

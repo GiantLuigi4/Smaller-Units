@@ -44,8 +44,13 @@ public class PacketUtilMess {
 				info.scalePlayerReach(player, pos.upb());
 				info.adjust(player, player.level, pos, !player.getLevel().isClientSide);
 				
-				ITickerLevel tkLvl = (ITickerLevel) player.level;
-				tkLvl.addInteractingEntity(player);
+				try {
+					ITickerLevel tkLvl = (ITickerLevel) player.level;
+					tkLvl.addInteractingEntity(player);
+				} catch (Throwable err) {
+					info.reset(player);
+					throw new RuntimeException(err);
+				}
 				
 				pkts.put(packet, info);
 			}
