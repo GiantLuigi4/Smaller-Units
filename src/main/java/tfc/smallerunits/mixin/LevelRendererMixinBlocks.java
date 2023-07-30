@@ -1,5 +1,6 @@
 package tfc.smallerunits.mixin;
 
+import com.jozufozu.flywheel.backend.instancing.InstancedRenderRegistry;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -39,6 +40,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.asm.AssortedQol;
+import tfc.smallerunits.utils.asm.ModCompat;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixinBlocks {
@@ -190,7 +192,10 @@ public abstract class LevelRendererMixinBlocks {
 			stk.pushPose();
 			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
 			for (BlockEntity tile : bes)
-				TileRendererHelper.renderBE(tile, origin, SU$Frustum, stk, blockEntityRenderDispatcher, pct);
+				if (
+						!ModCompat.isFlywheelPresent ||
+								!InstancedRenderRegistry.canInstance(tile.getType())
+				) TileRendererHelper.renderBE(tile, origin, SU$Frustum, stk, blockEntityRenderDispatcher, pct);
 			stk.popPose();
 		}
 		stk.popPose();
@@ -209,7 +214,7 @@ public abstract class LevelRendererMixinBlocks {
 		
 		if (capable == null)
 			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
-		
+
 //		if (!capable.SU$getChunkRender().hasBuffers()) return instance.isEmpty(pRenderType);
 		
 		if (uniform != null)

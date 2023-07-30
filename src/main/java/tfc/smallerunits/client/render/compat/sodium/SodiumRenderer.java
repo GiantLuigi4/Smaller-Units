@@ -198,8 +198,10 @@ public class SodiumRenderer {
 			stk.pushPose();
 			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
 			for (BlockEntity tile : bes)
-				if (!InstancedRenderRegistry.canInstance(tile.getType()))
-					TileRendererHelper.renderBE(tile, origin, frustum, stk, Minecraft.getInstance().getBlockEntityRenderDispatcher(), tickDelta);
+				if (
+						!ModCompat.isFlywheelPresent ||
+								!InstancedRenderRegistry.canInstance(tile.getType())
+				) TileRendererHelper.renderBE(tile, origin, frustum, stk, Minecraft.getInstance().getBlockEntityRenderDispatcher(), tickDelta);
 			stk.popPose();
 		}
 		stk.popPose();

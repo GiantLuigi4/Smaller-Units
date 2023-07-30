@@ -65,6 +65,7 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -848,6 +849,13 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 	
 	@Override
 	public String toString() {
+		Level parent = getParent();
+		Region region = this.region;
+		if (parent == null || region == null) {
+			Loggers.SU_LOGGER.warn("toString called before SU world is initialized");
+			return "TickerClientLevel[UNKNOWN]@[UNKNOWN]";
+		}
+		
 		return "TickerClientLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
@@ -1049,7 +1057,6 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
 	}
-	
 	
 	
 	// compat: lithium

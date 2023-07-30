@@ -4,8 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraftforge.fml.ModList;
 
 public class ModCompat {
+	public static final boolean isFlywheelPresent = ModList.get().isLoaded("flywheel");
+	
 	/**
 	 * mixin point; called when a small BE is added on client
 	 */
