@@ -8,14 +8,14 @@ import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import tfc.smallerunits.simulation.level.client.FakeClientLevel;
+import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 
 public class PlatformUtilsClient {
-	public static void postTick(FakeClientLevel fakeClientLevel) {
+	public static void postTick(TickerClientLevel fakeClientLevel) {
 //		ClientTickEvents.END_WORLD_TICK.invoker().onEndTick(fakeClientLevel);
 	}
 	
-	public static void preTick(FakeClientLevel fakeClientLevel) {
+	public static void preTick(TickerClientLevel fakeClientLevel) {
 //		ClientTickEvents.START_WORLD_TICK.invoker().onStartTick(fakeClientLevel);
 	}
 	
@@ -27,7 +27,7 @@ public class PlatformUtilsClient {
 		return ItemBlockRenderTypes.getChunkRenderType(state).equals(chunkBufferLayer);
 	}
 	
-	public static void onLoad(FakeClientLevel fakeClientLevel) {
+	public static void onLoad(TickerClientLevel fakeClientLevel) {
 		// no-op?
 	}
 	

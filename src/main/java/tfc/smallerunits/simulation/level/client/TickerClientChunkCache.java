@@ -29,14 +29,14 @@ import tfc.smallerunits.utils.IHateTheDistCleaner;
 import java.lang.ref.WeakReference;
 import java.util.function.BooleanSupplier;
 
-public class FakeClientChunkCache extends ClientChunkCache implements ITickerChunkCache {
+public class TickerClientChunkCache extends ClientChunkCache implements ITickerChunkCache {
 	public final BasicVerticalChunk[][] columns;
 	int upb;
 	Level level;
 	
 	EmptyLevelChunk empty;
 	
-	public FakeClientChunkCache(ClientLevel pLevel, int pViewDistance, int upb) {
+	public TickerClientChunkCache(ClientLevel pLevel, int pViewDistance, int upb) {
 		super(pLevel, pViewDistance);
 		level = pLevel;
 		this.upb = upb;
