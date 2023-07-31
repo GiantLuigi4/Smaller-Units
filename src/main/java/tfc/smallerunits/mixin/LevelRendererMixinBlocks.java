@@ -224,4 +224,9 @@ public abstract class LevelRendererMixinBlocks {
 		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, SU$Frustum, pCamX, pCamY, pCamZ, uniform);
 		return instance.isEmpty(pRenderType);
 	}
+	
+	@Inject(at = @At("TAIL"), method = "renderChunkLayer")
+	public void postRenderLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo ci) {
+		ModCompat.postRenderLayer(renderType, poseStack, camX, camY, camZ, level);
+	}
 }
