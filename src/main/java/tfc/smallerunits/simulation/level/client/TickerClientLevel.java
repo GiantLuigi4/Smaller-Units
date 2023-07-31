@@ -50,9 +50,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.fml.LogicalSide;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
@@ -74,6 +72,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtilsClient;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.selection.MutableAABB;
 import tfc.smallerunits.utils.selection.UnitShape;
@@ -148,33 +147,6 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		});
 	}
 	
-	@Override
-	public void playSeededSound(@Nullable Player p_233621_, double p_233622_, double p_233623_, double p_233624_, SoundEvent p_233625_, SoundSource p_233626_, float p_233627_, float p_233628_, long p_233629_) {
-		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_233622_, p_233623_, p_233624_, p_233625_, p_233626_, p_233627_, p_233628_);
-		if (event.isCanceled() || event.getSound() == null) return;
-		p_233625_ = event.getSound();
-		p_233626_ = event.getSource();
-		p_233627_ = event.getNewVolume();
-		p_233628_ = event.getNewPitch();
-		if (p_233621_ == Minecraft.getInstance().player) {
-			this.playLocalSound(
-					p_233622_, p_233623_, p_233624_,
-					p_233625_, p_233626_, p_233627_,
-					p_233628_, false
-			);
-		}
-	}
-	
-	@Override
-	public void playSeededSound(@Nullable Player p_233631_, Entity p_233632_, SoundEvent p_233633_, SoundSource p_233634_, float p_233635_, float p_233636_, long p_233637_) {
-		super.playSeededSound(p_233631_, p_233632_, p_233633_, p_233634_, p_233635_, p_233636_, p_233637_);
-	}
-	
-	@Override
-	public void playLocalSound(BlockPos p_104678_, SoundEvent p_104679_, SoundSource p_104680_, float p_104681_, float p_104682_, boolean p_104683_) {
-		super.playLocalSound(p_104678_, p_104679_, p_104680_, p_104681_, p_104682_, p_104683_);
-	}
-	
 	public TickerClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
 		this.parent = new WeakReference<>(parent);
@@ -211,7 +183,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			return state;
 		};
 		
-		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(this));
+		PlatformUtilsClient.onLoad(this);
 	}
 	
 	public UnitParticleEngine getParticleEngine() {
@@ -382,7 +354,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 					case 2001:
 						BlockState blockstate = Block.stateById(pData);
 						if (!blockstate.isAir()) {
-							SoundType soundtype = blockstate.getSoundType(this, pPos, null);
+							SoundType soundtype = PlatformUtilsClient.getSoundType(blockstate, this, pPos);
 							this.playLocalSound(pPos, soundtype.getBreakSound(), SoundSource.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
 						}
 						
@@ -721,7 +693,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		particleEngine.tick();
 		Minecraft.getInstance().level = tlevel;
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, this, () -> true));
+		PlatformUtilsClient.preTick(this);
 		
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
@@ -752,13 +724,14 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				((EntityAccessor) entity).setMotionScalar(1);
 		entitiesGrabbedByBlocks.clear();
 		
-		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, this, () -> true));
+		PlatformUtilsClient.postTick(this);
 	}
 	
 	@Override
 	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, RandomSource pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
 		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
 		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
+//		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
 	}
 	
 	@Override
@@ -857,48 +830,6 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		}
 		
 		return "TickerClientLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
-	}
-	
-	// TODO: try to optimize or shrink this?
-	@Override
-	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
-		if (this.isOutsideBuildHeight(pPos)) {
-			return false;
-		} else if (!this.isClientSide && this.isDebug()) {
-			return false;
-		} else {
-			LevelChunk levelchunk = this.getChunkAt(pPos);
-			
-			BlockPos actualPos = pPos;
-			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
-			net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
-			if (this.captureBlockSnapshots && !this.isClientSide) {
-				blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.create(this.dimension(), this, pPos, pFlags);
-				this.capturedBlockSnapshots.add(blockSnapshot);
-			}
-			
-			BlockState old = levelchunk.getBlockState(pPos);
-			int oldLight = old.getLightEmission(this, pPos);
-			int oldOpacity = old.getLightBlock(this, pPos);
-			
-			BlockState blockstate = levelchunk.setBlockState(pPos, pState, (pFlags & 64) != 0);
-			if (blockstate == null) {
-				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
-				return false;
-			} else {
-				BlockState blockstate1 = levelchunk.getBlockState(pPos);
-				if ((pFlags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getLightBlock(this, pPos) != oldOpacity || blockstate1.getLightEmission(this, pPos) != oldLight || blockstate1.useShapeForLightOcclusion() || blockstate.useShapeForLightOcclusion())) {
-					this.getProfiler().push("queueCheckLight");
-					this.getChunkSource().getLightEngine().checkBlock(actualPos);
-					this.getProfiler().pop();
-				}
-				
-				if (blockSnapshot == null) // Don't notify clients or update physics while capturing blockstates
-					this.markAndNotifyBlock(actualPos, levelchunk, blockstate, pState, pFlags, pRecursionLeft);
-				
-				return true;
-			}
-		}
 	}
 	
 	@Override
@@ -1108,5 +1039,76 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 	@Override
 	public boolean chunkExists(SectionPos pos) {
 		return false;
+	}
+	
+	/* forge specific */
+	
+	// TODO: try to optimize or shrink this?
+	@Override
+	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
+		if (this.isOutsideBuildHeight(pPos)) {
+			return false;
+		} else if (!this.isClientSide && this.isDebug()) {
+			return false;
+		} else {
+			LevelChunk levelchunk = this.getChunkAt(pPos);
+			
+			BlockPos actualPos = pPos;
+			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
+			net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
+			if (this.captureBlockSnapshots && !this.isClientSide) {
+				blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.create(this.dimension(), this, pPos, pFlags);
+				this.capturedBlockSnapshots.add(blockSnapshot);
+			}
+			
+			BlockState old = levelchunk.getBlockState(pPos);
+			int oldLight = old.getLightEmission(this, pPos);
+			int oldOpacity = old.getLightBlock(this, pPos);
+			
+			BlockState blockstate = levelchunk.setBlockState(pPos, pState, (pFlags & 64) != 0);
+			if (blockstate == null) {
+				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
+				return false;
+			} else {
+				BlockState blockstate1 = levelchunk.getBlockState(pPos);
+				if ((pFlags & 128) == 0 && blockstate1 != blockstate && (blockstate1.getLightBlock(this, pPos) != oldOpacity || blockstate1.getLightEmission(this, pPos) != oldLight || blockstate1.useShapeForLightOcclusion() || blockstate.useShapeForLightOcclusion())) {
+					this.getProfiler().push("queueCheckLight");
+					this.getChunkSource().getLightEngine().checkBlock(actualPos);
+					this.getProfiler().pop();
+				}
+				
+				if (blockSnapshot == null) // Don't notify clients or update physics while capturing blockstates
+					this.markAndNotifyBlock(actualPos, levelchunk, blockstate, pState, pFlags, pRecursionLeft);
+				
+				return true;
+			}
+		}
+	}
+	
+	@Override
+	public void playSeededSound(@Nullable Player p_233621_, double p_233622_, double p_233623_, double p_233624_, SoundEvent p_233625_, SoundSource p_233626_, float p_233627_, float p_233628_, long p_233629_) {
+		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_233622_, p_233623_, p_233624_, p_233625_, p_233626_, p_233627_, p_233628_);
+		if (event.isCanceled() || event.getSound() == null) return;
+		p_233625_ = event.getSound();
+		p_233626_ = event.getSource();
+		p_233627_ = event.getNewVolume();
+		p_233628_ = event.getNewPitch();
+		if (p_233621_ == Minecraft.getInstance().player) {
+			this.playLocalSound(
+					p_233622_, p_233623_, p_233624_,
+					p_233625_, p_233626_, p_233627_,
+					p_233628_, false
+			);
+		}
+	}
+	
+	@Override
+	public void playSeededSound(@Nullable Player p_233631_, Entity p_233632_, SoundEvent p_233633_, SoundSource p_233634_, float p_233635_, float p_233636_, long p_233637_) {
+		super.playSeededSound(p_233631_, p_233632_, p_233633_, p_233634_, p_233635_, p_233636_, p_233637_);
+	}
+	
+	@Override
+	public void playLocalSound(BlockPos p_104678_, SoundEvent p_104679_, SoundSource p_104680_, float p_104681_, float p_104682_, boolean p_104683_) {
+		super.playLocalSound(p_104678_, p_104679_, p_104680_, p_104681_, p_104682_, p_104683_);
 	}
 }

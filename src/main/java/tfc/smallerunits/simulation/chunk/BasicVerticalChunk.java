@@ -43,6 +43,7 @@ import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.asm.ModCompat;
 import tfc.smallerunits.utils.math.Math1D;
+import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.util.ArrayList;
@@ -263,7 +264,8 @@ public class BasicVerticalChunk extends LevelChunk {
 	
 	public BlockEntity createBlockEntity(BlockPos pPos) {
 		BlockState blockstate = this.getBlockState(pPos);
-		return !blockstate.hasBlockEntity() ? null : ((EntityBlock) blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
+		return !blockstate.hasBlockEntity() ? null :
+				((EntityBlock) blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
 	}
 	
 	public void setBlockEntity$(BlockEntity pBlockEntity) {
@@ -274,9 +276,9 @@ public class BasicVerticalChunk extends LevelChunk {
 			pBlockEntity.setLevel(this.level);
 			pBlockEntity.clearRemoved();
 			BlockEntity blockentity = this.blockEntities.put(blockpos, pBlockEntity);
-			if (blockentity != null && blockentity != pBlockEntity) {
+			if (blockentity != null && blockentity != pBlockEntity)
 				blockentity.setRemoved();
-			}
+			PlatformUtils.beLoaded(pBlockEntity, level);
 		}
 		
 		if (!level.isClientSide) return;
@@ -316,19 +318,19 @@ public class BasicVerticalChunk extends LevelChunk {
 		super.removeBlockEntity(pPos);
 	}
 	
-	public void removeBlockEntityTicker(BlockPos pPos) {
-		if (yPos != 0)
-			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
-		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
-	}
-	
 	public void addBlockEntity$(BlockPos pos, BlockEntity pBlockEntity) {
 		this.setBlockEntity$(pBlockEntity);
 		if (isLoaded() || level.isClientSide) {
 			super.addAndRegisterBlockEntity(pBlockEntity);
 			this.updateBlockEntityTicker(pBlockEntity);
-			pBlockEntity.onLoad();
+			PlatformUtils.altBeLoad(pBlockEntity);
 		}
+	}
+	
+	public void removeBlockEntityTicker(BlockPos pPos) {
+		if (yPos != 0)
+			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
+		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
 	}
 	
 	@Override
@@ -453,7 +455,7 @@ public class BasicVerticalChunk extends LevelChunk {
 				if (!section.getBlockState(j, k, l).is(block)) {
 					return null;
 				} else {
-					if (!this.level.isClientSide && !this.level.captureBlockSnapshots) {
+					if (!this.level.isClientSide && !PlatformUtils.shouldCaptureBlockSnapshots(level)) {
 						pState.onPlace(this.level, offsetPos, blockstate, pIsMoving);
 					}
 					
@@ -726,13 +728,14 @@ public class BasicVerticalChunk extends LevelChunk {
 		return SectionPos.of(getPos(), yPos);
 	}
 	
-	public Holder<Biome> getNoiseBiome(int pX, int pY, int pZ) {
-		BlockPos bp = ((ITickerLevel)level).getRegion().pos.toBlockPos().offset(
-				// TODO: double check this
-				Math.floor(pX / (double) upb),
-				Math.floor(pY / (double) upb),
-				Math.floor(pZ / (double) upb)
+	@Override
+	public Holder<Biome> getNoiseBiome(int p_204347_, int p_204348_, int p_204349_) {
+		return level.getBiome(
+				new BlockPos(
+						getSectionPos().minBlockX() + p_204347_,
+						getSectionPos().minBlockY() + p_204348_,
+						getSectionPos().minBlockZ() + p_204349_
+				)
 		);
-		return ((ITickerLevel)level).getParent().getBiome(bp.offset(((ITickerLevel)level).getRegion().pos.toBlockPos()));
 	}
 }
