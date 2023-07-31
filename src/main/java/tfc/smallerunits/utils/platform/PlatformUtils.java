@@ -22,12 +22,14 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.asm.MixinConnector;
 import tfc.smallerunits.utils.platform.hooks.ICullableBE;
+import tfc.smallerunits.utils.scale.ResizingUtils;
 
 import java.util.ArrayList;
 
@@ -154,5 +156,18 @@ public class PlatformUtils {
 			IHateTheDistCleaner.loadBe(pBlockEntity, level);
 		else
 			ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.invoker().onLoad(pBlockEntity, (ServerLevel) level);
+	}
+	
+	public static Entity migrateEntity(Entity pEntity, TickerServerLevel serverLevel, int upb, Level lvl) {
+		((EntityAccessor) pEntity).setPortalInfo(PlatformUtils.createPortalInfo(pEntity, serverLevel));
+		ResizingUtils.resizeForUnit(pEntity, 1f / upb);
+		Entity entity = pEntity.changeDimension((ServerLevel) lvl);
+		((EntityAccessor) pEntity).setPortalInfo(null);
+		
+		return entity;
+	}
+	
+	public static void loadLevel(TickerServerLevel serverLevel) {
+		ServerWorldEvents.LOAD.invoker().onWorldLoad(serverLevel.getServer(), serverLevel);
 	}
 }

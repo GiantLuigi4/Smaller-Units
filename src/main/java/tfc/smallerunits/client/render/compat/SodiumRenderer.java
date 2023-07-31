@@ -1,4 +1,4 @@
-package tfc.smallerunits.client.compat;
+package tfc.smallerunits.client.render.compat;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -35,14 +35,21 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
+import tfc.smallerunits.utils.asm.ModCompat;
 
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 
 public class SodiumRenderer {
-	public static void render(RenderType renderLayer, PoseStack matrixStack, double x, double y, double z, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel world, RenderSectionManager renderSectionManager) {
-		renderVanilla(renderLayer, frustum, world, matrixStack, x, y, z);
+	public static void render(RenderType type, PoseStack poseStack, double camX, double camY, double camZ, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {
+		if (true) { // TODO: config
+			renderVanilla(type, frustum, level, poseStack, camX, camY, camZ);
+		} else {
+			throw new RuntimeException("Sodium renderer not implemented yet");
+		}
+		
+		ModCompat.postRenderLayer(type, poseStack, camX, camY, camZ, level);
 	}
 	
 	public static void renderVanilla(RenderType type, IFrustum su$Frustum, ClientLevel level, PoseStack poseStack, double camX, double camY, double camZ) {
@@ -100,6 +107,8 @@ public class SodiumRenderer {
 				);
 			}
 		}
+		
+		instance.CHUNK_OFFSET.set(0f, 0, 0);
 		
 		instance.setSampler("Sampler0", null);
 		instance.setSampler("Sampler2", null);

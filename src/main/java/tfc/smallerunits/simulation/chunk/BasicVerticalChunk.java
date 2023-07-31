@@ -41,6 +41,7 @@ import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
+import tfc.smallerunits.utils.asm.ModCompat;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.threading.ThreadLocals;
@@ -308,6 +309,7 @@ public class BasicVerticalChunk extends LevelChunk {
 				for (BlockEntity tile : ((SUCapableChunk) ac).getTiles()) {
 					if (tile.getBlockPos().equals(offsetPos)) {
 						toRemove.add(tile);
+						ModCompat.onRemoveBE(tile);
 					}
 				}
 				((SUCapableChunk) ac).getTiles().removeAll(toRemove);
@@ -366,7 +368,9 @@ public class BasicVerticalChunk extends LevelChunk {
 				
 				if (state.isAir()) { // TODO: do this better
 					if (!pState.isAir()) {
-						ac.setBlockState(parentPos, tfc.smallerunits.Registry.UNIT_SPACE.get().defaultBlockState(), false);
+						ac.getSection(
+								SectionPos.blockToSectionCoord(ac.getSectionIndexFromSectionY(parentPos.getY()))
+						).setBlockState(parentPos.getX() & 15, parentPos.getY() & 15, parentPos.getZ() & 15, Registry.UNIT_SPACE.get().defaultBlockState());
 						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
 						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
 						// TODO: debug why space can still be null after this or what

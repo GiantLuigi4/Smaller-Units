@@ -10,4 +10,5 @@ public @interface Config {
 	ConfigSide type();
 	String namespace();
 	String path() default "";
+	String extra() default "";
 }

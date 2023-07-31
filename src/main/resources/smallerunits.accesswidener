@@ -101,6 +101,8 @@ accessible field net/minecraft/server/level/ServerLevel blockEvents Lit/unimi/ds
 accessible method net/minecraft/server/level/ServerLevel doBlockEvent (Lnet/minecraft/world/level/BlockEventData;)Z
 accessible method net/minecraft/server/level/ServerLevel runBlockEvents ()V
 extendable method net/minecraft/server/level/ServerLevel runBlockEvents ()V
+accessible method net/minecraft/server/level/ServerLevel advanceWeatherCycle ()V
+extendable method net/minecraft/server/level/ServerLevel advanceWeatherCycle ()V
 accessible class net/minecraft/server/level/ServerLevel$EntityCallbacks
 extendable class net/minecraft/server/level/ServerLevel$EntityCallbacks
 accessible method net/minecraft/server/level/ServerLevel$EntityCallbacks <init> (Lnet/minecraft/server/level/ServerLevel;)V

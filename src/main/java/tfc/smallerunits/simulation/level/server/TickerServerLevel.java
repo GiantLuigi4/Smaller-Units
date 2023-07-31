@@ -1,7 +1,6 @@
 package tfc.smallerunits.simulation.level.server;
 
 import com.mojang.datafixers.util.Pair;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.minecraft.Util;
 import net.minecraft.core.*;
 import net.minecraft.core.particles.ParticleOptions;
@@ -61,6 +60,7 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -77,6 +77,7 @@ import tfc.smallerunits.utils.selection.MutableAABB;
 import tfc.smallerunits.utils.selection.UnitShape;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
+import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.io.File;
 import java.io.IOException;
@@ -184,18 +185,20 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				return cache.get(pos).getFirst();
 			}
 			
+			Level pArent = this.parent.get();
+			
 			if (!getServer().isReady())
 				return Blocks.VOID_AIR.defaultBlockState();
-			if (!this.parent.get().isLoaded(pos))
+			if (!pArent.isLoaded(pos))
 				return Blocks.VOID_AIR.defaultBlockState();
 			
 			ChunkPos ckPos = new ChunkPos(pos);
 			WeakReference<LevelChunk> chunkRef = lastChunk.get();
 			LevelChunk ck;
 			if (chunkRef == null || (ck = chunkRef.get()) == null)
-				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
+				lastChunk.set(new WeakReference<>(ck = pArent.getChunkAt(pos)));
 			else if (!chunkRef.get().getPos().equals(ckPos))
-				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
+				lastChunk.set(new WeakReference<>(ck = pArent.getChunkAt(pos)));
 			
 			BlockState state = ck.getBlockState(pos);
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
@@ -208,7 +211,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		this.getDataStorage().dataFolder = new File(saveWorld.file + "/data/");
 		
 		this.entityManager = new EntityManager<>(this, Entity.class, new EntityCallbacks(), new EntityStorage(this, noAccess.getDimensionPath(p_8575_).resolve("entities"), server.getFixerUpper(), server.forceSynchronousWrites(), server));
-		ServerWorldEvents.LOAD.invoker().onWorldLoad(this.getServer(), this);
+		PlatformUtils.loadLevel(this);
 	}
 	
 	@Override
@@ -378,21 +381,21 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public LevelChunk getChunkAt(BlockPos pPos) {
-		int pX = SectionPos.blockToSectionCoord(pPos.getX());
-//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
-		int pY = 0;
-		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
-		ChunkAccess chunkaccess = ((TickerChunkCache) this.getChunkSource()).getChunk(pX, pY, pZ, ChunkStatus.FULL, true);
-		return (LevelChunk) chunkaccess;
+		return (LevelChunk) ((TickerChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, true
+		);
 	}
 	
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {
-		int pX = SectionPos.blockToSectionCoord(pPos.getX());
-//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
-		int pY = 0;
-		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
-		ChunkAccess chunkaccess = ((TickerChunkCache) this.getChunkSource()).getChunk(pX, pY, pZ, ChunkStatus.FULL, false);
-		return (LevelChunk) chunkaccess;
+		return (LevelChunk) ((TickerChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, false
+		);
 	}
 	
 	@Override
@@ -443,10 +446,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 		NetworkingHacks.setPos(descriptor.parent());
 		
-		((EntityAccessor) pEntity).setPortalInfo(PlatformUtils.createPortalInfo(pEntity, this));
-		ResizingUtils.resizeForUnit(pEntity, 1f / upb);
-		Entity entity = pEntity.changeDimension((ServerLevel) lvl);
-		((EntityAccessor) pEntity).setPortalInfo(null);
+		Entity entity = PlatformUtils.migrateEntity(pEntity, this, upb, lvl);
 		
 		NetworkingHacks.setPos(descriptor);
 		
@@ -971,6 +971,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public String toString() {
+		Level parent = getParent();
+		Region region = this.region;
+		if (parent == null || region == null) {
+			Loggers.SU_LOGGER.warn("toString called before SU world is initialized");
+			return "TickerServerLevel[UNKNOWN]@[UNKNOWN]";
+		}
+		
 		return "TickerServerLevel[" + ((ServerLevelData) this.getLevelData()).getLevelName() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
@@ -1049,6 +1056,10 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	}
 	
 	@Override
+	public void advanceWeatherCycle() {
+	}
+	
+	@Override
 	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
 		BlockPos parentPos = PositionUtils.getParentPos(pBlockPos, this);
 		int lt = parent.get().getBrightness(pLightType, parentPos);
@@ -1059,6 +1070,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	@Override
 	public void tick(BooleanSupplier pHasTimeLeft) {
 		if (upb == 0) return;
+		
+		Level parent = this.parent.get();
+		if (parent == null) return;
+		// compensate for create creating a level
+		ThreadLocals.levelLocal.set(parent);
 		
 		PlatformUtils.preTick(this);
 		
@@ -1121,6 +1137,8 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		saveWorld.tick();
 		
 		PlatformUtils.postTick(this);
+		
+		ThreadLocals.levelLocal.remove();
 	}
 	
 	@Override

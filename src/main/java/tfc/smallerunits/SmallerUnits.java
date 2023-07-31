@@ -1,12 +1,12 @@
 package tfc.smallerunits;
 
-import dev.onyxstudios.cca.api.v3.chunk.ChunkSyncCallback;
 import io.netty.channel.ChannelPipeline;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.impl.client.texture.SpriteRegistryCallbackHolder;
 import net.minecraft.client.renderer.texture.TextureAtlas;
@@ -34,6 +34,8 @@ import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
 
+import java.util.ArrayDeque;
+
 // The value here should match an entry in the META-INF/mods.toml file
 public class SmallerUnits implements ModInitializer {
 	public static float tesselScale = 0;
@@ -54,10 +56,10 @@ public class SmallerUnits implements ModInitializer {
 		CraftingRegistry.RECIPES.register();
 		/* mod loading events */
 		if (PlatformUtils.isClient())
-			ClientLifecycleEvents.CLIENT_STARTED.register((a) -> setup());
-		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setupCfg());
+			ClientLifecycleEvents.CLIENT_STARTED.register((a) -> clientSetup());
+		else ServerLifecycleEvents.SERVER_STARTED.register((a) -> setup());
 		/* in game events */
-		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatch);
+//		ChunkSyncCallback.EVENT.register(SUCapabilityManager::onChunkWatch);
 		ServerPlayConnectionEvents.INIT.register((handler, server) -> {
 			setupConnectionButchery(handler.player, handler.connection, handler.connection.channel.pipeline());
 		});
@@ -118,15 +120,32 @@ public class SmallerUnits implements ModInitializer {
 //			}
 //		} catch (Throwable ignored) {
 //		}
+		ServerTickEvents.END_SERVER_TICK.register((idc) -> onTick());
 	}
 	
-	private void setupCfg() {
+	private void setup() {
+		if (PlatformUtils.isLoaded("pehkui")) PehkuiSupport.setup();
 		PlatformUtils.delayConfigInit(null);
+	}
+	
+	private static final ArrayDeque<Runnable> enqueued = new ArrayDeque<>();
+	
+	// this ended up being necessary, as without it, furnaces can end up deadlocing world loading
+	private static void onTick() {
+		synchronized (enqueued) {
+			// for some reason
+			// using an enhanced for loop crashes on fabric
+			while (!enqueued.isEmpty()) {
+				enqueued.pop().run();
+			}
+		}
 	}
 	
 	private void onChunkLoaded(ServerLevel world, LevelChunk chunk) {
 		if (world.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
-			SUCapabilityManager.onChunkLoad(chunk);
+			synchronized (enqueued) {
+				enqueued.add(() -> SUCapabilityManager.onChunkLoad(chunk));
+			}
 			
 			ChunkAccess access = chunk;
 			int min = access.getMinBuildHeight();
@@ -160,9 +179,8 @@ public class SmallerUnits implements ModInitializer {
 		}
 	}
 	
-	private void setup() {
-		if (PlatformUtils.isLoaded("pehkui")) PehkuiSupport.setup();
-		setupCfg();
+	private void clientSetup() {
+		setup();
 	}
 	
 	public static void setupConnectionButchery(Player player, Connection connection, ChannelPipeline pipeline) {

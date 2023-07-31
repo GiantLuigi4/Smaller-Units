@@ -1,6 +1,7 @@
 package tfc.smallerunits;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -98,19 +99,42 @@ public class UnitSpace {
 		return space;
 	}
 	
+	int minBlock(Direction.Axis axis) {
+		return SectionPos.sectionToBlockCoord(SectionPos.blockToSectionCoord(
+				axis.choose(
+						this.myPosInTheLevel.getX(),
+						this.myPosInTheLevel.getY(),
+						this.myPosInTheLevel.getZ()
+				)
+		));
+	}
+	
+	int maxBlock(Direction.Axis axis) {
+		return SectionPos.sectionToBlockCoord(SectionPos.blockToSectionCoord(
+				axis.choose(
+						this.myPosInTheLevel.getX() + unitsPerBlock,
+						this.myPosInTheLevel.getY() + unitsPerBlock,
+						this.myPosInTheLevel.getZ() + unitsPerBlock
+				)
+		));
+	}
+	
 	private void loadWorld(CompoundTag tag) {
 		if (myLevel == null || tag == null) return;
 		if (!level.isLoaded(pos)) return;
 		
 		// ensures that chunks are loaded
-		for (int x = 0; x < unitsPerBlock; x += 15) {
-			for (int z = 0; z < unitsPerBlock; z += 15) {
-				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
-				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+		for (int x = minBlock(Direction.Axis.X); x <= maxBlock(Direction.Axis.X); x += 16) {
+			int pX = SectionPos.blockToSectionCoord(x);
+			
+			for (int z = minBlock(Direction.Axis.Z); z <= maxBlock(Direction.Axis.Z); z += 16) {
+				int pZ = SectionPos.blockToSectionCoord(z);
 				
 				boolean anyExists = false;
-				for (int y = 0; y < unitsPerBlock; y += 15) {
-					if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, y, pZ))) {
+				for (int y = minBlock(Direction.Axis.Y); y <= maxBlock(Direction.Axis.Y); y += 16) {
+					int pY = (y) >> 4;
+					
+					if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, pY, pZ))) {
 						anyExists = true;
 						break;
 					}
@@ -120,9 +144,11 @@ public class UnitSpace {
 					if (chunk == null) continue;
 					BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 					
-					for (int y = 0; y < unitsPerBlock; y += 15) {
-						if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, (y + myPosInTheLevel.getY()) >> 4, pZ))) {
-							vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4);
+					for (int y = minBlock(Direction.Axis.Y); y <= maxBlock(Direction.Axis.Y); y += 16) {
+						int pY = (y) >> 4;
+						
+						if (((ITickerLevel) myLevel).chunkExists(SectionPos.of(pX, pY, pZ))) {
+							vc.getSubChunk(pY);
 						}
 					}
 				}
@@ -435,16 +461,18 @@ public class UnitSpace {
 	public Set<BasicVerticalChunk> getChunks() {
 		Set<BasicVerticalChunk> chunks = new HashSet<>();
 		if (myLevel == null) return chunks;
-		for (int x = 0; x < unitsPerBlock; x += 15) {
-			for (int z = 0; z < unitsPerBlock; z += 15) {
-				int pX = SectionPos.blockToSectionCoord(x + myPosInTheLevel.getX());
-				int pZ = SectionPos.blockToSectionCoord(z + myPosInTheLevel.getZ());
+		for (int x = minBlock(Direction.Axis.X); x <= maxBlock(Direction.Axis.X); x += 16) {
+			int pX = SectionPos.blockToSectionCoord(x);
+			
+			for (int z = minBlock(Direction.Axis.Z); z <= maxBlock(Direction.Axis.Z); z += 16) {
+				int pZ = SectionPos.blockToSectionCoord(z);
+				
 				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 				if (chunk == null) continue;
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
 				
-				for (int y = 0; y < unitsPerBlock; y += 15) {
-					chunks.add(vc.getSubChunk((y + myPosInTheLevel.getY()) >> 4));
+				for (int y = minBlock(Direction.Axis.Y); y <= maxBlock(Direction.Axis.Y); y += 16) {
+					chunks.add(vc.getSubChunk((y) >> 4));
 				}
 			}
 		}

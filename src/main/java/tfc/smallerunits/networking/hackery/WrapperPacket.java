@@ -216,7 +216,7 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 		try {
 			PacketUtilMess.preHandlePacket(ctx.getHandler().getConnection().getPacketListener(), context.pkt);
 		} catch (Throwable err) {
-			if (err instanceof ClassCastException) {
+			if ((err instanceof ClassCastException) || (err.getCause() instanceof ClassCastException)) {
 //				if (castException.toString().startsWith("class net.minecraft.client.multiplayer.ClientLevel cannot be cast to class tfc.smallerunits.simulation.level.ITickerLevel")) {
 //					if (err.getStackTrace()[0].getLineNumber() == 47) {
 //						// fully recoverable in this scenario, for some reason
@@ -226,6 +226,17 @@ public class WrapperPacket extends tfc.smallerunits.networking.Packet {
 //				}
 				if (!(Minecraft.getInstance().level instanceof ITickerLevel)) {
 					Loggers.SU_LOGGER.warn("Failed to handle packet " + wrapped + ".\nHowever, this should be recoverable.");
+					if (err.getStackTrace() != null) {
+						Loggers.SU_LOGGER.warn("Exception: ", err);
+					}
+					try {
+						PacketUtilMess.postHandlePacket(ctx.getHandler(), context.pkt);
+						teardown(context);
+						NetworkingHacks.increaseBlockPosPrecision.remove();
+						NetworkingHacks.unitPos.remove();
+						NetworkingHacks.currentContext.remove();
+					} catch (Throwable ignored) {
+					}
 					return;
 				}
 			}

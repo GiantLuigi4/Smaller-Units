@@ -61,6 +61,7 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.data.storage.Region;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
@@ -837,16 +838,33 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 	
 	@Override
 	public String toString() {
+		Level parent = getParent();
+		Region region = this.region;
+		if (parent == null || region == null) {
+			Loggers.SU_LOGGER.warn("toString called before SU world is initialized");
+			return "TickerClientLevel[UNKNOWN]@[UNKNOWN]";
+		}
+		
 		return "TickerClientLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
 	
+	@Override
+	public LevelChunk getChunkAt(BlockPos pPos) {
+		return ((TickerClientChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, true
+		);
+	}
+	
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {
-		int pX = SectionPos.blockToSectionCoord(pPos.getX());
-//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
-		int pY = 0;
-		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
-		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
-		return (LevelChunk) chunkCache.getChunk(pX, pY, pZ, ChunkStatus.FULL, false);
+		return ((TickerClientChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, false
+		);
 	}
 	
 	@Override

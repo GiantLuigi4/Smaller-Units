@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.SUChunkRender;
+import tfc.smallerunits.utils.asm.ModCompat;
 
 import java.util.ArrayList;
 
@@ -54,12 +55,14 @@ public abstract class LevelChunkMixin implements SUCapableChunk {
 			for (BlockEntity renderableBlockEntity : renderableBlockEntities) {
 				if (renderableBlockEntity.getBlockPos().equals(be.getBlockPos())) {
 					renderableBlockEntities.remove(renderableBlockEntity);
+					ModCompat.onRemoveBE(renderableBlockEntity);
 					break;
 				}
 			}
 			if (Minecraft.getInstance().getBlockEntityRenderDispatcher().getRenderer(be) != null) {
 				// I believe this is how this should work
 				renderableBlockEntities.add(be);
+				ModCompat.onAddBE(be);
 			}
 		}
 	}

@@ -207,6 +207,10 @@ public class JsonCategoryBuilder extends CategoryBuilder {
 			if (!wrapped.has(name)) {
 				wrapped.addProperty(name, defaultV);
 				return defaultV;
+			} else if (wrapped.get(name).isJsonNull()) {
+				wrapped.remove(name);
+				wrapped.addProperty(name, defaultV);
+				return defaultV;
 			}
 			
 			JsonPrimitive primitive = wrapped.getAsJsonPrimitive(name);
