@@ -11,9 +11,11 @@ maven:
   # entity reach attributes
   jamies: "https://maven.jamieswhiteshirt.com/libs-release"
   # cca
-  ladysnake: "https://ladysnake.jfrog.io/artifactory/mods"
+  ladysnake: "https://maven.ladysnake.org/releases"
   # cloth config
   shedaniel: "https://maven.shedaniel.me/"
   terraformers: "https://maven.terraformersmc.com/releases/"
   # C&B
   ldteam: "https://ldtteam.jfrog.io/ldtteam/modding/"
+  # flywheel
+  tterrag: "https://maven.tterrag.com/"

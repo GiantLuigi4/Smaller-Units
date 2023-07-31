@@ -223,8 +223,6 @@ dependencies {
 
     ArrayList<Object[]> libraryLines = new ArrayList<>();
 
-//    HashMap<String, ArrayList<String>> sections = new HashMap<>()
-
     for (String s : deps.keys()) {
         Yaml entry = deps.getYaml(s)
 
@@ -307,6 +305,8 @@ dependencies {
         compileOnly files("run/mods/aa_do_not_rename_OptiFineDevTweaker-2.6.5-all.jar")
         compileOnly files("of/OptiFine_1.19.2_HD_U_I1-deobf.jar")
     }
+
+    modApi "com.jozufozu.flywheel:flywheel-fabric-1.19.2:0.6.9-6"
 }
 
 if (Vars.isFabric) {

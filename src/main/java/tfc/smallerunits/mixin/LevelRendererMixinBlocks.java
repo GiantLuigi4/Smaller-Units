@@ -1,5 +1,6 @@
 package tfc.smallerunits.mixin;
 
+import com.jozufozu.flywheel.backend.instancing.InstancedRenderRegistry;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
@@ -39,6 +40,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.asm.AssortedQol;
+import tfc.smallerunits.utils.asm.ModCompat;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixinBlocks {
@@ -186,7 +188,10 @@ public abstract class LevelRendererMixinBlocks {
 			stk.pushPose();
 			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
 			for (BlockEntity tile : bes)
-				TileRendererHelper.renderBE(tile, origin, SU$Frustum, stk, blockEntityRenderDispatcher, pct);
+				if (
+						!ModCompat.isFlywheelPresent ||
+								!InstancedRenderRegistry.canInstance(tile.getType())
+				) TileRendererHelper.renderBE(tile, origin, SU$Frustum, stk, blockEntityRenderDispatcher, pct);
 			stk.popPose();
 		}
 		stk.popPose();
@@ -213,5 +218,10 @@ public abstract class LevelRendererMixinBlocks {
 		SU$Frustum.set(capturedFrustum != null ? capturedFrustum : cullingFrustum);
 		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, SU$Frustum, pCamX, pCamY, pCamZ, uniform);
 		return instance.isEmpty(pRenderType);
+	}
+	
+	@Inject(at = @At("TAIL"), method = "renderChunkLayer")
+	public void postRenderLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo ci) {
+		ModCompat.postRenderLayer(renderType, poseStack, camX, camY, camZ, level);
 	}
 }
