@@ -901,13 +901,23 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		}
 	}
 	
+	@Override
+	public LevelChunk getChunkAt(BlockPos pPos) {
+		return ((TickerClientChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, true
+		);
+	}
+	
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {
-		int pX = SectionPos.blockToSectionCoord(pPos.getX());
-//		int pY = SectionPos.blockToSectionCoord(pPos.getY());
-		int pY = 0;
-		int pZ = SectionPos.blockToSectionCoord(pPos.getZ());
-		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
-		return (LevelChunk) chunkCache.getChunk(pX, pY, pZ, ChunkStatus.FULL, false);
+		return ((TickerClientChunkCache) this.getChunkSource()).getChunk(
+				SectionPos.blockToSectionCoord(pPos.getX()),
+				0,
+				SectionPos.blockToSectionCoord(pPos.getZ()),
+				ChunkStatus.FULL, false
+		);
 	}
 	
 	@Override
