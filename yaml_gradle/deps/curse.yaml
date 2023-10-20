@@ -18,8 +18,9 @@ graphics:
 # optimization mods
 optimization:
   (canary): 665658 4421576
-  rubidium: 574856 3973894
-  (flywheel): 486392 4341471
+  (rubidium): 574856 3973894
+  embeddium: 908741 4800667
+  flywheel: 486392 4341471
 
 # invasive mods
 invasive:

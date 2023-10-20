@@ -29,15 +29,8 @@ public class ModCompatMixin {
 			if (InstancedRenderRegistry.canInstance(be.getType())) {// 47
 				InstancedRenderDispatcher.getBlockEntities(be.getLevel()).add(be);// 56
 				InstancedRenderDispatcher.getBlockEntities(be.getLevel()).update(be);// 75 76
-//				return false;
 			}
-			
-//			if (!InstancedRenderRegistry.shouldSkipRender(be)) {// 51
-//				self.add(be);// 52
-//				return true;// 57
-//			}
 		}
-//		else return true
 	}
 	
 	@Inject(at = @At("HEAD"), method = "onRemoveBE")
@@ -46,31 +39,6 @@ public class ModCompatMixin {
 			if (InstancedRenderRegistry.canInstance(be.getType())) {// 47
 				InstancedRenderDispatcher.getBlockEntities(be.getLevel()).remove(be);
 				InstancedRenderDispatcher.getBlockEntities(be.getLevel()).update(be);// 75 76
-			}
-		}
-	}
-	
-	@Inject(at = @At("HEAD"), method = "postRenderLayer")
-	private static void afterRenderLayer(RenderType type, PoseStack poseStack, double camX, double camY, double camZ, Level level, CallbackInfo ci) {
-		for (Region value : ((RegionalAttachments) level).SU$getRegionMap().values()) {
-			BlockPos rp = value.pos.toBlockPos();
-			for (Level valueLevel : value.getLevels()) {
-				if (valueLevel != null) {
-					poseStack.pushPose();
-					poseStack.scale(
-							1f / ((ITickerLevel) valueLevel).getUPB(),
-							1f / ((ITickerLevel) valueLevel).getUPB(),
-							1f / ((ITickerLevel) valueLevel).getUPB()
-					);
-					int mul = ((ITickerLevel) valueLevel).getUPB();
-					RenderLayerEvent event = new RenderLayerEvent(
-							(ClientLevel) valueLevel,
-							type, poseStack, Minecraft.getInstance().renderBuffers(),
-							camX * mul, camY * mul, (camZ - rp.getZ()) * mul
-					);
-					MinecraftForge.EVENT_BUS.post(event);
-					poseStack.popPose();
-				}
 			}
 		}
 	}

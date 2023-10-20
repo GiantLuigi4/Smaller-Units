@@ -41,6 +41,7 @@ import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.asm.AssortedQol;
 import tfc.smallerunits.utils.asm.ModCompat;
+import tfc.smallerunits.utils.asm.ModCompatClient;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixinBlocks {
@@ -192,10 +193,10 @@ public abstract class LevelRendererMixinBlocks {
 			stk.pushPose();
 			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
 			for (BlockEntity tile : bes)
-				if (
-						!ModCompat.isFlywheelPresent ||
-								!InstancedRenderRegistry.canInstance(tile.getType())
-				) TileRendererHelper.renderBE(tile, origin, SU$Frustum, stk, blockEntityRenderDispatcher, pct);
+				ModCompatClient.drawBE(
+						tile, origin, SU$Frustum,
+						stk, pct
+				);
 			stk.popPose();
 		}
 		stk.popPose();

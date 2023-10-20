@@ -1,6 +1,5 @@
 package tfc.smallerunits.client.render.compat.sodium;
 
-import com.jozufozu.flywheel.backend.instancing.InstancedRenderRegistry;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -36,6 +35,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.asm.ModCompat;
+import tfc.smallerunits.utils.asm.ModCompatClient;
 import tfc.smallerunits.utils.config.compat.ClientCompatConfig;
 
 import java.util.List;
@@ -198,10 +198,10 @@ public class SodiumRenderer {
 			stk.pushPose();
 			stk.translate(-origin.getX(), -origin.getY(), -origin.getZ());
 			for (BlockEntity tile : bes)
-				if (
-						!ModCompat.isFlywheelPresent ||
-								!InstancedRenderRegistry.canInstance(tile.getType())
-				) TileRendererHelper.renderBE(tile, origin, frustum, stk, Minecraft.getInstance().getBlockEntityRenderDispatcher(), tickDelta);
+				ModCompatClient.drawBE(
+						tile, origin, frustum,
+						stk, tickDelta
+				);
 			stk.popPose();
 		}
 		stk.popPose();
