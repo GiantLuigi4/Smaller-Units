@@ -447,3 +447,7 @@ class Yaml extends YamlEntry {
         this(text.split("\n"), 0, new int[]{0})
     }
 }
+
+tasks.withType(Jar.class).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
