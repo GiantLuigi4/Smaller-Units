@@ -30,6 +30,7 @@ import tfc.smallerunits.data.storage.UnitPallet;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.SUNetworkRegistry;
+import tfc.smallerunits.networking.sync.RemoveUnitPacketS2C;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
@@ -420,6 +421,11 @@ public class UnitSpace {
 		SyncPacketS2C pkt = new SyncPacketS2C(this);
 		SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
 	}
+
+	public void sendRemove(PacketDistributor.PacketTarget target) {
+		RemoveUnitPacketS2C pkt = new RemoveUnitPacketS2C(this.pos, this.unitsPerBlock);
+		SUNetworkRegistry.NETWORK_INSTANCE.send(target, pkt);
+	}
 	
 	// ip compatibility method
 	public void sendRedirectableSync(PacketDistributor.PacketTarget target) {
@@ -451,25 +457,25 @@ public class UnitSpace {
 			numBlocks += 1;
 		}
 	}
-	
+
 	public boolean isEmpty() {
 		// TODO: this doesn't work on client
 		return numBlocks <= 0;
 	}
-	
+
 	public Set<BasicVerticalChunk> getChunks() {
 		Set<BasicVerticalChunk> chunks = new HashSet<>();
 		if (myLevel == null) return chunks;
 		for (int x = minBlock(Direction.Axis.X); x <= maxBlock(Direction.Axis.X); x += 16) {
 			int pX = SectionPos.blockToSectionCoord(x);
-			
+
 			for (int z = minBlock(Direction.Axis.Z); z <= maxBlock(Direction.Axis.Z); z += 16) {
 				int pZ = SectionPos.blockToSectionCoord(z);
-				
+
 				ChunkAccess chunk = myLevel.getChunk(pX, pZ, ChunkStatus.FULL, false);
 				if (chunk == null) continue;
 				BasicVerticalChunk vc = (BasicVerticalChunk) chunk;
-				
+
 				for (int y = minBlock(Direction.Axis.Y); y <= maxBlock(Direction.Axis.Y); y += 16) {
 					chunks.add(vc.getSubChunk((y) >> 4));
 				}
@@ -477,7 +483,7 @@ public class UnitSpace {
 		}
 		return chunks;
 	}
-	
+
 	public List<UnitSpace[]> getPotentiallyNestedSpaces() {
 		ArrayList<UnitSpace[]> nestedSpaces = new ArrayList<>();
 		for (BasicVerticalChunk chunk : getChunks()) {
@@ -486,7 +492,7 @@ public class UnitSpace {
 		}
 		return nestedSpaces;
 	}
-	
+
 	public boolean contains(UnitSpace unitSpace) {
 		if (unitSpace.level == myLevel) {
 			return unitSpace.pos.getX() >= myPosInTheLevel.getX() &&

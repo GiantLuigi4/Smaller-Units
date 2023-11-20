@@ -372,20 +372,23 @@ public class BasicVerticalChunk extends LevelChunk {
 
 				if (state.isAir()) { // TODO: do this better
 					if (!pState.isAir()) {
-						ac.getSection(
-								SectionPos.blockToSectionCoord(ac.getSectionIndexFromSectionY(parentPos.getY()))
-						).setBlockState(parentPos.getX() & 15, parentPos.getY() & 15, parentPos.getZ() & 15, Registry.UNIT_SPACE.get().defaultBlockState());
-						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
-						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
-						// TODO: debug why space can still be null after this or what
-						space.isNatural = true;
-						space.setUpb(((ITickerLevel) level).getUPB());
 						// setup network
 						NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 						if (descriptor != null)
 							NetworkingHacks.setPos(descriptor.parent());
+
+						ac.setBlockState(
+								new BlockPos(parentPos.getX() & 15, parentPos.getY(), parentPos.getZ() & 15),
+								Registry.UNIT_SPACE.get().defaultBlockState(),
+								false
+						);
+						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
+						// TODO: debug why space can still be null after this or what
+						space.isNatural = true;
+						space.setUpb(((ITickerLevel) level).getUPB());
 						// send unit to client
 						space.sendSync(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+
 						// reset network
 						NetworkingHacks.unitPos.set(descriptor);
 					}
@@ -409,12 +412,15 @@ public class BasicVerticalChunk extends LevelChunk {
 					NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 					if (descriptor != null)
 						NetworkingHacks.setPos(descriptor.parent());
+
 					// remove unit space
 					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
 					BlockState state = ac.getBlockState(parentPos);
 					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
 					// remove unit
 					capabilityHandler.getSUCapability().removeUnit(parentPos);
+					space.sendRemove(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
+
 					// reset network
 					if (descriptor != null)
 						NetworkingHacks.setPos(descriptor);

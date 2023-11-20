@@ -1,5 +1,7 @@
 package tfc.smallerunits.mixin.compat.canary;
 
+import com.abdelaziz.canary.common.block.BlockCountingSection;
+import com.abdelaziz.canary.common.block.BlockStateFlags;
 import com.abdelaziz.canary.common.entity.movement.ChunkAwareBlockCollisionSweeper;
 import com.abdelaziz.canary.common.util.Pos;
 import net.minecraft.util.Mth;
@@ -17,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 // TODO
@@ -70,6 +73,21 @@ public abstract class CollisionSweeperMixin {
         return false;
     }
 
+    @Inject(at = @At("HEAD"), method = "hasChunkSectionOversizedBlocks", cancellable = true)
+    private static void preCheck(ChunkAccess chunk, int chunkY, CallbackInfoReturnable<Boolean> cir) {
+        // just assume it's an SU world
+        if (chunk == null) cir.setReturnValue(false);
+
+        if (chunk instanceof BasicVerticalChunk) {
+            if (!BlockStateFlags.ENABLED) {
+                cir.setReturnValue(true);
+            } else {
+                LevelChunkSection section = chunk.getSection(chunkY);
+                cir.setReturnValue(((BlockCountingSection)section).anyMatch(BlockStateFlags.OVERSIZED_SHAPE, true));
+            }
+        }
+    }
+
     @Shadow
     private ChunkAccess cachedChunk;
     @Shadow
@@ -91,6 +109,7 @@ public abstract class CollisionSweeperMixin {
         return 0;
     }
 
+    @Shadow private int index;
     @Unique
     boolean smallerunits$isSmallWorld = false;
 

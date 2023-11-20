@@ -94,7 +94,7 @@ public class SyncPacketS2C extends Packet {
 				if (!(access instanceof LevelChunk chunk)) continue;
 				ISUCapability cap = SUCapabilityManager.getCapability(chunk);
 				UnitSpace space = new UnitSpace(syncPacket.realPos, chunk.getLevel());
-				
+
 				// TODO: adjust player position and whatnot
 				
 				{
