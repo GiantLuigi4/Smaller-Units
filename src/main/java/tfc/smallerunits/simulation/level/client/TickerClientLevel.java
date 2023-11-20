@@ -606,13 +606,19 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				if (cap != null) {
 					UnitSpace space = cap.getUnit(parentPos);
 					if (space != null) {
+						// TODO: do this on section dirty
 						((SUCapableChunk) ac).SU$markDirty(parentPos);
 					}
 				}
 			}
 		}
 	}
-	
+
+//	@Override
+//	public void setSectionDirtyWithNeighbors(int pSectionX, int pSectionY, int pSectionZ) {
+//		super.setSectionDirtyWithNeighbors(pSectionX, pSectionY, pSectionZ);
+//	}
+
 	@Override
 	public RecipeManager getRecipeManager() {
 		return parent.get().getRecipeManager();

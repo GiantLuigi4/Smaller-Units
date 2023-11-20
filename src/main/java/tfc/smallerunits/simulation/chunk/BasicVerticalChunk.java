@@ -208,11 +208,11 @@ public class BasicVerticalChunk extends LevelChunk {
 						if (descriptor != null)
 							NetworkingHacks.setPos(descriptor.parent());
 
-						ac.setBlockState(
-								new BlockPos(parentPos.getX() & 15, parentPos.getY(), parentPos.getZ() & 15),
-								Registry.UNIT_SPACE.get().defaultBlockState(),
-								false
-						);
+						ac.getSection(
+								ac.getSectionIndexFromSectionY(SectionPos.blockToSectionCoord((parentPos.getY())))
+						).setBlockState(parentPos.getX() & 15, parentPos.getY() & 15, parentPos.getZ() & 15, Registry.UNIT_SPACE.get().defaultBlockState());
+						ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+
 						space = capabilityHandler.getSUCapability().getOrMakeUnit(parentPos);
 						// TODO: debug why space can still be null after this or what
 						space.isNatural = true;
@@ -245,9 +245,11 @@ public class BasicVerticalChunk extends LevelChunk {
 						NetworkingHacks.setPos(descriptor.parent());
 
 					// remove unit space
-					ac.setBlockState(parentPos, Blocks.AIR.defaultBlockState(), false);
-					BlockState state = ac.getBlockState(parentPos);
-					ac.getLevel().sendBlockUpdated(parentPos, state, Registry.UNIT_SPACE.get().defaultBlockState(), 0);
+					ac.getSection(
+							ac.getSectionIndexFromSectionY(SectionPos.blockToSectionCoord((parentPos.getY())))
+					).setBlockState(parentPos.getX() & 15, parentPos.getY() & 15, parentPos.getZ() & 15, Blocks.AIR.defaultBlockState());
+					ac.getLevel().sendBlockUpdated(parentPos, Registry.UNIT_SPACE.get().defaultBlockState(), Blocks.AIR.defaultBlockState(), 0);
+
 					// remove unit
 					capabilityHandler.getSUCapability().removeUnit(parentPos);
 					space.sendRemove(PacketDistributor.TRACKING_CHUNK.with(() -> ac));
@@ -611,10 +613,20 @@ public class BasicVerticalChunk extends LevelChunk {
 	}
 
     private BlockEntity getBlockEntity$(BlockPos pPos, EntityCreationType pCreationType) {
-        return super.getBlockEntity(pPos, pCreationType);
+        return super.getBlockEntity(new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15), pCreationType);
     }
 
-    @Override
+	@Nullable
+	@Override
+	public BlockEntity createBlockEntity(BlockPos pPos) {
+		return super.createBlockEntity(pPos.offset(
+				chunkPos.getMinBlockX() + pPos.getX(),
+				pPos.getY() + yPos * 16,
+				chunkPos.getMinBlockZ() + pPos.getZ()
+		));
+	}
+
+	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
         BlockPos pPos = pBlockEntity.getBlockPos();
 		pPos = pPos.offset(0, -yPos * 16, 0);

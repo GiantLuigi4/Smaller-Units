@@ -10,6 +10,7 @@
     "compat.alternate_current.ACLevelAccessMixin",
     "compat.canary.CanaryEntityCollisionsMixin",
     "compat.canary.CollisionSweeperMixin",
+    "compat.integrated_dynamics.PartPosMixin",
     "compat.ip.ChunkDataSyncManagerMixin",
     "compat.ip.PacketRedirectionMixin",
     "core.ConnectionMixin",

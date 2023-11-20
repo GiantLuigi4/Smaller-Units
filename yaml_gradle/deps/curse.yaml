@@ -4,7 +4,7 @@
 
 # mods that SU compiles against
 compile:
-  (chisel_and_bits): 231095 4402503
+  chisel_and_bits: 231095 4402503
   pehkui: 319596 4408042
   (alternate_current): 548115 4406066
   (refinedstorage): 243076 4392788
@@ -41,3 +41,13 @@ testing:
   ae2: 223794 4733119
   armourers-workshop: 229523 4785735
   mekanism: 268560 4644795
+
+  integrated-terminals: 295910 4728159
+  integrated-tunnels: 251389 4782857
+  integrated-dynamics: 236307 4791809
+  -common-capabilities: 247007 4391413
+  -cyclops-core: 232758 4808713
+
+  redstone-pen: 461710 4393700
+
+  online-detector: 454487 4167054
