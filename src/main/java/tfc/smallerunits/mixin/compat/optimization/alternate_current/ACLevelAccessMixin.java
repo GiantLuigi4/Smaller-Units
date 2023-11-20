@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.alternate_current;
+package tfc.smallerunits.mixin.compat.optimization.alternate_current;
 
 import alternate.current.wire.LevelHelper;
 import net.minecraft.core.BlockPos;

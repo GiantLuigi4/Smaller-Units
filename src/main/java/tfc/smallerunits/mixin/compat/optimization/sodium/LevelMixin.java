@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.sodium;
+package tfc.smallerunits.mixin.compat.optimization.sodium;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.level.ChunkPos;

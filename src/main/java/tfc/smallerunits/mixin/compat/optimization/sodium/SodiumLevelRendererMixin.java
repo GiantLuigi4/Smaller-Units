@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.sodium;
+package tfc.smallerunits.mixin.compat.optimization.sodium;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;

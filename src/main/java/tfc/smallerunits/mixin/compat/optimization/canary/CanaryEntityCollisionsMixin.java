@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.canary;
+package tfc.smallerunits.mixin.compat.optimization.canary;
 
 import com.abdelaziz.canary.common.entity.CanaryEntityCollisions;
 import com.abdelaziz.canary.common.util.Pos;

@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.canary;
+package tfc.smallerunits.mixin.compat.optimization.canary;
 
 import com.abdelaziz.canary.common.block.BlockCountingSection;
 import com.abdelaziz.canary.common.block.BlockStateFlags;

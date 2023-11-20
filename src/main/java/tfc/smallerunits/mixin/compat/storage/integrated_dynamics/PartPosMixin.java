@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.integrated_dynamics;
+package tfc.smallerunits.mixin.compat.storage.integrated_dynamics;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;

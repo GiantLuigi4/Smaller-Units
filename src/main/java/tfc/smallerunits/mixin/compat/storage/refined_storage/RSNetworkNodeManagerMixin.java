@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.dangit.block_pos;
+package tfc.smallerunits.mixin.compat.storage.refined_storage;
 
 import com.refinedmods.refinedstorage.api.network.node.INetworkNode;
 import com.refinedmods.refinedstorage.apiimpl.network.NetworkNodeManager;

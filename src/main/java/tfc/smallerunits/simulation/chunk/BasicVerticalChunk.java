@@ -602,13 +602,9 @@ public class BasicVerticalChunk extends LevelChunk {
                 return null;
 
 			BlockPos bp = new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15);
-            if (chunk.holder != null)
-                chunk.holder.setBlockDirty(bp);
             return chunk.getBlockEntity$(bp, pCreationType);
         }
 
-        if (holder != null)
-            holder.setBlockDirty(pPos);
         return getBlockEntity$(pPos, pCreationType);
 	}
 
@@ -619,12 +615,12 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Nullable
 	@Override
 	public BlockEntity createBlockEntity(BlockPos pPos) {
-		return super.createBlockEntity(pPos.offset(
-				chunkPos.getMinBlockX() + pPos.getX(),
-				pPos.getY() + yPos * 16,
-				chunkPos.getMinBlockZ() + pPos.getZ()
-		));
-	}
+        return super.createBlockEntity(pPos.offset(
+                chunkPos.getMinBlockX(),
+                yPos * 16,
+                chunkPos.getMinBlockZ()
+        ));
+    }
 
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
@@ -719,7 +715,7 @@ public class BasicVerticalChunk extends LevelChunk {
 			}
 		}
 
-        super.removeBlockEntity(pos);
+        super.removeBlockEntity(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
 	}
 
 	@Override

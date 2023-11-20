@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.sodium;
+package tfc.smallerunits.mixin.compat.optimization.sodium;
 
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraftforge.fml.ModList;
@@ -16,18 +16,18 @@ public class SodiumDebugOverlayMixin {
 	@Unique
 	private static String getSodiumName() {
 		if (ModList.get().isLoaded("sodium")) return "Sodium";
+		else if (ModList.get().isLoaded("embeddium")) return "Embeddium";
 		else if (ModList.get().isLoaded("rubidium")) return "Rubidium";
 		else if (ModList.get().isLoaded("magnesium")) return "Magnesium";
-		else if (ModList.get().isLoaded("embeddium")) return "Embeddium";
 		return null;
 	}
 	
 	@Unique
 	private static boolean isSodiumPresent() {
 		if (ModList.get().isLoaded("sodium")) return true;
+		else if (ModList.get().isLoaded("embeddium")) return true;
 		else if (ModList.get().isLoaded("rubidium")) return true;
 		else if (ModList.get().isLoaded("magnesium")) return true;
-		else if (ModList.get().isLoaded("embeddium")) return true;
 		return false;
 	}
 	

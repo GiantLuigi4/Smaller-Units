@@ -1,6 +1,5 @@
 package tfc.smallerunits.utils.asm;
 
-import com.jozufozu.flywheel.api.FlywheelWorld;
 import net.minecraftforge.coremod.api.ASMAPI;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
@@ -23,8 +22,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	static {
 		pkgLookup.add("tfc.smallerunits.mixin.compat.");
-		classLookup.add("tfc.smallerunits.mixin.dangit.block_pos.RSNetworkNodeMixin");
-		
+
 		{
 			ArrayList<String> incompat = new ArrayList<>();
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
@@ -36,9 +34,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 //			incompatibilityMap.put("tfc.smallerunits.mixin.core.ConnectionMixin", incompat);
 //		}
 		{
-			dependencies.put("tfc.smallerunits.mixin.compat.flywheel.LevelRendererMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
-			dependencies.put("tfc.smallerunits.mixin.compat.flywheel.ModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
-			dependencies.put("tfc.smallerunits.mixin.compat.flywheel.TickerClientLevelMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.flywheel.LevelRendererMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.flywheel.ModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.flywheel.TickerClientLevelMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 		}
 	}
 	

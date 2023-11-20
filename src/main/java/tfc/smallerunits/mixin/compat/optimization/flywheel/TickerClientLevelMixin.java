@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.flywheel;
+package tfc.smallerunits.mixin.compat.optimization.flywheel;
 
 import com.jozufozu.flywheel.api.FlywheelWorld;
 import org.spongepowered.asm.mixin.Mixin;

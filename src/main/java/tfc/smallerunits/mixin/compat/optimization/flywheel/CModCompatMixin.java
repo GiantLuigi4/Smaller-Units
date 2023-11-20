@@ -1,7 +1,5 @@
-package tfc.smallerunits.mixin.compat.flywheel;
+package tfc.smallerunits.mixin.compat.optimization.flywheel;
 
-import com.jozufozu.flywheel.backend.Backend;
-import com.jozufozu.flywheel.backend.instancing.InstancedRenderRegistry;
 import com.jozufozu.flywheel.event.RenderLayerEvent;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;

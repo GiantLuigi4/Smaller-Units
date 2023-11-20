@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.flywheel;
+package tfc.smallerunits.mixin.compat.optimization.flywheel;
 
 import com.jozufozu.flywheel.event.BeginFrameEvent;
 import net.minecraft.client.Camera;

@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.sodium;
+package tfc.smallerunits.mixin.compat.optimization.sodium;
 
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;

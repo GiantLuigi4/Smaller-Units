@@ -38,9 +38,10 @@ debug:
 
 testing:
   (create): 328085 4625534
-  ae2: 223794 4733119
   armourers-workshop: 229523 4785735
   mekanism: 268560 4644795
+
+  ae2: 223794 4733119
 
   integrated-terminals: 295910 4728159
   integrated-tunnels: 251389 4782857
@@ -48,6 +49,12 @@ testing:
   -common-capabilities: 247007 4391413
   -cyclops-core: 232758 4808713
 
+  tubes-reloaded: 326957 3962848
+  use-item-on-block-event: 571346 3895111
+
   redstone-pen: 461710 4393700
+  tiny-redstone: 453746 4410858
 
   online-detector: 454487 4167054
+
+  multipart-machines-farming: 867296 4774160

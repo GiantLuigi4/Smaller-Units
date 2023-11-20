@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.compat.sodium;//package tfc.smallerunits.mixin.compat.sodium;
+package tfc.smallerunits.mixin.compat.optimization.sodium;//package tfc.smallerunits.mixin.compat.sodium;
 //
 //import me.jellysquid.mods.sodium.client.render.chunk.ChunkCameraContext;
 //import me.jellysquid.mods.sodium.client.render.chunk.ChunkRenderList;
