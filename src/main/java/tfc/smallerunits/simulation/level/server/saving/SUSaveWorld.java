@@ -98,6 +98,9 @@ public class SUSaveWorld {
 	}
 	
 	public void saveChunk(BasicVerticalChunk basicVerticalChunk) throws IOException {
+		// no point in saving something that hasn't changed
+		if (!basicVerticalChunk.isUnsaved()) return;
+
 		try {
 			basicVerticalChunk.updateModificationTime(-1);
 			
@@ -181,7 +184,7 @@ public class SUSaveWorld {
 //				}
 //			}
 			
-			NbtIo.writeCompressed(tag, fl);
+			NbtIo.write(tag, fl);
 			
 			basicVerticalChunk.setUnsaved(false);
 		} catch (Throwable ignored) {
@@ -199,7 +202,12 @@ public class SUSaveWorld {
 			int oz = ckPos.getBlockZ(0);
 			
 			BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-			CompoundTag tag = NbtIo.readCompressed(fl);
+			CompoundTag tag;
+			try {
+				tag = NbtIo.readCompressed(fl);
+			} catch (Throwable err) {
+				tag = NbtIo.read(fl);
+			}
 			if (tag.contains("blocks", Tag.TAG_COMPOUND)) {
 				UnitPallet pallet = UnitPallet.fromNBT(tag.getCompound("blocks"));
 				BlockState[] states = new BlockState[16 * 16 * 16];
@@ -251,7 +259,7 @@ public class SUSaveWorld {
 									err.printStackTrace();
 								}
 								if (be == null) continue;
-								shell.addBlockEntity$(ps, be);
+								shell.addAndRegisterBlockEntity(be);
 //								be.load(tile);
 							}
 						}

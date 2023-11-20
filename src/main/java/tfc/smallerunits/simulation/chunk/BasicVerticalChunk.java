@@ -20,8 +20,6 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.gameevent.GameEventDispatcher;
-import net.minecraft.world.level.gameevent.GameEventListener;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
@@ -43,7 +41,6 @@ import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
-import tfc.smallerunits.utils.asm.ModCompat;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.threading.ThreadLocals;
@@ -51,6 +48,7 @@ import tfc.smallerunits.utils.threading.ThreadLocals;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 import static tfc.smallerunits.simulation.WorldStitcher.chunkRelative;
 
@@ -182,173 +180,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (holder != null)
 			holder.setBlockDirty(pos);
 		return setBlockState$(pos, pState, pIsMoving);
-	}
-
-	@Override
-	public BlockEntity getBlockEntity(BlockPos pos, LevelChunk.EntityCreationType pCreationType) {
-		int yO = Math1D.getChunkOffset(pos.getY(), 16);
-		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
-			// TODO: non-grid aligned world stitching?
-
-			BasicVerticalChunk chunk = verticalLookup.applyNoLoad(yPos + yO);
-			if (chunk == null)
-				return null;
-			return chunk.getBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pCreationType);
-		}
-		return getBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pCreationType);
-	}
-
-	@Override
-	public void setBlockEntity(BlockEntity pBlockEntity) {
-		BlockPos pos = pBlockEntity.getBlockPos();
-		pos = new BlockPos(pos.getX(), pos.getY() - (yPos * 16), pos.getZ());
-		int yO = Math1D.getChunkOffset(pos.getY(), 16);
-//		pos = new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
-		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
-			// TODO: non-grid aligned world stitching?
-
-			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			if (chunk == null)
-				return;
-			chunk.setBlockEntity$(pBlockEntity);
-			return;
-		}
-		setBlockEntity$(pBlockEntity);
-	}
-
-	@Override
-	public void removeBlockEntity(BlockPos pos) {
-		int yO = Math1D.getChunkOffset(pos.getY(), 16);
-		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
-			// TODO: non-grid aligned world stitching?
-
-			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
-			if (chunk == null)
-				return;
-			chunk.removeBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
-			return;
-		}
-		removeBlockEntity$(pos);
-	}
-
-	@Override
-	public void addAndRegisterBlockEntity(BlockEntity pBlockEntity) {
-		BlockPos pos = pBlockEntity.getBlockPos();
-		pos = new BlockPos(pos.getX(), pos.getY() - (yPos * 16), pos.getZ());
-		int yO = Math1D.getChunkOffset(pos.getY(), 16);
-		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
-			// TODO: non-grid aligned world stitching?
-
-			BasicVerticalChunk chunk = verticalLookup.apply(yO);
-			if (chunk == null)
-				return;
-			chunk.addBlockEntity$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pBlockEntity);
-			return;
-		}
-		addBlockEntity$(pos, pBlockEntity);
-	}
-
-	// TODO: I'd like to not override this actually
-	public BlockEntity getBlockEntity$(BlockPos pPos, LevelChunk.EntityCreationType pCreationType) {
-		BlockEntity blockentity = super.getBlockEntity(pPos, EntityCreationType.CHECK);
-
-		if (blockentity == null) {
-			if (pCreationType == LevelChunk.EntityCreationType.IMMEDIATE) {
-				blockentity = this.createBlockEntity(pPos);
-				if (blockentity != null) {
-					this.addBlockEntity$(pPos, blockentity);
-				}
-			}
-		}
-
-		return blockentity;
-	}
-
-	public BlockEntity createBlockEntity(BlockPos pPos) {
-		BlockState blockstate = this.getBlockState(pPos);
-		return !blockstate.hasBlockEntity() ? null :
-				((EntityBlock) blockstate.getBlock()).newBlockEntity(pPos.offset(0, this.yPos * 16, 0), blockstate);
-	}
-
-	public void setBlockEntity$(BlockEntity pBlockEntity) {
-		BlockPos blockpos = pBlockEntity.getBlockPos();
-		blockpos = new BlockPos(blockpos.getX() & 15, blockpos.getY() & 15, blockpos.getZ() & 15);
-		if (this.getBlockStateSmallOnly(blockpos).hasBlockEntity()) {
-			pBlockEntity.worldPosition = blockpos.offset(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
-			pBlockEntity.setLevel(this.level);
-			pBlockEntity.clearRemoved();
-			BlockEntity blockentity = this.blockEntities.put(blockpos, pBlockEntity);
-			if (blockentity != null && blockentity != pBlockEntity)
-				blockentity.setRemoved();
-			PlatformUtils.beLoaded(pBlockEntity, level);
-		}
-
-		if (!level.isClientSide) return;
-
-		ITickerLevel tickerWorld = ((ITickerLevel) level);
-
-		BlockPos parentPos = PositionUtils.getParentPos(blockpos, this, ThreadLocals.posLocal.get());
-		ChunkAccess ac;
-		ac = tickerWorld.getParent().getChunkAt(parentPos);
-
-		// TODO: check if a renderer exists, or smth?
-		((SUCapableChunk) ac).addTile(pBlockEntity);
-	}
-
-	public void removeBlockEntity$(BlockPos pPos) {
-		pPos = new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15);
-		if (level.isClientSide) {
-			ITickerLevel tickerWorld = ((ITickerLevel) level);
-
-			BlockPos parentPos = PositionUtils.getParentPos(pPos, this, ThreadLocals.posLocal.get());
-			ChunkAccess ac;
-			ac = tickerWorld.getParent().getChunkAt(parentPos);
-
-			BlockPos offsetPos = pPos.offset(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
-
-			ArrayList<BlockEntity> toRemove = new ArrayList<>();
-			synchronized (((SUCapableChunk) ac).getTiles()) {
-				for (BlockEntity tile : ((SUCapableChunk) ac).getTiles()) {
-					if (tile.getBlockPos().equals(offsetPos)) {
-						toRemove.add(tile);
-						ModCompat.onRemoveBE(tile);
-					}
-				}
-				((SUCapableChunk) ac).getTiles().removeAll(toRemove);
-			}
-		}
-		super.removeBlockEntity(pPos);
-	}
-
-	// TODO: find a less janky way of doing this, because this does not make sense
-	public void addBlockEntity$(BlockPos pos, BlockEntity pBlockEntity) {
-//		this.setBlockEntity$(pBlockEntity);
-		if (isLoaded() || level.isClientSide) {
-			this.customAddAndRegisterBlockEntity(pBlockEntity);
-			this.updateBlockEntityTicker(pBlockEntity);
-			PlatformUtils.altBeLoad(pBlockEntity);
-		}
-	}
-
-	public void removeBlockEntityTicker(BlockPos pPos) {
-		if (yPos != 0)
-			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
-		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
-	}
-
-	@Override
-	public <T extends BlockEntity> TickingBlockEntity createTicker(T pBlockEntity, BlockEntityTicker<T> pTicker) {
-		if (yPos == 0)
-			return super.createTicker(pBlockEntity, pTicker);
-		return verticalLookup.applyAbs(0).createTicker(pBlockEntity, pTicker);
-//		return super.createTicker(pBlockEntity, pTicker);
-	}
-
-	@Override
-	public <T extends BlockEntity> void updateBlockEntityTicker(T pBlockEntity) {
-		if (yPos == 0) super.updateBlockEntityTicker(pBlockEntity);
-		else verticalLookup.applyAbs(0).updateBlockEntityTicker(pBlockEntity);
-//		super.updateBlockEntityTicker(pBlockEntity);
 	}
 
 	// TODO: optimize?
@@ -682,12 +513,13 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (gameTime == -1) modTime = -1;
 		// staggers save time
 //		this.modTime = gameTime + new Random().nextInt(700) + 300;
-//		this.modTime = gameTime + new Random().nextInt(300) + 200;
-		this.modTime = gameTime + 1;
+		this.modTime = gameTime + new Random().nextInt(300) + 200;
+//		this.modTime = gameTime + 100;
 	}
 
 	public boolean isSaveTime(long gameTime) {
 		if (modTime == -1) return false;
+        // past self, WHAT DO YOU MEAN, TOD0?
 		// TODO:
 		return gameTime >= modTime;
 	}
@@ -725,6 +557,10 @@ public class BasicVerticalChunk extends LevelChunk {
 				if (isUnsaved()) {
 					((TickerServerLevel) level).saveWorld.saveChunk(this);
 					((TickerServerLevel) level).unload(this);
+					// after this point, block entities get cleared
+					// do NOT save after here
+					updateModificationTime(-1);
+					setUnsaved(false);
 				}
 			}
 		} catch (Throwable ignored) {
@@ -748,32 +584,154 @@ public class BasicVerticalChunk extends LevelChunk {
 		);
 	}
 
-	public void customAddAndRegisterBlockEntity(BlockEntity pBlockEntity) {
-		this.setBlockEntity$(pBlockEntity);
-		if (this.isInLevel()) {
-			Level level = this.level;
-			if (level instanceof ServerLevel) {
-				ServerLevel serverlevel = (ServerLevel)level;
-				this.addGameEventListener(pBlockEntity, serverlevel);
-			}
-
-			this.updateBlockEntityTicker(pBlockEntity);
-			pBlockEntity.onLoad();
-		}
-	}
-
 	private boolean isInLevel() {
 		return this.isLoaded() || this.level.isClientSide();
 	}
 
-    private <T extends BlockEntity> void addGameEventListener(T pBlockEntity, ServerLevel pLevel) {
-        Block block = pBlockEntity.getBlockState().getBlock();
-        if (block instanceof EntityBlock) {
-            GameEventListener gameeventlistener = ((EntityBlock)block).getListener(pLevel, pBlockEntity);
-            if (gameeventlistener != null) {
-                GameEventDispatcher gameeventdispatcher = this.getEventDispatcher(SectionPos.blockToSectionCoord(pBlockEntity.getBlockPos().getY()));
-                gameeventdispatcher.register(gameeventlistener);
-            }
+	@Nullable
+	@Override
+	public BlockEntity getBlockEntity(BlockPos pPos, EntityCreationType pCreationType) {
+        int yO = Math1D.getChunkOffset(pPos.getY(), 16);
+        if (yO != 0 || pPos.getX() < 0 || pPos.getZ() < 0 || pPos.getX() >= (upb * 32) || pPos.getZ() >= (upb * 32)) {
+            // TODO: non-grid aligned world stitching?
+
+            BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+            if (chunk == null)
+                return null;
+
+			BlockPos bp = new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15);
+            if (chunk.holder != null)
+                chunk.holder.setBlockDirty(bp);
+            return chunk.getBlockEntity$(bp, pCreationType);
         }
+
+        if (holder != null)
+            holder.setBlockDirty(pPos);
+        return getBlockEntity$(pPos, pCreationType);
+	}
+
+    private BlockEntity getBlockEntity$(BlockPos pPos, EntityCreationType pCreationType) {
+        return super.getBlockEntity(pPos, pCreationType);
     }
+
+    @Override
+	public void setBlockEntity(BlockEntity pBlockEntity) {
+        BlockPos pPos = pBlockEntity.getBlockPos();
+		pPos = pPos.offset(0, -yPos * 16, 0);
+
+        int yO = Math1D.getChunkOffset(pPos.getY(), 16);
+        if (yO != 0 || pPos.getX() < 0 || pPos.getZ() < 0 || pPos.getX() >= (upb * 32) || pPos.getZ() >= (upb * 32)) {
+            // TODO: non-grid aligned world stitching?
+
+            BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+            if (chunk == null)
+                return;
+
+            if (chunk.holder != null)
+                chunk.holder.setBlockDirty(new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15));
+            chunk.setBlockEntity$(pBlockEntity);
+            return;
+        }
+
+        if (holder != null)
+            holder.setBlockDirty(pPos);
+        setBlockEntity$(pBlockEntity);
+	}
+
+    public void setBlockEntity$(BlockEntity pBlockEntity) {
+		BlockPos blockpos = pBlockEntity.getBlockPos();
+		blockpos = new BlockPos(blockpos.getX() & 15, blockpos.getY() & 15, blockpos.getZ() & 15);
+		if (this.getBlockState(blockpos).hasBlockEntity()) {
+			pBlockEntity.setLevel(this.level);
+			pBlockEntity.clearRemoved();
+			BlockEntity blockentity = this.blockEntities.put(blockpos.immutable(), pBlockEntity);
+			if (blockentity != null && blockentity != pBlockEntity) {
+				blockentity.setRemoved();
+			}
+		}
+
+		if (!level.isClientSide) return;
+
+		ITickerLevel tickerWorld = ((ITickerLevel) level);
+
+		BlockPos pos = pBlockEntity.getBlockPos();
+		pos = pos.offset(0, -yPos * 16, 0);
+		BlockPos parentPos = PositionUtils.getParentPos(pos, this, ThreadLocals.posLocal.get());
+		ChunkAccess ac;
+		ac = tickerWorld.getParent().getChunkAt(parentPos);
+
+		// TODO: check if a renderer exists, or smth?
+		((SUCapableChunk) ac).addTile(pBlockEntity);
+    }
+
+	@Override
+	public void removeBlockEntity(BlockPos pPos) {
+		int yO = Math1D.getChunkOffset(pPos.getY(), 16);
+		if (yO != 0 || pPos.getX() < 0 || pPos.getZ() < 0 || pPos.getX() >= (upb * 32) || pPos.getZ() >= (upb * 32)) {
+			// TODO: non-grid aligned world stitching?
+
+			BasicVerticalChunk chunk = verticalLookup.apply(yPos + yO);
+			if (chunk == null)
+				return;
+
+			if (chunk.holder != null)
+				chunk.holder.setBlockDirty(new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15));
+			chunk.removeBlockEntity$(new BlockPos(pPos.getX() & 15, pPos.getY() & 15, pPos.getZ() & 15));
+			return;
+		}
+
+		if (holder != null)
+			holder.setBlockDirty(pPos);
+		removeBlockEntity$(pPos);
+	}
+
+	public void removeBlockEntity$(BlockPos pos) {
+		if (level.isClientSide) {
+			BlockPos pPos = new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+			ITickerLevel tickerWorld = ((ITickerLevel) level);
+
+			BlockPos parentPos = PositionUtils.getParentPos(pPos, this, ThreadLocals.posLocal.get());
+			ChunkAccess ac;
+			ac = tickerWorld.getParent().getChunkAt(parentPos);
+
+			BlockPos offsetPos = pPos.offset(chunkPos.getMinBlockX(), yPos * 16, chunkPos.getMinBlockZ());
+
+			ArrayList<BlockEntity> toRemove = new ArrayList<>();
+			synchronized (((SUCapableChunk) ac).getTiles()) {
+				for (BlockEntity tile : ((SUCapableChunk) ac).getTiles()) {
+					if (tile.getBlockPos().equals(offsetPos)) {
+						toRemove.add(tile);
+					}
+				}
+				((SUCapableChunk) ac).getTiles().removeAll(toRemove);
+			}
+		}
+
+        super.removeBlockEntity(pos);
+	}
+
+	@Override
+	public <T extends BlockEntity> void updateBlockEntityTicker(T pBlockEntity) {
+		if (yPos == 0) super.updateBlockEntityTicker(pBlockEntity);
+		else verticalLookup.applyAbs(0).updateBlockEntityTicker(pBlockEntity);
+	}
+
+	@Override
+	public <T extends BlockEntity> TickingBlockEntity createTicker(T pBlockEntity, BlockEntityTicker<T> pTicker) {
+		if (yPos == 0)
+			return super.createTicker(pBlockEntity, pTicker);
+		return verticalLookup.applyAbs(0).createTicker(pBlockEntity, pTicker);
+	}
+
+	@Override
+	public void removeBlockEntityTicker(BlockPos pPos) {
+		if (yPos != 0)
+			verticalLookup.applyAbs(0).removeBlockEntityTicker(new BlockPos(pPos.getX(), pPos.getY() + yPos * 16, pPos.getZ()));
+		else super.removeBlockEntityTicker(chunkPos.getWorldPosition().offset(pPos));
+	}
+
+//	@Override
+//	public Map<BlockPos, BlockEntity> getBlockEntities() {
+//		return super.getBlockEntities();
+//	}
 }
