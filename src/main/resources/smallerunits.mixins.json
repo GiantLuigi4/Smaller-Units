@@ -12,6 +12,7 @@
     "compat.optimization.alternate_current.ACLevelAccessMixin",
     "compat.optimization.canary.CanaryEntityCollisionsMixin",
     "compat.optimization.canary.CollisionSweeperMixin",
+    "compat.storage.ae2.IWishThisArrayCouldntBeAccessed",
     "compat.storage.integrated_dynamics.DimPosMixin",
     "compat.storage.integrated_dynamics.PacketCodecMixin",
     "compat.storage.integrated_dynamics.PartPosMixin",

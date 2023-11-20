@@ -403,6 +403,14 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
 		for (int x = minX; x < maxX; x += 16) {
 			for (int z = minZ; z < maxZ; z += 16) {
+				bb.set(
+						x, minY, z,
+						x + 16, maxY, z + 16
+				);
+				if (!simpleChecker.apply(bb)) {
+					continue;
+				}
+
 				for (int y = minY; y < maxY; y += 16) {
 					bb.set(
 							x, y, z,
@@ -500,7 +508,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		BlockPos pos = closest.getBlockPos();
 		BlockState state = getBlockState(pos);
 		VoxelShape shape = state.getShape(this, pos);
-		closest = shape.clip(hit.add(look), end.subtract(look), pos);
+		closest = shape.clip(hit.add(look), hit.subtract(look), pos);
 		if (closest == null) return src;
 		
 		return closest;

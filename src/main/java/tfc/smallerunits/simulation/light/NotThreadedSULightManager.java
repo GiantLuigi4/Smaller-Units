@@ -5,7 +5,10 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ThreadedLevelLightEngine;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LightChunkGetter;
+
+import java.util.concurrent.CompletableFuture;
 
 // TODO: figure out why I can't get mojang's one to work
 public class NotThreadedSULightManager extends ThreadedLevelLightEngine {
@@ -71,5 +74,15 @@ public class NotThreadedSULightManager extends ThreadedLevelLightEngine {
 	
 	@Override
 	public void tryScheduleUpdate() {
+	}
+
+	@Override
+	public void setTaskPerBatch(int pTaskPerBatch) {
+		super.setTaskPerBatch(pTaskPerBatch);
+	}
+
+	@Override
+	public CompletableFuture<ChunkAccess> lightChunk(ChunkAccess pChunk, boolean p_9355_) {
+		return CompletableFuture.completedFuture(pChunk);
 	}
 }
