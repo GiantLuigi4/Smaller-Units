@@ -2,7 +2,6 @@ package tfc.smallerunits;
 
 import io.netty.channel.ChannelPipeline;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
@@ -44,12 +43,26 @@ import java.util.ArrayDeque;
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod("smallerunits")
 public class SmallerUnits {
-	public static float tesselScale = 0;
+    /**
+     * Use {@link SmallerUnits#ABS_MIN} instead, as that won't get inlined by the compiler
+     * Reason: this value may change in the future, so ideally mods would be able to react to that without updating
+     */
+    @Deprecated
+	public static final int ABS_MIN_CONST = 256;
+
+	// prevents inlining of constant
+	private static int theMin() {
+		return ABS_MIN_CONST;
+	}
+
+	public static final int ABS_MIN = theMin();
+
+    public static float tesselScale = 0;
 	private static boolean isVivecraftPresent;
 	private static boolean isVFEPresent;
 	private static boolean isOFPresent;
 	private static final boolean isImmPrtlPresent = ModList.get().isLoaded("imm_ptl_core");
-	
+
 	public SmallerUnits() {
 		SUNetworkRegistry.init();
 		IEventBus forgeBus = MinecraftForge.EVENT_BUS;
@@ -66,10 +79,10 @@ public class SmallerUnits {
 //		forgeBus.addListener(SUCapabilityManager::onChunkWatchEvent);
 		forgeBus.addListener(this::connect1);
 		forgeBus.addGenericListener(LevelChunk.class, SUCapabilityManager::onAttachCapabilities);
-		
+
 		forgeBus.addListener(SmallerUnits::onChunkLoaded);
 		forgeBus.addListener(SmallerUnits::onChunkUnloaded);
-		
+
 		if (FMLEnvironment.dist.isClient()) {
 			ClientConfig.init();
 //			ClientCompatConfig.init();
@@ -93,11 +106,11 @@ public class SmallerUnits {
 			return null;
 		}, (obj, ctx) -> {
 		});
-		
+
 		if (FMLEnvironment.dist.isClient()) {
 			FMLJavaModLoadingContext.get().getModEventBus().addListener(SmallerUnits::onTextureStitch);
 		}
-		
+
 		isVivecraftPresent = ModList.get().isLoaded("vivecraft");
 		isVFEPresent = ModList.get().isLoaded("vivecraftforgeextensions");
 		try {
@@ -113,12 +126,12 @@ public class SmallerUnits {
 			}
 		} catch (Throwable ignored) {
 		}
-		
+
 		MinecraftForge.EVENT_BUS.addListener(SmallerUnits::onTick);
 	}
-	
+
 	private static final ArrayDeque<Runnable> enqueued = new ArrayDeque<>();
-	
+
 	// this ended up being necessary, as without it, furnaces can end up deadlocing world loading
 	private static void onTick(TickEvent.ServerTickEvent event) {
 		if (event.phase == TickEvent.Phase.END) {
@@ -127,7 +140,7 @@ public class SmallerUnits {
 			}
 		}
 	}
-	
+
 	private static void onChunkLoaded(ChunkEvent.Load loadEvent) {
 		if (loadEvent.getLevel() instanceof ServerLevel lvl) {
 			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) {
@@ -135,7 +148,7 @@ public class SmallerUnits {
 					enqueued.add(() -> SUCapabilityManager.onChunkLoad(lvlChk));
 				}
 			}
-			
+
 			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 				ChunkAccess access = loadEvent.getChunk();
 				int min = access.getMinBuildHeight();
@@ -146,7 +159,7 @@ public class SmallerUnits {
 			}
 		}
 	}
-	
+
 	private static void onChunkUnloaded(ChunkEvent.Unload loadEvent) {
 		if (loadEvent.getLevel() instanceof ServerLevel lvl) {
 			if (loadEvent.getChunk() instanceof LevelChunk lvlChk) {
@@ -157,7 +170,7 @@ public class SmallerUnits {
 					}
 				}
 			}
-			
+
 			if (lvl.getChunkSource().chunkMap instanceof RegionalAttachments attachments) {
 				ChunkAccess access = loadEvent.getChunk();
 				int min = access.getMinBuildHeight();
@@ -173,15 +186,15 @@ public class SmallerUnits {
 			}
 		}
 	}
-	
+
 	public static boolean isImmersivePortalsPresent() {
 		return isImmPrtlPresent;
 	}
-	
+
 	private void setup(final FMLCommonSetupEvent event) {
 		if (ModList.get().isLoaded("pehkui")) PehkuiSupport.setup();
 	}
-	
+
 	public static void setupConnectionButchery(Player player, Connection connection, ChannelPipeline pipeline) {
 //		if (!pipeline.toMap().containsKey(SmallerUnits.class.getName() + ":writer")) {
 //			pipeline.addFirst(SmallerUnits.class.getName() + ":writer", new PacketWriter(player, connection));
@@ -193,19 +206,19 @@ public class SmallerUnits {
 //		ChannelPipeline pipeline = event.getSource().get().getSender().connection.connection.channel().pipeline();
 //		addListeners(pipeline);
 //	}
-	
+
 	public static boolean isVivecraftPresent() {
 		return isVivecraftPresent;
 	}
-	
+
 	public static boolean isVFEPresent() {
 		return isVFEPresent;
 	}
-	
+
 	public static boolean isIsOFPresent() {
 		return isOFPresent;
 	}
-	
+
 	public void connect1(PlayerEvent.PlayerLoggedInEvent event) {
 		Connection connection;
 		Player player;
@@ -217,7 +230,7 @@ public class SmallerUnits {
 		}
 		setupConnectionButchery(player, connection, connection.channel().pipeline());
 	}
-	
+
 	private static void onTextureStitch(TextureStitchEvent.Pre event) {
 		if (event.getAtlas().location().equals(TextureAtlas.LOCATION_BLOCKS)) {
 			event.addSprite(new ResourceLocation("smallerunits:block/white_pixel"));

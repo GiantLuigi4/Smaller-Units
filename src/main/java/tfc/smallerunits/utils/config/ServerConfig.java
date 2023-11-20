@@ -2,6 +2,7 @@ package tfc.smallerunits.utils.config;
 
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.utils.config.annoconfg.AnnoCFG;
 import tfc.smallerunits.utils.config.annoconfg.annotation.format.*;
 import tfc.smallerunits.utils.config.annoconfg.annotation.value.Default;
@@ -27,7 +28,7 @@ public class ServerConfig {
 		@Name("DefaultUPB")
 		@Comment("The scale for the unit shrinker to default to when placed into the crafting grid alone")
 		@Translation("config.smaller_units.def_upb")
-		@IntRange(minV = 1, maxV = 256)
+		@IntRange(minV = 1, maxV = SmallerUnits.ABS_MIN_CONST)
 		@Default(valueI = 4)
 		public static final int defaultScale = "".hashCode();
 		
@@ -37,7 +38,7 @@ public class ServerConfig {
 				"This should be set to the lowest divisor you want to be craftable"
 		})
 		@Translation("config.smaller_units.min_upb")
-		@IntRange(minV = 1, maxV = 256)
+		@IntRange(minV = 1, maxV = SmallerUnits.ABS_MIN_CONST)
 		@Default(valueI = 2)
 		public static final int minScale = "".hashCode();
 		
@@ -47,7 +48,7 @@ public class ServerConfig {
 				"This should be set to the highest divisor you want to be craftable"
 		})
 		@Translation("config.smaller_units.max_upb")
-		@IntRange(minV = 1, maxV = 256)
+		@IntRange(minV = 1, maxV = SmallerUnits.ABS_MIN_CONST)
 		@Default(valueI = 16)
 		public static final int maxScale = "".hashCode();
 	}

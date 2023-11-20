@@ -15,6 +15,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.storage.ServerLevelData;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.level.LevelEvent;
+import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.client.TickerClientLevel;
@@ -35,7 +36,7 @@ public class Region {
 	public Region(RegionPos pos) {
 		this.pos = pos;
 		// TODO: config
-		this.levels = new Level[257];
+		this.levels = new Level[SmallerUnits.ABS_MIN + 1];
 	}
 	
 	public int subtractRef(RegionPos regionPos) {
