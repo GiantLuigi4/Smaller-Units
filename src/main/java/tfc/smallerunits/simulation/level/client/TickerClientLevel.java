@@ -70,6 +70,7 @@ import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
+import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtilsClient;
@@ -106,6 +107,11 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 	ArrayList<List<Entity>> entitiesGrabbedByBlocks = new ArrayList<>();
 	
 	public void addInteractingEntity(Entity e) {
+		if (e == null) {
+			if (CommonConfig.DebugOptions.crashOnNullInteracter) {
+				throw new RuntimeException("A null interacting entity has been added?");
+			} else return;
+		}
 		interactingEntities.add(e);
 	}
 	

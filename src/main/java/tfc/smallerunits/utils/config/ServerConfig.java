@@ -104,7 +104,7 @@ public class ServerConfig {
 			@Default(valueD = 1 / 8d)
 			public static final double downscaleRate = "".hashCode();
 		}
-		
+
 		@Comment("Options for VR players")
 		@CFGSegment("vr_options")
 		public static class VROptions {
@@ -129,7 +129,7 @@ public class ServerConfig {
 			public static final double blockThreshold = "".hashCode();
 		}
 	}
-	
+
 	public static void init() {
 //		CFG.create(ModConfig.Type.SERVER, ModLoadingContext.get().getActiveNamespace() + "_server.toml");
 	}

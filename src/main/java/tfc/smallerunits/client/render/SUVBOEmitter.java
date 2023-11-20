@@ -189,7 +189,8 @@ public class SUVBOEmitter {
 									block, offsetPos, stk,
 									consumer, true,
 									randomSource,
-									0, 0
+									0, 0,
+									data, chunkBufferLayer
 							);
 							endBlock(consumer);
 							

@@ -55,7 +55,9 @@ public class SyncPacketS2C extends Packet {
 				tg.putInt("x", tile.getBlockPos().getX());
 				tg.putInt("y", tile.getBlockPos().getY());
 				tg.putInt("z", tile.getBlockPos().getZ());
-				tg.putString("id", tile.getType().toString());
+				tg.putString("id", net.minecraft.core.Registry.BLOCK_ENTITY_TYPE.getKey(
+						tile.getType()
+				).toString());
 				beData.add(tg);
 			}
 		}
@@ -142,7 +144,9 @@ public class SyncPacketS2C extends Packet {
 						if (be == null) continue;
 						lvl.setBlockEntity(be);
 					}
-					
+
+					tag.remove("id");
+
 					// this is jank, I should probably de-jankify it
 					try {
 						be.onDataPacket(null, ClientboundBlockEntityDataPacket.create(be, (e) -> tag));
@@ -163,7 +167,7 @@ public class SyncPacketS2C extends Packet {
 					
 					positionsWithBE.remove(be.getBlockPos());
 				}
-				
+
 				for (BlockPos blockPos : positionsWithBE) {
 					BlockState state = lvl.getBlockState(blockPos);
 					

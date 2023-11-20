@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.simulation.level.client.TickerClientLevel;
 
 @Mixin(value = ChiseledBlockModelDataExecutor.class, remap = false)
-public class ChiselAndBitMeshMixin {
+public class ChiselAndBitsMeshMixin {
 	@Inject(at = @At("HEAD"), method = "lambda$updateModelDataCore$5", cancellable = true)
 	private static void preUpdate(ChiseledBlockEntity tileEntity, CallbackInfo ci) {
 		//noinspection UnnecessaryLocalVariable

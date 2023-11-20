@@ -35,6 +35,7 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.config.ClientConfig;
+import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.config.ServerConfig;
 import tfc.smallerunits.utils.scale.PehkuiSupport;
 
@@ -73,8 +74,9 @@ public class SmallerUnits {
 			ClientConfig.init();
 //			ClientCompatConfig.init();
 		}
+		CommonConfig.init();
 		ServerConfig.init();
-		
+
 		InfoRegistry.register("su:world_redir", () -> {
 			if (NetworkingHacks.unitPos.get() == null) return null;
 			CompoundTag tg = new CompoundTag();

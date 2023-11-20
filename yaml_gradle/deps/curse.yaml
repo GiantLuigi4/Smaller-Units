@@ -17,7 +17,7 @@ graphics:
 
 # optimization mods
 optimization:
-  (canary): 665658 4421576
+  canary: 665658 4421576
   (rubidium): 574856 3973894
   embeddium: 908741 4800667
   flywheel: 486392 4341471
@@ -34,7 +34,10 @@ vr:
 
 # debugging mods
 debug:
-  (spark): 361579 4057111
+  spark: 361579 4057111
 
 testing:
   (create): 328085 4625534
+  ae2: 223794 4733119
+  armourers-workshop: 229523 4785735
+  mekanism: 268560 4644795

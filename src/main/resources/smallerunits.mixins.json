@@ -8,6 +8,7 @@
   "mixins": [
     "ChunkSerializerAccessor",
     "compat.alternate_current.ACLevelAccessMixin",
+    "compat.canary.CanaryEntityCollisionsMixin",
     "compat.canary.CollisionSweeperMixin",
     "compat.ip.ChunkDataSyncManagerMixin",
     "compat.ip.PacketRedirectionMixin",
@@ -47,10 +48,10 @@
   "client": [
     "LevelRendererMixin",
     "LevelRendererMixinBlocks",
-    "compat.ChiselAndBitMeshMixin",
+    "compat.ChiselAndBitsMeshMixin",
     "compat.distant_horizons.ForgeClientProxyMixin",
-    "compat.flywheel.LevelRendererMixin",
     "compat.flywheel.CModCompatMixin",
+    "compat.flywheel.LevelRendererMixin",
     "compat.flywheel.ModCompatMixin",
     "compat.flywheel.TickerClientLevelMixin",
     "compat.ip.PacketRedirectionClientMixin",

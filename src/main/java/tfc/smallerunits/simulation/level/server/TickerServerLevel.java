@@ -73,6 +73,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.platform.PlatformUtils;
 import tfc.smallerunits.utils.scale.ResizingUtils;
@@ -106,6 +107,11 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	List<Entity> interactingEntities = new ArrayList<>();
 	
 	public void addInteractingEntity(Entity e) {
+		if (e == null) {
+			if (CommonConfig.DebugOptions.crashOnNullInteracter) {
+				throw new RuntimeException("A null interacting entity has been added?");
+			} else return;
+		}
 		interactingEntities.add(e);
 	}
 	
