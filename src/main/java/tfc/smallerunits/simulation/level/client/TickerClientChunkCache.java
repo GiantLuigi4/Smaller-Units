@@ -129,7 +129,11 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 			
 			otherRegion = ((RegionalAttachments) ((ITickerLevel) this.level).getParent()).SU$getRegion(pos);
 			if (otherRegion != null && IHateTheDistCleaner.isClientLevel(parent)) {
-				level = otherRegion.getClientWorld(parent, upb);
+				if (pLoad) {
+					level = otherRegion.getClientWorld(parent, upb);
+				} else {
+					level = otherRegion.getExistingLevel(upb);
+				}
 			} else {
 //				EmptyLevelChunk chunk = new EmptyLevelChunk(this.level, new ChunkPos(pChunkX, pChunkZ), Holder.Reference.createStandAlone(this.level.registryAccess().registry(Registry.BIOME_REGISTRY).get(), Biomes.THE_VOID));
 				EmptyLevelChunk chunk = empty;

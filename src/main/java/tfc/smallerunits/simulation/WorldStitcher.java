@@ -99,10 +99,14 @@ public class WorldStitcher {
 						return chunkCache.getEmpty();
 					}
 
-					if (level instanceof ServerLevel) {
-						lvl = r.getServerWorld(level.getParent().getServer(), (ServerLevel) level.getParent(), upb);
+					if (pLoad) {
+						if (level instanceof ServerLevel) {
+							lvl = r.getServerWorld(level.getParent().getServer(), (ServerLevel) level.getParent(), upb);
+						} else {
+							lvl = r.getClientWorld(level.getParent(), upb);
+						}
 					} else {
-						lvl = r.getClientWorld(level.getParent(), upb);
+						lvl = r.getExistingLevel(upb);
 					}
 				}
 				if (ord != -1) {
