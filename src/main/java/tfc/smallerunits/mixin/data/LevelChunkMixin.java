@@ -15,7 +15,7 @@ import java.util.ArrayList;
 @Mixin(LevelChunk.class)
 public abstract class LevelChunkMixin implements SUCapableChunk {
 	@Unique
-	private final ArrayList<BlockPos> dirtyBlocks = new ArrayList<>();
+	private ArrayList<BlockPos> dirtyBlocks = new ArrayList<>();
 	@Unique
 	private final ArrayList<BlockPos> forRemoval = new ArrayList<>();
 	@Unique
@@ -68,8 +68,8 @@ public abstract class LevelChunkMixin implements SUCapableChunk {
 	}
 	
 	@Override
-	public void SU$reset() {
-		dirtyBlocks.clear();
+	public void SU$reset(ArrayList<BlockPos> notDone) {
+		dirtyBlocks = notDone;
 		forRemoval.clear();
 	}
 	

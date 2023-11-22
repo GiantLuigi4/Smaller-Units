@@ -36,7 +36,7 @@ public class SUCapabilityManager {
 				new ResourceLocation("smallerunits", "unit_space_cap"),
 				// I find it a bit ridiculous that I need a whole provider for every single chunk in the world...
 				// but I guess it makes sense
-				new CapabilityProvider(new SUCapability(event.getObject().getLevel()))
+				new CapabilityProvider(new SUCapability(event.getObject().getLevel(), event.getObject()))
 		);
 	}
 	

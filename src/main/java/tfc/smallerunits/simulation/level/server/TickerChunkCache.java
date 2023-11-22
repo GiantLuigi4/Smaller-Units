@@ -12,7 +12,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
@@ -204,27 +203,11 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
             BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 //			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
             if (ck == null || ck[pChunkY] == null) {
-                BasicVerticalChunk vc = createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
-                if (ck == null) {
-                    ck = columns[pChunkX * (33 * upb) + pChunkZ];
-                    ck[pChunkY] = vc;
-                }
-//				ck[pChunkY] = new BasicVerticalChunk(
-//						level, new ChunkPos(pChunkX, pChunkZ), pChunkY,
-//						new VChunkLookup(
-//								this, pChunkY, ck,
-//								new ChunkPos(pChunkX, pChunkZ)
-//						), getLookup(), upb
-//				);
-//				synchronized (allChunks) {
-//					allChunks.add(ck[pChunkY]);
-//				}
-//				UnitChunkHolder holder = new UnitChunkHolder(ck[pChunkY].getPos(), 0, level, level.getLightEngine(), (a, b, c, d) -> {
-//				}, chunkMap, ck[pChunkY]);
-//				synchronized (holders) {
-//					holders.add(holder);
-//				}
-//				ck[pChunkY].holder = holder;
+                return createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
+//                if (ck == null) {
+//                    ck = columns[pChunkX * (33 * upb) + pChunkZ];
+//                    ck[pChunkY] = vc;
+//                }
             }
             return ck[pChunkY];
         }
@@ -251,26 +234,28 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
         int pChunkX = ckPos.x;
         int pChunkZ = ckPos.z;
         BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
-        if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
-        BasicVerticalChunk bvc = ck[yPos] = new BasicVerticalChunk(
+        if (ck == null)
+            ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
+        BasicVerticalChunk bvci = new BasicVerticalChunk(
                 level, new ChunkPos(pChunkX, pChunkZ), yPos,
                 new VChunkLookup(
                         this, yPos, ck,
                         new ChunkPos(pChunkX, pChunkZ), upb * 32
                 ), getLookup(), upb
         );
-        ((TickerServerLevel) level).saveWorld.load(bvc, bvc.getPos(), bvc.yPos);
+        ck[yPos] = bvci;
+        ((TickerServerLevel) level).saveWorld.load(bvci, bvci.getPos(), bvci.yPos);
         synchronized (newChunks) {
-            newChunks.add(bvc);
+            newChunks.add(bvci);
         }
-        UnitChunkHolder holder = new UnitChunkHolder(bvc.getPos(), 0, level, level.getLightEngine(), noListener, chunkMap, bvc, yPos);
+        UnitChunkHolder holder = new UnitChunkHolder(bvci.getPos(), 0, level, level.getLightEngine(), noListener, chunkMap, bvci, yPos);
         synchronized (holders) {
             holders.add(holder);
         }
-        bvc.holder = holder;
-        MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(bvc));
+        bvci.holder = holder;
+        MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(bvci));
 
-        return bvc;
+        return bvci;
     }
 
     @Override

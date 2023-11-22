@@ -154,7 +154,7 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 			BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
 			if (ck == null) ck = columns[pChunkX * (33 * upb) + pChunkZ] = new BasicVerticalChunk[33 * upb];
 			if (ck[pChunkY] == null)
-				ck[pChunkY] = createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
+				return createChunk(pChunkY, new ChunkPos(pChunkX, pChunkZ));
 			return ck[pChunkY];
 		}
 	}
@@ -164,20 +164,21 @@ public class TickerClientChunkCache extends ClientChunkCache implements ITickerC
 		int pChunkX = ckPos.x;
 		int pChunkZ = ckPos.z;
 		BasicVerticalChunk[] ck = columns[pChunkX * (33 * upb) + pChunkZ];
-		ck[i] = new BasicVerticalChunk(
+		BasicVerticalChunk bvci = new BasicVerticalChunk(
 				level, new ChunkPos(pChunkX, pChunkZ), i,
 				new VChunkLookup(
 						this, i, ck,
 						new ChunkPos(pChunkX, pChunkZ), upb * 32
 				), getLookup(), upb
 		);
-		allChunks.add(ck[i]);
-		ck[i].setClientLightReady(true);
+		ck[i] = bvci;
+		allChunks.add(bvci);
+		bvci.setClientLightReady(true);
 		getLightEngine().enableLightSources(new ChunkPos(pChunkX, pChunkZ), true);
 		((ClientLevel) level).onChunkLoaded(ckPos);
-		MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(ck[i]));
+		MinecraftForge.EVENT_BUS.post(new ChunkEvent.Load(bvci));
 		
-		return ck[i];
+		return bvci;
 	}
 	
 	@Override

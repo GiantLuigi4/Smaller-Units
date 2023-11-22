@@ -7,4 +7,5 @@ import java.util.HashMap;
 
 public interface SodiumGridAttachments {
 	HashMap<ChunkPos, SUCompiledChunkAttachments> getRenderChunks();
+	HashMap<ChunkPos, SUCompiledChunkAttachments> renderChunksWithUnits();
 }

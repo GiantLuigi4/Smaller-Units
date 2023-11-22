@@ -72,6 +72,7 @@ import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.SUTickList;
 import tfc.smallerunits.simulation.level.server.saving.SUSaveWorld;
+import tfc.smallerunits.utils.AddOnlyList;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.Math1D;
@@ -104,7 +105,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 		}
 	}
 	
-	List<Entity> interactingEntities = new ArrayList<>();
+	List<Entity> interactingEntities = new AddOnlyList<>();
 	
 	public void addInteractingEntity(Entity e) {
 		if (e == null) {
@@ -112,6 +113,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				throw new RuntimeException("A null interacting entity has been added?");
 			} else return;
 		}
+
 		interactingEntities.add(e);
 	}
 	
@@ -482,25 +484,25 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	
 	@Override
 	public LevelEntityGetter<Entity> getEntities() {
-		return new LevelEntityGetter<Entity>() {
+		return new LevelEntityGetter<>() {
 			public Entity get(int p_156931_) {
 				for (Entity entity : entities) {
 					if (entity.getId() == p_156931_) return entity; // TODO: be not dumb
 				}
 				return null;
 			}
-			
+
 			public Entity get(UUID pUuid) {
 				for (Entity entity : entities) {
 					if (entity.getUUID().equals(pUuid)) return entity; // TODO: be not dumb
 				}
 				return null;
 			}
-			
+
 			public Iterable<Entity> getAll() {
 				return entities;
 			}
-			
+
 			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156935_, Consumer<U> p_156936_) {
 				for (Entity entity : entities) {
 					if (p_156935_.getBaseClass().isInstance(entity)) {
@@ -508,7 +510,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					}
 				}
 			}
-			
+
 			public void get(AABB p_156937_, Consumer<Entity> p_156938_) {
 				for (Entity entity : entities) {
 					if (p_156937_.intersects(entity.getBoundingBox())) {
@@ -516,7 +518,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 					}
 				}
 			}
-			
+
 			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156932_, AABB p_156933_, Consumer<U> p_156934_) {
 				// ?
 				for (Entity entity : entities) {
@@ -768,23 +770,31 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
 		BlockHitResult closest = null;
 		double d = Double.POSITIVE_INFINITY;
-		
+
 		Level parent = this.parent.get();
-		
+
 		int minX = (int) Math.floor(Math.min(start.x, end.x)) - 1;
 		int minY = (int) Math.floor(Math.min(start.y, end.y)) - 1;
 		int minZ = (int) Math.floor(Math.min(start.z, end.z)) - 1;
 		int maxX = (int) Math.ceil(Math.max(start.x, end.x)) + 1;
 		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
 		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
-		
+
 		MutableAABB bb = new MutableAABB(0, 0, 0, 1, 1, 1);
 		Collection<AABB> singleton = Collections.singleton(new AABB(0, 0, 0, 1, 1, 1));
-		
+
 		// TODO: there are better ways to do this
 		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
 		for (int x = minX; x < maxX; x += 16) {
 			for (int z = minZ; z < maxZ; z += 16) {
+				bb.set(
+						x, minY, z,
+						x + 16, maxY, z + 16
+				);
+				if (!simpleChecker.apply(bb)) {
+					continue;
+				}
+
 				for (int y = minY; y < maxY; y += 16) {
 					bb.set(
 							x, y, z,
@@ -795,7 +805,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 							int x1 = x + x0;
 							for (int z0 = 0; z0 < 16; z0++) {
 								int z1 = z + z0;
-								
+
 								int pX = SectionPos.blockToSectionCoord(x1);
 								int pZ = SectionPos.blockToSectionCoord(z1);
 								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
@@ -810,13 +820,13 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 											if (simpleChecker.apply(bb)) {
 												BlockPos pos = new BlockPos(x1, y1, z1);
 												BlockPos pos1 = PositionUtils.getParentPos(pos, this);
-												
+
 												BlockState state = localCache.get(pos1);
 												if (state == null) {
 													state = parent.getBlockState(pos1);
 													localCache.put(pos1.immutable(), state);
 												}
-												
+
 												if (state.isAir()) continue;
 												BlockHitResult result = AABB.clip(
 														singleton,
@@ -836,7 +846,7 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 									}
 									continue;
 								}
-								
+
 								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;
 									bb.set(
@@ -871,34 +881,34 @@ public class TickerServerLevel extends ServerLevel implements ITickerLevel {
 				}
 			}
 		}
-		
+
 		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
 		BlockHitResult src = closest;
-		
+
 		// improve precision
 		Vec3 hit = closest.getLocation();
-		Vec3 look = start.subtract(end).normalize().scale(0.5f);
-		
+		Vec3 look = start.subtract(end).normalize().scale(1);
+
 		BlockPos pos = closest.getBlockPos();
 		BlockState state = getBlockState(pos);
 		VoxelShape shape = state.getShape(this, pos);
-		closest = shape.clip(hit.add(look), end.subtract(look), pos);
+		closest = shape.clip(hit.add(look), hit.subtract(look), pos);
 		if (closest == null) return src;
-		
+
 		return closest;
 	}
-	
+
 	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
 		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
 		if (result == null) return null;
-		
+
 		// improve precision
-		if (!result.getType().equals(HitResult.Type.MISS)) {
-			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-			off = off.normalize().scale(0.5f);
-			Vec3 hit = result.getLocation();
-			return sp.clip(hit.add(off), hit.subtract(off), pos);
-		}
+//		if (!result.getType().equals(HitResult.Type.MISS)) {
+//			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+//			off = off.normalize().scale(0.5f);
+//			Vec3 hit = result.getLocation();
+//			return sp.clip(hit.add(off), hit.subtract(off), pos);
+//		}
 		return result;
 	}
 	

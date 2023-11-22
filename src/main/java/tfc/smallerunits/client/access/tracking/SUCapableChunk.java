@@ -15,7 +15,7 @@ public interface SUCapableChunk {
 	
 	void SU$markDirty(BlockPos pos);
 	
-	void SU$reset();
+	void SU$reset(ArrayList<BlockPos> done);
 	
 	void SU$markGone(BlockPos pos);
 	

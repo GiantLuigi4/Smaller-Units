@@ -1,13 +1,10 @@
 package tfc.smallerunits.utils.asm;
 
 import net.minecraftforge.coremod.api.ASMAPI;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.*;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +34,9 @@ public class MixinConnector implements IMixinConfigPlugin {
 			dependencies.put("tfc.smallerunits.mixin.compat.optimization.flywheel.LevelRendererMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 			dependencies.put("tfc.smallerunits.mixin.compat.optimization.flywheel.ModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 			dependencies.put("tfc.smallerunits.mixin.compat.optimization.flywheel.TickerClientLevelMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
+
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.UnitCapabilityHandlerMixin", "me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.LevelMixin", "me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 		}
 	}
 	
@@ -120,21 +120,21 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixinBlocks") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.gui.client.expansion.DebugScreenOverlayMixin")
-		) {
-			try {
-				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
-				ClassWriter writer = new ClassWriter(0);
-				targetClass.accept(writer);
-				outputStream.write(writer.toByteArray());
-				outputStream.flush();
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if (
+//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixinBlocks") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.core.gui.client.expansion.DebugScreenOverlayMixin")
+//		) {
+//			try {
+//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-pre.class");
+//				ClassWriter writer = new ClassWriter(0);
+//				targetClass.accept(writer);
+//				outputStream.write(writer.toByteArray());
+//				outputStream.flush();
+//				outputStream.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 		if (mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin")) {
 			String target = ASMAPI.mapMethod("m_172993_"); // renderChunkLayer
 			String desc = "(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"; // TODO: I'd like to not assume Mojmap
@@ -170,20 +170,20 @@ public class MixinConnector implements IMixinConfigPlugin {
 	
 	@Override
 	public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-		if (
-				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
-						mixinClassName.equals("tfc.smallerunits.mixin.core.gui.client.expansion.DebugScreenOverlayMixin")
-		) {
-			try {
-				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
-				ClassWriter writer = new ClassWriter(0);
-				targetClass.accept(writer);
-				outputStream.write(writer.toByteArray());
-				outputStream.flush();
-				outputStream.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if (
+//				mixinClassName.equals("tfc.smallerunits.mixin.LevelRendererMixin") ||
+//						mixinClassName.equals("tfc.smallerunits.mixin.core.gui.client.expansion.DebugScreenOverlayMixin")
+//		) {
+//			try {
+//				FileOutputStream outputStream = new FileOutputStream(targetClass.name.substring(targetClass.name.lastIndexOf("/") + 1) + "-post.class");
+//				ClassWriter writer = new ClassWriter(0);
+//				targetClass.accept(writer);
+//				outputStream.write(writer.toByteArray());
+//				outputStream.flush();
+//				outputStream.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 }

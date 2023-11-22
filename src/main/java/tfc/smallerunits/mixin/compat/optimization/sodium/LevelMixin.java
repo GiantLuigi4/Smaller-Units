@@ -18,12 +18,20 @@ import java.util.HashMap;
 public class LevelMixin implements SodiumGridAttachments {
 	@Unique
 	HashMap<ChunkPos, SUCompiledChunkAttachments> renderChunks = new HashMap<>();
+
+	@Unique
+	HashMap<ChunkPos, SUCompiledChunkAttachments> renderChunksWithUnits = new HashMap<>();
 	
 	@Override
 	public HashMap<ChunkPos, SUCompiledChunkAttachments> getRenderChunks() {
 		return renderChunks;
 	}
-	
+
+	@Override
+	public HashMap<ChunkPos, SUCompiledChunkAttachments> renderChunksWithUnits() {
+		return renderChunksWithUnits;
+	}
+
 	@Inject(at = @At("TAIL"), method = "onChunkLoaded")
 	public void preChunkLoad(ChunkPos p_171650_, CallbackInfo ci) {
 		SUCapableChunk chk = (SUCapableChunk) ((ClientLevel) (Object) this).getChunk(p_171650_.x, p_171650_.z);
@@ -38,8 +46,10 @@ public class LevelMixin implements SodiumGridAttachments {
 			}
 		});
 	}
+
 	@Inject(at = @At("TAIL"), method = "unload")
 	public void postUnload(LevelChunk p_104666_, CallbackInfo ci) {
 		getRenderChunks().remove(p_104666_.getPos());
+		renderChunksWithUnits().remove(p_104666_.getPos());
 	}
 }

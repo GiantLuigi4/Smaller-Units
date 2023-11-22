@@ -64,6 +64,7 @@
     "compat.optimization.sodium.RenderSectionMixin",
     "compat.optimization.sodium.SodiumDebugOverlayMixin",
     "compat.optimization.sodium.SodiumLevelRendererMixin",
+    "compat.optimization.sodium.UnitCapabilityHandlerMixin",
     "core.ClientLevelMixin",
     "core.LocalPlayerMixin",
     "core.MinecraftMixin",

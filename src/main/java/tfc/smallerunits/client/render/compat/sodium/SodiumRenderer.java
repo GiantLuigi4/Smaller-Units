@@ -67,7 +67,7 @@ public class SodiumRenderer {
 		int min = level.getMinBuildHeight();
 		int max = level.getMaxBuildHeight();
 		
-		for (SUCompiledChunkAttachments chunk : ((SodiumGridAttachments) level).getRenderChunks().values()) {
+		for (SUCompiledChunkAttachments chunk : ((SodiumGridAttachments) level).renderChunksWithUnits().values()) {
 			SUCapableChunk capableChunk = chunk.getSUCapable();
 			
 			LevelChunk chunk1 = ((LevelChunk) capableChunk);
@@ -81,10 +81,10 @@ public class SodiumRenderer {
 							chunk1.getPos().getMaxBlockZ() + 1
 					)
 			);
-			
+
 			for (LevelChunkSection section : chunk1.getSections()) {
 				if (section.hasOnlyAir()) continue;
-				
+
 				BlockPos pos = new BlockPos(
 						chunk1.getPos().getMinBlockX(),
 						section.bottomBlockY(),

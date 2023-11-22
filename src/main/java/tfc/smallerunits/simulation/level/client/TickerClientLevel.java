@@ -1,5 +1,6 @@
 package tfc.smallerunits.simulation.level.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.datafixers.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -69,6 +70,7 @@ import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
 import tfc.smallerunits.simulation.level.ITickerLevel;
+import tfc.smallerunits.utils.AddOnlyList;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.HitboxScaling;
@@ -93,20 +95,24 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 	public final GroupMap<Pair<BlockState, VecMap<VoxelShape>>> cache = new GroupMap<>(2);
 	public ParentLookup lookup;
 	WeakReference<ClientLevel> parent;
-	
+
 	@Override
 	public ParticleEngine myEngine() {
 		return particleEngine;
 	}
-	
+
 	@Override
 	public void setParticleEngine(ParticleEngine engine) {
 	}
-	
-	List<Entity> interactingEntities = new ArrayList<>();
+
+	List<Entity> interactingEntities = new AddOnlyList<>();
 	ArrayList<List<Entity>> entitiesGrabbedByBlocks = new ArrayList<>();
-	
+
 	public void addInteractingEntity(Entity e) {
+		if (!RenderSystem.isOnRenderThread()) {
+			throw new RuntimeException("add interacting entity called from off thread");
+		}
+
 		if (e == null) {
 			if (CommonConfig.DebugOptions.crashOnNullInteracter) {
 				throw new RuntimeException("A null interacting entity has been added?");
@@ -114,15 +120,15 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		}
 		interactingEntities.add(e);
 	}
-	
+
 	public void removeInteractingEntity(Entity e) {
 		interactingEntities.remove(e);
 	}
-	
+
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
 	// if I do Minecraft.getInstance().getTextureManager(), it messes up particle textures
 	UnitParticleEngine particleEngine = new UnitParticleEngine(this, new TextureManager(Minecraft.getInstance().getResourceManager()));
-	
+
 	@Override
 	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
 		playLocalSound(
@@ -130,7 +136,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				pEvent, pCategory, pVolume, pPitch, false
 		);
 	}
-	
+
 	@Override
 	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
 		double scl = 1f / upb;
@@ -152,7 +158,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
 		});
 	}
-	
+
 	public TickerClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
 		this.parent = new WeakReference<>(parent);
@@ -160,12 +166,12 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		this.chunkSource = new TickerClientChunkCache(this, 0, upb);
 		this.upb = upb;
 		this.isClientSide = true;
-		
+
 		this.blockStatePredictionHandler = new BigWorldPredictionHandler();
-		
+
 		particleEngine.setLevel(this);
-		
-		
+
+
 		ThreadLocal<WeakReference<LevelChunk>> lastChunk = new ThreadLocal<>();
 		lookup = (pos) -> {
 			Pair<BlockState, VecMap<VoxelShape>> value = cache.getOrDefault(pos, null);
@@ -173,9 +179,9 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				// TODO: empty shape check
 				return value.getFirst();
 			}
-			
+
 			if (Minecraft.getInstance().level == null) return Blocks.VOID_AIR.defaultBlockState();
-			
+
 			ChunkPos ckPos = new ChunkPos(pos);
 			WeakReference<LevelChunk> chunkRef = lastChunk.get();
 			LevelChunk ck;
@@ -183,21 +189,21 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
 			else if (!chunkRef.get().getPos().equals(ckPos))
 				lastChunk.set(new WeakReference<>(ck = this.parent.get().getChunkAt(pos)));
-			
+
 			BlockState state = ck.getBlockState(pos);
 			cache.put(pos, Pair.of(state, new VecMap<>(2)));
 			return state;
 		};
-		
+
 		PlatformUtilsClient.onLoad(this);
 	}
-	
+
 	public UnitParticleEngine getParticleEngine() {
 		return particleEngine;
 	}
-	
+
 	public HashMap<Integer, BreakData> breakStatus = new HashMap<>();
-	
+
 	@Override
 	public void destroyBlockProgress(int pBreakerId, BlockPos pPos, int pProgress) {
 		if (pProgress < 0) breakStatus.remove(pBreakerId);
@@ -208,61 +214,61 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				breakStatus.put(pBreakerId, new BreakData(pPos, pProgress));
 		}
 	}
-	
+
 	@Override
 	public HashMap<Integer, BreakData> getBreakData() {
 		return breakStatus;
 	}
-	
+
 	@Override
 	protected void finalize() throws Throwable {
 		MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(this));
 		super.finalize();
 	}
-	
+
 	@Override
 	public void sendPacketToServer(Packet<?> pPacket) {
 		NetworkingHacks.setPos(getDescriptor());
 		parent.get().sendPacketToServer(pPacket);
 		NetworkingHacks.unitPos.remove();
 	}
-	
+
 	@Override
 	public void disconnect() {
 		NetworkingHacks.setPos(getDescriptor());
 		parent.get().disconnect();
 		NetworkingHacks.unitPos.remove();
 	}
-	
+
 	// TODO: do this a bit more properly
 	@Override
 	public void addParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
 		addAlwaysVisibleParticle(pParticleData, false, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 	}
-	
+
 	@Override
 	public void addParticle(ParticleOptions pParticleData, boolean pForceAlwaysRender, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
 		addAlwaysVisibleParticle(pParticleData, pForceAlwaysRender, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 	}
-	
+
 	@Override
 	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
 		addAlwaysVisibleParticle(pParticleData, false, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 	}
-	
+
 	@Override
 	public void addAlwaysVisibleParticle(ParticleOptions pParticleData, boolean pIgnoreRange, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
 		Particle particle = particleEngine.createParticle(pParticleData, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
 		if (particle != null)
 			particleEngine.add(particle);
 	}
-	
+
 	// TODO: stuff that requires a level renderer
 	@Override
 	public void globalLevelEvent(int pId, BlockPos pPos, int pData) {
 		// TODO
 	}
-	
+
 	@Override
 	public void levelEvent(@Nullable Player pPlayer, int pType, BlockPos pPos, int pData) {
 //		System.out.println(pType);
@@ -312,14 +318,14 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 						break;
 					case 1501:
 						playLocalSound(pPos, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
-						
+
 						for (int i2 = 0; i2 < 8; ++i2) {
 							addParticle(ParticleTypes.LARGE_SMOKE, (double) pPos.getX() + random.nextDouble(), (double) pPos.getY() + 1.2D, (double) pPos.getZ() + random.nextDouble(), 0.0D, 0.0D, 0.0D);
 						}
 						break;
 					case 1502:
 						playLocalSound(pPos, SoundEvents.REDSTONE_TORCH_BURNOUT, SoundSource.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F, false);
-						
+
 						for (int l1 = 0; l1 < 5; ++l1) {
 							double d15 = (double) pPos.getX() + random.nextDouble() * 0.6D + 0.2D;
 							double d20 = (double) pPos.getY() + random.nextDouble() * 0.6D + 0.2D;
@@ -329,7 +335,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 						break;
 					case 1503:
 						playLocalSound(pPos, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.BLOCKS, 1.0F, 1.0F, false);
-						
+
 						for (int k1 = 0; k1 < 16; ++k1) {
 							double d14 = (double) pPos.getX() + (5.0D + random.nextDouble() * 6.0D) / 16.0D;
 							double d19 = (double) pPos.getY() + 0.8125D;
@@ -345,7 +351,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 						double d18 = (double) pPos.getX() + (double) j1 * 0.6D + 0.5D;
 						double d24 = (double) pPos.getY() + (double) j2 * 0.6D + 0.5D;
 						double d28 = (double) pPos.getZ() + (double) k2 * 0.6D + 0.5D;
-						
+
 						for (int i3 = 0; i3 < 10; ++i3) {
 							double d4 = random.nextDouble() * 0.2D + 0.01D;
 							double d6 = d18 + (double) j1 * 0.01D + (random.nextDouble() - 0.5D) * (double) k2 * 0.5D;
@@ -363,7 +369,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 							SoundType soundtype = PlatformUtilsClient.getSoundType(blockstate, this, pPos);
 							this.playLocalSound(pPos, soundtype.getBreakSound(), SoundSource.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F, false);
 						}
-						
+
 						this.addDestroyBlockEffect(pPos, blockstate);
 						break;
 					default:
@@ -374,7 +380,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		Minecraft.getInstance().level = level;
 		Minecraft.getInstance().particleEngine = engine;
 	}
-	
+
 	@Override
 	public void createFireworks(double pX, double pY, double pZ, double pMotionX, double pMotionY, double pMotionZ, @Nullable CompoundTag pCompound) {
 		ParticleEngine engine = Minecraft.getInstance().particleEngine;
@@ -382,23 +388,23 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		super.createFireworks(pX, pY, pZ, pMotionX, pMotionY, pMotionZ, pCompound);
 		Minecraft.getInstance().particleEngine = engine;
 	}
-	
+
 	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
 		BlockHitResult closest = null;
 		double d = Double.POSITIVE_INFINITY;
-		
+
 		Level parent = this.parent.get();
-		
+
 		int minX = (int) Math.floor(Math.min(start.x, end.x)) - 1;
 		int minY = (int) Math.floor(Math.min(start.y, end.y)) - 1;
 		int minZ = (int) Math.floor(Math.min(start.z, end.z)) - 1;
 		int maxX = (int) Math.ceil(Math.max(start.x, end.x)) + 1;
 		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
 		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
-		
+
 		MutableAABB bb = new MutableAABB(0, 0, 0, 1, 1, 1);
 		Collection<AABB> singleton = Collections.singleton(new AABB(0, 0, 0, 1, 1, 1));
-		
+
 		// TODO: there are better ways to do this
 		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
 		for (int x = minX; x < maxX; x += 16) {
@@ -421,7 +427,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 							int x1 = x + x0;
 							for (int z0 = 0; z0 < 16; z0++) {
 								int z1 = z + z0;
-								
+
 								int pX = SectionPos.blockToSectionCoord(x1);
 								int pZ = SectionPos.blockToSectionCoord(z1);
 								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
@@ -436,13 +442,13 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 											if (simpleChecker.apply(bb)) {
 												BlockPos pos = new BlockPos(x1, y1, z1);
 												BlockPos pos1 = PositionUtils.getParentPos(pos, this);
-												
+
 												BlockState state = localCache.get(pos1);
 												if (state == null) {
 													state = parent.getBlockState(pos1);
 													localCache.put(pos1.immutable(), state);
 												}
-												
+
 												if (state.isAir()) continue;
 												BlockHitResult result = AABB.clip(
 														singleton,
@@ -462,7 +468,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 									}
 									continue;
 								}
-								
+
 								for (int y0 = 0; y0 < 16; y0++) {
 									int y1 = y + y0;
 									bb.set(
@@ -497,48 +503,48 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				}
 			}
 		}
-		
+
 		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
 		BlockHitResult src = closest;
-		
+
 		// improve precision
 		Vec3 hit = closest.getLocation();
-		Vec3 look = start.subtract(end).normalize().scale(0.5f);
-		
+		Vec3 look = start.subtract(end).normalize().scale(1);
+
 		BlockPos pos = closest.getBlockPos();
 		BlockState state = getBlockState(pos);
 		VoxelShape shape = state.getShape(this, pos);
 		closest = shape.clip(hit.add(look), hit.subtract(look), pos);
 		if (closest == null) return src;
-		
+
 		return closest;
 	}
-	
+
 	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
 		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
 		if (result == null) return null;
-		
+
 		// improve precision
-		if (!result.getType().equals(HitResult.Type.MISS)) {
-			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-			off = off.normalize().scale(0.5f);
-			Vec3 hit = result.getLocation();
-			return sp.clip(hit.add(off), hit.subtract(off), pos);
-		}
+//		if (!result.getType().equals(HitResult.Type.MISS)) {
+//			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+//			off = off.normalize().scale(0.5f);
+//			Vec3 hit = result.getLocation();
+//			return sp.clip(hit.add(off), hit.subtract(off), pos);
+//		}
 		return result;
 	}
-	
+
 	@Override
 	public BlockHitResult clip(ClipContext pContext) {
 		// I prefer this method over vanilla's method
 		Vec3 fStartVec = pContext.getFrom();
 		Vec3 endVec = pContext.getTo();
-		
+
 		double d0 = endVec.x - fStartVec.x;
 		double d1 = endVec.y - fStartVec.y;
 		double d2 = endVec.z - fStartVec.z;
 		double[] adouble = new double[]{1.0D};
-		
+
 		return collectShape(
 				pContext.getFrom(),
 				pContext.getTo(),
@@ -561,7 +567,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				upb
 		);
 	}
-	
+
 	@Override
 	public void setBlocksDirty(BlockPos pBlockPos, BlockState pOldState, BlockState pNewState) {
 		// TODO
@@ -580,13 +586,13 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 //			space.setUpb(upb);
 //		}
 	}
-	
+
 	@Override
 	public void sendBlockUpdated(BlockPos pPos, BlockState pOldState, BlockState pNewState, int pFlags) {
 		// TODO: check
 		BlockEntity be = getBlockEntity(pPos);
 		if (be != null) Objects.requireNonNull(getModelDataManager()).requestRefresh(be);
-		
+
 		ArrayList<BlockPos> positionsToRefresh = new ArrayList<>();
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		BlockPos rp = region.pos.toBlockPos();
@@ -601,7 +607,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				}
 			}
 		}
-		
+
 		for (BlockPos parentPos : positionsToRefresh) {
 //			int xo = ((toRefresh.getX()) / upb);
 //			int yo = ((toRefresh.getY()) / upb);
@@ -631,80 +637,80 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 	public RecipeManager getRecipeManager() {
 		return parent.get().getRecipeManager();
 	}
-	
+
 	@Override
 	public int getUPB() {
 		return upb;
 	}
-	
+
 	@Override
 	public void handleRemoval() {
 		// I don't remember what this is
 	}
-	
+
 	@Nullable
 	@Override
 	public Entity getEntity(int pId) {
 		return super.getEntity(pId);
 	}
-	
+
 	@Override
 	public Iterable<Entity> entitiesForRendering() {
 		return getEntities().getAll();
 	}
-	
+
 	@Override
 	public void SU$removeEntity(Entity pEntity) {
-	
+
 	}
-	
+
 	@Override
 	public void SU$removeEntity(UUID uuid) {
-	
+
 	}
-	
+
 	@Override
 	public Iterable<Entity> getAllEntities() {
 		return new ArrayList<>(); // TODO
 	}
-	
+
 	@Override
 	public Level getParent() {
 		return parent.get();
 	}
-	
+
 	@Override
 	public Region getRegion() {
 		return region;
 	}
-	
+
 	@Override
 	public ParentLookup getLookup() {
 		return lookup;
 	}
-	
+
 	@Override
 	public RegistryAccess registryAccess() {
 		// TODO: find a proper solution
 		if (parent == null) parent = new WeakReference<>(Minecraft.getInstance().level);
 		return parent.get().registryAccess();
 	}
-	
+
 	@Override
 	public Tag getTicksIn(BlockPos myPosInTheLevel, BlockPos offset) {
 		return new CompoundTag();
 	}
-	
+
 	@Override
 	public void setLoaded() {
 		// maybe TODO?
 	}
-	
+
 	@Override
 	public void loadTicks(CompoundTag ticks) {
 		// nah, this don't exist client side
 	}
-	
+
 	@Override
 	public void tickTime() {
 		// swap client level for IP compat
@@ -712,14 +718,14 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		Minecraft.getInstance().level = this;
 		particleEngine.tick();
 		Minecraft.getInstance().level = tlevel;
-		
+
 		PlatformUtilsClient.preTick(this);
-		
+
 		AABB box = HitboxScaling.getOffsetAndScaledBox(Minecraft.getInstance().player.getBoundingBox(), Minecraft.getInstance().player.position(), upb, region.pos);
 		Vec3 vec = box.getCenter().subtract(0, box.getYsize() / 2, 0);
 		BlockPos pos = new BlockPos(vec);
 		this.animateTick(pos.getX(), pos.getY(), pos.getZ()); // TODO: this is borked
-		
+
 		try {
 			for (Entity entity : entitiesForRendering()) {
 				// TODO: remove null entities..?
@@ -734,52 +740,52 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			}
 		} catch (Throwable ignored) {
 		}
-		
+
 		getLightEngine().runUpdates(10000, true, false);
 		for (Runnable runnable : completeOnTick) runnable.run();
 		completeOnTick.clear();
-		
+
 		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks)
 			for (Entity entity : entitiesGrabbedByBlock)
 				((EntityAccessor) entity).setMotionScalar(1);
 		entitiesGrabbedByBlocks.clear();
-		
+
 		PlatformUtilsClient.postTick(this);
 	}
-	
+
 	@Override
 	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, RandomSource pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
 		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
 		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
 //		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
 	}
-	
+
 	@Override
 	public int getSectionsCount() {
 		return getMaxSection() - getMinSection();
 	}
-	
+
 	@Override
 	public int getMinSection() {
 		return 0;
 	}
-	
+
 	@Override
 	public int getSectionIndexFromSectionY(int pSectionIndex) {
 		return pSectionIndex;
 	}
-	
+
 	@Override
 	public int getMaxSection() {
 		return upb + 4;
 	}
-	
+
 	@Override
 	public Holder<Biome> getBiome(BlockPos p_204167_) {
 		Registry<Biome> reg = registryAccess().registry(Registry.BIOME_REGISTRY).get();
 		return reg.getOrCreateHolder(Biomes.THE_VOID).get().orThrow();
 	}
-	
+
 	@Override
 	public void clear(BlockPos myPosInTheLevel, BlockPos offset) {
 		HashMap<SectionPos, ChunkAccess> cache = new HashMap<>();
@@ -790,7 +796,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				int pZ = SectionPos.blockToSectionCoord(z);
 				BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pX, pZ, ChunkStatus.FULL, false);
 				if (vc == null) continue;
-				
+
 				for (int y = myPosInTheLevel.getY(); y < offset.getY(); y++) {
 					mutableBlockPos.set(x, y, z);
 					vc.setBlockFast(mutableBlockPos, null, cache);
@@ -798,7 +804,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			}
 		}
 	}
-	
+
 	@Override
 	public void setFromSync(ChunkPos cp, int cy, int x, int y, int z, BlockState state, ArrayList<BlockPos> positions, HashMap<SectionPos, ChunkAccess> chunkCache) {
 		BlockPos parentPos = PositionUtils.getParentPos(new BlockPos(x, y, z), cp, 0, this);
@@ -813,7 +819,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				positions.add(parentPos);
 			}
 		} else ac = chunkCache.get(pos);
-		
+
 		ISUCapability cap = SUCapabilityManager.getCapability((LevelChunk) ac);
 		UnitSpace space = cap.getUnit(parentPos);
 		if (space == null) {
@@ -824,22 +830,22 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		vc = vc.getSubChunk(cy);
 		vc.setBlockFast(new BlockPos(x, y, z), state, chunkCache);
 		// TODO: mark lighting engine dirty
-		
+
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
-	
+
 	@Override
 	public void markRenderDirty(BlockPos pLevelPos) {
 		BlockPos parentPos = PositionUtils.getParentPos(pLevelPos, this);
 		ChunkAccess ac = parent.get().getChunkAt(parentPos);
 		((SUCapableChunk) ac).SU$markDirty(parentPos);
 	}
-	
+
 	@Override
 	public void invalidateCache(BlockPos pos) {
 		cache.remove(pos);
 	}
-	
+
 	@Override
 	public String toString() {
 		Level parent = getParent();
@@ -848,10 +854,10 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			Loggers.SU_LOGGER.warn("toString called before SU world is initialized");
 			return "TickerClientLevel[UNKNOWN]@[UNKNOWN]";
 		}
-		
+
 		return "TickerClientLevel[" + getParent() + "]@[" + region.pos.x + "," + region.pos.y + "," + region.pos.z + "]";
 	}
-	
+
 	@Override
 	public LevelChunk getChunkAt(BlockPos pPos) {
 		return ((TickerClientChunkCache) this.getChunkSource()).getChunk(
@@ -861,7 +867,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				ChunkStatus.FULL, true
 		);
 	}
-	
+
 	public LevelChunk getChunkAtNoLoad(BlockPos pPos) {
 		return ((TickerClientChunkCache) this.getChunkSource()).getChunk(
 				SectionPos.blockToSectionCoord(pPos.getX()),
@@ -870,7 +876,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				ChunkStatus.FULL, false
 		);
 	}
-	
+
 	@Override
 	public BlockState getBlockState(BlockPos pPos) {
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
@@ -880,24 +886,24 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			if (parentState.isAir() || parentState.getBlock() instanceof UnitSpaceBlock) {
 				return Blocks.VOID_AIR.defaultBlockState();
 			}
-			
+
 			boolean transparent = true;
 			Level lvl = this.getParent();
 			if (parentState.isCollisionShapeFullBlock(lvl, parentPos))
 				transparent = false;
-			
+
 			return tfc.smallerunits.Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
 		}
 		return chunk.getBlockState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
-	
+
 	@Override
 	public FluidState getFluidState(BlockPos pPos) {
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
 		if (chunk == null) return Fluids.EMPTY.defaultFluidState();
 		return chunk.getFluidState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
 	}
-	
+
 	@Override
 	public void setBlockEntity(BlockEntity pBlockEntity) {
 		LevelChunk chunk = this.getChunkAt(pBlockEntity.getBlockPos());
@@ -905,27 +911,27 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		// TODO: figure out of deserialization and reserialization is necessary or not
 		chunk.addAndRegisterBlockEntity(pBlockEntity);
 	}
-	
+
 	@Override
 	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
 		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
 		return chunkCache.getChunk(x, y, z, pRequiredStatus, pLoad);
 	}
-	
+
 	public BlockPos lightCacheCenter = null;
 	private int[] lightCache = new int[3 * 3 * 3];
-	
+
 	public void setupLightCache(BlockPos center) {
 		if (center != null)
 			Arrays.fill(lightCache, -1);
 		this.lightCacheCenter = center;
 	}
-	
+
 	@Override
 	public int getBrightness(LightLayer pLightType, BlockPos pBlockPos) {
 		BlockPos parentPos = PositionUtils.getParentPos(pBlockPos, this);
 		int lt;
-		
+
 		// TODO: caching of light values
 //		if (pLightType.equals(LightLayer.SKY)) {
 //			if (lightCacheCenter != null) {
@@ -936,35 +942,37 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 //		} else {
 //			lt = parent.get().getBrightness(pLightType, parentPos);
 //		}
-		
+
 		lt = parent.get().getBrightness(pLightType, parentPos);
 		if (pLightType.equals(LightLayer.SKY)) return lt;
 		return Math.max(lt, super.getBrightness(pLightType, pBlockPos));
 	}
-	
+
 	@Override
 	public int randomTickCount() {
 		return 0;
 	}
-	
+
 	@Override
 	public int getHeight(Heightmap.Types pHeightmapType, int pX, int pZ) {
 		return getMaxBuildHeight(); // TODO: do this properly
 //		return 0;
 	}
-	
+
 	@Override
 	public List<Entity> getEntities(@Nullable Entity pEntity, AABB pBoundingBox, Predicate<? super Entity> pPredicate) {
 		// for simplicity
 		return getEntities(EntityTypeTest.forClass(Entity.class), pBoundingBox, pPredicate);
 	}
-	
+
 	@Override
 	public <T extends Entity> List<T> getEntities(EntityTypeTest<Entity, T> pEntityTypeTest, AABB aabb, Predicate<? super T> pPredicate) {
+		boolean onRender = RenderSystem.isOnRenderThread();
+
 		Level owner = parent.get();
 		if (owner != null) {
 			List<T> entities = super.getEntities(pEntityTypeTest, aabb, pPredicate);
-			
+
 			double upb = this.upb;
 			AABB aabb1 = new AABB(0, 0, 0, aabb.getXsize() / upb, aabb.getZsize() / upb, aabb.getZsize() / upb);
 			AABB bb = aabb1.move(
@@ -986,31 +994,42 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				}
 			} catch (Throwable ignored) {
 			}
-			
-			for (Entity interactingEntity : interactingEntities) {
-				if (interactingEntity.getBoundingBox().intersects(aabb)) {
-					T ent = pEntityTypeTest.tryCast(interactingEntity);
-					if (ent != null) {
-						if (pPredicate.test(ent)) {
-							if (!parentEntities.contains(ent)) {
-								parentEntities.add(ent);
+
+			// if the game is not on the render thread, then doing this will cause problems
+			if (onRender) {
+				for (Entity interactingEntity : interactingEntities) {
+					if (interactingEntity == null) {
+						if (CommonConfig.DebugOptions.crashOnNullInteracter) {
+							throw new RuntimeException("???");
+						} else {
+							continue;
+						}
+					}
+
+					if (interactingEntity.getBoundingBox().intersects(aabb)) {
+						T ent = pEntityTypeTest.tryCast(interactingEntity);
+						if (ent != null) {
+							if (pPredicate.test(ent)) {
+								if (!parentEntities.contains(ent)) {
+									parentEntities.add(ent);
+								}
 							}
 						}
 					}
 				}
 			}
-			
+
 			entitiesGrabbedByBlocks.add((List<Entity>) parentEntities);
 			for (T parentEntity : parentEntities)
 				((EntityAccessor) parentEntity).setMotionScalar((float) (1 / upb));
-			
+
 			entities.addAll(parentEntities);
 			return entities;
 		}
-		
+
 		return super.getEntities(pEntityTypeTest, aabb, pPredicate);
 	}
-	
+
 	@Override
 	public void ungrab(Player entitiesOfClass) {
 		for (List<Entity> entitiesGrabbedByBlock : entitiesGrabbedByBlocks) {
@@ -1018,14 +1037,14 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			entitiesGrabbedByBlock.remove(entitiesOfClass);
 		}
 	}
-	
-	
+
+
 	// compat: lithium
 	// reason: un-inline
 	public int getSectionYFromSectionIndex(int p_151569_) {
 		return p_151569_ + this.getMinSection();
 	}
-	
+
 	@Override
 	public boolean isOutsideBuildHeight(int pY) {
 		Level parent = this.parent.get();
@@ -1034,7 +1053,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		yo = region.pos.toBlockPos().getY() + yo;
 		return parent.isOutsideBuildHeight(yo);
 	}
-	
+
 	// compat: lithium
 	// reason: un-inline
 	@Override
@@ -1045,24 +1064,24 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 		yo = region.pos.toBlockPos().getY() + yo;
 		return parent.isOutsideBuildHeight(yo);
 	}
-	
+
 	@Override
 	public int getMinBuildHeight() {
 		return -32;
 	}
-	
+
 	@Override
 	public int getMaxBuildHeight() {
 		return upb * 512 + 32;
 	}
-	
+
 	@Override
 	public boolean chunkExists(SectionPos pos) {
 		return false;
 	}
-	
+
 	/* forge specific */
-	
+
 	// TODO: try to optimize or shrink this?
 	@Override
 	public boolean setBlock(BlockPos pPos, BlockState pState, int pFlags, int pRecursionLeft) {
@@ -1072,7 +1091,7 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			return false;
 		} else {
 			LevelChunk levelchunk = this.getChunkAt(pPos);
-			
+
 			BlockPos actualPos = pPos;
 			pPos = new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15);
 			net.minecraftforge.common.util.BlockSnapshot blockSnapshot = null;
@@ -1080,11 +1099,11 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 				blockSnapshot = net.minecraftforge.common.util.BlockSnapshot.create(this.dimension(), this, pPos, pFlags);
 				this.capturedBlockSnapshots.add(blockSnapshot);
 			}
-			
+
 			BlockState old = levelchunk.getBlockState(pPos);
 			int oldLight = old.getLightEmission(this, pPos);
 			int oldOpacity = old.getLightBlock(this, pPos);
-			
+
 			BlockState blockstate = levelchunk.setBlockState(pPos, pState, (pFlags & 64) != 0);
 			if (blockstate == null) {
 				if (blockSnapshot != null) this.capturedBlockSnapshots.remove(blockSnapshot);
@@ -1096,15 +1115,15 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 					this.getChunkSource().getLightEngine().checkBlock(actualPos);
 					this.getProfiler().pop();
 				}
-				
+
 				if (blockSnapshot == null) // Don't notify clients or update physics while capturing blockstates
 					this.markAndNotifyBlock(actualPos, levelchunk, blockstate, pState, pFlags, pRecursionLeft);
-				
+
 				return true;
 			}
 		}
 	}
-	
+
 	@Override
 	public void playSeededSound(@Nullable Player p_233621_, double p_233622_, double p_233623_, double p_233624_, SoundEvent p_233625_, SoundSource p_233626_, float p_233627_, float p_233628_, long p_233629_) {
 		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_233622_, p_233623_, p_233624_, p_233625_, p_233626_, p_233627_, p_233628_);
@@ -1121,12 +1140,12 @@ public class TickerClientLevel extends ClientLevel implements ITickerLevel, Part
 			);
 		}
 	}
-	
+
 	@Override
 	public void playSeededSound(@Nullable Player p_233631_, Entity p_233632_, SoundEvent p_233633_, SoundSource p_233634_, float p_233635_, float p_233636_, long p_233637_) {
 		super.playSeededSound(p_233631_, p_233632_, p_233633_, p_233634_, p_233635_, p_233636_, p_233637_);
 	}
-	
+
 	@Override
 	public void playLocalSound(BlockPos p_104678_, SoundEvent p_104679_, SoundSource p_104680_, float p_104681_, float p_104682_, boolean p_104683_) {
 		super.playLocalSound(p_104678_, p_104679_, p_104680_, p_104681_, p_104682_, p_104683_);

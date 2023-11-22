@@ -13,6 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -144,12 +145,14 @@ public class SUVBOEmitter {
 					int indx = (((x * upb) + y) * upb) + z;
 					BlockState block = states[indx];
 					if (block == null || block.isAir()) continue;
+
+					Block b = block.getBlock();
 					
 					BlockPos offsetPos = space.getOffsetPos(blockPosMut);
 					// for some reason
 					// this single line of code causes a lot of lag
 					// TODO: what???
-					FluidState fluid = block.getFluidState();
+					FluidState fluid = b.getFluidState(block);
 					if (!fluid.isEmpty()) {
 						RenderType rendertype = ItemBlockRenderTypes.getRenderLayer(fluid);
 						if (rendertype.equals(chunkBufferLayer)) {
@@ -170,10 +173,11 @@ public class SUVBOEmitter {
 							endBlock(consumer);
 						}
 					}
-					
-					if (block.getRenderShape() == RenderShape.MODEL) {
+
+					if (b.getRenderShape(block) == RenderShape.MODEL) {
 						RandomSource randomSource = new XoroshiroRandomSource(offsetPos.asLong());
 						ModelData modelData = Objects.requireNonNull(wld.getModelDataManager()).getAt(offsetPos);
+						if (modelData == null) modelData = ModelData.EMPTY;
 						BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
 						if (model.getRenderTypes(block, randomSource, modelData).contains(chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);

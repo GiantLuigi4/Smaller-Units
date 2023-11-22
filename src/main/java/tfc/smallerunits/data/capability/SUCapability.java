@@ -7,14 +7,17 @@ import it.unimi.dsi.fastutil.objects.ObjectBigList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.common.util.INBTSerializable;
 import tfc.smallerunits.UnitSpace;
 
 public class SUCapability implements ISUCapability, INBTSerializable<CompoundTag> {
 	final Level level;
-	
-	public SUCapability(Level level) {
+	final LevelChunk chunk;
+
+	public SUCapability(Level level, LevelChunk chunk) {
 		this.level = level;
+		this.chunk = chunk;
 	}
 	
 	private final Int2ObjectMap<UnitSpace[]> spaceMap = new Int2ObjectRBTreeMap<>();

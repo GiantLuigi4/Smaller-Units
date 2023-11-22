@@ -135,8 +135,10 @@ public class SmallerUnits {
 	// this ended up being necessary, as without it, furnaces can end up deadlocing world loading
 	private static void onTick(TickEvent.ServerTickEvent event) {
 		if (event.phase == TickEvent.Phase.END) {
-			for (Runnable runnable : enqueued) {
-				runnable.run();
+			synchronized (enqueued) {
+				while (!enqueued.isEmpty()) {
+					enqueued.poll().run();
+				}
 			}
 		}
 	}

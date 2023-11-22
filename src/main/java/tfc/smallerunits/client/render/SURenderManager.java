@@ -11,11 +11,14 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.AABB;
 import tfc.smallerunits.client.abstraction.IFrustum;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCapableWorld;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+
+import java.util.ArrayList;
 
 public class SURenderManager {
 	public static void drawChunk(LevelChunk chunk, Level world, BlockPos positionRendering, RenderType type, IFrustum frustum, double pCamX, double pCamY, double pCamZ, AbstractUniform uniform) {
@@ -27,17 +30,21 @@ public class SURenderManager {
 		if (type.equals(RenderType.solid())) {
 			SUVBOEmitter vboEmitter = ((SUCapableWorld) world).getVBOEmitter();
 			// TODO: frustrum check
-			for (BlockPos pos : suCapable.SU$dirty())
-				render.addBuffers(pos, vboEmitter.genBuffers(chunk, suCapable, capability, pos));
+			ArrayList<BlockPos> notDrawn = new ArrayList<>();
+			for (BlockPos pos : suCapable.SU$dirty()) {
+				if (!frustum.test(new AABB(pos)))
+					notDrawn.add(pos);
+				else render.addBuffers(pos, vboEmitter.genBuffers(chunk, suCapable, capability, pos));
+			}
 			for (BlockPos pos : suCapable.SU$toRemove())
 				render.freeBuffers(pos, vboEmitter);
 			// TODO: remove only unit positions that are in the frustrum
-			suCapable.SU$reset();
+			suCapable.SU$reset(notDrawn);
 		}
-		
+
 		render.draw(positionRendering, type, frustum, uniform);
 	}
-	
+
 	public static void drawEntity(LevelRenderer renderer, Level lvl, PoseStack stk, Camera cam, float pct, MultiBufferSource buffers, Entity entity) {
 		// TODO: glowing
 		renderer.renderEntity(
