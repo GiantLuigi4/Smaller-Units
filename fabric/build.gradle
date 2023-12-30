@@ -1,0 +1,116 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'maven-publish'
+    id 'fabric-loom' version '1.2-SNAPSHOT'
+}
+
+base {
+    archivesName = "${mod_name}-fabric-${minecraft_version}"
+}
+
+repositories {
+    maven {
+        name 'jamies'
+        url 'https://maven.jamieswhiteshirt.com/libs-release'
+    }
+    maven {
+        name 'ladysnake'
+        url 'https://maven.ladysnake.org/releases'
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "rinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter {
+            includeGroup "maven.modrinth"
+        }
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+//    Set<String> apiModules = [
+//            "fabric-api-base",
+//            "fabric-lifecycle-events-v1",
+//            "fabric-networking-api-v1"
+//    ]
+//
+//    apiModules.forEach {
+//        modImplementation(fabricApi.module(it, "${fabric_version}"))
+//    }
+
+    implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
+
+    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.0.2"
+    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-world:5.0.2"
+    modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-chunk:5.0.2"
+    include (modImplementation "com.jamieswhiteshirt:reach-entity-attributes:2.3.0")
+    compileOnly ("curse.maven:pehkui-319596:4823467")
+
+    modImplementation "maven.modrinth:lithium:mc1.19.2-0.11.1"
+
+    modImplementation "com.jozufozu.flywheel:flywheel-fabric-1.19.2:0.6.9-6"
+
+    compileOnly project(":Common")
+}
+
+loom {
+    if (project(":Common").file("src/main/resources/${mod_id}.accesswidener").exists()) {
+        accessWidenerPath.set(project(":Common").file("src/main/resources/${mod_id}.accesswidener"))
+    }
+
+    mixin {
+        defaultRefmapName.set("${mod_id}.refmap.json")
+    }
+
+    runs {
+        client {
+            client()
+            setConfigName("Fabric Client")
+            ideConfigGenerated(true)
+            runDir("run")
+//            from project(":Common").sourceSets.main.resources
+//            source sourceSets.main
+//            source project(":Common").sourceSets.main
+        }
+        server {
+            server()
+            setConfigName("Fabric Server")
+            ideConfigGenerated(true)
+            runDir("run")
+//            from project(":Common").sourceSets.main.resources
+//            source sourceSets.main
+//            source project(":Common").sourceSets.main
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    source(project(":Common").sourceSets.main.allSource)
+}
+processResources {
+    from project(":Common").sourceSets.main.resources
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId base.archivesName.get()
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://" + System.getenv("local_maven")
+        }
+    }
+}

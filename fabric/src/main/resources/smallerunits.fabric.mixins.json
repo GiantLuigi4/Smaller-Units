@@ -1,0 +1,38 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "tfc.smallerunits.plat.mixin",
+  "plugin": "tfc.smallerunits.plat.asm.MixinConnector",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "compat.optimization.lithium.CollisionSweeperMixin",
+    "compat.optimization.lithium.LithiumEntityCollisionsMixin",
+    "core.EntityMixin",
+    "core.network.ConnectionMixin",
+    "core.network.ServerPlayNetworkAddonMixin",
+    "core.network.ServerPlayNetworkingMixin",
+    "data.FastCapabilityChunkMixin",
+    "quality.EntityQolFabric",
+    "quality.LivingEntityMixin",
+    "quality.ReachEntityAttributesMixin"
+  ],
+  "client": [
+    "compat.fabric.RenderWorldMixin",
+    "compat.optimization.flywheel.TickerClientLevelMixin",
+    "compat.optimization.flywheel.ModCompatMixin",
+    "compat.optimization.flywheel.LevelRendererMixin",
+    "core.gui.client.GameRendererMixin",
+    "core.gui.client.KeyboardHandlerMixin",
+    "core.gui.client.MinecraftMixin",
+    "core.gui.client.MouseHandlerMixin",
+    "core.gui.client.ScreenMixin",
+    "core.gui.client.expansion.DebugScreenOverlayMixin",
+    "core.network.ClientPlayNetworkingMixin",
+    "quality.MinecraftMixin",
+    "quality.ParticleEngineAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+  

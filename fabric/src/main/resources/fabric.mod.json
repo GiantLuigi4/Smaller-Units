@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "smallerunits",
+  "version": "${version}",
+  "name": "SmallerUnits",
+  "description": "A mod about bending space to make blocks smaller",
+  "authors": [
+    "GiantLuigi4"
+  ],
+  "contributors": [
+    "Moony", "Lorenzo", "Space Lover", "Mohatax", "Mysticpasta1"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+  "license": "MIT",
+  "icon": "assets/smallerunits/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "tfc.smallerunits.plat.FabricMod"
+    ],
+    "cardinal-components": [
+      "tfc.smallerunits.plat.ComponentRegistry"
+    ]
+  },
+  "mixins": [
+    "smallerunits.mixins.json",
+    "smallerunits.fabric.mixins.json"
+  ],
+  "depends": {
+    "minecraft": "~1.19.2",
+    "fabric-api": "*",
+    "cardinal-components-chunk": "*",
+    "cardinal-components-world": "*"
+  },
+  "breaks": {
+    "immersiveportals": "<1.14.11"
+  },
+  "suggests": {
+  },
+  "custom": {
+    "cardinal-components": [
+      "smallerunits:unit_space_cap"
+    ]
+  },
+  "accessWidener": "smallerunits.accesswidener"
+}

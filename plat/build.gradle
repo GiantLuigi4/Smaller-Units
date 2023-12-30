@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+    id 'org.spongepowered.gradle.vanilla' version '0.2.1-SNAPSHOT'
+}
+
+archivesBaseName = "${mod_name}-plat-${minecraft_version}"
+
+minecraft {
+    version(minecraft_version)
+    runs {
+    }
+}
+
+dependencies {
+    compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
+}
+
+jar {
+    exclude("tfc/smallerunits/data/**")
+    exclude("tfc/smallerunits/simulation/level/ITickerLevel.class")
+    exclude("tfc/smallerunits/simulation/level/client/AbstractTickerClientLevel.class")
+    exclude("tfc/smallerunits/simulation/level/server/AbstractTickerServerLevel.class")
+}
