@@ -25,6 +25,15 @@ public class MixinConnector implements IMixinConfigPlugin {
 			ArrayList<String> incompat = new ArrayList<>();
 			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
+			
+			incompat = new ArrayList<>();
+			incompat.add("virtuoel.pehkui.api.ScaleTypes");
+			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.AbstractContainerMenuMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.AbstractFurnaceBlockEntityMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.BrewingStandBlockEntityMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.EnderChestBlockEntityMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.ItemCombinerMenuMixin", incompat);
+			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.RandomizableContainerBlockEntityMixin", incompat);
 		}
 //		{
 //			ArrayList<String> incompat = new ArrayList<>();
