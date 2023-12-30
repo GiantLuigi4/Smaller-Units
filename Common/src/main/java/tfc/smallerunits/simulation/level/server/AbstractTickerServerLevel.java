@@ -7,9 +7,8 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
-import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
-import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -66,6 +65,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.plat.CapabilityWrapper;
+import tfc.smallerunits.plat.util.PlatformUtils;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.EntityManager;
@@ -77,8 +77,6 @@ import tfc.smallerunits.utils.AddOnlyList;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.Math1D;
-import tfc.smallerunits.plat.util.PlatformUtils;
-import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.selection.MutableAABB;
 import tfc.smallerunits.utils.selection.UnitShape;
 import tfc.smallerunits.utils.storage.GroupMap;
@@ -601,7 +599,7 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 					time, TickPriority.values()[priority], sub
 			));
 		}
-		CompoundTag fluids = tag.getCompound("blocks");
+		CompoundTag fluids = tag.getCompound("fluids");
 		for (String allKey : fluids.getAllKeys()) {
 			CompoundTag tick = fluids.getCompound(allKey);
 			long time = tick.getLong("ttime") + getGameTime();
@@ -1003,33 +1001,6 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 	}
 	
 	@Override
-	public void runBlockEvents() {
-		this.blockEventsToReschedule.clear();
-		
-		while (!this.blockEvents.isEmpty()) {
-			BlockEventData blockeventdata = this.blockEvents.removeFirst();
-			if (this.shouldTickBlocksAt(ChunkPos.asLong(blockeventdata.pos()))) {
-				if (this.doBlockEvent(blockeventdata)) {
-					for (Player player : parent.get().players()) {
-						BlockPos parentPos = PositionUtils.getParentPos(blockeventdata.pos(), this);
-						if (
-								player.distanceToSqr(parentPos.getX(), parentPos.getY(), parentPos.getZ()) <
-//										((64 / Math.sqrt(upb)))
-										(64) // TODO: scale this based off player scale and upb
-						) {
-							((ServerPlayer) player).connection.send(new ClientboundBlockEventPacket(blockeventdata.pos(), blockeventdata.block(), blockeventdata.paramA(), blockeventdata.paramB()));
-						}
-					}
-				}
-			} else {
-				this.blockEventsToReschedule.add(blockeventdata);
-			}
-		}
-		
-		this.blockEvents.addAll(this.blockEventsToReschedule);
-	}
-	
-	@Override
 	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
 		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();
 		return chunkCache.getChunk(x, y, z, pRequiredStatus, pLoad);
@@ -1314,4 +1285,69 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 //		}
 //		return getBlockState(pPos).getDirectSignal(this, pPos, pDirection);
 //	}
+	
+	protected void broadcast(Packet<?> packet, BlockPos pos) {
+		BlockPos parentPos = PositionUtils.getParentPos(pos, this);
+		for (Player player : parent.get().players()) {
+			if (
+					player.distanceToSqr(parentPos.getX(), parentPos.getY(), parentPos.getZ()) <
+							(64) // TODO: scale this based off player scale and upb?
+			) {
+				((ServerPlayer) player).connection.send(packet);
+			}
+		}
+	}
+	
+	protected void broadcast(
+			Player exclude, Packet<?> packet,
+	                         double x, double y, double z,
+	                         double dist
+	) {
+		Vec3 parentPos = PositionUtils.getParentVec(new Vec3(x, y, z), this);
+		for (Player player : parent.get().players()) {
+			if (player != exclude) {
+				if (
+						player.distanceToSqr(parentPos.x, parentPos.y, parentPos.z) <
+								(dist) // TODO: scale this based off player scale and upb?
+				) {
+					((ServerPlayer) player).connection.send(packet);
+				}
+			}
+		}
+	}
+	
+	public void globalLevelEvent(int p_8811_, BlockPos p_8812_, int p_8813_) {
+		Level parent = getParent();
+		if (parent != null) {
+			parent.globalLevelEvent(p_8811_, p_8812_, p_8813_);
+		}
+	}
+	
+	public void levelEvent(@javax.annotation.Nullable Player p_8684_, int p_8685_, BlockPos p_8686_, int p_8687_) {
+		broadcast(
+				p_8684_,
+				new ClientboundLevelEventPacket(p_8685_, p_8686_, p_8687_, false),
+				p_8686_.getX(), p_8686_.getY(), p_8686_.getZ(),
+				64.0D
+		);
+	}
+	
+	@Override
+	public void runBlockEvents() {
+		this.blockEventsToReschedule.clear();
+		
+		while (!this.blockEvents.isEmpty()) {
+			BlockEventData blockeventdata = this.blockEvents.removeFirst();
+			if (this.shouldTickBlocksAt(ChunkPos.asLong(blockeventdata.pos()))) {
+				if (this.doBlockEvent(blockeventdata)) {
+					ClientboundBlockEventPacket packet = new ClientboundBlockEventPacket(blockeventdata.pos(), blockeventdata.block(), blockeventdata.paramA(), blockeventdata.paramB());
+					broadcast(packet, blockeventdata.pos());
+				}
+			} else {
+				this.blockEventsToReschedule.add(blockeventdata);
+			}
+		}
+		
+		this.blockEvents.addAll(this.blockEventsToReschedule);
+	}
 }

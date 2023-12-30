@@ -7,6 +7,9 @@ accessible field net/minecraft/world/entity/LivingEntity jumping Z
 accessible field net/minecraft/world/entity/Entity eyeHeight F
 
 mutable    field net/minecraft/client/player/AbstractClientPlayer clientLevel Lnet/minecraft/client/multiplayer/ClientLevel;
+accessible method net/minecraft/client/multiplayer/ClientLevel playSound (DDDLnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FFZJ)V
+extendable method net/minecraft/client/multiplayer/ClientLevel playSound (DDDLnet/minecraft/sounds/SoundEvent;Lnet/minecraft/sounds/SoundSource;FFZJ)V
+
 
 mutable    field net/minecraft/client/Minecraft particleEngine Lnet/minecraft/client/particle/ParticleEngine;
 

@@ -35,12 +35,12 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.plat.net.PacketTarget;
+import tfc.smallerunits.plat.util.PlatformUtils;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.simulation.level.UnitChunkHolder;
 import tfc.smallerunits.simulation.level.server.TickerServerLevel;
 import tfc.smallerunits.utils.math.Math1D;
-import tfc.smallerunits.plat.util.PlatformUtils;
 import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.util.ArrayList;
@@ -632,8 +632,8 @@ public class BasicVerticalChunk extends LevelChunk {
 	public void setBlockEntity(BlockEntity pBlockEntity) {
         BlockPos pPos = pBlockEntity.getBlockPos();
 		pPos = pPos.offset(0, -yPos * 16, 0);
-
-        int yO = Math1D.getChunkOffset(pPos.getY(), 16);
+		
+		int yO = Math1D.getChunkOffset(pPos.getY(), 16);
         if (yO != 0 || pPos.getX() < 0 || pPos.getZ() < 0 || pPos.getX() >= (upb * 32) || pPos.getZ() >= (upb * 32)) {
             // TODO: non-grid aligned world stitching?
 
@@ -678,7 +678,30 @@ public class BasicVerticalChunk extends LevelChunk {
 		// TODO: check if a renderer exists, or smth?
 		((SUCapableChunk) ac).addTile(pBlockEntity);
     }
-
+	
+	@Override
+	public void addAndRegisterBlockEntity(BlockEntity $$0) {
+		int yO = Math1D.getChunkOffset($$0.getBlockPos().getY(), 16);
+		if (yO >= upb * 32 || yO < 0) {
+			$$0.worldPosition = new BlockPos(
+					$$0.getBlockPos().getX(),
+					yPos * 16,
+					$$0.getBlockPos().getZ()
+			);
+			verticalLookup.applyAbs(yO).verticalLookup.applyAbs(0).addAndRegisterBlockEntity(
+					$$0
+			);
+			return;
+		}
+		
+		if (yPos != 0) {
+			verticalLookup.applyAbs(0).addAndRegisterBlockEntity($$0);
+			return;
+		}
+		
+		super.addAndRegisterBlockEntity($$0);
+	}
+	
 	@Override
 	public void removeBlockEntity(BlockPos pPos) {
 		int yO = Math1D.getChunkOffset(pPos.getY(), 16);

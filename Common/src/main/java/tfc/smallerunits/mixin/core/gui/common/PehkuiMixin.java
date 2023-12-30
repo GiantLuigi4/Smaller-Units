@@ -15,7 +15,19 @@ import virtuoel.pehkui.util.ScaleUtils;
 // TODO: this is temporary
 @Mixin(value = ScaleUtils.class, remap = false)
 public class PehkuiMixin {
-	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;)F", cancellable = true)
+	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;F)F", cancellable = true, require = 0)
+	private static void modifyReach(Entity entity, float pct, CallbackInfoReturnable<Float> cir) {
+		if (entity instanceof LivingEntity livingEntity) {
+			AttributeInstance instance = PlatformUtils.getReachAttrib(livingEntity);
+			if (instance == null) return;
+			AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
+			if (modifier == null) return;
+			
+			cir.setReturnValue((float) (cir.getReturnValueF() * modifier.getAmount()));
+		}
+	}
+	
+	@Inject(at = @At("TAIL"), method = "getBlockReachScale(Lnet/minecraft/world/entity/Entity;)F", cancellable = true, require = 0)
 	private static void modifyReach(Entity entity, CallbackInfoReturnable<Float> cir) {
 		if (entity instanceof LivingEntity livingEntity) {
 			AttributeInstance instance = PlatformUtils.getReachAttrib(livingEntity);

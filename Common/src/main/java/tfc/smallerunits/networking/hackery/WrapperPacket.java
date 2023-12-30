@@ -5,11 +5,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.ConnectionProtocol;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.PacketEncoder;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
@@ -27,13 +27,9 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.function.BiFunction;
-
-import static net.minecraft.network.Connection.ATTRIBUTE_PROTOCOL;
 
 public class WrapperPacket extends tfc.smallerunits.plat.net.Packet {
 	private static final Unsafe theUnsafe;
@@ -129,6 +125,11 @@ public class WrapperPacket extends tfc.smallerunits.plat.net.Packet {
 		ctx.setPacketHandled(true);
 		// TODO: I don't know why this happens
 		if (wrapped == null) return;
+		
+		if (wrapped instanceof ServerboundMovePlayerPacket) {
+			Loggers.SU_LOGGER.warn("Move packet received in a wrapper packet on server...");
+			return;
+		}
 		
 		Player player = ctx.getSender();
 		

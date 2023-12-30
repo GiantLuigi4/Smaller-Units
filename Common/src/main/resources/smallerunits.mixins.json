@@ -68,6 +68,7 @@
     "data.regions.ClientLevelMixin",
     "data.regions.LevelMixin",
     "debug.RenderWorldLast",
+    "egg.Bed",
     "quality.BlockEntityRenderDispatcherMixin",
     "quality.BlockEntityRendererMixin",
     "quality.CameraMixin",

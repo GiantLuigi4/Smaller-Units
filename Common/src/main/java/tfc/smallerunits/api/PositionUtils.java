@@ -177,4 +177,24 @@ public class PositionUtils {
 				(zo) + rPos.getZ() + (z0 + 0.5) / (double) tickerWorld.getUPB()
 		);
 	}
+	
+	public static Vec3 getParentVec(Vec3 vec, ITickerLevel tickerWorld) {
+		BlockPos rPos = tickerWorld.getRegion().pos.toBlockPos();
+		double j = vec.x();
+		double k = vec.y();
+		double l = vec.z();
+		int xo = Math1D.getChunkOffset((int) j, tickerWorld.getUPB());
+		int yo = Math1D.getChunkOffset((int) k, tickerWorld.getUPB());
+		int zo = Math1D.getChunkOffset((int) l, tickerWorld.getUPB());
+		
+		double x0 = vec.x - (xo * tickerWorld.getUPB());
+		double y0 = vec.y - (yo * tickerWorld.getUPB());
+		double z0 = vec.z - (zo * tickerWorld.getUPB());
+		
+		return new Vec3(
+				(xo) + rPos.getX() + (x0 + 0.5) / (double) tickerWorld.getUPB(),
+				(yo) + rPos.getY() + (y0 + 0.5) / (double) tickerWorld.getUPB(),
+				(zo) + rPos.getZ() + (z0 + 0.5) / (double) tickerWorld.getUPB()
+		);
+	}
 }

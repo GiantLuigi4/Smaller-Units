@@ -66,6 +66,7 @@ import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.plat.util.PlatformUtils;
+import tfc.smallerunits.plat.util.PlatformUtilsClient;
 import tfc.smallerunits.simulation.block.ParentLookup;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerChunkCache;
@@ -75,7 +76,6 @@ import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
-import tfc.smallerunits.plat.util.PlatformUtilsClient;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.selection.MutableAABB;
 import tfc.smallerunits.utils.selection.UnitShape;
@@ -129,36 +129,6 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 	private final ArrayList<Runnable> completeOnTick = new ArrayList<>();
 	// if I do Minecraft.getInstance().getTextureManager(), it messes up particle textures
 	UnitParticleEngine particleEngine = new UnitParticleEngine(this, new TextureManager(Minecraft.getInstance().getResourceManager()));
-
-	@Override
-	public void playSound(@Nullable Player pPlayer, Entity pEntity, SoundEvent pEvent, SoundSource pCategory, float pVolume, float pPitch) {
-		playLocalSound(
-				pEntity.getX(), pEntity.getY(), pEntity.getZ(),
-				pEvent, pCategory, pVolume, pPitch, false
-		);
-	}
-
-	@Override
-	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
-		double scl = 1f / upb;
-		BlockPos pos = getRegion().pos.toBlockPos();
-		pX *= scl;
-		pY *= scl;
-		pZ *= scl;
-		pX += pos.getX();
-		pY += pos.getY();
-		pZ += pos.getZ();
-		double finalPX = pX;
-		double finalPY = pY;
-		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
-		});
-	}
 
 	public AbstractTickerClientLevel(ClientLevel parent, ClientPacketListener p_205505_, ClientLevelData p_205506_, ResourceKey<Level> p_205507_, Holder<DimensionType> p_205508_, int p_205509_, int p_205510_, Supplier<ProfilerFiller> p_205511_, LevelRenderer p_205512_, boolean p_205513_, long p_205514_, int upb, Region region) {
 		super(p_205505_, p_205506_, p_205507_, p_205508_, p_205509_, p_205510_, p_205511_, p_205512_, p_205513_, p_205514_);
@@ -1078,32 +1048,36 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 	public boolean chunkExists(SectionPos pos) {
 		return false;
 	}
-
+	
 	@Override
-	public void playSeededSound(@Nullable Player p_233621_, double p_233622_, double p_233623_, double p_233624_, SoundEvent p_233625_, SoundSource p_233626_, float p_233627_, float p_233628_, long p_233629_) {
-//		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_233622_, p_233623_, p_233624_, p_233625_, p_233626_, p_233627_, p_233628_);
-//		if (event.isCanceled() || event.getSound() == null) return;
-//		p_233625_ = event.getSound();
-//		p_233626_ = event.getSource();
-//		p_233627_ = event.getNewVolume();
-//		p_233628_ = event.getNewPitch();
-//		if (p_233621_ == Minecraft.getInstance().player) {
-//			this.playLocalSound(
-//					p_233622_, p_233623_, p_233624_,
-//					p_233625_, p_233626_, p_233627_,
-//					p_233628_, false
-//			);
-//		}
-		super.playSeededSound(p_233621_, p_233622_, p_233623_, p_233624_, p_233625_, p_233626_, p_233627_, p_233628_, p_233629_);
-	}
-
-	@Override
-	public void playSeededSound(@Nullable Player p_233631_, Entity p_233632_, SoundEvent p_233633_, SoundSource p_233634_, float p_233635_, float p_233636_, long p_233637_) {
-		super.playSeededSound(p_233631_, p_233632_, p_233633_, p_233634_, p_233635_, p_233636_, p_233637_);
-	}
-
-	@Override
-	public void playLocalSound(BlockPos p_104678_, SoundEvent p_104679_, SoundSource p_104680_, float p_104681_, float p_104682_, boolean p_104683_) {
-		super.playLocalSound(p_104678_, p_104679_, p_104680_, p_104681_, p_104682_, p_104683_);
+	public void playSound(
+			double pX, double pY, double pZ,
+			SoundEvent pSound, SoundSource pCategory,
+			float pVolume, float pPitch,
+			boolean pDistanceDelay, long p_233611_
+	) {
+		double scl = 1f / upb;
+		BlockPos pos = getRegion().pos.toBlockPos();
+		pX *= scl;
+		pY *= scl;
+		pZ *= scl;
+		pX += pos.getX();
+		pY += pos.getY();
+		pZ += pos.getZ();
+		double finalPX = pX;
+		double finalPY = pY;
+		double finalPZ = pZ;
+		if (ResizingUtils.isResizingModPresent())
+			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+		if (scl > 1) scl = 1 / scl;
+		double finalScl = scl;
+		completeOnTick.add(() -> {
+			parent.get().playSound(
+					finalPX, finalPY, finalPZ,
+					pSound, pCategory,
+					(float) (pVolume * finalScl), pPitch,
+					pDistanceDelay, p_233611_
+			);
+		});
 	}
 }
