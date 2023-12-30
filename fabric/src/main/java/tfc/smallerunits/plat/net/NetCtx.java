@@ -1,7 +1,10 @@
 package tfc.smallerunits.plat.net;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.PacketListener;
 import net.minecraft.world.entity.player.Player;
+import tfc.smallerunits.data.access.PacketListenerAccessor;
+import tfc.smallerunits.logging.Loggers;
 import tfc.smallerunits.plat.util.PlatformUtils;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
@@ -39,26 +42,16 @@ public class NetCtx {
 		return direction;
 	}
 	
-	static final ArrayList<Runnable> enqueued = new ArrayList<>();
-	
 	public void enqueueWork(Runnable r) {
-		synchronized (enqueued) {
-			enqueued.add(r);
-		}
-	}
-	
-	public static void tick() {
-		if (!PlatformUtils.isClient() || IHateTheDistCleaner.getConnection() != null || IHateTheDistCleaner.getClientLevel() != null) {
-			if (IHateTheDistCleaner.getClientLevel() != null) {
-				if (!enqueued.isEmpty()) {
-					synchronized (enqueued) {
-						for (Runnable runnable : enqueued)
-							runnable.run();
-					}
-				}
-				enqueued.clear();
+		if (PlatformUtils.isClient() && (sender == null || sender.getLevel().isClientSide)) {
+			Minecraft.getInstance().tell(r);
+		} else {
+			if (sender != null) {
+				sender.getLevel().getServer().execute(r);
+			} else {
+				r.run(); // whar
+				Loggers.SU_LOGGER.warn("A null sender on server???");
 			}
-		} else if (IHateTheDistCleaner.getPlayer() == null)
-			enqueued.clear();
+		}
 	}
 }

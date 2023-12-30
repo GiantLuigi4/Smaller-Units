@@ -110,8 +110,6 @@ public abstract class SmallerUnits extends AbstractMod {
 		}
 
 		registerTick(TickType.SERVER, Phase.END, SmallerUnits::onTick);
-		if (PlatformUtils.isFabric())
-			registerTick(TickType.ALL, Phase.START, NetCtx::tick);
 	}
 	
 	private static final ArrayDeque<Runnable> enqueued = new ArrayDeque<>();

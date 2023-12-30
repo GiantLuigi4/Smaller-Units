@@ -45,24 +45,7 @@ public class NetCtx {
 		return direction;
 	}
 	
-	static final ArrayList<Runnable> enqueued = new ArrayList<>();
-	
 	public void enqueueWork(Runnable r) {
 		context.enqueueWork(r);
-	}
-	
-	public static void tick() {
-		if (!PlatformUtils.isClient() || IHateTheDistCleaner.getConnection() != null || IHateTheDistCleaner.getClientLevel() != null) {
-			if (IHateTheDistCleaner.getClientLevel() != null) {
-				if (!enqueued.isEmpty()) {
-					synchronized (enqueued) {
-						for (Runnable runnable : enqueued)
-							runnable.run();
-					}
-				}
-				enqueued.clear();
-			}
-		} else if (IHateTheDistCleaner.getPlayer() == null)
-			enqueued.clear();
 	}
 }
