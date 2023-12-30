@@ -71,21 +71,4 @@ public class AbstractContainerMenuMixin implements SUScreenAttachments {
 	public NetworkingHacks.LevelDescriptor getDescriptor() {
 		return descriptor;
 	}
-	
-	@Inject(at = @At("HEAD"), method = "stillValid(Lnet/minecraft/world/inventory/ContainerLevelAccess;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/level/block/Block;)Z", cancellable = true)
-	private static void scale(ContainerLevelAccess $$0, Player $$1, Block $$2, CallbackInfoReturnable<Boolean> cir) {
-		if ($$1.getLevel() instanceof ITickerLevel) {
-			AttributeInstance instance = PlatformUtils.getReachAttrib($$1);
-			if (instance == null) return;
-			AttributeModifier modifier = instance.getModifier(PositionalInfo.SU_REACH_UUID);
-			if (modifier == null) return;
-			
-			cir.setReturnValue($$0.evaluate(
-					(var2x, var3) -> !var2x.getBlockState(var3).is($$2)
-							? false
-							: $$1.distanceToSqr((double)var3.getX() + 0.5, (double)var3.getY() + 0.5, (double)var3.getZ() + 0.5) <= (64.0 * modifier.getAmount()),
-					true
-			));
-		}
-	}
 }

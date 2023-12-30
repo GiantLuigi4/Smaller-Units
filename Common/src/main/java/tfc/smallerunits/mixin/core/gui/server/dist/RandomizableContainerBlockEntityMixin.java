@@ -1,4 +1,4 @@
-package tfc.smallerunits.mixin.core.gui.server;
+package tfc.smallerunits.mixin.core.gui.server.dist;
 
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
