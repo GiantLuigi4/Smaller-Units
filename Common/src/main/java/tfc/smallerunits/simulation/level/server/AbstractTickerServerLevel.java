@@ -580,8 +580,8 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 	
 	public void loadTicks(CompoundTag tag) {
 		if (tag.isEmpty()) return;
+		
 		Registry<Block> blockRegistry = parent.get().registryAccess().registryOrThrow(Registry.BLOCK_REGISTRY);
-		Registry<Fluid> fluidRegistry = parent.get().registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
 		CompoundTag blocks = tag.getCompound("blocks");
 		for (String allKey : blocks.getAllKeys()) {
 			CompoundTag tick = blocks.getCompound(allKey);
@@ -599,6 +599,8 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 					time, TickPriority.values()[priority], sub
 			));
 		}
+		
+		Registry<Fluid> fluidRegistry = parent.get().registryAccess().registryOrThrow(Registry.FLUID_REGISTRY);
 		CompoundTag fluids = tag.getCompound("fluids");
 		for (String allKey : fluids.getAllKeys()) {
 			CompoundTag tick = fluids.getCompound(allKey);
@@ -1187,13 +1189,14 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 		}
 	}
 	
-	
 	// compat: lithium
 	// reason: un-inline
 	public int getSectionYFromSectionIndex(int p_151569_) {
 		return p_151569_ + this.getMinSection();
 	}
 	
+	// compat: lithium
+	// reason: un-inline
 	@Override
 	public boolean isOutsideBuildHeight(int pY) {
 		Level parent = this.parent.get();

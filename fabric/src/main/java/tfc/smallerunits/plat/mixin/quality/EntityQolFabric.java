@@ -37,7 +37,7 @@ public abstract class EntityQolFabric {
 		boolean wasInFluid = cir.getReturnValueZ();
 		final boolean[] inFluid = {wasInFluid};
 		SU$runPerWorld((level, regionPos) -> {
-			inFluid[0] = inFluid[0] || PlatformQol.runSUFluidCheck((Entity) (Object) this, fluids, something, level, regionPos, fluidHeight);
+			inFluid[0] = PlatformQol.runSUFluidCheck((Entity) (Object) this, fluids, something, level, regionPos, fluidHeight) || inFluid[0];
 		});
 		if (inFluid[0] && !wasInFluid)
 			cir.setReturnValue(true);

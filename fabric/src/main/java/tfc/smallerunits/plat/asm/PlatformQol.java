@@ -20,8 +20,6 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
-import java.util.Map;
-
 public class PlatformQol {
 	public static boolean runSUFluidCheck(Entity entity, TagKey<Fluid> fluids, double something, Level level, RegionPos regionPos, Object2DoubleMap<TagKey<Fluid>> fluidHeight) {
 		AABB aabb = HitboxScaling.getOffsetAndScaledBox(entity.getBoundingBox().deflate(0.001D), entity.getPosition(0), ((ITickerLevel) level).getUPB(), regionPos);
@@ -35,7 +33,7 @@ public class PlatformQol {
 		int minZ = Mth.floor(aabb.minZ);
 		int maxZ = Mth.ceil(aabb.maxZ);
 		boolean flag = entity.isPushedByFluid();
-		Vec3 vec3 = Vec3.ZERO;
+		Vec3 vec3 = new Vec3(0, 0, 0);
 		BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
 		int countIn = 0;
 		double height = 0.0D;
@@ -94,7 +92,9 @@ public class PlatformQol {
 									vec31 = vec31.scale(height / ResizingUtils.getActualSize(entity));
 								}
 								
-								vec3 = vec3.add(vec31);
+								vec3.x += vec31.x;
+								vec3.y += vec31.y;
+								vec3.z += vec31.z;
 								++countIn;
 							}
 						}

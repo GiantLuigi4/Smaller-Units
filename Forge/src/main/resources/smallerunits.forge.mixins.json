@@ -20,6 +20,7 @@
     "core.network.ConnectionMixin",
     "core.network.NetworkContextMixin",
     "data.FastCapabilityChunkMixin",
+    "quality.EntityQolForge",
     "quality.PlayerMixin"
   ],
   "client": [

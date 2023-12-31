@@ -18,6 +18,10 @@ repositories {
         name 'ladysnake'
         url 'https://maven.ladysnake.org/releases'
     }
+    maven {
+        name 'jitpack'
+        url 'https://jitpack.io'
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -37,25 +41,16 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 
-//    Set<String> apiModules = [
-//            "fabric-api-base",
-//            "fabric-lifecycle-events-v1",
-//            "fabric-networking-api-v1"
-//    ]
-//
-//    apiModules.forEach {
-//        modImplementation(fabricApi.module(it, "${fabric_version}"))
-//    }
-
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
 
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.0.2"
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-world:5.0.2"
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-chunk:5.0.2"
     include (modImplementation "com.jamieswhiteshirt:reach-entity-attributes:2.3.0")
-    compileOnly ("curse.maven:pehkui-319596:4823467")
+    modImplementation "curse.maven:pehkui-319596:4641062"
+    modImplementation 'com.github.Virtuoel:KanosConfig:0.4.1'
 
-    modImplementation "maven.modrinth:lithium:mc1.19.2-0.11.1"
+    modCompileOnly "maven.modrinth:lithium:mc1.19.2-0.11.1"
 
     modImplementation "com.jozufozu.flywheel:flywheel-fabric-1.19.2:0.6.9-6"
 

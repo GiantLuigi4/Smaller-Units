@@ -5,7 +5,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.DataLayer;
@@ -126,6 +125,7 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 		int neighbor = PlatformUtils.getLightEmission(state, level, pPos);
 		VoxelShape shape = state.getShape(level, pPos);
 		int block = state.getLightBlock(level, pPos);
+		if (neighbor != 0) block = 0;
 		// TODO: make this be more proper
 		for (Direction value : directions) {
 			BlockPos pos = pPos.relative(value);
@@ -142,11 +142,11 @@ public class SULightEngine extends LayerLightEngine<BlockLightSectionStorage.Blo
 		return Math.max(Math.min(neighbor - block, 15), 0);
 	}
 	
-	protected int getStateAndOpacity(BlockPos pPos, BlockState state, Level level) {
-		BlockState blockstate = level.getBlockState(pPos); // TODO: optimize?
-		boolean flag = blockstate.canOcclude() && blockstate.useShapeForLightOcclusion();
-		return blockstate.getLightBlock(this.chunkSource.getLevel(), this.pos);
-	}
+//	protected int getStateAndOpacity(BlockPos pPos, BlockState state, Level level) {
+//		BlockState blockstate = level.getBlockState(pPos); // TODO: optimize?
+//		boolean flag = blockstate.canOcclude() && blockstate.useShapeForLightOcclusion();
+//		return blockstate.getLightBlock(this.chunkSource.getLevel(), this.pos);
+//	}
 	
 	@Override
 	public int getLightValue(BlockPos pLevelPos) {

@@ -41,7 +41,7 @@
     "optimization.LevelMixin",
     "optimization.ShapesMixin",
     "optimization.VoxelShapeAccessor",
-    "quality.EntityQol",
+    "quality.EntityQolMixin",
     "quality.vr.PistonMixin"
   ],
   "client": [

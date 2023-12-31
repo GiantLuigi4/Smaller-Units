@@ -21,13 +21,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
+import tfc.smallerunits.utils.asm.EntityQol;
 
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 @Mixin(Entity.class)
-public abstract class EntityQol {
+public abstract class EntityQolMixin {
 	@Shadow
 	public Level level;
 	
@@ -101,7 +102,7 @@ public abstract class EntityQol {
 	@Inject(at = @At("RETURN"), method = "updateFluidOnEyes")
 	public void postCheckEyeInFluid(CallbackInfo ci) {
 		SU$runPerWorld((level, regionPos) -> {
-			tfc.smallerunits.utils.asm.EntityQol.runSUFluidEyeCheck((Entity) (Object) this, fluidOnEyes, level, regionPos);
+			EntityQol.runSUFluidEyeCheck((Entity) (Object) this, fluidOnEyes, level, regionPos);
 		});
 	}
 	
@@ -112,7 +113,7 @@ public abstract class EntityQol {
 				boolean[] inWater = new boolean[]{false};
 				SU$runPerWorldInterruptable((level, regionPos) -> {
 					
-					BlockState state = tfc.smallerunits.utils.asm.EntityQol.getSUBlockAtFeet((Entity) (Object) this, level, regionPos);
+					BlockState state = EntityQol.getSUBlockAtFeet((Entity) (Object) this, level, regionPos);
 					if (state.getFluidState().is(FluidTags.WATER))
 						return inWater[0] = true;
 					return false;
@@ -129,7 +130,7 @@ public abstract class EntityQol {
 		if (cir.getReturnValue()) {
 			boolean[] out = new boolean[]{false};
 			SU$runPerWorldInterruptable((level, regionPos) -> {
-				out[0] = tfc.smallerunits.utils.asm.EntityQol.inAnyFluid(pBb, level, regionPos);
+				out[0] = EntityQol.inAnyFluid(pBb, level, regionPos);
 				return out[0];
 			});
 			if (out[0])
