@@ -89,7 +89,6 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 	}
 	
 	@Override
-	// TODO: look into correcting this?
 	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
@@ -102,22 +101,51 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 		double finalPX = pX;
 		double finalPY = pY;
 		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
-			scl *= 1 / ResizingUtils.getSize(pPlayer);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
 		completeOnTick.add(() -> {
 			Level lvl = parent.get();
 			if (lvl == null) return;
 			for (Player player : lvl.players()) {
 				if (player == pPlayer) continue;
 				
-				double fScl = finalScl;
-				fScl *= 1 / ResizingUtils.getSize(player);
-				this.playSeededSoundTo(
-						player, finalPX, finalPY, finalPZ,
+				double fScl = scl;
+				if (ResizingUtils.isResizingModPresent())
+					fScl *= 1 / ResizingUtils.getSize(player);
+				if (fScl > 1) fScl = 1 / fScl;
+				parent.get().playSound(
+						pPlayer,
+						finalPX, finalPY, finalPZ,
 						pSound, pCategory, (float) (pVolume * fScl),
-						pPitch, this.random.nextLong()
+						pPitch
+				);
+			}
+		});
+	}
+	
+	@Override
+	public void playLocalSound(double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch, boolean pDistanceDelay) {
+		double scl = 1f / upb;
+		BlockPos pos = getRegion().pos.toBlockPos();
+		pX *= scl;
+		pY *= scl;
+		pZ *= scl;
+		pX += pos.getX();
+		pY += pos.getY();
+		pZ += pos.getZ();
+		double finalPX = pX;
+		double finalPY = pY;
+		double finalPZ = pZ;
+		completeOnTick.add(() -> {
+			Level lvl = parent.get();
+			if (lvl == null) return;
+			for (Player player : lvl.players()) {
+				double fScl = scl;
+				if (ResizingUtils.isResizingModPresent())
+					fScl *= 1 / ResizingUtils.getSize(player);
+				if (fScl > 1) fScl = 1 / fScl;
+				parent.get().playLocalSound(
+						finalPX, finalPY, finalPZ,
+						pSound, pCategory, (float) (pVolume * fScl),
+						pPitch, pDistanceDelay
 				);
 			}
 		});
@@ -125,7 +153,7 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 	
 	/* forge specific */
 	
-	// TODO: override this instead of the vanilla method?
+	// TODO: modify this?
 	@Override
 	public void playSeededSound(@javax.annotation.Nullable Player p_215027_, Entity p_215028_, SoundEvent p_215029_, SoundSource p_215030_, float p_215031_, float p_215032_, long p_215033_) {
 		net.minecraftforge.event.PlayLevelSoundEvent.AtEntity event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(p_215028_, p_215029_, p_215030_, p_215031_, p_215032_);
@@ -137,29 +165,9 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 		broadcastTo(p_215027_, p_215028_.getX(), p_215028_.getY(), p_215028_.getZ(), (double) p_215029_.getRange(p_215031_), this.dimension(), new ClientboundSoundEntityPacket(p_215029_, p_215030_, p_215028_, p_215031_, p_215032_, p_215033_));
 	}
 	
-	// TODO: override this instead of the vanilla method?
+	// TODO: modify this?
 	@Override
 	public void playSeededSound(@javax.annotation.Nullable Player p_215017_, double p_215018_, double p_215019_, double p_215020_, SoundEvent p_215021_, SoundSource p_215022_, float p_215023_, float p_215024_, long p_215025_) {
-		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_215018_, p_215019_, p_215020_, p_215021_, p_215022_, p_215023_, p_215024_);
-		if (event.isCanceled() || event.getSound() == null) return;
-		p_215021_ = event.getSound();
-		p_215022_ = event.getSource();
-		p_215023_ = event.getNewVolume();
-		p_215024_ = event.getNewPitch();
-		broadcastTo(p_215017_, p_215018_, p_215019_, p_215020_, (double) p_215021_.getRange(p_215023_), this.dimension(), new ClientboundSoundPacket(p_215021_, p_215022_, p_215018_, p_215019_, p_215020_, p_215023_, p_215024_, p_215025_));
-	}
-	
-	public void playSeededSoundTo(@javax.annotation.Nullable Player p_215027_, Entity p_215028_, SoundEvent p_215029_, SoundSource p_215030_, float p_215031_, float p_215032_, long p_215033_) {
-		net.minecraftforge.event.PlayLevelSoundEvent.AtEntity event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(p_215028_, p_215029_, p_215030_, p_215031_, p_215032_);
-		if (event.isCanceled() || event.getSound() == null) return;
-		p_215029_ = event.getSound();
-		p_215030_ = event.getSource();
-		p_215031_ = event.getNewVolume();
-		p_215032_ = event.getNewPitch();
-		broadcastTo(p_215027_, p_215028_.getX(), p_215028_.getY(), p_215028_.getZ(), (double) p_215029_.getRange(p_215031_), this.dimension(), new ClientboundSoundEntityPacket(p_215029_, p_215030_, p_215028_, p_215031_, p_215032_, p_215033_));
-	}
-	
-	public void playSeededSoundTo(@javax.annotation.Nullable Player p_215017_, double p_215018_, double p_215019_, double p_215020_, SoundEvent p_215021_, SoundSource p_215022_, float p_215023_, float p_215024_, long p_215025_) {
 		net.minecraftforge.event.PlayLevelSoundEvent.AtPosition event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtPosition(this, p_215018_, p_215019_, p_215020_, p_215021_, p_215022_, p_215023_, p_215024_);
 		if (event.isCanceled() || event.getSound() == null) return;
 		p_215021_ = event.getSound();

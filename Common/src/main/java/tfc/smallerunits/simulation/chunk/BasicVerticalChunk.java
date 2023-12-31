@@ -164,6 +164,9 @@ public class BasicVerticalChunk extends LevelChunk {
 	@Override
 	public BlockState setBlockState(BlockPos pos, BlockState pState, boolean pIsMoving) {
 		int yO = Math1D.getChunkOffset(pos.getY(), 16);
+		
+		BlockPos wrap = new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+		
 		if (yO != 0 || pos.getX() < 0 || pos.getZ() < 0 || pos.getX() >= (upb * 32) || pos.getZ() >= (upb * 32)) {
 			// TODO: non-grid aligned world stitching?
 
@@ -172,12 +175,12 @@ public class BasicVerticalChunk extends LevelChunk {
 				return Blocks.VOID_AIR.defaultBlockState();
 			}
 			if (chunk.holder != null)
-				chunk.holder.setBlockDirty(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15));
-			return chunk.setBlockState$(new BlockPos(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15), pState, pIsMoving);
+				chunk.holder.setBlockDirty(wrap);
+			return chunk.setBlockState$(wrap, pState, pIsMoving);
 		}
 		if (holder != null)
-			holder.setBlockDirty(pos);
-		return setBlockState$(pos, pState, pIsMoving);
+			holder.setBlockDirty(wrap);
+		return setBlockState$(wrap, pState, pIsMoving);
 	}
 
 	// TODO: optimize?
@@ -302,7 +305,7 @@ public class BasicVerticalChunk extends LevelChunk {
 					}
 
 					if (pState.hasBlockEntity()) {
-						BlockPos realPos = pPos.offset(chunkPos.getWorldPosition());
+						BlockPos realPos = new BlockPos(j, k, l).offset(chunkPos.getWorldPosition());
 						BlockEntity blockentity = this.getBlockEntity(new BlockPos(pPos.getX(), pPos.getY() & 15, pPos.getZ()), LevelChunk.EntityCreationType.CHECK);
 						if (blockentity == null) {
 							blockentity = ((EntityBlock) block).newBlockEntity(realPos, pState);
@@ -685,7 +688,7 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (yO >= upb * 32 || yO < 0) {
 			$$0.worldPosition = new BlockPos(
 					$$0.getBlockPos().getX(),
-					yPos * 16,
+					yPos * 16 + $$0.getBlockPos().getY() & 15,
 					$$0.getBlockPos().getZ()
 			);
 			verticalLookup.applyAbs(yO).verticalLookup.applyAbs(0).addAndRegisterBlockEntity(

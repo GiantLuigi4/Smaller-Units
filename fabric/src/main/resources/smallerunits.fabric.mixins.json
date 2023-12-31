@@ -18,9 +18,10 @@
   ],
   "client": [
     "compat.fabric.RenderWorldMixin",
-    "compat.optimization.flywheel.TickerClientLevelMixin",
-    "compat.optimization.flywheel.ModCompatMixin",
     "compat.optimization.flywheel.LevelRendererMixin",
+    "compat.optimization.flywheel.ModCompatMixin",
+    "compat.optimization.flywheel.TickerClientLevelMixin",
+    "core.LevelRendererMixinFabric",
     "core.gui.client.GameRendererMixin",
     "core.gui.client.KeyboardHandlerMixin",
     "core.gui.client.MinecraftMixin",

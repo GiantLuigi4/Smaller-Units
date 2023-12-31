@@ -12,15 +12,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkGenerator;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.storage.ServerLevelData;
 import org.jetbrains.annotations.Nullable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.plat.CapabilityWrapper;
-import tfc.smallerunits.simulation.level.server.AbstractTickerServerLevel;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
 import java.util.List;
@@ -45,7 +42,6 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 	}
 	
 	@Override
-	// TODO: look into correcting this?
 	public void playSound(@Nullable Player pPlayer, double pX, double pY, double pZ, SoundEvent pSound, SoundSource pCategory, float pVolume, float pPitch) {
 		double scl = 1f / upb;
 		BlockPos pos = getRegion().pos.toBlockPos();
@@ -58,22 +54,20 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 		double finalPX = pX;
 		double finalPY = pY;
 		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
-			scl *= 1 / ResizingUtils.getSize(pPlayer);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
 		completeOnTick.add(() -> {
 			Level lvl = parent.get();
 			if (lvl == null) return;
 			for (Player player : lvl.players()) {
 				if (player == pPlayer) continue;
 				
-				double fScl = finalScl;
-				fScl *= 1 / ResizingUtils.getSize(player);
+				double fScl = scl;
+				if (ResizingUtils.isResizingModPresent())
+					fScl *= 1 / ResizingUtils.getSize(player);
+				if (fScl > 1) fScl = 1 / fScl;
 				parent.get().playSound(
 						pPlayer,
 						finalPX, finalPY, finalPZ,
-						pSound, pCategory, (float) (pVolume * finalScl),
+						pSound, pCategory, (float) (pVolume * fScl),
 						pPitch
 				);
 			}
@@ -93,12 +87,32 @@ public class TickerServerLevel extends AbstractTickerServerLevel {
 		double finalPX = pX;
 		double finalPY = pY;
 		double finalPZ = pZ;
-//		if (ResizingUtils.isResizingModPresent() && pPlayer != null) // TODO: I probably need to manually send sounds to each player
-//			scl *= 1 / ResizingUtils.getSize(pPlayer);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
 		completeOnTick.add(() -> {
-			parent.get().playLocalSound(finalPX, finalPY, finalPZ, pSound, pCategory, (float) (pVolume * finalScl), pPitch, pDistanceDelay);
+			Level lvl = parent.get();
+			if (lvl == null) return;
+			for (Player player : lvl.players()) {
+				double fScl = scl;
+				if (ResizingUtils.isResizingModPresent())
+					fScl *= 1 / ResizingUtils.getSize(player);
+				if (fScl > 1) fScl = 1 / fScl;
+				parent.get().playLocalSound(
+						finalPX, finalPY, finalPZ,
+						pSound, pCategory, (float) (pVolume * fScl),
+						pPitch, pDistanceDelay
+				);
+			}
 		});
+	}
+	
+	// TODO: modify this?
+	@Override
+	public void playSeededSound(@javax.annotation.Nullable Player p_215027_, Entity p_215028_, SoundEvent p_215029_, SoundSource p_215030_, float p_215031_, float p_215032_, long p_215033_) {
+		broadcastTo(p_215027_, p_215028_.getX(), p_215028_.getY(), p_215028_.getZ(), (double) p_215029_.getRange(p_215031_), this.dimension(), new ClientboundSoundEntityPacket(p_215029_, p_215030_, p_215028_, p_215031_, p_215032_, p_215033_));
+	}
+	
+	// TODO: modify this?
+	@Override
+	public void playSeededSound(@javax.annotation.Nullable Player p_215017_, double p_215018_, double p_215019_, double p_215020_, SoundEvent p_215021_, SoundSource p_215022_, float p_215023_, float p_215024_, long p_215025_) {
+		broadcastTo(p_215017_, p_215018_, p_215019_, p_215020_, (double) p_215021_.getRange(p_215023_), this.dimension(), new ClientboundSoundPacket(p_215021_, p_215022_, p_215018_, p_215019_, p_215020_, p_215023_, p_215024_, p_215025_));
 	}
 }
