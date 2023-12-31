@@ -6,7 +6,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -45,7 +44,6 @@ import tfc.smallerunits.utils.threading.ThreadLocals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Random;
 
 import static tfc.smallerunits.simulation.WorldStitcher.chunkRelative;
@@ -459,10 +457,6 @@ public class BasicVerticalChunk extends LevelChunk {
 		setBlockFast$(allowSave, new BlockPos(pos), state, chunkCache);
 	}
 
-	ArrayList<ServerPlayer> oldPlayersTracking = new ArrayList<>();
-
-	ArrayList<ServerPlayer> playersTracking = new ArrayList<>();
-
 	public void randomTick() {
 		if (section.hasOnlyAir())
 			return;
@@ -486,24 +480,6 @@ public class BasicVerticalChunk extends LevelChunk {
 
 	public BasicVerticalChunk getSubChunk(int cy) {
 		return verticalLookup.apply(cy);
-	}
-
-	public boolean isTrackedBy(ServerPlayer player) {
-		return oldPlayersTracking.contains(player);
-	}
-
-	public void setTracked(ServerPlayer player) {
-		playersTracking.add(player);
-		if (oldPlayersTracking.contains(player)) oldPlayersTracking.remove(player);
-	}
-
-	public void swapTracks() {
-		oldPlayersTracking = playersTracking;
-		playersTracking = new ArrayList<>();
-	}
-
-	public List<ServerPlayer> getPlayersTracking() {
-		return oldPlayersTracking;
 	}
 
 	@Override
@@ -688,7 +664,8 @@ public class BasicVerticalChunk extends LevelChunk {
 		if (yO >= upb * 32 || yO < 0) {
 			$$0.worldPosition = new BlockPos(
 					$$0.getBlockPos().getX(),
-					yPos * 16 + $$0.getBlockPos().getY() & 15,
+//					yPos * 16 + $$0.getBlockPos().getY() & 15,
+					verticalLookup.applyAbs(yO).yPos * 16 + ($$0.getBlockPos().getY() & 15),
 					$$0.getBlockPos().getZ()
 			);
 			verticalLookup.applyAbs(yO).verticalLookup.applyAbs(0).addAndRegisterBlockEntity(
