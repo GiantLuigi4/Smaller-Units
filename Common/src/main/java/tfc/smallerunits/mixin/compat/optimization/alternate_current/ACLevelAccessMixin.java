@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 @Mixin(value = LevelHelper.class, remap = false)
@@ -39,10 +40,9 @@ public class ACLevelAccessMixin {
 			return;
 		}
 		
-		LevelChunkSection section = chunk.getSection(index);
-		//noinspection ConstantConditions
+		LevelChunkSection section = ((BasicVerticalChunk) chunk).getSectionNullable(index);
 		if (section == null) {
-			cir.setReturnValue(false); // the code definitely can get here
+			cir.setReturnValue(false);
 			return;
 		}
 		

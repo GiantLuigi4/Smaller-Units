@@ -7,7 +7,6 @@ import com.abdelaziz.canary.common.util.Pos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.CollisionGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -121,7 +120,7 @@ public abstract class CollisionSweeperMixin {
             while (true) {
                 if (this.cachedChunk != null && this.chunkYIndex < Pos.SectionYIndex.getMaxYSectionIndexInclusive(this.level) && this.chunkYIndex < Pos.SectionYIndex.fromBlockCoord(this.level, expandMax(this.maxY))) {
                     ++this.chunkYIndex;
-                    this.cachedChunkSection = this.cachedChunk.getSection(this.chunkYIndex);
+                    this.cachedChunkSection = ((BasicVerticalChunk) this.cachedChunk).getSectionNullable(this.chunkYIndex);
                 } else {
                     this.chunkYIndex = Mth.clamp(Pos.SectionYIndex.fromBlockCoord(this.level, expandMin(this.minY)), Pos.SectionYIndex.getMinYSectionIndex(this.level), Pos.SectionYIndex.getMaxYSectionIndexInclusive(this.level));
                     if (this.chunkX < Pos.ChunkCoord.fromBlockCoord(expandMax(this.maxX))) {
@@ -140,7 +139,7 @@ public abstract class CollisionSweeperMixin {
                     if (view instanceof ChunkAccess) {
                         this.cachedChunk = (ChunkAccess) this.level.getChunkForCollisions(this.chunkX, this.chunkZ);
                         if (this.cachedChunk != null) {
-                            this.cachedChunkSection = this.cachedChunk.getSection(this.chunkYIndex);
+                            this.cachedChunkSection = ((BasicVerticalChunk) this.cachedChunk).getSectionNullable(this.chunkYIndex);
                         }
                     }
                 }

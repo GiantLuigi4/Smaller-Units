@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
 @Mixin(value = LithiumEntityCollisions.class, remap = false)
@@ -30,8 +31,11 @@ public class LithiumEntityCollisionsMixin {
             } else {
                 ChunkAccess chunk = (ChunkAccess) world.getChunkForCollisions(Pos.ChunkCoord.fromBlockCoord(x), Pos.ChunkCoord.fromBlockCoord(z));
                 if (chunk != null) {
-                    LevelChunkSection cachedChunkSection = chunk.getSection(Pos.SectionYIndex.fromBlockCoord(world, y));
-                    cir.setReturnValue(cachedChunkSection.getBlockState(x & 15, y & 15, z & 15).getCollisionShape(world, new BlockPos(x, y, z), entity == null ? CollisionContext.empty() : CollisionContext.of(entity)));
+                    LevelChunkSection cachedChunkSection = ((BasicVerticalChunk) chunk).getSectionNullable(Pos.SectionYIndex.fromBlockCoord(world, y));
+                    if (cachedChunkSection == null)
+                        cir.setReturnValue(null);
+                    else
+                        cir.setReturnValue(cachedChunkSection.getBlockState(x & 15, y & 15, z & 15).getCollisionShape(world, new BlockPos(x, y, z), entity == null ? CollisionContext.empty() : CollisionContext.of(entity)));
                 } else {
                     cir.setReturnValue(null);
                 }

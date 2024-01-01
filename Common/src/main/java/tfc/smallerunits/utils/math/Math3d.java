@@ -1,6 +1,7 @@
 package tfc.smallerunits.utils.math;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
@@ -41,7 +42,7 @@ public class Math3d {
 			int cx = SectionPos.blockToSectionCoord(blockX);
 			int cz = SectionPos.blockToSectionCoord(blockZ);
 			LevelChunk chunk = (LevelChunk) level.getChunk(cx, cz, ChunkStatus.FULL, false);
-
+			
 			T res = null;
 			if (chunk != null && !chunk.isEmpty()) {
 				res = fullMapper.apply(
@@ -82,7 +83,7 @@ public class Math3d {
 							d14 += d11;
 							
 							int s = SectionPos.blockToSectionCoord(blockZ);
-							if (s != cx) chunk = (LevelChunk) level.getChunk(cx, cz = s, ChunkStatus.FULL, false);
+							if (s != cz) chunk = (LevelChunk) level.getChunk(cx, cz = s, ChunkStatus.FULL, false);
 						}
 					} else if (d13 < d14) {
 						blockY += yStep;
@@ -92,7 +93,7 @@ public class Math3d {
 						d14 += d11;
 						
 						int s = SectionPos.blockToSectionCoord(blockZ);
-						if (s != cx) chunk = (LevelChunk) level.getChunk(cx, cz = s, ChunkStatus.FULL, false);
+						if (s != cz) chunk = (LevelChunk) level.getChunk(cx, cz = s, ChunkStatus.FULL, false);
 					}
 					
 					mutableblockpos.set(blockX, blockY, blockZ);
@@ -123,5 +124,22 @@ public class Math3d {
 				return fallback.get();
 			}
 		}
+	}
+	
+	public static Direction getUp(Direction src) {
+		return switch (src) {
+			case NORTH, SOUTH, EAST, WEST -> Direction.UP;
+			case UP, DOWN -> Direction.NORTH;
+		};
+	}
+	
+	public static Direction getRight(Direction src) {
+		return switch (src) {
+			case NORTH -> Direction.EAST;
+			case EAST -> Direction.SOUTH;
+			case SOUTH -> Direction.EAST;
+			case WEST -> Direction.SOUTH;
+			case UP, DOWN -> Direction.EAST;
+		};
 	}
 }

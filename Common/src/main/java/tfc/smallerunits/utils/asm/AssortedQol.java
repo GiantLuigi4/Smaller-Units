@@ -93,7 +93,7 @@ public class AssortedQol {
 			ISUCapability capability = SUCapabilityManager.getCapability(level, new ChunkPos(result.getBlockPos()));
 			UnitSpace space = capability.getUnit(result.getBlockPos());
 			
-			Vec3 look = block.getLocation().subtract(Minecraft.getInstance().cameraEntity.getViewVector(0)).normalize().scale(-1);
+			Vec3 look = Minecraft.getInstance().cameraEntity.getViewVector(0);
 			
 			BlockPos blockpos;
 			
@@ -107,20 +107,20 @@ public class AssortedQol {
 					end = block.getLocation().add(look.scale(1d / space.unitsPerBlock));
 				} else {
 					start = Minecraft.getInstance().cameraEntity.getEyePosition(0);
-					end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(20)); // TODO: figure out what exactly this should be
+					end = Minecraft.getInstance().cameraEntity.getEyePosition(0).add(look.scale(20));
 				}
 				
 				start = new Vec3(
-						HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), start.x),
-						HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), start.y),
-						HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), start.z)
+						(start.x - (space.regionPos.x * 512)) * space.unitsPerBlock,
+						(start.y - (space.regionPos.y * 512)) * space.unitsPerBlock,
+						(start.z - (space.regionPos.z * 512)) * space.unitsPerBlock
 				);
 				end = new Vec3(
-						HitboxScaling.scaleX((ITickerLevel) space.getMyLevel(), end.x),
-						HitboxScaling.scaleY((ITickerLevel) space.getMyLevel(), end.y),
-						HitboxScaling.scaleZ((ITickerLevel) space.getMyLevel(), end.z)
+						(end.x - (space.regionPos.x * 512)) * space.unitsPerBlock,
+						(end.y - (space.regionPos.y * 512)) * space.unitsPerBlock,
+						(end.z - (space.regionPos.z * 512)) * space.unitsPerBlock
 				);
-				BlockHitResult result1 = space.getMyLevel().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, Minecraft.getInstance().player));
+				BlockHitResult result1 = space.getMyLevel().clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, Minecraft.getInstance().cameraEntity));
 				blockpos = result1.getBlockPos();
 			}
 			BlockState state = space.getMyLevel().getBlockState(blockpos);

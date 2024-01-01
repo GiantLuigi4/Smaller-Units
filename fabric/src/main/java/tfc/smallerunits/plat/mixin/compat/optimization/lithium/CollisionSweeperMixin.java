@@ -122,7 +122,7 @@ public abstract class CollisionSweeperMixin {
 			while (true) {
 				if (this.cachedChunk != null && this.chunkYIndex < Pos.SectionYIndex.getMaxYSectionIndexInclusive(this.world) && this.chunkYIndex < Pos.SectionYIndex.fromBlockCoord(this.world, expandMax(this.maxY))) {
 					++this.chunkYIndex;
-					this.cachedChunkSection = this.cachedChunk.getSection(this.chunkYIndex);
+					this.cachedChunkSection = ((BasicVerticalChunk) this.cachedChunk).getSectionNullable(this.chunkYIndex);
 				} else {
 					this.chunkYIndex = Mth.clamp(Pos.SectionYIndex.fromBlockCoord(this.world, expandMin(this.minY)), Pos.SectionYIndex.getMinYSectionIndex(this.world), Pos.SectionYIndex.getMaxYSectionIndexInclusive(this.world));
 					if (this.chunkX < Pos.ChunkCoord.fromBlockCoord(expandMax(this.maxX))) {
@@ -141,7 +141,7 @@ public abstract class CollisionSweeperMixin {
 					if (view instanceof ChunkAccess) {
 						this.cachedChunk = (ChunkAccess) this.world.getChunkForCollisions(this.chunkX, this.chunkZ);
 						if (this.cachedChunk != null) {
-							this.cachedChunkSection = this.cachedChunk.getSection(this.chunkYIndex);
+							this.cachedChunkSection = ((BasicVerticalChunk) this.cachedChunk).getSectionNullable(this.chunkYIndex);
 						}
 					}
 				}

@@ -311,7 +311,6 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 	}
 	
 	public ParentLookup lookup;
-	public ParentLookup lookupTemp;
 	ArrayList<Entity> entities = new ArrayList<>();
 	
 	@Override
@@ -757,12 +756,19 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 				pContext.getTo(),
 				this,
 				(pos, state) -> {
+					if (state.isAir())
+						return null;
+					
 					VoxelShape sp = switch (pContext.block) {
 						case VISUAL -> state.getVisualShape(this, pos, pContext.collisionContext);
 						case COLLIDER -> state.getCollisionShape(this, pos, pContext.collisionContext);
 						case OUTLINE -> state.getShape(this, pos, pContext.collisionContext);
 						default -> state.getCollisionShape(this, pos, pContext.collisionContext); // TODO
 					};
+					
+					if (sp.isEmpty())
+						return null;
+					
 					BlockHitResult result = runTrace(sp, pContext, pos);
 					if (result != null && result.getType() != HitResult.Type.MISS) return result;
 					if (pContext.fluid.canPick(state.getFluidState()))
@@ -1081,7 +1087,7 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 	// compat: lithium
 	// reason: un-inline
 	public int getSectionYFromSectionIndex(int p_151569_) {
-		return p_151569_ + this.getMinSection();
+		return p_151569_;
 	}
 	
 	// compat: lithium

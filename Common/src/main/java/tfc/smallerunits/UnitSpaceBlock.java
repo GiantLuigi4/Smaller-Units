@@ -36,6 +36,7 @@ import tfc.smallerunits.plat.itf.IContextAwareScaffold;
 import tfc.smallerunits.plat.net.PacketTarget;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.PositionalInfo;
+import tfc.smallerunits.utils.math.Math3d;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 import tfc.smallerunits.utils.selection.UnitShape;
 
@@ -224,11 +225,7 @@ public class UnitSpaceBlock extends Block implements IContextAwareLadder {
 					int pZ = SectionPos.blockToSectionCoord(z);
 					BasicVerticalChunk chunk = (BasicVerticalChunk) smallWorld.getChunk(pX, pZ, ChunkStatus.FULL, false);
 					if (chunk == null) {
-						if (z == (z >> 4) << 4) {
-							z += 15;
-						} else {
-							z = ((z >> 4) << 4) + 15;
-						}
+						z = (z | 0xF + 1);
 						continue;
 					}
 					
@@ -236,11 +233,7 @@ public class UnitSpaceBlock extends Block implements IContextAwareLadder {
 						int sectionIndex = chunk.getSectionIndex(y);
 						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
 						if (section == null || section.hasOnlyAir()) {
-							if (y == (y >> 4) << 4) {
-								y += 15;
-							} else {
-								y = ((y >> 4) << 4) + 15;
-							}
+							y = (y | 0xF + 1);
 							continue;
 						}
 						
@@ -282,23 +275,6 @@ public class UnitSpaceBlock extends Block implements IContextAwareLadder {
 		return false;
 	}
 	
-	protected Direction getUp(Direction src) {
-		return switch (src) {
-			case NORTH, SOUTH, EAST, WEST -> Direction.UP;
-			case UP, DOWN -> Direction.NORTH;
-		};
-	}
-	
-	protected Direction getRight(Direction src) {
-		return switch (src) {
-			case NORTH -> Direction.EAST;
-			case EAST -> Direction.SOUTH;
-			case SOUTH -> Direction.EAST;
-			case WEST -> Direction.SOUTH;
-			case UP, DOWN -> Direction.EAST;
-		};
-	}
-	
 	@Override
 	public void neighborChanged(BlockState pState, Level pLevel, BlockPos pPos, Block pBlock, BlockPos pFromPos, boolean pIsMoving) {
 		ChunkAccess access = ((Level) pLevel).getChunk(pPos);
@@ -322,8 +298,8 @@ public class UnitSpaceBlock extends Block implements IContextAwareLadder {
 		}
 		Direction dir = Direction.fromNormal(nx, ny, nz);
 		
-		Direction right = getRight(dir);
-		Direction up = getUp(dir);
+		Direction right = Math3d.getRight(dir);
+		Direction up = Math3d.getUp(dir);
 		
 		BlockPos origin = space.getOffsetPos(new BlockPos(
 				Math.max(0, dir.getStepX()) * (space.unitsPerBlock - 1),
@@ -331,7 +307,7 @@ public class UnitSpaceBlock extends Block implements IContextAwareLadder {
 				Math.max(0, dir.getStepZ()) * (space.unitsPerBlock - 1)
 		));
 		BlockPos.MutableBlockPos mp = new BlockPos.MutableBlockPos();
-		LevelChunk current = null;
+		ChunkAccess current = null;
 		SectionPos sp = null;
 		for (int x = 0; x < space.unitsPerBlock; x++) {
 			for (int y = 0; y < space.unitsPerBlock; y++) {
@@ -343,17 +319,22 @@ public class UnitSpaceBlock extends Block implements IContextAwareLadder {
 				
 				if (current == null) {
 					sp = SectionPos.of(mp);
-					current = space.myLevel.getChunk(sp.getX(), sp.getZ());
+					current = space.myLevel.getChunk(sp.getX(), sp.getZ(), ChunkStatus.FULL, false);
 				} else if (
 						current.getPos().x != SectionPos.blockToSectionCoord(mp.getX()) ||
 								current.getPos().z != SectionPos.blockToSectionCoord(mp.getZ())
 				) {
 					sp = SectionPos.of(mp);
-					current = space.myLevel.getChunk(sp.getX(), sp.getZ());
+					current = space.myLevel.getChunk(sp.getX(), sp.getZ(), ChunkStatus.FULL, false);
 				}
 				
+				if (current == null) continue;
+				
 				// TODO: optimize, wheeze
-				BlockState state = current.getSection(current.getSectionIndex(mp.getY())).getBlockState(
+				LevelChunkSection section = ((BasicVerticalChunk) current).getSectionNullable(current.getSectionIndex(mp.getY()));
+				if (section == null) continue;
+				
+				BlockState state = section.getBlockState(
 						mp.getX() & 15,
 						mp.getY() & 15,
 						mp.getZ() & 15
