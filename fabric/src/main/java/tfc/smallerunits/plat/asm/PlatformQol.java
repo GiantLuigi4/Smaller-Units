@@ -58,11 +58,7 @@ public class PlatformQol {
 				int pZ = SectionPos.blockToSectionCoord(z);
 				BasicVerticalChunk chunk = (BasicVerticalChunk) level.getChunk(pX, pZ, ChunkStatus.FULL, false);
 				if (chunk == null) {
-					if (z == (z >> 4) << 4) {
-						z += 15;
-					} else {
-						z = ((z >> 4) << 4) + 15;
-					}
+					z = (z | 0xF + 1);
 					continue;
 				}
 				
@@ -70,11 +66,7 @@ public class PlatformQol {
 					int sectionIndex = chunk.getSectionIndex(y);
 					LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
 					if (section == null || section.hasOnlyAir()) {
-						if (y == (y >> 4) << 4) {
-							y += 15;
-						} else {
-							y = ((y >> 4) << 4) + 15;
-						}
+						y = (y | 0xF + 1);
 						continue;
 					}
 					

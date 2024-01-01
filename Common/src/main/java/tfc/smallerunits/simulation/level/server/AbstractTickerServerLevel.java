@@ -77,8 +77,7 @@ import tfc.smallerunits.utils.AddOnlyList;
 import tfc.smallerunits.utils.PositionalInfo;
 import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.Math1D;
-import tfc.smallerunits.utils.selection.MutableAABB;
-import tfc.smallerunits.utils.selection.UnitShape;
+import tfc.smallerunits.utils.math.Math3d;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 import tfc.smallerunits.utils.threading.ThreadLocals;
@@ -87,7 +86,9 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.*;
-import java.util.function.*;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 @ApiStatus.Internal
 @SuppressWarnings("removal")
@@ -113,7 +114,7 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 				throw new RuntimeException("A null interacting entity has been added?");
 			} else return;
 		}
-
+		
 		interactingEntities.add(e);
 	}
 	
@@ -451,18 +452,18 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 				}
 				return null;
 			}
-
+			
 			public Entity get(UUID pUuid) {
 				for (Entity entity : entities) {
 					if (entity.getUUID().equals(pUuid)) return entity; // TODO: be not dumb
 				}
 				return null;
 			}
-
+			
 			public Iterable<Entity> getAll() {
 				return entities;
 			}
-
+			
 			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156935_, Consumer<U> p_156936_) {
 				for (Entity entity : entities) {
 					if (p_156935_.getBaseClass().isInstance(entity)) {
@@ -470,7 +471,7 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 					}
 				}
 			}
-
+			
 			public void get(AABB p_156937_, Consumer<Entity> p_156938_) {
 				for (Entity entity : entities) {
 					if (p_156937_.intersects(entity.getBoundingBox())) {
@@ -478,7 +479,7 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 					}
 				}
 			}
-
+			
 			public <U extends Entity> void get(EntityTypeTest<Entity, U> p_156932_, AABB p_156933_, Consumer<U> p_156934_) {
 				// ?
 				for (Entity entity : entities) {
@@ -729,169 +730,33 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 		});
 	}
 	
-	public BlockHitResult collectShape(Vec3 start, Vec3 end, Function<AABB, Boolean> simpleChecker, BiFunction<BlockPos, BlockState, BlockHitResult> boxFiller, int upbInt) {
-		BlockHitResult closest = null;
-		double d = Double.POSITIVE_INFINITY;
-
-		Level parent = this.parent.get();
-
-		int minX = (int) Math.floor(Math.min(start.x, end.x)) - 1;
-		int minY = (int) Math.floor(Math.min(start.y, end.y)) - 1;
-		int minZ = (int) Math.floor(Math.min(start.z, end.z)) - 1;
-		int maxX = (int) Math.ceil(Math.max(start.x, end.x)) + 1;
-		int maxY = (int) Math.ceil(Math.max(start.y, end.y)) + 1;
-		int maxZ = (int) Math.ceil(Math.max(start.z, end.z)) + 1;
-
-		MutableAABB bb = new MutableAABB(0, 0, 0, 1, 1, 1);
-		Collection<AABB> singleton = Collections.singleton(new AABB(0, 0, 0, 1, 1, 1));
-
-		// TODO: there are better ways to do this
-		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
-		for (int x = minX; x < maxX; x += 16) {
-			for (int z = minZ; z < maxZ; z += 16) {
-				bb.set(
-						x, minY, z,
-						x + 16, maxY, z + 16
-				);
-				if (!simpleChecker.apply(bb)) {
-					continue;
-				}
-
-				for (int y = minY; y < maxY; y += 16) {
-					bb.set(
-							x, y, z,
-							x + 16, y + 16, z + 16
-					);
-					if (simpleChecker.apply(bb)) {
-						for (int x0 = 0; x0 < 16; x0++) {
-							int x1 = x + x0;
-							for (int z0 = 0; z0 < 16; z0++) {
-								int z1 = z + z0;
-
-								int pX = SectionPos.blockToSectionCoord(x1);
-								int pZ = SectionPos.blockToSectionCoord(z1);
-								ChunkAccess chunk = getChunk(pX, pZ, ChunkStatus.FULL, false);
-								if (chunk == null) {
-									if (parent != null) {
-										for (int y0 = 0; y0 < 16; y0++) {
-											int y1 = y + y0;
-											bb.set(
-													x1, y1, z1,
-													x1 + 1, y1 + 1, z1 + 1
-											);
-											if (simpleChecker.apply(bb)) {
-												BlockPos pos = new BlockPos(x1, y1, z1);
-												BlockPos pos1 = PositionUtils.getParentPos(pos, this);
-
-												BlockState state = localCache.get(pos1);
-												if (state == null) {
-													state = parent.getBlockState(pos1);
-													localCache.put(pos1.immutable(), state);
-												}
-
-												if (state.isAir()) continue;
-												BlockHitResult result = AABB.clip(
-														singleton,
-														start, end,
-														pos
-												);
-												// result should always be non-null, but just incase
-												if (result != null) {
-													double dd = result.getLocation().distanceTo(start);
-													if (dd < d) {
-														d = dd;
-														closest = result;
-													}
-												}
-											}
-										}
-									}
-									continue;
-								}
-
-								for (int y0 = 0; y0 < 16; y0++) {
-									int y1 = y + y0;
-									bb.set(
-											x1, y1, z1,
-											x1 + 1, y1 + 1, z1 + 1
-									);
-									if (simpleChecker.apply(bb)) {
-										BlockPos pos = new BlockPos(x1, y1, z1);
-										BlockState state = chunk.getBlockState(pos);
-										if (state.isAir()) continue;
-										BlockHitResult result = boxFiller.apply(pos, state);
-										if (result != null) {
-											double dd = result.getLocation().distanceTo(start);
-											boolean lenient = state.getBlock().equals(tfc.smallerunits.Registry.UNIT_EDGE.get());
-											if (lenient) {
-												if (dd < d) {
-													d = dd;
-													closest = result;
-												}
-											} else {
-												if (dd <= d) {
-													d = dd;
-													closest = result;
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if (closest == null) return BlockHitResult.miss(end, Direction.UP, new BlockPos(end)); // TODO
-		BlockHitResult src = closest;
-
-		// improve precision
-		Vec3 hit = closest.getLocation();
-		Vec3 look = start.subtract(end).normalize().scale(1);
-
-		BlockPos pos = closest.getBlockPos();
-		BlockState state = getBlockState(pos);
-		VoxelShape shape = state.getShape(this, pos);
-		closest = shape.clip(hit.add(look), hit.subtract(look), pos);
-		if (closest == null) return src;
-
-		return closest;
-	}
-
 	protected BlockHitResult runTrace(VoxelShape sp, ClipContext pContext, BlockPos pos) {
 		BlockHitResult result = sp.clip(pContext.getFrom(), pContext.getTo(), pos);
 		if (result == null) return null;
-
+		
 		// improve precision
-//		if (!result.getType().equals(HitResult.Type.MISS)) {
-//			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
-//			off = off.normalize().scale(0.5f);
-//			Vec3 hit = result.getLocation();
-//			return sp.clip(hit.add(off), hit.subtract(off), pos);
-//		}
+		if (!result.getType().equals(HitResult.Type.MISS)) {
+			Vec3 off = pContext.getFrom().subtract(pContext.getTo());
+			off = off.normalize().scale(0.5f);
+			Vec3 hit = result.getLocation();
+			return sp.clip(hit.add(off), hit.subtract(off), pos);
+		}
 		return result;
 	}
 	
 	@Override
 	public BlockHitResult clip(ClipContext pContext) {
-		// I prefer this method over vanilla's method
-		Vec3 fStartVec = pContext.getFrom();
-		Vec3 endVec = pContext.getTo();
+		Collection<AABB> singleton = Collections.singleton(new AABB(0, 0, 0, 1, 1, 1));
 		
-		double d0 = endVec.x - fStartVec.x;
-		double d1 = endVec.y - fStartVec.y;
-		double d2 = endVec.z - fStartVec.z;
-		double[] adouble = new double[]{1.0D};
+		HashMap<BlockPos, BlockState> localCache = new HashMap<>();
 		
-		return collectShape(
+		Level parent = getParent();
+		
+		return Math3d.traverseBlocks(
 				pContext.getFrom(),
 				pContext.getTo(),
-				(box) -> {
-					if (box.contains(fStartVec)) return true;
-					return UnitShape.intersects(box, fStartVec, d0, d1, d2, adouble);
-				}, (pos, state) -> {
+				this,
+				(pos, state) -> {
 					VoxelShape sp = switch (pContext.block) {
 						case VISUAL -> state.getVisualShape(this, pos, pContext.collisionContext);
 						case COLLIDER -> state.getCollisionShape(this, pos, pContext.collisionContext);
@@ -904,7 +769,31 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 						result = runTrace(state.getFluidState().getShape(this, pos), pContext, pos);
 					return result;
 				},
-				upb
+				(pos) -> {
+					if (parent == null) return null;
+					
+					BlockPos pos1 = PositionUtils.getParentPos(pos, this);
+					
+					BlockState state = localCache.get(pos1);
+					if (state == null) {
+						state = parent.getBlockState(pos1);
+						localCache.put(pos1.immutable(), state);
+					}
+					if (state.isAir()) return null;
+					if (state.getBlock() instanceof UnitSpaceBlock) return null;
+					
+					BlockHitResult result = AABB.clip(
+							singleton,
+							pContext.getFrom(), pContext.getTo(),
+							pos
+					);
+					
+					return result;
+				},
+				() -> {
+					Vec3 vec3 = pContext.getFrom().subtract(pContext.getTo());
+					return BlockHitResult.miss(pContext.getTo(), Direction.getNearest(vec3.x, vec3.y, vec3.z), new BlockPos(pContext.getTo()));
+				}
 		);
 	}
 	
@@ -1303,8 +1192,8 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 	
 	protected void broadcast(
 			Player exclude, Packet<?> packet,
-	                         double x, double y, double z,
-	                         double dist
+			double x, double y, double z,
+			double dist
 	) {
 		Vec3 parentPos = PositionUtils.getParentVec(new Vec3(x, y, z), this);
 		for (Player player : parent.get().players()) {

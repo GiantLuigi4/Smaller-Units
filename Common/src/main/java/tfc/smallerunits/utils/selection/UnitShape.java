@@ -29,6 +29,7 @@ import tfc.smallerunits.utils.math.HitboxScaling;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -210,6 +211,12 @@ public class UnitShape extends VoxelShape {
 	
 	VoxelShape[] neighbors = new VoxelShape[Direction.values().length];
 	
+	Vec3 calc(Vec3 pStart, Vec3 pEnd) {
+		AABB bx = new AABB(space.pos);
+		Optional<Vec3> vec = bx.clip(pStart, pEnd);
+		return vec.orElse(pStart);
+	}
+	
 	public BlockHitResult clip(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		if (collisionContext instanceof EntityCollisionContext entityCollisionContext) {
 			Entity entity = entityCollisionContext.getEntity();
@@ -218,12 +225,12 @@ public class UnitShape extends VoxelShape {
 			if (entity instanceof Player player)
 				info.scalePlayerReach(player, space.unitsPerBlock);
 			collisionContext = CollisionContext.of(entity);
-			BlockHitResult d = clip$(pStartVec, pEndVec, pPos);
+			BlockHitResult d = clip$(calc(pStartVec, pEndVec), calc(pEndVec, pStartVec), pPos);
 			collisionContext = entityCollisionContext;
 			info.reset(entity);
 			return d;
 		}
-		return clip$(pStartVec, pEndVec, pPos);
+		return clip$(calc(pStartVec, pEndVec), calc(pEndVec, pStartVec), pPos);
 	}
 	
 	private BlockHitResult clip$(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
@@ -300,11 +307,7 @@ public class UnitShape extends VoxelShape {
 					int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
 					BasicVerticalChunk chunk = (BasicVerticalChunk) space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
 					if (chunk == null) {
-						if (z == (z >> 4) << 4) {
-							z += 15;
-						} else {
-							z = ((z >> 4) << 4) + 15;
-						}
+						z = (z | 0xF + 1);
 						continue;
 					}
 					
@@ -312,11 +315,7 @@ public class UnitShape extends VoxelShape {
 						int sectionIndex = chunk.getSectionIndex(y + origin.getY());
 						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
 						if (section == null || section.hasOnlyAir()) {
-							if (y == (y >> 4) << 4) {
-								y += 15;
-							} else {
-								y = ((y >> 4) << 4) + 15;
-							}
+							y = (y | 0xF + 1);
 							continue;
 						}
 						
@@ -382,9 +381,12 @@ public class UnitShape extends VoxelShape {
 			AABB motionBox = pCollisionBox;
 			double signNum = Math.signum(pDesiredOffset);
 			switch (ySwivel) {
-				case X -> motionBox = motionBox.expandTowards(pDesiredOffset, 0, 0).contract(-signNum * pCollisionBox.getXsize(), 0, 0);
-				case Y -> motionBox = motionBox.expandTowards(0, pDesiredOffset, 0).contract(0, -signNum * pCollisionBox.getYsize(), 0);
-				case Z -> motionBox = motionBox.expandTowards(0, 0, pDesiredOffset).contract(0, 0, -signNum * pCollisionBox.getZsize());
+				case X ->
+						motionBox = motionBox.expandTowards(pDesiredOffset, 0, 0).contract(-signNum * pCollisionBox.getXsize(), 0, 0);
+				case Y ->
+						motionBox = motionBox.expandTowards(0, pDesiredOffset, 0).contract(0, -signNum * pCollisionBox.getYsize(), 0);
+				case Z ->
+						motionBox = motionBox.expandTowards(0, 0, pDesiredOffset).contract(0, 0, -signNum * pCollisionBox.getZsize());
 			}
 			// TODO: got an issue with tall block collision (fences, walls, etc)
 			BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
@@ -528,11 +530,7 @@ public class UnitShape extends VoxelShape {
 					int pZ = SectionPos.blockToSectionCoord(z);
 					BasicVerticalChunk chunk = (BasicVerticalChunk) space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
 					if (chunk == null) {
-						if (z == (z >> 4) << 4) {
-							z += 15;
-						} else {
-							z = ((z >> 4) << 4) + 15;
-						}
+						z = (z | 0xF + 1);
 						continue;
 					}
 					
@@ -540,11 +538,7 @@ public class UnitShape extends VoxelShape {
 						int sectionIndex = chunk.getSectionIndex(y);
 						LevelChunkSection section = chunk.getSectionNullable(sectionIndex);
 						if (section == null || section.hasOnlyAir()) {
-							if (y == (y >> 4) << 4) {
-								y += 15;
-							} else {
-								y = ((y >> 4) << 4) + 15;
-							}
+							y = (y | 0xF + 1);
 							continue;
 						}
 

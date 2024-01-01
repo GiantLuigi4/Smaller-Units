@@ -41,7 +41,7 @@ public class SURenderManager {
 			// TODO: remove only unit positions that are in the frustrum
 			suCapable.SU$reset(notDrawn);
 		}
-
+		
 		render.draw(positionRendering, type, frustum, uniform);
 	}
 

@@ -104,6 +104,8 @@ dependencies {
     compileOnly fg.deobf("curse.maven:common-capabilities-247007:4391413")
     compileOnly fg.deobf("curse.maven:chisels-bits-231095:4724660")
 
+    implementation fg.deobf("curse.maven:spark-361579:4505309")
+
     compileOnly project(":Common")
 }
 
