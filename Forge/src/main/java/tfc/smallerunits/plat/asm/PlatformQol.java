@@ -85,7 +85,7 @@ public class PlatformQol {
 						double d1 = (float) y + fluidstate.getHeight(level, blockpos$mutableblockpos);
 						if (d1 >= aabb.minY) {
 							org.apache.commons.lang3.tuple.MutableTriple<Double, Vec3, Integer> interim = interimCalcs.computeIfAbsent(fluidType, t -> org.apache.commons.lang3.tuple.MutableTriple.of(0.0D, new Vec3(0, 0, 0), 0));
-							interim.setLeft(Math.max((d1 - aabb.minY), interim.getLeft()));
+							interim.setLeft(Math.max((d1 - aabb.minY) / scale, interim.getLeft()));
 							if (entity.isPushedByFluid(fluidType)) {
 								Vec3 vec31 = fluidstate.getFlow(level, blockpos$mutableblockpos);
 								if (interim.getLeft() < 0.4D) {
@@ -127,7 +127,7 @@ public class PlatformQol {
 			}
 			
 			double d = forgeFluidTypeHeight.getOrDefault(fluidType, 0d);
-			forgeFluidTypeHeight.put(fluidType, Math.max(d, interim.getLeft() / scale));
+			forgeFluidTypeHeight.put(fluidType, Math.max(d, interim.getLeft()));
 		}
 	}
 }
