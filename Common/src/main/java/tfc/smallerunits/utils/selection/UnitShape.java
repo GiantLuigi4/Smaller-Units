@@ -281,6 +281,13 @@ public class UnitShape extends VoxelShape {
 		
 		if (closest != null) return closest;
 		
+		pStartVec.x = pEndVec.x - d0;
+		pStartVec.y = pEndVec.y - d1;
+		pStartVec.z = pEndVec.z - d2;
+		pEndVec.x += d0;
+		pEndVec.y += d1;
+		pEndVec.z += d2;
+		
 		return computeEdgeResult(pStartVec, pEndVec, pPos);
 	}
 	
