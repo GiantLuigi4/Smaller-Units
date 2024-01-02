@@ -19,8 +19,10 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ParticleUtils;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BoneMealItem;
@@ -355,6 +357,34 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 						}
 						
 						this.addDestroyBlockEffect(pPos, blockstate);
+						break;
+					case 2009:
+						for(int j3 = 0; j3 < 8; ++j3)
+							this.addParticle(ParticleTypes.CLOUD, (double)pPos.getX() + random.nextDouble(), (double)pPos.getY() + 1.2D, (double)pPos.getZ() + random.nextDouble(), 0.0D, 0.0D, 0.0D);
+						break;
+					case 3000:
+						this.addParticle(ParticleTypes.EXPLOSION_EMITTER, true, (double)pPos.getX() + 0.5D, (double)pPos.getY() + 0.5D, (double)pPos.getZ() + 0.5D, 0.0D, 0.0D, 0.0D);
+						this.playLocalSound(pPos, SoundEvents.END_GATEWAY_SPAWN, SoundSource.BLOCKS, 10.0F, (1.0F + (this.random.nextFloat() - this.random.nextFloat()) * 0.2F) * 0.7F, false);
+						break;
+					case 3001:
+						this.playLocalSound(pPos, SoundEvents.ENDER_DRAGON_GROWL, SoundSource.HOSTILE, 64.0F, 0.8F + this.random.nextFloat() * 0.3F, false);
+						break;
+					case 3002:
+						if (pData >= 0 && pData < Direction.Axis.VALUES.length) {
+							ParticleUtils.spawnParticlesAlongAxis(Direction.Axis.VALUES[pData], this, pPos, 0.125D, ParticleTypes.ELECTRIC_SPARK, UniformInt.of(10, 19));
+						} else {
+							ParticleUtils.spawnParticlesOnBlockFaces(this, pPos, ParticleTypes.ELECTRIC_SPARK, UniformInt.of(3, 5));
+						}
+						break;
+					case 3003:
+						ParticleUtils.spawnParticlesOnBlockFaces(this, pPos, ParticleTypes.WAX_ON, UniformInt.of(3, 5));
+						this.playLocalSound(pPos, SoundEvents.HONEYCOMB_WAX_ON, SoundSource.BLOCKS, 1.0F, 1.0F, false);
+						break;
+					case 3004:
+						ParticleUtils.spawnParticlesOnBlockFaces(this, pPos, ParticleTypes.WAX_OFF, UniformInt.of(3, 5));
+						break;
+					case 3005:
+						ParticleUtils.spawnParticlesOnBlockFaces(this, pPos, ParticleTypes.SCRAPE, UniformInt.of(3, 5));
 						break;
 					default:
 						System.out.println("Unkown Level Event: " + pType);

@@ -116,6 +116,8 @@ dependencies {
     implementation fg.deobf("curse.maven:spark-361579:4505309")
     implementation fg.deobf("com.jozufozu.flywheel:flywheel-forge-1.19.2:0.6.10-20")
 
+    implementation fg.deobf("curse.maven:jei-238222:4712866")
+
     compileOnly project(":Common")
 }
 

@@ -152,7 +152,6 @@ public class MouseHandlerMixin {
 				
 				if (Minecraft.getInstance().screen != null && Minecraft.getInstance().screen != currentScreen.get()) {
 					SUScreenAttachments attachments = (SUScreenAttachments) Minecraft.getInstance().screen;
-					NetworkingHacks.setPos(((ITickerLevel) attachments.getTarget()).getDescriptor());
 					attachments.setup(screenAttachments);
 				}
 			}
