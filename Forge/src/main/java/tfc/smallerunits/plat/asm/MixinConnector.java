@@ -20,6 +20,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 	static {
 		pkgLookup.add("tfc.smallerunits.mixin.compat.");
 		pkgLookup.add("tfc.smallerunits.plat.mixin.compat.");
+		classLookup.add("tfc.smallerunits.mixin.dangit.block_pos.RSNetworkNodeMixin");
 		
 		{
 			ArrayList<String> incompat = new ArrayList<>();
@@ -35,17 +36,14 @@ public class MixinConnector implements IMixinConfigPlugin {
 			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.ItemCombinerMenuMixin", incompat);
 			incompatibilityMap.put("tfc.smallerunits.mixin.core.gui.server.dist.RandomizableContainerBlockEntityMixin", incompat);
 		}
-//		{
-//			ArrayList<String> incompat = new ArrayList<>();
-//			incompat.add("qouteall.imm_ptl.core.network.PacketRedirection");
-//			incompatibilityMap.put("tfc.smallerunits.plat.mixin.core.network.ConnectionMixin", incompat);
-//		}
+		
 		{
+			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.CModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.LevelRendererMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.ModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
-			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.CModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.TickerClientLevelMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
-			
+		}
+		{
 			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.UnitCapabilityHandlerMixin", "me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.LevelMixin", "me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
 		}
@@ -76,7 +74,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			if (stream != null) {
 				try {
 					stream.close();
-					return false;
+					return true;
 				} catch (Throwable ignored) {
 				}
 			} else return false;

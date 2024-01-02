@@ -94,7 +94,7 @@ public class RenderWorld implements BlockAndTintGetter, IMayManageModelData {
 							pos.getY() < (bvc.yPos * 16) + 16
 			)
 				return bvc.getBlockState$(pos);
-			return ((BasicVerticalChunk) chunk).getBlockStateSmallOnly(pos);
+			return ((BasicVerticalChunk) chunk).getBlockState(pos);
 		}
 		ChunkPos cp = new ChunkPos(pos);
 		if (preCrd != cp.toLong()) {

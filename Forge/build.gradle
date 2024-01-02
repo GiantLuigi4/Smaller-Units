@@ -86,6 +86,13 @@ repositories {
         name = 'tterrag maven'
         url = 'https://maven.tterrag.com'
     }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
 }
 
 dependencies {
@@ -93,7 +100,7 @@ dependencies {
 //    compileOnly project(":Common")
     annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
 
-//    implementation fg.deobf("curse.maven:rubidium-574856:3973894")
+    implementation fg.deobf("maven.modrinth:embeddium:0.2.16+mc1.19.2")
     implementation fg.deobf("curse.maven:canary-665658:4980565")
     implementation fg.deobf("curse.maven:pehkui-319596:4823467")
     compileOnly fg.deobf("curse.maven:distant-horizons-508933:4924658")

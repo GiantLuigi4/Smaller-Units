@@ -82,7 +82,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			if (stream != null) {
 				try {
 					stream.close();
-					return false;
+					return true;
 				} catch (Throwable ignored) {
 				}
 			} else return false;
