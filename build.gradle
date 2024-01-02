@@ -61,8 +61,6 @@ subprojects {
         compileOnly "curse.maven:vfe-325360:3949338"
         compileOnly "curse.maven:vivecraft-667903:4409427"
         compileOnly "curse.maven:alternate_current-548115:4406066"
-
-        compileOnly "com.jozufozu.flywheel:flywheel-forge-1.19.2:0.6.10-20"
     }
 
     tasks.withType(JavaCompile).configureEach {

@@ -34,7 +34,6 @@ import tfc.smallerunits.data.capability.SUCapabilityManager;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.BreakData;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
-import tfc.smallerunits.utils.asm.ModCompat;
 import tfc.smallerunits.utils.asm.ModCompatClient;
 import tfc.smallerunits.utils.config.compat.ClientCompatConfig;
 
@@ -50,7 +49,7 @@ public class SodiumRenderer {
 			throw new RuntimeException("Sodium renderer not implemented yet");
 		}
 		
-		ModCompat.postRenderLayer(type, poseStack, camX, camY, camZ, level);
+		ModCompatClient.postRenderLayer(type, poseStack, camX, camY, camZ, level);
 	}
 	
 	public static void renderVanilla(RenderType type, IFrustum su$Frustum, ClientLevel level, PoseStack poseStack, double camX, double camY, double camZ) {

@@ -50,6 +50,8 @@ dependencies {
     compileOnly "curse.maven:alternate_current-548115:4406066"
 
     compileOnly "com.jozufozu.flywheel:flywheel-forge-1.19.2:0.6.10-20"
+
+    compileOnly "com.jozufozu.flywheel:flywheel-forge-1.19.2:0.6.10-20"
 }
 
 processResources {

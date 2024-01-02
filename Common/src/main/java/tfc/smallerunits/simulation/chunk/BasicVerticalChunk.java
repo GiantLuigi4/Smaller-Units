@@ -303,10 +303,9 @@ public class BasicVerticalChunk extends LevelChunk {
 					}
 
 					if (pState.hasBlockEntity()) {
-						BlockPos realPos = new BlockPos(j, k, l).offset(chunkPos.getWorldPosition());
-						BlockEntity blockentity = this.getBlockEntity(new BlockPos(pPos.getX(), pPos.getY() & 15, pPos.getZ()), LevelChunk.EntityCreationType.CHECK);
+						BlockEntity blockentity = this.getBlockEntity$(new BlockPos(pPos.getX(), pPos.getY() & 15, pPos.getZ()), LevelChunk.EntityCreationType.CHECK);
 						if (blockentity == null) {
-							blockentity = ((EntityBlock) block).newBlockEntity(realPos, pState);
+							blockentity = ((EntityBlock) block).newBlockEntity(offsetPos, pState);
 							if (blockentity != null) {
 								this.addAndRegisterBlockEntity(blockentity);
 							}
@@ -634,7 +633,7 @@ public class BasicVerticalChunk extends LevelChunk {
     public void setBlockEntity$(BlockEntity pBlockEntity) {
 		BlockPos blockpos = pBlockEntity.getBlockPos();
 		blockpos = new BlockPos(blockpos.getX() & 15, blockpos.getY() & 15, blockpos.getZ() & 15);
-		if (this.getBlockState(blockpos).hasBlockEntity()) {
+		if (this.getBlockStateSmallOnly(blockpos).hasBlockEntity()) {
 			pBlockEntity.setLevel(this.level);
 			pBlockEntity.clearRemoved();
 			BlockEntity blockentity = this.blockEntities.put(blockpos.immutable(), pBlockEntity);

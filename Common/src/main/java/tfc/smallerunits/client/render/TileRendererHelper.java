@@ -320,7 +320,7 @@ public class TileRendererHelper {
 		PoseStack stack = new PoseStack();
 		stack.last().pose().multiply(pPoseStack.last().pose());
 		
-		if (!PlatformUtils.isLoaded("sodium")) SmallerUnits.tesselScale = scl;
+		if (!SmallerUnits.isSodiumPresent()) SmallerUnits.tesselScale = scl;
 		
 		ClientLevel clvl = Minecraft.getInstance().level;
 		Minecraft.getInstance().level = (ClientLevel) valueLevel;

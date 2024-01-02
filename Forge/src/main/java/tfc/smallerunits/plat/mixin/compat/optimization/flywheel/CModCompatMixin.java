@@ -1,5 +1,7 @@
 package tfc.smallerunits.plat.mixin.compat.optimization.flywheel;
 
+import com.jozufozu.flywheel.backend.Backend;
+import com.jozufozu.flywheel.backend.instancing.InstancedRenderRegistry;
 import com.jozufozu.flywheel.event.RenderLayerEvent;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
@@ -37,7 +39,7 @@ public class CModCompatMixin {
                     RenderLayerEvent event = new RenderLayerEvent(
                             (ClientLevel) valueLevel,
                             type, poseStack, Minecraft.getInstance().renderBuffers(),
-                            camX * mul, camY * mul, (camZ - rp.getZ()) * mul
+                            (camX - rp.getX()) * mul, (camY - rp.getY()) * mul, (camZ - rp.getZ()) * mul
                     );
                     MinecraftForge.EVENT_BUS.post(event);
                     poseStack.popPose();
@@ -48,9 +50,9 @@ public class CModCompatMixin {
 
     @Inject(at = @At("HEAD"), method = "drawBE", cancellable = true)
     private static void preDrawBE(BlockEntity be, BlockPos origin, IFrustum frustum, PoseStack stk, float tickDelta, CallbackInfo ci) {
-//        if (Backend.isOn())
-//            if (Backend.canUseInstancing(be.getLevel()))
-//                if (InstancedRenderRegistry.canInstance(be.getType()))
-//                    ci.cancel();
+        if (Backend.isOn())
+            if (Backend.canUseInstancing(be.getLevel()))
+                if (InstancedRenderRegistry.canInstance(be.getType()))
+                    ci.cancel();
     }
 }
