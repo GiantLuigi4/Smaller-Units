@@ -19,10 +19,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.EntityCollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraft.world.phys.shapes.*;
 import tfc.smallerunits.UnitEdge;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.UnitSpaceBlock;
@@ -606,19 +603,12 @@ public class UnitShape extends VoxelShape {
 	protected BlockHitResult computeEdgeResult(Vec3 pStartVec, Vec3 pEndVec, BlockPos pPos) {
 		if (visual) return null;
 		
-		double upbDouble = space.unitsPerBlock;
-		
-		double dbest = Double.POSITIVE_INFINITY;
 		UnitHitResult h = null;
-		double[] percent = new double[]{1};
 		double d0 = pEndVec.x - pStartVec.x;
 		double d1 = pEndVec.y - pStartVec.y;
 		double d2 = pEndVec.z - pStartVec.z;
 		
-		AABB traceBB = new AABB(pStartVec, pEndVec);
 		double[] doubles = new double[]{1};
-		
-		Vec3 totalOffset = new Vec3(pPos.getX() + offset.x, pPos.getY() + offset.y, pPos.getZ() + offset.z);
 		
 		Vec3 u = new Vec3(0, 0, 0);
 		Vec3 r = new Vec3(0, 0, 0);
@@ -629,10 +619,13 @@ public class UnitShape extends VoxelShape {
 		for (Direction value : Direction.values()) {
 			VoxelShape shape1 = neighbors[value.ordinal()];
 			if (shape1 == null || shape1.isEmpty()) continue;
+			shape1 = shape1.getFaceShape(value.getOpposite());
 			shape1 = shape1.move(value.getStepX(), value.getStepY(), value.getStepZ());
 			
 			BlockHitResult bhr = shape1.clip(pStartVec, pEndVec, pPos);
 			if (bhr != null && bhr.getType() != HitResult.Type.MISS) {
+				if (bhr.getDirection() != value.getOpposite()) continue;
+				
 				Vec3 loc = bhr.getLocation();
 				loc.x -= pPos.getX();
 				loc.y -= pPos.getY();
@@ -682,25 +675,34 @@ public class UnitShape extends VoxelShape {
 					double hZ = pStartVec.z + d2 * doubles[0];
 					doubles[0] = 1;
 					
-					if (
-							hX != (int) hX &&
-									hY != (int) hY &&
-									hZ != (int) hZ
-					) continue;
-					
 					Vec3 hvec = new Vec3(hX, hY, hZ);
-					Optional<Vec3> opt = shape1.move(pPos.getX(), pPos.getY(), pPos.getZ()).closestPointTo(hvec);
-					if (opt.isPresent() && hvec.equals(opt.get())) {
+					if (Shapes.joinIsNotEmpty(
+							Shapes.create(box),
+							shape1,
+							BooleanOp.AND
+					)) {
+						BlockPos pos = new BlockPos(
+								up.getStepX() * u.x + right.getStepX() * r.x,
+								up.getStepY() * u.y + right.getStepY() * r.y,
+								up.getStepZ() * u.z + right.getStepZ() * r.z
+						);
+						
+						switch (value) {
+							case UP -> pos = pos.above(space.unitsPerBlock);
+							case EAST -> pos = pos.east(space.unitsPerBlock);
+							case SOUTH -> pos = pos.south(space.unitsPerBlock);
+							case DOWN -> pos = pos.below();
+							case WEST -> pos = pos.west();
+							case NORTH -> pos = pos.north();
+						}
+						
 						h = new UnitHitResult(
-								hvec.subtract(d0, d1, d2),
+//									hvec.subtract(d0, d1, d2),
+								hvec,
 								bhr.getDirection(),
 								space.pos,
 								bhr.isInside(),
-								new BlockPos(
-										up.getStepX() * u.x + right.getStepX() * r.x,
-										up.getStepY() * u.y + right.getStepY() * r.y,
-										up.getStepZ() * u.z + right.getStepZ() * r.z
-								),
+								pos,
 								box
 						);
 					}

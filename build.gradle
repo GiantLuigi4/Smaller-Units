@@ -54,7 +54,7 @@ subprojects {
 
     dependencies {
         compileOnly "curse.maven:rubidium-574856:3973894"
-        compileOnly "curse.maven:oculus-581495:4763262"
+//        compileOnly "curse.maven:oculus-581495:4763262"
 //        compileOnly "curse.maven:pehkui-319596:4823467"
         compileOnly "curse.maven:immersive-portals-for-forge-355440:4896844"
         compileOnly "curse.maven:alternate-current-548115:4609489"

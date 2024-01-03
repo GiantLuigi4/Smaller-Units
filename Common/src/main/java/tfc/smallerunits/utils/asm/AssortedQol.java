@@ -266,7 +266,24 @@ public class AssortedQol {
 							);
 						}
 						
+//						BlockState state1 = level.getBlockState(pPos.relative(((UnitHitResult) result).getDirection().getOpposite()));
+//						VoxelShape shape2 = state1.getShape(level, pPos.relative(((UnitHitResult) result).getDirection().getOpposite()));
+
+//						MutableAABB bob = (MutableAABB) new MutableAABB(
+//								box.minX,
+//								box.minY,
+//								box.minZ,
+//								box.maxX,
+//								box.maxY,
+//								box.maxZ
+//						).scale(1.0 / upbDouble);
+						
 						shape1 = Shapes.create(box);
+//						shape1 = Shapes.joinUnoptimized(
+//								shape1, shape2,
+//								BooleanOp.AND
+//						);
+						
 						renderShape.accept(shape1);
 					} else {
 						/* draw block */
