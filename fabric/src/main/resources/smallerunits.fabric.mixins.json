@@ -17,6 +17,7 @@
     "quality.ReachEntityAttributesMixin"
   ],
   "client": [
+    "compat.distant_horizons.FabricClientProxyMixin",
     "compat.fabric.RenderWorldMixin",
     "compat.optimization.flywheel.LevelRendererMixin",
     "compat.optimization.flywheel.ModCompatMixin",

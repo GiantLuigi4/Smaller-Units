@@ -105,7 +105,7 @@ dependencies {
 
     implementation fg.deobf("curse.maven:canary-665658:4980565")
     implementation fg.deobf("curse.maven:pehkui-319596:4823467")
-    compileOnly fg.deobf("curse.maven:distant-horizons-508933:4924658")
+    implementation fg.deobf("curse.maven:distant-horizons-508933:4924658")
     compileOnly fg.deobf("curse.maven:applied-energistics-2-223794:4733119")
     compileOnly fg.deobf("curse.maven:refined-storage-243076:4861827")
     compileOnly fg.deobf("curse.maven:integrated-dynamics-236307:4925682")

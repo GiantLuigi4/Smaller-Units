@@ -50,7 +50,9 @@ dependencies {
     modImplementation "curse.maven:pehkui-319596:4641062"
     modImplementation 'com.github.Virtuoel:KanosConfig:0.4.1'
 
+    modCompileOnly "curse.maven:oculus-581495:4763262"
     modCompileOnly "maven.modrinth:lithium:mc1.19.2-0.11.1"
+    modImplementation "curse.maven:distant-horizons-508933:4924658"
 
     modImplementation "com.jozufozu.flywheel:flywheel-fabric-1.19.2:0.6.9-6"
 
