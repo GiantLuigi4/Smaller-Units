@@ -49,6 +49,11 @@ public class ServerPlayNetworkingMixin {
 					public void sendPacket(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> callback) {
 						sendPacket(packet); // TODO
 					}
+					
+					@Override
+					public void sendPacket(Packet<?> packet, @Nullable PacketSendListener callback) {
+						sendPacket(packet);
+					}
 				});
 			} else {
 				handler.receive(a, b, c, d, e);

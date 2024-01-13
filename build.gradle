@@ -2,13 +2,14 @@ subprojects {
     apply plugin: 'java'
 
     java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-    java.withSourcesJar()
-    java.withJavadocJar()
+//    java.withSourcesJar()
+//    java.withJavadocJar()
 
     jar {
         from(rootProject.file("LICENSE")) {
             rename { "${it}_${mod_name}" }
         }
+
         manifest {
             attributes([
                     'Specification-Title'     : mod_name,
@@ -25,11 +26,11 @@ subprojects {
         }
     }
 
-    sourcesJar {
-        from(rootProject.file("LICENSE")) {
-            rename { "${it}_${mod_name}" }
-        }
-    }
+//    sourcesJar {
+//        from(rootProject.file("LICENSE")) {
+//            rename { "${it}_${mod_name}" }
+//        }
+//    }
 
     repositories {
         mavenCentral()
@@ -69,7 +70,7 @@ subprojects {
     }
 
     tasks.withType(AbstractCopyTask.class).configureEach {
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        duplicatesStrategy = DuplicatesStrategy.WARN
     }
 
     processResources {
@@ -106,5 +107,9 @@ subprojects {
 
     test {
         exclude '**/*'
+        onlyIf {false}
+        enabled = false
     }
+    tasks.withType(Test) {enabled = false}
+    compileTestJava.enabled = false
 }

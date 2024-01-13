@@ -659,6 +659,14 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 	}
 	
 	@Override
+	public void setBlockEntity(BlockEntity pBlockEntity) {
+		LevelChunk chunk = this.getChunkAt(pBlockEntity.getBlockPos());
+		pBlockEntity.worldPosition = chunk.getPos().getWorldPosition().offset(pBlockEntity.getBlockPos().getX() & 15, pBlockEntity.getBlockPos().getY(), pBlockEntity.getBlockPos().getZ() & 15);
+		// TODO: figure out of deserialization and reserialization is necessary or not
+		chunk.addAndRegisterBlockEntity(pBlockEntity);
+	}
+	
+	@Override
 	public void blockEntityChanged(BlockPos pPos) {
 		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
 		BlockEntity be = vc.getBlockEntity(pPos);
@@ -887,14 +895,6 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 		LevelChunk chunk = getChunkAtNoLoad(pPos);
 		if (chunk == null) return Fluids.EMPTY.defaultFluidState();
 		return chunk.getFluidState(new BlockPos(pPos.getX() & 15, pPos.getY(), pPos.getZ() & 15));
-	}
-	
-	@Override
-	public void setBlockEntity(BlockEntity pBlockEntity) {
-		LevelChunk chunk = this.getChunkAt(pBlockEntity.getBlockPos());
-		pBlockEntity.worldPosition = chunk.getPos().getWorldPosition().offset(pBlockEntity.getBlockPos().getX() & 15, pBlockEntity.getBlockPos().getY(), pBlockEntity.getBlockPos().getZ() & 15);
-		// TODO: figure out of deserialization and reserialization is necessary or not
-		chunk.addAndRegisterBlockEntity(pBlockEntity);
 	}
 	
 	@Override

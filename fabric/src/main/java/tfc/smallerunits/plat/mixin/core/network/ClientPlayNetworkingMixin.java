@@ -4,7 +4,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.protocol.Packet;
@@ -48,6 +47,11 @@ public class ClientPlayNetworkingMixin {
 
 					@Override
 					public void sendPacket(Packet<?> packet, @Nullable GenericFutureListener<? extends Future<? super Void>> callback) {
+						sendPacket(packet); // TODO
+					}
+					
+					@Override
+					public void sendPacket(Packet<?> packet, @Nullable PacketSendListener callback) {
 						sendPacket(packet); // TODO
 					}
 				});

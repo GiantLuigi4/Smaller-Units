@@ -6,6 +6,8 @@
   "refmap": "smallerunits.refmap.json",
   "plugin": "tfc.smallerunits.plat.asm.MixinConnector",
   "mixins": [
+    "compat.cc.ComputerUIMixin",
+    "compat.cc.NetworkHandlerMixin",
     "compat.chisel_and_bits.ChiselAndBitsMeshMixin",
     "compat.optimization.canary.CanaryEntityCollisionsMixin",
     "compat.optimization.canary.CollisionSweeperMixin",

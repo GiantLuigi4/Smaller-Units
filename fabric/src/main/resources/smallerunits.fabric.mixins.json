@@ -5,6 +5,8 @@
   "plugin": "tfc.smallerunits.plat.asm.MixinConnector",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "compat.cc.ComputerUIMixin",
+    "compat.cc.NetworkHandlerMixin",
     "compat.optimization.lithium.CollisionSweeperMixin",
     "compat.optimization.lithium.LithiumEntityCollisionsMixin",
     "core.EntityMixin",

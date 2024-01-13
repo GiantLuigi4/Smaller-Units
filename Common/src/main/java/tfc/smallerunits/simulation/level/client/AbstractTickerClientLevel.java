@@ -821,6 +821,19 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 		chunk.addAndRegisterBlockEntity(pBlockEntity);
 	}
 	
+//	@Override
+//	public void blockEntityChanged(BlockPos pPos) {
+//		super.blockEntityChanged(pPos);
+//		BasicVerticalChunk vc = (BasicVerticalChunk) getChunk(pPos);
+//		BlockEntity be = vc.getBlockEntity(pPos);
+//		if (be == null) return;
+//		((BasicVerticalChunk) getChunkAt(pPos)).getSubChunk(pPos.getY() >> 4).setUnsaved(true);
+//		vc.beChanges.add(be);
+//		BlockPos parentPos = PositionUtils.getParentPosPrecise(pPos, vc);
+//		LevelChunk ac = getParent().getChunkAt(parentPos);
+//		ac.setUnsaved(true);
+//	}
+	
 	@Override
 	public ChunkAccess getChunk(int x, int y, int z, ChunkStatus pRequiredStatus, boolean pLoad) {
 		ITickerChunkCache chunkCache = (ITickerChunkCache) getChunkSource();

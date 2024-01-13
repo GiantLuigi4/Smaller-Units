@@ -2,7 +2,7 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.spongepowered.mixin' version '0.7-SNAPSHOT'
+    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
 base {
@@ -10,10 +10,12 @@ base {
 }
 
 mixin {
-    add sourceSets.main, "smallerunits.refmap.json"
+    add sourceSets.main, 'smallerunits.refmap.json'
 
-    config("${mod_id}.mixins.json")
-    config("${mod_id}.forge.mixins.json")
+    config("smallerunits.mixins.json")
+    config("smallerunits.forge.mixins.json")
+
+    disableTargetValidator = false
 }
 
 minecraft {
@@ -97,8 +99,7 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-//    compileOnly project(":Common")
-    annotationProcessor("org.spongepowered:mixin:0.8.5-SNAPSHOT:processor")
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     implementation fg.deobf("maven.modrinth:embeddium:0.2.16+mc1.19.2")
     implementation fg.deobf("curse.maven:oculus-581495:4763262")
@@ -120,12 +121,15 @@ dependencies {
 
     implementation fg.deobf("curse.maven:jei-238222:4712866")
 
+    implementation fg.deobf("curse.maven:cc-tweaked-282001:5005332")
+
     compileOnly project(":Common")
 }
 
 tasks.withType(JavaCompile).configureEach {
     source(project(":Common").sourceSets.main.allSource)
 }
+
 processResources {
     from project(":Common").sourceSets.main.resources
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

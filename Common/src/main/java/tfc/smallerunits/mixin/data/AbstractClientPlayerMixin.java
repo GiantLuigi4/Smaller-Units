@@ -8,6 +8,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
@@ -22,6 +23,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 public class AbstractClientPlayerMixin implements ICanUseUnits {
 	@Shadow
 	public ClientLevel clientLevel;
+	@Unique
 	HitResult hit;
 	
 	@Override

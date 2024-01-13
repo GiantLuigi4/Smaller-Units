@@ -26,6 +26,7 @@ public abstract class FastCapabilityChunkMixin implements FastCapabilityHandler 
 	@Unique
 	ISUCapability capability = null;
 	
+	@Unique
 	boolean isEmpty = false;
 	
 	@Inject(at = @At("TAIL"), method = "<init>(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/ChunkPos;Lnet/minecraft/world/level/chunk/UpgradeData;Lnet/minecraft/world/ticks/LevelChunkTicks;Lnet/minecraft/world/ticks/LevelChunkTicks;J[Lnet/minecraft/world/level/chunk/LevelChunkSection;Lnet/minecraft/world/level/chunk/LevelChunk$PostLoadProcessor;Lnet/minecraft/world/level/levelgen/blending/BlendingData;)V")
@@ -33,7 +34,7 @@ public abstract class FastCapabilityChunkMixin implements FastCapabilityHandler 
 		isEmpty = ((Object) this) instanceof EmptyLevelChunk;
 	}
 	
-	@Shadow
+	@Shadow(remap = false)
 	public abstract <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side);
 	
 	@Override

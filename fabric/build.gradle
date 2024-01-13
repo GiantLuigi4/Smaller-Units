@@ -33,6 +33,13 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+    // ccr
+    maven { url "https://maven.shedaniel.me/" }
+    maven { url "https://maven.terraformersmc.com/releases" }
+    maven {
+        name "SquidDev"
+        url "https://squiddev.cc/maven"
+    }
 }
 
 dependencies {
@@ -46,15 +53,26 @@ dependencies {
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.0.2"
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-world:5.0.2"
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-chunk:5.0.2"
-    include (modImplementation "com.jamieswhiteshirt:reach-entity-attributes:2.3.0")
-    modImplementation "curse.maven:pehkui-319596:4641062"
-    modImplementation 'com.github.Virtuoel:KanosConfig:0.4.1'
+    include(modCompileOnly "com.jamieswhiteshirt:reach-entity-attributes:2.3.0")
+    modCompileOnly "curse.maven:pehkui-319596:4641062"
+    modCompileOnly 'com.github.Virtuoel:KanosConfig:0.4.1'
 
     modCompileOnly "curse.maven:oculus-581495:4763262"
     modCompileOnly "maven.modrinth:lithium:mc1.19.2-0.11.1"
-    modImplementation "curse.maven:distant-horizons-508933:4924658"
+    modCompileOnly "curse.maven:distant-horizons-508933:4924658"
 
-    modImplementation "com.jozufozu.flywheel:flywheel-fabric-1.19.2:0.6.9-6"
+    modCompileOnly "com.jozufozu.flywheel:flywheel-fabric-1.19.2:0.6.9-6"
+
+//    modImplementation "curse.maven:cc-restitched-462672:3908334"
+
+    // cc:restitched
+    implementation 'javax.vecmath:vecmath:1.5.2'
+    modApi 'com.electronwill.night-config:core:3.6.3'
+    modApi 'com.electronwill.night-config:toml:3.6.3'
+    modApi('com.github.cc-tweaked:cc-restitched:v1.19.1-1.101.2-ccr')
+    modApi("me.shedaniel.cloth:cloth-config-fabric:8.3.115") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
 
     compileOnly project(":Common")
 }
