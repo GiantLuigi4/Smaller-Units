@@ -44,6 +44,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.fabric.networking.ServerPlayNetworking", "net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking");
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.fabric.networking.ServerMixin", "net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon");
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.fabric.networking.ServerPlayNetworkingAddonMixin", "net.fabricmc.fabric.impl.networking.server.ServerPlayNetworkAddon");
+			dependencies.put("tfc.smallerunits.plat.mixin.compat.fabric.networking.ClientPlayNetworkingAddonMixin", "tfc.smallerunits.plat.mixin.core.network.ClientPlayNetworkAddon");
 		}
 		{
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.CModCompatMixin", "com.jozufozu.flywheel.api.FlywheelWorld");

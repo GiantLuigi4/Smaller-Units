@@ -1,8 +1,8 @@
 package tfc.smallerunits.plat.mixin.core.network;
 
 import net.minecraft.network.Connection;
+import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -17,12 +17,12 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 
-@Mixin(value = NetworkEvent.Context.class, remap = false)
-public class NetworkContextMixin {
-	@ModifyVariable(at = @At("HEAD"), method = "enqueueWork", argsOnly = true, ordinal = 0)
-	public Runnable wrapRunnable(Runnable src) {
+@Mixin(BlockableEventLoop.class)
+public class BlockableEventLoopMixin {
+	@ModifyVariable(at = @At("HEAD"), method = "execute", argsOnly = true, ordinal = 0)
+	public Runnable preSchedule(Runnable value) {
 		NetworkHandlingContext nhcontext = NetworkingHacks.currentContext.get();
-		if (nhcontext == null) return src;
+		if (nhcontext == null) return value;
 		
 		NetworkContext context = nhcontext.netContext;
 		Connection networkManager = context.connection;
@@ -52,7 +52,7 @@ public class NetworkContextMixin {
 			((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(context.player.level);
 			
 			try {
-				src.run(); // run deferred work
+				value.run(); // run deferred work
 			} catch (Throwable err) {
 				Loggers.PACKET_HACKS_LOGGER.error("-- A wrapped packet has encountered an error: desyncs are imminent --");
 				err.printStackTrace();

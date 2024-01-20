@@ -10,6 +10,7 @@
     "compat.optimization.lithium.CollisionSweeperMixin",
     "compat.optimization.lithium.LithiumEntityCollisionsMixin",
     "core.EntityMixin",
+    "core.network.BlockableEventLoopMixin",
     "core.network.ConnectionMixin",
     "core.network.ServerPlayNetworkAddonMixin",
     "core.network.ServerPlayNetworkingMixin",
@@ -31,6 +32,7 @@
     "core.gui.client.MouseHandlerMixin",
     "core.gui.client.ScreenMixin",
     "core.gui.client.expansion.DebugScreenOverlayMixin",
+    "core.network.ClientPlayNetworkingAddonMixin",
     "core.network.ClientPlayNetworkingMixin",
     "quality.MinecraftMixin",
     "quality.ParticleEngineAccessor"
