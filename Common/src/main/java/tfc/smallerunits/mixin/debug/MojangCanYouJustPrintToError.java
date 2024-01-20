@@ -15,7 +15,7 @@ import tfc.smallerunits.logging.Loggers;
 public class MojangCanYouJustPrintToError {
 	@Shadow @Final private static Logger LOGGER;
 	
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/network/Connection;send(Lnet/minecraft/network/protocol/Packet;Lnet/minecraft/network/PacketSendListener;)V"), method = "exceptionCaught")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/network/Connection;send(Lnet/minecraft/network/protocol/Packet;Lio/netty/util/concurrent/GenericFutureListener;)V"), method = "exceptionCaught")
 	public void onExceptionCaught0(ChannelHandlerContext p_129533_, Throwable p_129534_, CallbackInfo ci) {
 		Loggers.SU_LOGGER.error("Packet handling failed", p_129534_);
 	}

@@ -22,6 +22,7 @@ import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.client.abstraction.IFrustum;
+import tfc.smallerunits.client.access.VertexBufferAccessor;
 import tfc.smallerunits.client.render.util.SUTesselator;
 import tfc.smallerunits.client.render.util.TextureScalingVertexBuilder;
 import tfc.smallerunits.data.storage.Region;
@@ -96,7 +97,10 @@ public class TileRendererHelper {
 		if (consumer == null) {
 			if (buffers[upb - 1] != null) {
 				if (lastScale != upb) {
+					((VertexBufferAccessor) buffers[upb - 1]).invokeBindVAO();
 					buffers[upb - 1].bind();
+					DefaultVertexFormat.POSITION_COLOR.setupBufferState();
+					GameRenderer.getPositionColorShader().apply();
 					lastScale = upb;
 				}
 				
@@ -247,7 +251,8 @@ public class TileRendererHelper {
 		if (builder != null) {
 			buffers[upb - 1] = new VertexBuffer();
 			buffers[upb - 1].bind();
-			buffers[upb - 1].upload(builder.end());
+			builder.end();
+			buffers[upb - 1].upload(builder);
 			DefaultVertexFormat.POSITION_COLOR.setupBufferState();
 			VertexBuffer.unbind();
 			builder.discard();

@@ -1,12 +1,15 @@
 package tfc.smallerunits.mixin.egg;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.resources.sounds.MinecartSoundInstance;
 import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
+import net.minecraft.world.entity.vehicle.AbstractMinecart;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,12 +33,10 @@ public abstract class Bed {
 	private ClientLevel level;
 	
 	@Shadow
-	protected abstract void postAddEntitySoundInstance(Entity entity);
-	
-	@Shadow
 	@Final
 	private static Logger LOGGER;
 	
+	@Shadow @Final private Minecraft minecraft;
 	@Unique
 	private static EntityType<EnderDragon> $$;
 	@Unique
@@ -91,7 +92,8 @@ public abstract class Bed {
 					int $$$$$ = $$$$$$.getId();
 					$$$.recreateFromPacket($$$$$$);
 					level.putNonPlayerEntity($$$$$, $$$);
-					postAddEntitySoundInstance($$$);
+					//noinspection ConstantValue
+					if ($$$ instanceof AbstractMinecart) this.minecraft.getSoundManager().play(new MinecartSoundInstance((AbstractMinecart)$$$));
 					$$$.setPosRaw($$$.getPosition(0).x + 0.5f, $$$.getPosition(0).y, $$$.getPosition(0).z + 0.5f);
 					$$$$$$$.cancel();
 				} else {

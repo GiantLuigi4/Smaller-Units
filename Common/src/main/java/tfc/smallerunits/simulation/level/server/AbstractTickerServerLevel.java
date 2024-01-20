@@ -35,7 +35,6 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.storage.EntityStorage;
 import net.minecraft.world.level.dimension.DimensionType;
-import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraft.world.level.entity.LevelEntityGetter;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -162,8 +161,9 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 				noAccess,
 				data,
 				p_8575_,
-				new LevelStem(Holder.direct(dimType), generator),
+				Holder.direct(dimType),
 				progressListener,
+				generator,
 				p_8579_,
 				p_8580_,
 				spawners,

@@ -95,7 +95,7 @@ public class MouseHandlerMixin {
 		}
 	}
 	
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPost(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)V"), method = "onScroll")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPost(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)Z"), method = "onScroll")
 	public void prePostScroll(long pWindowPointer, double pXOffset, double pYOffset, CallbackInfo ci) {
 		Screen screen = currentScreen.get();
 		if (Minecraft.getInstance().player != null && screen != null) {
@@ -108,7 +108,7 @@ public class MouseHandlerMixin {
 		}
 	}
 	
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPost(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)V", shift = At.Shift.AFTER), method = "onScroll")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraftforge/client/ForgeHooksClient;onScreenMouseScrollPre(Lnet/minecraft/client/MouseHandler;Lnet/minecraft/client/gui/screens/Screen;D)Z", shift = At.Shift.AFTER), method = "onScroll")
 	public void postPostScroll(long pWindowPointer, double pXOffset, double pYOffset, CallbackInfo ci) {
 		Screen screen = currentScreen.get();
 		if (Minecraft.getInstance().player != null && screen != null) {

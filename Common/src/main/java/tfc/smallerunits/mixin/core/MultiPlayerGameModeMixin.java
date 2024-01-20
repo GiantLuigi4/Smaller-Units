@@ -1,19 +1,14 @@
 package tfc.smallerunits.mixin.core;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
-import net.minecraft.client.multiplayer.prediction.BlockStatePredictionHandler;
-import net.minecraft.client.multiplayer.prediction.PredictiveAction;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.phys.HitResult;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.core.DestroyUnitPacket;
@@ -36,15 +31,15 @@ public class MultiPlayerGameModeMixin {
 		}
 	}
 	
-	@Inject(at = @At("HEAD"), method = "startPrediction", cancellable = true)
-	public void preSendAction(ClientLevel p_233730_, PredictiveAction p_233731_, CallbackInfo ci) {
-		HitResult result = minecraft.hitResult;
-		if (result instanceof UnitHitResult) {
-			BlockStatePredictionHandler blockStatePredictionHandler = p_233730_.getBlockStatePredictionHandler();
-			int i = blockStatePredictionHandler.currentSequence() + 1;
-			if (p_233731_.predict(i) instanceof ServerboundPlayerActionPacket)
-				// don't send the packet?
-				ci.cancel();
-		}
-	}
+//	@Inject(at = @At("HEAD"), method = "startPrediction", cancellable = true)
+//	public void preSendAction(ClientLevel p_233730_, PredictiveAction p_233731_, CallbackInfo ci) {
+//		HitResult result = minecraft.hitResult;
+//		if (result instanceof UnitHitResult) {
+//			BlockStatePredictionHandler blockStatePredictionHandler = p_233730_.getBlockStatePredictionHandler();
+//			int i = blockStatePredictionHandler.currentSequence() + 1;
+//			if (p_233731_.predict(i) instanceof ServerboundPlayerActionPacket)
+//				// don't send the packet?
+//				ci.cancel();
+//		}
+//	}
 }

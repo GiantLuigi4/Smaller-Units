@@ -101,27 +101,27 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    implementation fg.deobf("maven.modrinth:embeddium:0.2.16+mc1.19.2")
-    implementation fg.deobf("curse.maven:oculus-581495:4763262")
+    compileOnly fg.deobf("maven.modrinth:embeddium:0.2.16+mc1.19.2")
+    compileOnly fg.deobf("curse.maven:oculus-581495:4763262")
 
-    implementation fg.deobf("curse.maven:canary-665658:4980565")
-    implementation fg.deobf("curse.maven:pehkui-319596:4823467")
-    implementation fg.deobf("curse.maven:distant-horizons-508933:4924658")
+    compileOnly fg.deobf("curse.maven:canary-665658:4980565")
+    compileOnly fg.deobf("curse.maven:pehkui-319596:4823467")
+    implementation fg.deobf("curse.maven:distant-horizons-508933:4924657")
     compileOnly fg.deobf("curse.maven:applied-energistics-2-223794:4733119")
     compileOnly fg.deobf("curse.maven:refined-storage-243076:4861827")
     compileOnly fg.deobf("curse.maven:integrated-dynamics-236307:4925682")
     compileOnly fg.deobf("curse.maven:cyclops-core-232758:4905969")
     compileOnly fg.deobf("curse.maven:common-capabilities-247007:4391413")
-    compileOnly fg.deobf("curse.maven:chisels-bits-231095:4724660")
+    implementation fg.deobf("curse.maven:chisels-bits-231095:4119191")
 
-    implementation fg.deobf("curse.maven:framedblocks-441647:4762544")
+    compileOnly fg.deobf("curse.maven:framedblocks-441647:4762544")
 
-    implementation fg.deobf("curse.maven:spark-361579:4505309")
-    implementation fg.deobf("com.jozufozu.flywheel:flywheel-forge-1.19.2:0.6.10-20")
+    compileOnly fg.deobf("curse.maven:spark-361579:4505309")
+    compileOnly fg.deobf("com.jozufozu.flywheel:flywheel-forge-1.19.2:0.6.10-20")
 
-    implementation fg.deobf("curse.maven:jei-238222:4712866")
+    compileOnly fg.deobf("curse.maven:jei-238222:4712866")
 
-    implementation fg.deobf("curse.maven:cc-tweaked-282001:5005332")
+    compileOnly fg.deobf("curse.maven:cc-tweaked-282001:5005332")
 
     compileOnly project(":Common")
 }

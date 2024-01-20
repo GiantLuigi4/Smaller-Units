@@ -2,7 +2,6 @@ package tfc.smallerunits.simulation.level.server;
 
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.progress.ChunkProgressListener;
 import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
@@ -12,7 +11,6 @@ import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.plat.CapabilityWrapper;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class TickerServerLevel extends AbstractTickerServerLevel {

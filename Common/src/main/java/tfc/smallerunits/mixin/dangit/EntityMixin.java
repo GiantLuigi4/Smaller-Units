@@ -2,13 +2,11 @@ package tfc.smallerunits.mixin.dangit;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.gameevent.DynamicGameEventListener;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -22,7 +20,6 @@ import tfc.smallerunits.data.access.EntityAccessor;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 
 import javax.annotation.Nullable;
-import java.util.function.BiConsumer;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin implements EntityAccessor {

@@ -1,8 +1,9 @@
 package tfc.smallerunits.plat.mixin.core.network;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import net.minecraft.network.Connection;
 import net.minecraft.network.PacketListener;
-import net.minecraft.network.PacketSendListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,7 +34,7 @@ public abstract class ConnectionMixin {
 	@Shadow @Final private PacketFlow receiving;
 	
 	@Inject(at = @At("HEAD"), method = "sendPacket", cancellable = true)
-	public void preSend(Packet<?> packet, PacketSendListener p_243316_, CallbackInfo ci) {
+	public void preSend(Packet<?> packet, GenericFutureListener<? extends Future<? super Void>> p_129522_, CallbackInfo ci) {
 		try {
 			if (((PacketListenerAccessor) this.packetListener).getPlayer() == null) return;
 		} catch (Throwable ignored) {

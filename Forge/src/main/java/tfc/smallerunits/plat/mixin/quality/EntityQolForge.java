@@ -9,13 +9,14 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.fluids.FluidType;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.data.storage.RegionPos;
 import tfc.smallerunits.data.tracking.RegionalAttachments;
@@ -23,13 +24,12 @@ import tfc.smallerunits.plat.asm.PlatformQol;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.math.HitboxScaling;
 
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 @Mixin(Entity.class)
 public abstract class EntityQolForge {
 	
-	@Shadow
-	protected Object2DoubleMap<FluidType> forgeFluidTypeHeight;
 	@Shadow
 	public Level level;
 	
@@ -46,24 +46,27 @@ public abstract class EntityQolForge {
 	public abstract float getEyeHeight();
 	
 	@Shadow
-	private FluidType forgeFluidTypeOnEyes;
-	
-	@Shadow
 	public abstract AABB getBoundingBox();
 	
-	// forge, casually rewriting the entirety of fluid logic
-	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing()V", remap = false)
-	public void postCheckInFluid(CallbackInfo ci) {
+	@Shadow
+	@Final
+	private Set<TagKey<Fluid>> fluidOnEyes;
+	
+	@Inject(at = @At("RETURN"), method = "updateFluidHeightAndDoFluidPushing", cancellable = true)
+	public void postCheckInFluid(TagKey<Fluid> fluids, double something, CallbackInfoReturnable<Boolean> cir) {
+		boolean wasInFluid = cir.getReturnValueZ();
+		final boolean[] inFluid = {wasInFluid};
 		SU$runPerWorld((level, regionPos) -> {
-			// TODO: optimize?
-			PlatformQol.runSUFluidCheck((Entity) (Object) this, level, regionPos, fluidHeight, forgeFluidTypeHeight);
+			inFluid[0] = inFluid[0] || PlatformQol.runSUFluidCheck((Entity) (Object) this, fluids, something, level, regionPos, fluidHeight);
 		});
+		if (inFluid[0] && !wasInFluid)
+			cir.setReturnValue(true);
 	}
 	
 	@Inject(at = @At("RETURN"), method = "updateFluidOnEyes")
 	public void postCheckFluidOnEyes(CallbackInfo ci) {
 		SU$runPerWorld((level, pos) -> {
-			if (!forgeFluidTypeOnEyes.isAir()) return;
+//			if (!forgeFluidTypeOnEyes.isAir()) return;
 			
 			AABB aabb = HitboxScaling.getOffsetAndScaledBox(this.getBoundingBox().deflate(0.001D), this.getPosition(0), ((ITickerLevel) level).getUPB(), pos);
 			
@@ -72,8 +75,9 @@ public abstract class EntityQolForge {
 			FluidState fluidstate = level.getFluidState(blockpos);
 			double d1 = ((float) blockpos.getY() + fluidstate.getHeight(level, blockpos));
 			if (d1 > d0) {
-				if (!fluidstate.isEmpty())
-					this.forgeFluidTypeOnEyes = fluidstate.getFluidType();
+				if (!fluidstate.isEmpty()) {
+					fluidstate.getTags().forEach((t) -> fluidOnEyes.add(t));
+				}
 			}
 		});
 	}

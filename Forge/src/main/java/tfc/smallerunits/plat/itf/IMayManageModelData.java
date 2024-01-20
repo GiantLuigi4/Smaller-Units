@@ -1,27 +1,25 @@
 package tfc.smallerunits.plat.itf;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.client.model.data.ModelDataManager;
-import net.minecraftforge.common.extensions.IForgeBlockGetter;
+import net.minecraftforge.client.model.data.EmptyModelData;
+import net.minecraftforge.client.model.data.IModelData;
 import org.jetbrains.annotations.Nullable;
+import tfc.smallerunits.plat.util.ver.SUModelDataManager;
 
 import java.util.Objects;
 
-public interface IMayManageModelData extends IForgeBlockGetter {
+public interface IMayManageModelData {
 	Level getActual();
 	
 	@Nullable
-	@Override
-	default ModelDataManager getModelDataManager() {
-		return getActual().getModelDataManager();
+	default SUModelDataManager getModelDataManager() {
+		return ((IMayManageModelData) getActual()).getModelDataManager();
 	}
 	
 	default Object getModelData(BlockPos offsetPos) {
-		ModelData modelData = Objects.requireNonNull(getModelDataManager()).getAt(offsetPos);
-		if (modelData == null) modelData = ModelData.EMPTY;
+		IModelData modelData = Objects.requireNonNull(getModelDataManager()).getModelData((Level) getActual(), offsetPos);
+		if (modelData == null) modelData = EmptyModelData.INSTANCE;
 		return modelData;
 	}
 }

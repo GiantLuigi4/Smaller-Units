@@ -11,13 +11,11 @@ import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import tfc.smallerunits.UnitSpace;
@@ -34,7 +32,7 @@ import tfc.smallerunits.utils.storage.DefaultedMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Objects;
+import java.util.Random;
 
 public class SUVBOEmitter {
 	private static final ArrayList<BufferStorage> vbosFree = new ArrayList<>();
@@ -177,7 +175,7 @@ public class SUVBOEmitter {
 					}
 					
 					if (b.getRenderShape(block) == RenderShape.MODEL) {
-						RandomSource randomSource = new XoroshiroRandomSource(offsetPos.asLong());
+						Random randomSource = new Random(offsetPos.asLong());
 						Object modelData = ((IMayManageModelData) wld).getModelData(offsetPos);
 						BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
 						if (PlatformUtils.canRenderIn(model, block, randomSource, modelData, chunkBufferLayer)) {

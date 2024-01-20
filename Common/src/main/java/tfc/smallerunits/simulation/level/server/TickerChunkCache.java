@@ -18,7 +18,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.chunk.*;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +53,7 @@ public class TickerChunkCache extends ServerChunkCache implements ITickerChunkCa
 
     protected final ObjectOpenHashBigSet<ChunkHolder> holders = new ObjectOpenHashBigSet<>();
 
-    public TickerChunkCache(ServerLevel p_214982_, LevelStorageSource.LevelStorageAccess p_214983_, DataFixer p_214984_, StructureTemplateManager p_214985_, Executor p_214986_, ChunkGenerator p_214987_, int p_214988_, int p_214989_, boolean p_214990_, ChunkProgressListener p_214991_, ChunkStatusUpdateListener p_214992_, Supplier<DimensionDataStorage> p_214993_, int upb) {
+    public TickerChunkCache(ServerLevel p_214982_, LevelStorageSource.LevelStorageAccess p_214983_, DataFixer p_214984_, StructureManager p_214985_, Executor p_214986_, ChunkGenerator p_214987_, int p_214988_, int p_214989_, boolean p_214990_, ChunkProgressListener p_214991_, ChunkStatusUpdateListener p_214992_, Supplier<DimensionDataStorage> p_214993_, int upb) {
         super(p_214982_, p_214983_, p_214984_, p_214985_, p_214986_, p_214987_, p_214988_, p_214989_, p_214990_, p_214991_, p_214992_, p_214993_);
         this.chunkMap = new UnitChunkMap(p_214982_, p_214983_, p_214984_, p_214985_, p_214986_, this.mainThreadProcessor, this, p_214987_, p_214991_, p_214992_, p_214993_, p_214988_, p_214990_);
         this.upb = upb;

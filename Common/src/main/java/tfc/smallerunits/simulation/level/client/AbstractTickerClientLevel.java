@@ -16,11 +16,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ParticleUtils;
-import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.util.valueproviders.UniformInt;
 import net.minecraft.world.entity.Entity;
@@ -79,7 +77,6 @@ import tfc.smallerunits.utils.config.CommonConfig;
 import tfc.smallerunits.utils.math.HitboxScaling;
 import tfc.smallerunits.utils.math.Math1D;
 import tfc.smallerunits.utils.math.Math3d;
-import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.storage.GroupMap;
 import tfc.smallerunits.utils.storage.VecMap;
 
@@ -137,7 +134,7 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 		this.upb = upb;
 		this.isClientSide = true;
 		
-		this.blockStatePredictionHandler = new BigWorldPredictionHandler();
+//		this.blockStatePredictionHandler = new BigWorldPredictionHandler();
 		
 		particleEngine.setLevel(this);
 		
@@ -662,11 +659,17 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 		PlatformUtilsClient.postTick(this);
 	}
 	
+//	@Override
+//	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, RandomSource pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
+//		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
+//		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
+////		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
+//	}
+	
+	
 	@Override
-	public void doAnimateTick(int pPosX, int pPosY, int pPosZ, int pRange, RandomSource pRandom, @Nullable Block pBlock, BlockPos.MutableBlockPos pBlockPos) {
-		if (pPosX < 0 || pPosY < 0 || pPosZ < 0) return;
-		if (pPosX >= (upb * 16) || pPosZ >= (upb * 16) || (pPosY / 16) > upb) return;
-//		super.doAnimateTick(pPosX, pPosY, pPosZ, pRange, pRandom, pBlock, pBlockPos);
+	public void doAnimateTick(int $$0, int $$1, int $$2, int $$3, Random $$4, @Nullable Block $$5, BlockPos.MutableBlockPos $$6) {
+//		super.doAnimateTick($$0, $$1, $$2, $$3, $$4, $$5, $$6);
 	}
 	
 	@Override
@@ -692,7 +695,7 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 	@Override
 	public Holder<Biome> getBiome(BlockPos p_204167_) {
 		Registry<Biome> reg = registryAccess().registry(Registry.BIOME_REGISTRY).get();
-		return reg.getOrCreateHolder(Biomes.THE_VOID).get().orThrow();
+		return reg.getOrCreateHolder(Biomes.THE_VOID);
 	}
 	
 	@Override
@@ -1000,35 +1003,35 @@ public class AbstractTickerClientLevel extends ClientLevel implements ITickerLev
 		return false;
 	}
 	
-	@Override
-	public void playSound(
-			double pX, double pY, double pZ,
-			SoundEvent pSound, SoundSource pCategory,
-			float pVolume, float pPitch,
-			boolean pDistanceDelay, long p_233611_
-	) {
-		double scl = 1f / upb;
-		BlockPos pos = getRegion().pos.toBlockPos();
-		pX *= scl;
-		pY *= scl;
-		pZ *= scl;
-		pX += pos.getX();
-		pY += pos.getY();
-		pZ += pos.getZ();
-		double finalPX = pX;
-		double finalPY = pY;
-		double finalPZ = pZ;
-		if (ResizingUtils.isResizingModPresent())
-			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
-		if (scl > 1) scl = 1 / scl;
-		double finalScl = scl;
-		completeOnTick.add(() -> {
-			parent.get().playSound(
-					finalPX, finalPY, finalPZ,
-					pSound, pCategory,
-					(float) (pVolume * finalScl), pPitch,
-					pDistanceDelay, p_233611_
-			);
-		});
-	}
+//	@Override
+//	public void playSound(
+//			double pX, double pY, double pZ,
+//			SoundEvent pSound, SoundSource pCategory,
+//			float pVolume, float pPitch,
+//			boolean pDistanceDelay, long p_233611_
+//	) {
+//		double scl = 1f / upb;
+//		BlockPos pos = getRegion().pos.toBlockPos();
+//		pX *= scl;
+//		pY *= scl;
+//		pZ *= scl;
+//		pX += pos.getX();
+//		pY += pos.getY();
+//		pZ += pos.getZ();
+//		double finalPX = pX;
+//		double finalPY = pY;
+//		double finalPZ = pZ;
+//		if (ResizingUtils.isResizingModPresent())
+//			scl *= 1 / ResizingUtils.getSize(Minecraft.getInstance().cameraEntity);
+//		if (scl > 1) scl = 1 / scl;
+//		double finalScl = scl;
+//		completeOnTick.add(() -> {
+//			parent.get().playSound(
+//					finalPX, finalPY, finalPZ,
+//					pSound, pCategory,
+//					(float) (pVolume * finalScl), pPitch,
+//					pDistanceDelay, p_233611_
+//			);
+//		});
+//	}
 }

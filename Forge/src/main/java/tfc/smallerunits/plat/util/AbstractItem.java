@@ -1,7 +1,7 @@
 package tfc.smallerunits.plat.util;
 
 import net.minecraft.world.item.Item;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.minecraftforge.client.IItemRenderProperties;
 
 import java.util.function.Consumer;
 
@@ -14,7 +14,7 @@ public class AbstractItem extends Item {
 	}
 	
 	@Override
-	public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+	public void initializeClient(Consumer<IItemRenderProperties> consumer) {
 		ClientInitContext ctx = new ClientInitContext(consumer);
 		initializeClient(ctx);
 		ctx.finish();

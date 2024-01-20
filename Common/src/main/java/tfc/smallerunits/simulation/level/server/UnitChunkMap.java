@@ -16,7 +16,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.entity.ChunkStatusUpdateListener;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureManager;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -29,18 +29,16 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 public class UnitChunkMap extends ChunkMap {
 	ServerLevel lvl;
 	
-	public UnitChunkMap(ServerLevel p_214836_, LevelStorageSource.LevelStorageAccess p_214837_, DataFixer p_214838_, StructureTemplateManager p_214839_, Executor p_214840_, BlockableEventLoop<Runnable> p_214841_, LightChunkGetter p_214842_, ChunkGenerator p_214843_, ChunkProgressListener p_214844_, ChunkStatusUpdateListener p_214845_, Supplier<DimensionDataStorage> p_214846_, int p_214847_, boolean p_214848_) {
+	public UnitChunkMap(ServerLevel p_214836_, LevelStorageSource.LevelStorageAccess p_214837_, DataFixer p_214838_, StructureManager p_214839_, Executor p_214840_, BlockableEventLoop<Runnable> p_214841_, LightChunkGetter p_214842_, ChunkGenerator p_214843_, ChunkProgressListener p_214844_, ChunkStatusUpdateListener p_214845_, Supplier<DimensionDataStorage> p_214846_, int p_214847_, boolean p_214848_) {
 		super(p_214836_, p_214837_, p_214838_, p_214839_, p_214840_, p_214841_, p_214842_, p_214843_, p_214844_, p_214845_, p_214846_, p_214847_, p_214848_);
 		this.distanceManager = new ButcheredDistMap(p_214840_, p_214841_);
-		this.poiManager = new BlankPOIManager(new NoPath(), p_214838_, p_214848_ /* I don't know */, p_214836_.registryAccess(), p_214836_);
+		this.poiManager = new BlankPOIManager(new NoPath(), p_214838_, p_214848_ /* I don't know */, p_214836_);
 		lvl = p_214836_;
 	}
 	
@@ -136,7 +134,7 @@ public class UnitChunkMap extends ChunkMap {
 	}
 	
 	@Override
-	public CompletableFuture<Optional<CompoundTag>> read(ChunkPos pChunkPos) {
+	public CompoundTag read(ChunkPos pChunkPos) {
 		return null;
 	}
 	

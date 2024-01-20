@@ -10,7 +10,6 @@ import net.minecraft.world.level.CustomSpawner;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.DimensionType;
-import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.storage.ServerLevelData;
 import tfc.smallerunits.data.storage.Region;
 import tfc.smallerunits.plat.CapabilityWrapper;
@@ -26,8 +25,9 @@ public abstract class AbstractTickerServerLevel extends ServerLevel implements I
 				null,
 				data,
 				p_8575_,
-				new LevelStem(Holder.direct(dimType), generator),
+				Holder.direct(dimType),
 				progressListener,
+				generator,
 				p_8579_,
 				p_8580_,
 				spawners,

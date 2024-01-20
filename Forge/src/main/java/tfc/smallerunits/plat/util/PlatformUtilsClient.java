@@ -14,17 +14,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.LogicalSide;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 
 public class PlatformUtilsClient {
 	public static void postTick(ClientLevel fakeClientLevel) {
-		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, fakeClientLevel, () -> true));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.END, fakeClientLevel, () -> true));
 	}
 	
 	public static void preTick(ClientLevel fakeClientLevel) {
-		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, fakeClientLevel, () -> true));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.CLIENT, TickEvent.Phase.START, fakeClientLevel, () -> true));
 	}
 	
 	public static boolean checkRenderLayer(FluidState fluid, RenderType chunkBufferLayer) {
@@ -36,7 +36,7 @@ public class PlatformUtilsClient {
 	}
 	
 	public static void onLoad(ClientLevel fakeClientLevel) {
-		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(fakeClientLevel));
+		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(fakeClientLevel));
 	}
 	
 	public static void handlePacketClient(ClientGamePacketListener packetListener, ClientboundCustomPayloadPacket clientboundCustomPayloadPacket) {

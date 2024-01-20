@@ -21,6 +21,7 @@
     "compat.storage.refined_storage.RSNetworkNodeManagerMixin",
     "core.network.ConnectionMixin",
     "core.network.NetworkContextMixin",
+    "dangit.ForgeWhy",
     "data.FastCapabilityChunkMixin",
     "quality.EntityQolForge",
     "quality.PlayerMixin"

@@ -1,14 +1,13 @@
 package tfc.smallerunits.plat;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.ChunkEvent;
+import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -129,12 +128,12 @@ public class ForgeMod extends SmallerUnits {
 		forgeBus.addListener(
 				EventPriority.NORMAL, false,
 				ChunkEvent.Load.class,
-				(ev) -> onChunkLoaded.accept(ev.getLevel(), ev.getChunk())
+				(ev) -> onChunkLoaded.accept(ev.getWorld(), ev.getChunk())
 		);
 		forgeBus.addListener(
 				EventPriority.NORMAL, false,
 				ChunkEvent.Unload.class,
-				(ev) -> onChunkUnloaded.accept(ev.getLevel(), ev.getChunk())
+				(ev) -> onChunkUnloaded.accept(ev.getWorld(), ev.getChunk())
 		);
 	}
 	

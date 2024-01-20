@@ -37,7 +37,8 @@ public class BufferStorage {
 	public void upload(RenderType type, BufferBuilder buffer) {
 		VertexBuffer buffer1 = getBuffer(type);
 		buffer1.bind();
-		buffer1.upload(buffer.end());
+		buffer.end();
+		buffer1.upload(buffer);
 		VertexBuffer.unbind();
 		buffer.clear();
 		

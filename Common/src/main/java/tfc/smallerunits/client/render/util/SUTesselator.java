@@ -39,7 +39,8 @@ public class SUTesselator extends Tesselator {
 	
 	@Override
 	public void end() {
-		BufferUploader.drawWithShader(this.builder.end());
+		this.builder.end();
+		BufferUploader.end(this.builder);
 	}
 	
 	public class TranslatingBufferBuilder extends BufferBuilder {

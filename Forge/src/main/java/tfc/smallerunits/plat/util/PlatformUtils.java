@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
@@ -18,7 +19,6 @@ import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -34,26 +34,26 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.world.ChunkEvent;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.plat.CapabilityProvider;
 import tfc.smallerunits.plat.itf.CapabilityLike;
-import tfc.smallerunits.plat.itf.ICullableBE;
+import tfc.smallerunits.plat.itf.IMayManageModelData;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.scale.ResizingUtils;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.Random;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -193,19 +193,19 @@ public class PlatformUtils {
 	
 	// events
 	public static void preTick(ServerLevel level, BooleanSupplier pHasTimeLeft) {
-		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, level, pHasTimeLeft));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.START, level, pHasTimeLeft));
 	}
 	
 	public static void postTick(ServerLevel level, BooleanSupplier pHasTimeLeft) {
-		MinecraftForge.EVENT_BUS.post(new TickEvent.LevelTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, level, pHasTimeLeft));
+		MinecraftForge.EVENT_BUS.post(new TickEvent.WorldTickEvent(LogicalSide.SERVER, TickEvent.Phase.END, level, pHasTimeLeft));
 	}
 	
 	public static void loadLevel(ServerLevel serverLevel) {
-		MinecraftForge.EVENT_BUS.post(new LevelEvent.Load(serverLevel));
+		MinecraftForge.EVENT_BUS.post(new WorldEvent.Load(serverLevel));
 	}
 	
 	public static void unloadLevel(Level level) {
-		MinecraftForge.EVENT_BUS.post(new LevelEvent.Unload(level));
+		MinecraftForge.EVENT_BUS.post(new WorldEvent.Unload(level));
 	}
 	
 	public static void chunkLoaded(LevelChunk bvci) {
@@ -249,7 +249,7 @@ public class PlatformUtils {
 	}
 	
 	public static void updateModelData(ClientLevel level, BlockEntity be) {
-		Objects.requireNonNull(level.getModelDataManager()).requestRefresh(be);
+		Objects.requireNonNull(((IMayManageModelData) level).getModelDataManager()).requestModelDataRefresh(be);
 	}
 	
 	public static int getLightEmission(BlockState state, BlockGetter level, BlockPos pPos) {
@@ -285,18 +285,19 @@ public class PlatformUtils {
 		return ((Entity) ent).serializeNBT();
 	}
 	
-	public static boolean canRenderIn(BakedModel model, BlockState block, RandomSource randomSource, Object modelData, RenderType chunkBufferLayer) {
-		return (model.getRenderTypes(block, randomSource, (ModelData) modelData).contains(chunkBufferLayer));
+	public static boolean canRenderIn(BakedModel model, BlockState block, Random randomSource, Object modelData, RenderType chunkBufferLayer) {
+//		return (model.getRenderTypes(block, randomSource, (IModelData) modelData).contains(chunkBufferLayer));
+		return ItemBlockRenderTypes.canRenderInLayer(block, chunkBufferLayer);
 	}
 	
-	public static void tesselate(BlockRenderDispatcher dispatcher, BlockAndTintGetter wld, BakedModel blockModel, BlockState block, BlockPos offsetPos, PoseStack stk, VertexConsumer consumer, boolean b, RandomSource randomSource, int i, int i1, Object modelData, RenderType chunkBufferLayer) {
+	public static void tesselate(BlockRenderDispatcher dispatcher, BlockAndTintGetter wld, BakedModel blockModel, BlockState block, BlockPos offsetPos, PoseStack stk, VertexConsumer consumer, boolean b, Random randomSource, int i, int i1, Object modelData, RenderType chunkBufferLayer) {
 		dispatcher.getModelRenderer().tesselateBlock(
 				wld, dispatcher.getBlockModel(block),
 				block, offsetPos, stk,
 				consumer, true,
 				randomSource,
 				0, 0,
-				(ModelData) modelData, chunkBufferLayer
+				(IModelData) modelData
 		);
 	}
 	

@@ -1,18 +1,17 @@
 package tfc.smallerunits.plat.util;
 
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.minecraftforge.client.IItemRenderProperties;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ClientInitContext {
-	Consumer<IClientItemExtensions> consumer;
+	Consumer<IItemRenderProperties> consumer;
 	
 	BlockEntityWithoutLevelRenderer renderer;
 	
-	public ClientInitContext(Consumer<IClientItemExtensions> consumer) {
+	public ClientInitContext(Consumer<IItemRenderProperties> consumer) {
 		this.consumer = consumer;
 	}
 	
@@ -22,9 +21,9 @@ public class ClientInitContext {
 	
 	void finish() {
 		if (renderer != null) {
-			consumer.accept(new IClientItemExtensions() {
+			consumer.accept(new IItemRenderProperties() {
 				@Override
-				public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+				public BlockEntityWithoutLevelRenderer getItemStackRenderer() {
 					return renderer;
 				}
 			});
