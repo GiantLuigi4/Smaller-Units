@@ -130,7 +130,7 @@ public class AssortedQol {
 			list.add(ChatFormatting.ITALIC + "World: " + level.dimension().location() + "|" + space.regionPos.x + "|" + space.regionPos.y + "|" + space.regionPos.z + "|");
 			list.add(ChatFormatting.ITALIC + "Scale: 1/" + space.unitsPerBlock);
 //			list.add(String.valueOf((Object) Registry.BLOCK.getKey(state.getBlock())));
-			list.add(String.valueOf(state.getBlockHolder().unwrapKey().get()));
+			list.add(String.valueOf(state.getBlockHolder().unwrapKey().get().location()));
 			
 			for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {
 				Property<?> property = entry.getKey();
