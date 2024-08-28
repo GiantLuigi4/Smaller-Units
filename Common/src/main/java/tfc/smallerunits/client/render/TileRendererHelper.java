@@ -92,18 +92,18 @@ public class TileRendererHelper {
 		
 		if (lastScale == -1)
 			GameRenderer.getPositionColorShader().apply();
-		
+
 		if (consumer == null) {
 			if (buffers[upb - 1] != null) {
 				if (lastScale != upb) {
 					buffers[upb - 1].bind();
 					lastScale = upb;
 				}
-				
+
 				stk.pushPose();
-				
+
 				stk.translate(pos.getX() - ox, pos.getY() - oy, pos.getZ() - oz);
-				
+
 				ShaderInstance instance = RenderSystem.getShader();
 				if (lastType != type) {
 					if (instance.COLOR_MODULATOR != null) {
@@ -116,11 +116,11 @@ public class TileRendererHelper {
 					instance.MODEL_VIEW_MATRIX.set(stk.last().pose());
 					instance.MODEL_VIEW_MATRIX.upload();
 				}
-				
+
 				buffers[upb - 1].draw();
-				
+
 				stk.popPose();
-				
+
 				return;
 			}
 		}
@@ -245,7 +245,7 @@ public class TileRendererHelper {
 		stk.popPose();
 		
 		if (builder != null) {
-			buffers[upb - 1] = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
+			if (buffers[upb - 1] == null) buffers[upb - 1] = new VertexBuffer(VertexBuffer.Usage.DYNAMIC);
 			buffers[upb - 1].bind();
 			buffers[upb - 1].upload(builder.end());
 			DefaultVertexFormat.POSITION_COLOR.setupBufferState();
@@ -304,9 +304,9 @@ public class TileRendererHelper {
 	
 	private static VertexConsumer vertex(VertexConsumer consumer, Matrix4f mat, float x, float y, float z) {
 		float w = 1.0F;
-		float tx = mat.m00() * x + mat.m01() * y + mat.m02() * z + mat.m03() * w;
-		float ty = mat.m10() * x + mat.m11() * y + mat.m12() * z + mat.m13() * w;
-		float tz = mat.m20() * x + mat.m21() * y + mat.m22() * z + mat.m23() * w;
+		float tx = mat.m00() * x + mat.m10() * y + mat.m20() * z + mat.m30() * w;
+		float ty = mat.m01() * x + mat.m11() * y + mat.m21() * z + mat.m31() * w;
+		float tz = mat.m02() * x + mat.m12() * y + mat.m22() * z + mat.m32() * w;
 		
 		return consumer.vertex(tx, ty, tz);
 	}

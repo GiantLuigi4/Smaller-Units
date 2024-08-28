@@ -1,20 +1,19 @@
 package tfc.smallerunits;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Quaternionf;
 import tfc.smallerunits.client.render.TileRendererHelper;
-
-import static tfc.smallerunits.client.render.TileRendererHelper.drawCorner;
 
 public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 	public SUItemRenderer() {
@@ -33,14 +32,15 @@ public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 		pPoseStack.pushPose();
 		
 		/* draw indicator */
+		VertexConsumer consumer = pBuffer.getBuffer(RenderType.solid());
 		TileRendererHelper.drawUnit(
 				null, new BlockPos(0, 0, 0), upb,
 				false, false, true,
-				pBuffer.getBuffer(RenderType.solid()),
+				consumer,
 				pPoseStack, pPackedLight,
 				0, 0, 0
 		);
-
+		
 		/* draw text */
 		String text = "1/" + upb;
 		int scale = upb;
@@ -50,10 +50,14 @@ public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 		pPoseStack.mulPose(new Quaternionf().fromAxisAngleDeg(1, 0, 0, 180));
 		pPoseStack.scale(1f / 4, 1f / 4, 1f / 4);
 		pPoseStack.translate(-Minecraft.getInstance().font.width("1/" + upb) / 2f, 0, 0);
-		Minecraft.getInstance().font.drawInBatch(text, -3f, -3f, 4210752, false, pPoseStack.last().pose(),
-				pBuffer, Font.DisplayMode.NORMAL, 0, 0, false
+		// TODO: look at 1.19, I don't remember how this actually looked
+		Minecraft.getInstance().font.drawInBatch(text, 1f, 1f, 4079166, false, pPoseStack.last().pose(),
+				pBuffer, Font.DisplayMode.NORMAL, 0, pPackedLight, false
 		);
 		pPoseStack.translate(0, 0, -0.1f);
+		Minecraft.getInstance().font.drawInBatch(text, 0f, 0f, 16514043, false, pPoseStack.last().pose(),
+				pBuffer, Font.DisplayMode.NORMAL, 0, pPackedLight, false
+		);
 		pPoseStack.popPose();
 		
 		// TODO: what?
