@@ -1,11 +1,13 @@
 {
   "item.smallerunits.su_grower": "Увеличитель блоков",
   "item.smallerunits.su_shrinker": "Уменьшитель блоков",
-  "item.smallerunits.unit_space": "missingno",
-  "block.smallerunits.unit_space": "missingno",
-  "itemGroup.Smaller Units": "Маленькие блоки",
+  "item.smallerunits.unit_space": "Пространство блоков",
+  "block.smallerunits.unit_space": "Пространство блоков",
+  "itemGroup.Smaller Units": "Smaller Units",
   "smallerunits.advancements.root.name": "Чем меньше, тем лучше!",
-  "smallerunits.advancements.root.description": "Сделайте молот изменения размера",
-  "smallerunits.advancements.rude.name": "Ну это же грубо!",
-  "smallerunits.advancements.rude.description": "Принудительно измените размер игрока при помощи молотка изменения размера"
+  "smallerunits.advancements.root.description": "Создайте молот изменения размера",
+  "smallerunits.advancements.rude.name": "Чтож, ну это уже грубо!",
+  "smallerunits.advancements.rude.description": "Насильно поменяйте размер игрока, используя молот изменения размера",
+  "smallerunits.tooltip.scale": "Масштаб 1:%s",
+  "smallerunits.built.too_small": "Ткань реальности в этой зоне была слишком искажена, дальнейшие действия разрушат её. (Лимит масштаба - 1:%s)"
 }
