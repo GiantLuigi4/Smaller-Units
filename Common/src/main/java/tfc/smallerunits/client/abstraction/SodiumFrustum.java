@@ -8,10 +8,11 @@ public class SodiumFrustum extends IFrustum {
 	
 	@Override
 	public boolean test(AABB box) {
-		return frustum.testAab(
-				(float) box.minX, (float) box.minY, (float) box.minZ,
-				(float) box.maxX, (float) box.maxY, (float) box.maxZ
-		);
+//		return frustum.testAab(
+//				(float) box.minX, (float) box.minY, (float) box.minZ,
+//				(float) box.maxX, (float) box.maxY, (float) box.maxZ
+//		);
+		return true; // TODO
 	}
 	
 	public void set(Frustum frustum) {

@@ -24,7 +24,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 		
 		{
 			ArrayList<String> incompat = new ArrayList<>();
-			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
+			incompat.add("me.jellysquid.mods.sodium.mixin.core.render.world.WorldRendererMixin");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
 			
 			incompat = new ArrayList<>();
@@ -44,8 +44,8 @@ public class MixinConnector implements IMixinConfigPlugin {
 			dependencies.put("tfc.smallerunits.plat.mixin.compat.optimization.flywheel.TickerClientLevelMixin", "com.jozufozu.flywheel.api.FlywheelWorld");
 		}
 		{
-			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.UnitCapabilityHandlerMixin", "me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
-			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.LevelMixin", "me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.UnitCapabilityHandlerMixin", "me.jellysquid.mods.sodium.mixin.core.render.world.WorldRendererMixin");
+			dependencies.put("tfc.smallerunits.mixin.compat.optimization.sodium.LevelMixin", "me.jellysquid.mods.sodium.mixin.core.render.world.WorldRendererMixin");
 		}
 	}
 	

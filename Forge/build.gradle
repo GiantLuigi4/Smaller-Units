@@ -103,6 +103,7 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
+    implementation fg.deobf("curse.maven:embeddium-908741:5630140")
     compileOnly fg.deobf("curse.maven:oculus-581495:5299671")
 
     compileOnly fg.deobf("curse.maven:canary-665658:5089991")

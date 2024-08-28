@@ -389,14 +389,14 @@ public class TileRendererHelper {
 							renderBox.maxZ * scl + regionOrigin.getZ()
 					);
 				}
-//				if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && !FMLEnvironment.production) {
-//					stk.pushPose();
-//					LevelRenderer.renderLineBox(
-//							stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
-//							renderBox, 1, 1, 1, 1
-//					);
-//					stk.popPose();
-//				}
+				if (Minecraft.getInstance().getEntityRenderDispatcher().shouldRenderHitBoxes() && PlatformUtils.isDevEnv()) {
+					stk.pushPose();
+					LevelRenderer.renderLineBox(
+							stk, Minecraft.getInstance().renderBuffers().bufferSource().getBuffer(RenderType.LINES),
+							renderBox, 1, 1, 1, 1
+					);
+					stk.popPose();
+				}
 				if (frustum.test(renderBox)) {
 					TileRendererHelper.setupStack(stk, tile, origin);
 					blockEntityRenderDispatcher.render(
