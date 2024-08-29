@@ -105,20 +105,21 @@ dependencies {
 
     implementation fg.deobf("curse.maven:embeddium-908741:5630140")
     compileOnly fg.deobf("curse.maven:oculus-581495:5299671")
+    compileOnly fg.deobf("curse.maven:alternate-current-548115:4721662")
 
-    compileOnly fg.deobf("curse.maven:canary-665658:5089991")
-    compileOnly fg.deobf("curse.maven:pehkui-319596:5393101")
+    implementation fg.deobf("curse.maven:canary-665658:5089991")
+    implementation fg.deobf("curse.maven:pehkui-319596:5393101")
     compileOnly fg.deobf("curse.maven:distant-horizons-508933:5649758")
-    compileOnly fg.deobf("curse.maven:applied-energistics-2-223794:5641282")
-    compileOnly fg.deobf("curse.maven:refined-storage-243076:4844585")
-    compileOnly fg.deobf("curse.maven:integrated-dynamics-236307:5653425")
-    compileOnly fg.deobf("curse.maven:cyclops-core-232758:5583765")
-    compileOnly fg.deobf("curse.maven:common-capabilities-247007:5650234")
-    compileOnly fg.deobf("curse.maven:chisels-bits-231095:5203366")
+    implementation fg.deobf("curse.maven:applied-energistics-2-223794:5641282")
+    implementation fg.deobf("curse.maven:refined-storage-243076:4844585")
+    implementation fg.deobf("curse.maven:integrated-dynamics-236307:5653425")
+    implementation fg.deobf("curse.maven:cyclops-core-232758:5583765")
+    implementation fg.deobf("curse.maven:common-capabilities-247007:5650234")
+    implementation fg.deobf("curse.maven:chisels-bits-231095:5203366")
 
-    compileOnly fg.deobf("curse.maven:framedblocks-441647:5629578")
+    implementation fg.deobf("curse.maven:framedblocks-441647:5629578")
 
-    compileOnly fg.deobf("curse.maven:spark-361579:4738952")
+    implementation fg.deobf("curse.maven:spark-361579:4738952")
 
     compileOnly fg.deobf("curse.maven:jei-238222:5648527")
 

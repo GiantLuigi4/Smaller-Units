@@ -13,7 +13,6 @@ import tfc.smallerunits.networking.hackery.NetworkContext;
 import tfc.smallerunits.networking.hackery.NetworkHandlingContext;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.plat.net.NetworkDirection;
-import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.IHateTheDistCleaner;
 import tfc.smallerunits.utils.PositionalInfo;
 
@@ -25,9 +24,15 @@ public class NetworkContextMixin {
 		if (nhcontext == null) return src;
 		
 		NetworkContext context = nhcontext.netContext;
-		Connection networkManager = context.connection;
+		// TODO: this causes errors to be outputted, but doesn't cause problems
+		//       why?
+		Connection networkManager$TMP = context.connection;
 		PositionalInfo info = nhcontext.info;
 		NetworkDirection direction = nhcontext.direction;
+//		if (direction == NetworkDirection.TO_CLIENT) {
+//			networkManager$TMP = IHateTheDistCleaner.getConnection((ClientLevel) context.player.level()).getConnection();
+//		}
+		Connection networkManager = networkManager$TMP;
 		
 		NetworkingHacks.LevelDescriptor descriptor = NetworkingHacks.unitPos.get();
 		
@@ -46,10 +51,12 @@ public class NetworkContextMixin {
 			if (toServer) old = context.player.containerMenu;
 			else old = IHateTheDistCleaner.getScreen();
 			// get level
-			int upb = 0;
-			if (preHandleLevel instanceof ITickerLevel tl) upb = tl.getUPB();
-			// TODO: debug this garbage
-			((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(context.player.level());
+//			int upb = 0;
+//			if (preHandleLevel instanceof ITickerLevel tl) upb = tl.getUPB();
+			// TODO: this seems to solve problems...
+			//       now... why?
+			if (networkManager.getPacketListener() != null)
+				((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(context.player.level());
 			
 			try {
 				src.run(); // run deferred work
@@ -75,7 +82,8 @@ public class NetworkContextMixin {
 			}
 			
 			info.reset(context.player);
-			((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(preHandleLevel);
+			if (networkManager.getPacketListener() != null)
+				((PacketListenerAccessor) networkManager.getPacketListener()).setWorld(preHandleLevel);
 			
 			NetworkingHacks.increaseBlockPosPrecision.set(false);
 			

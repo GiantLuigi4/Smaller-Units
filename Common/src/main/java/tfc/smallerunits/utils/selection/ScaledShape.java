@@ -23,11 +23,14 @@ public class ScaledShape {
 	// TODO: is this something that I will need to worry about making a fast algo for?
 	private static final Class<?> SLICE = SliceShape.class;
 	
-	MutableAABB worker = new MutableAABB(0, 0, 0, 1, 1, 1);
+//	MutableAABB worker = new MutableAABB(0, 0, 0, 1, 1, 1);
 	
 	private static final Direction[] dirs = Direction.values();
 	
-	public ScaledShape(BlockPos pos, VoxelShape src, Vec3 offset, double scale) {
+	MutableAABB worker;
+	
+	public ScaledShape(MutableAABB worker, BlockPos pos, VoxelShape src, Vec3 offset, double scale) {
+		this.worker = worker;
 		this.pos = pos;
 		this.src = src;
 		this.offset = offset;
@@ -46,14 +49,14 @@ public class ScaledShape {
 		}
 	}
 	
-	public BlockHitResult clip(BlockPos actualPos, Vec3 start, Vec3 end) {
+	public BlockHitResult clip(double[] percent, BlockPos actualPos, Vec3 start, Vec3 end) {
 //		cube = false;
 		usePrecise = false;
 		if (cube) {
 			AABB aabb = src.bounds();
 			worker.set(aabb).scale(scale).move(offset).move(actualPos);
 			
-			double[] percent = {1};
+			percent[0] = 1;
 			double d0 = end.x - start.x;
 			double d1 = end.y - start.y;
 			double d2 = end.z - start.z;
@@ -89,7 +92,7 @@ public class ScaledShape {
 			for (AABB aabb : src.toAabbs()) {
 				worker.set(aabb).scale(scale).move(offset).move(actualPos);
 				
-				double[] percent = {1};
+				percent[0] = 1;
 				double d0 = end.x - start.x;
 				double d1 = end.y - start.y;
 				double d2 = end.z - start.z;

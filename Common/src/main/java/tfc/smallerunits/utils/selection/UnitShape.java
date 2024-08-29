@@ -39,7 +39,6 @@ import java.util.function.Function;
 public class UnitShape extends VoxelShape {
 	public final boolean visual;
 	protected final ArrayList<UnitBox> boxesTrace = new ArrayList<>();
-	protected final ArrayList<UnitBox> boxesCollide = new ArrayList<>();
 	
 	public final UnitSpace space;
 	protected AABB totalBB = null;
@@ -90,7 +89,6 @@ public class UnitShape extends VoxelShape {
 				double deltaX = tMinX - oMaxX;
 				
 				if (deltaX < offsetX) return deltaX;
-//			} else if (offsetX < 0.0D && oMinX >= (tMaxX - 0.000001)) {
 			} else if (offsetX < 0.0D && oMinX >= (tMaxX - 0.000001)) {
 				double deltaX = tMaxX - oMinX;
 				
@@ -259,7 +257,9 @@ public class UnitShape extends VoxelShape {
 		double d0 = pEndVec.x - vec31.x;
 		double d1 = pEndVec.y - vec31.y;
 		double d2 = pEndVec.z - vec31.z;
-		double[] adouble = new double[]{1.0D};
+		
+		MutableAABB worker = new MutableAABB(0, 0, 0, 1, 1, 1);
+		double[] adouble = new double[1];
 		
 		collectShape((box) -> {
 			if (lenientContains(box, pStartVec.x, pStartVec.y, pStartVec.z)) return true;
@@ -273,6 +273,7 @@ public class UnitShape extends VoxelShape {
 			else sp = state.getShape(space.getMyLevel(), space.getOffsetPos(pos), collisionContext);
 			
 			scaledShapes.add(new ScaledShape(
+					worker,
 					pos.immutable(), sp,
 					new Vec3(x * divisor + offset.x, y * divisor + offset.y, z * divisor + offset.z),
 					divisor
@@ -283,7 +284,7 @@ public class UnitShape extends VoxelShape {
 		double bestDist = Double.POSITIVE_INFINITY;
 		
 		for (ScaledShape scaledShape : scaledShapes) {
-			BlockHitResult r = scaledShape.clip(pPos, pStartVec, pEndVec);
+			BlockHitResult r = scaledShape.clip(adouble, pPos, pStartVec, pEndVec);
 			if (r != null) {
 				double dist = r.getLocation().distanceTo(pStartVec);
 				if (dist <= bestDist) {
@@ -294,6 +295,8 @@ public class UnitShape extends VoxelShape {
 		}
 		
 		if (closest != null) return closest;
+		
+		adouble[0] = 1;
 		
 		double scl = 1d / Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
 		scl /= space.unitsPerBlock;
@@ -318,21 +321,26 @@ public class UnitShape extends VoxelShape {
 		double upbDouble = upbInt;
 		
 		BlockPos.MutableBlockPos mutableBlockPos = new BlockPos.MutableBlockPos();
-		BlockPos origin = space.getOffsetPos(new BlockPos(0, 0, 0));
+		BlockPos origin = space.getOffsetPos(BlockPos.ZERO);
 		// TODO: use a more efficient loop
 		MutableAABB box = new MutableAABB(0, 0, 0, 1, 1, 1);
 		
-		BlockPos.MutableBlockPos bbOffset = new BlockPos.MutableBlockPos(offset.x + pPos.getX(), offset.y + pPos.getY(), offset.z + pPos.getZ());
+		int x0 = (int) (offset.x + pPos.getX());
+		int y0 = (int) (offset.y + pPos.getY());
+		int z0 = (int) (offset.z + pPos.getZ());
+		
 		for (int x = 0; x < upbInt; x++) {
 			for (int z = 0; z < upbInt; z++) {
 				box.set(
-						x / upbDouble + bbOffset.getX(), bbOffset.getY(), z / upbDouble + bbOffset.getZ(),
-						(x + 1) / upbDouble + bbOffset.getX(), upbInt / upbDouble + bbOffset.getY(), (z + 1) / upbDouble + bbOffset.getZ()
+						x / upbDouble + x0, y0, z / upbDouble + z0,
+						(x + 1) / upbDouble + x0, 1 + y0, (z + 1) / upbDouble + z0
 				);
 				
 				if (simpleChecker.apply(box)) {
 					int pX = SectionPos.blockToSectionCoord(x + origin.getX());
 					int pZ = SectionPos.blockToSectionCoord(z + origin.getZ());
+					
+					// caching chunks doesn't really make a difference for SU, elsewise I woud
 					BasicVerticalChunk chunk = (BasicVerticalChunk) space.getMyLevel().getChunk(pX, pZ, ChunkStatus.FULL, false);
 					if (chunk == null) {
 						z = (z | 0xF + 1);
@@ -347,16 +355,21 @@ public class UnitShape extends VoxelShape {
 							continue;
 						}
 						
-						mutableBlockPos.set(x, y, z);
-						
 						box.set(
-								x / upbDouble + bbOffset.getX(), y / upbDouble + bbOffset.getY(), z / upbDouble + bbOffset.getZ(),
-								(x + 1) / upbDouble + bbOffset.getX(), (y + 1) / upbDouble + bbOffset.getY(), (z + 1) / upbDouble + bbOffset.getZ()
+								box.minX, y / upbDouble + y0, box.minZ,
+								box.maxX, (y + 1) / upbDouble + y0, box.maxZ
 						);
+						BlockState state = chunk.getBlockState(
+								mutableBlockPos.set(
+										(x + origin.getX()) & 15,
+										y + origin.getY(),
+										(z + origin.getZ()) & 15
+								)
+						);
+						if (state.isAir()) continue;
+						
+						// TODO: I cannot establish if this should be done before getting the block, after getting the block, or not at all
 						if (simpleChecker.apply(box)) {
-							mutableBlockPos.set((x + origin.getX()) & 15, y + origin.getY(), (z + origin.getZ()) & 15);
-							BlockState state = chunk.getBlockState(mutableBlockPos);
-							if (state.isAir()) continue;
 							mutableBlockPos.set(x, y, z);
 							boxFiller.accept(mutableBlockPos, state);
 						}
@@ -406,7 +419,10 @@ public class UnitShape extends VoxelShape {
 					space.regionPos
 			);
 			pDesiredOffset *= space.unitsPerBlock;
-			AABB motionBox = pCollisionBox;
+			AABB motionBox = new MutableAABB(
+					pCollisionBox.minX, pCollisionBox.minY, pCollisionBox.minZ,
+					pCollisionBox.maxX, pCollisionBox.maxY, pCollisionBox.maxZ
+			);
 			double signNum = Math.signum(pDesiredOffset);
 			switch (ySwivel) {
 				case X ->
@@ -694,10 +710,10 @@ public class UnitShape extends VoxelShape {
 							BooleanOp.AND
 					)) {
 						BlockPos pos = new BlockPos(
-                                (int) (up.getStepX() * u.x + right.getStepX() * r.x),
-                                (int) (up.getStepY() * u.y + right.getStepY() * r.y),
-                                (int) (up.getStepZ() * u.z + right.getStepZ() * r.z)
-                        );
+								(int) (up.getStepX() * u.x + right.getStepX() * r.x),
+								(int) (up.getStepY() * u.y + right.getStepY() * r.y),
+								(int) (up.getStepZ() * u.z + right.getStepZ() * r.z)
+						);
 						
 						switch (value) {
 							case UP -> pos = pos.above(space.unitsPerBlock);
