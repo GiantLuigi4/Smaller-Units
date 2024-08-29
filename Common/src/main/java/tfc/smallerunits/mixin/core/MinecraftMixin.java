@@ -22,7 +22,6 @@ import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.plat.util.PlatformUtils;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.PositionalInfo;
-import tfc.smallerunits.utils.scale.ResizingUtils;
 import tfc.smallerunits.utils.selection.UnitHitResult;
 
 import javax.annotation.Nullable;
@@ -32,9 +31,6 @@ import java.util.ArrayList;
 public class MinecraftMixin {
 	@Shadow
 	@Nullable
-	public HitResult hitResult;
-	@Shadow
-	@Nullable
 	public LocalPlayer player;
 	@Shadow
 	@Nullable
@@ -42,6 +38,9 @@ public class MinecraftMixin {
 	@Shadow
 	@Nullable
 	public Screen screen;
+	@Shadow
+	@org.jetbrains.annotations.Nullable
+	public HitResult hitResult;
 	@Unique
 	ArrayList<RaytraceData> datas = new ArrayList<>();
 	
