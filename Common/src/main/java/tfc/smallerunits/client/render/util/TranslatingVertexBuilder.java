@@ -19,6 +19,11 @@ public class TranslatingVertexBuilder implements VertexConsumer {
 		return this;
 	}
 	
+//	@Override
+//	public VertexConsumer vertex(Matrix4f $$0, float $$1, float $$2, float $$3) {
+//		return vertex($$1, $$2, $$3);
+//	}
+	
 	@Override
 	public VertexConsumer color(int red, int green, int blue, int alpha) {
 		parent = parent.color(red, green, blue, alpha);

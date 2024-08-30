@@ -22,6 +22,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -219,6 +220,11 @@ public class PlatformUtils {
 	
 	public static AttributeInstance getReachAttrib(LivingEntity livingEntity) {
 		return livingEntity.getAttribute(ForgeMod.BLOCK_REACH.get());
+	}
+	
+	// tabs
+	public static SUTabBuilder tab(String name, Supplier<ItemStack> icon) {
+		return new SUTabBuilder(name, icon);
 	}
 	
 	public static void customPayload(ClientboundCustomPayloadPacket clientboundCustomPayloadPacket, Object context, PacketListener listener) {

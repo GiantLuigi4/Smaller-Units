@@ -19,8 +19,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -182,7 +181,7 @@ public class PlatformUtils {
 	}
 	
 	// tabs
-	public static CreativeModeTab tab(String name, Supplier<Item> icon) {
+	public static SUTabBuilder tab(String name, Supplier<ItemStack> icon) {
 		throw new RuntimeException();
 	}
 	

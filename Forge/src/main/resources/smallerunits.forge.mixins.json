@@ -22,6 +22,10 @@
   ],
   "client": [
     "compat.distant_horizons.ForgeClientProxyMixin",
+    "compat.optimization.flywheel.CModCompatMixin",
+    "compat.optimization.flywheel.LevelRendererMixin",
+    "compat.optimization.flywheel.ModCompatMixin",
+    "compat.optimization.flywheel.TickerClientLevelMixin",
     "core.LevelRendererMixinForge",
     "core.gui.client.ForgeHooksClientMixin",
     "core.gui.client.KeyboardHandlerMixin",

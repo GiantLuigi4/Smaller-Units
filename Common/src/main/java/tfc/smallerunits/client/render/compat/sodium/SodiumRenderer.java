@@ -82,8 +82,10 @@ public class SodiumRenderer {
 			
 			int sectY = chunk1.getMinBuildHeight();
 			for (LevelChunkSection section : chunk1.getSections()) {
-				sectY += 16;
-				if (section.hasOnlyAir()) continue;
+				if (section.hasOnlyAir()) {
+					sectY += 16;
+					continue;
+				}
 				
 				BlockPos pos = new BlockPos(
 						chunk1.getPos().getMinBlockX(),
@@ -104,6 +106,8 @@ public class SodiumRenderer {
 						camX, camY, camZ,
 						instance.CHUNK_OFFSET
 				);
+				
+				sectY += 16;
 			}
 		}
 		

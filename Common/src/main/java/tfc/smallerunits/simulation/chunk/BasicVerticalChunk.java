@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
-import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -338,7 +337,10 @@ public class BasicVerticalChunk extends LevelChunk {
 		}
 		super.setUnsaved(pUnsaved);
 	}
-
+	
+	private static final BlockState eTranpsarent = Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, true);
+	private static final BlockState eSolid = Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, false);
+	
 	@Override
 	public BlockState getBlockState(BlockPos pos) {
 		boolean lookupPass = false;
@@ -376,7 +378,8 @@ public class BasicVerticalChunk extends LevelChunk {
 			}
 			return getBlockState$(pos);
 		} else {
-			return Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
+//			return Registry.UNIT_EDGE.get().defaultBlockState().setValue(UnitEdge.TRANSPARENT, transparent);
+			return transparent ? eTranpsarent : eSolid;
 		}
 	}
 

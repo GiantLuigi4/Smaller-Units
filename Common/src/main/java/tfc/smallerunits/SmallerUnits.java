@@ -18,7 +18,6 @@ import tfc.smallerunits.networking.SUNetworkRegistry;
 import tfc.smallerunits.networking.hackery.InfoRegistry;
 import tfc.smallerunits.networking.hackery.NetworkingHacks;
 import tfc.smallerunits.networking.sync.SyncPacketS2C;
-import tfc.smallerunits.plat.net.NetCtx;
 import tfc.smallerunits.plat.util.PlatformUtils;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.utils.config.ClientConfig;
@@ -63,6 +62,7 @@ public abstract class SmallerUnits extends AbstractMod {
 		/* registries */
 		Registry.BLOCK_REGISTER.register();
 		Registry.ITEM_REGISTER.register();
+		Registry.TAB_REGISTER.register();
 		CraftingRegistry.RECIPES.register();
 		/* mod loading events */
 		registerCapabilities();

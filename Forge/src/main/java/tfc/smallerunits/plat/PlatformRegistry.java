@@ -1,5 +1,7 @@
 package tfc.smallerunits.plat;
 
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.block.Block;
@@ -20,6 +22,8 @@ public class PlatformRegistry<T> {
 			internal = (DeferredRegister<T>) DeferredRegister.create(ForgeRegistries.BLOCKS, modid);
 		} else if (cls.equals(RecipeSerializer.class)) {
 			internal = (DeferredRegister<T>) DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, modid);
+		} else if (cls.equals(CreativeModeTab.class)) {
+			internal = (DeferredRegister<T>) DeferredRegister.create(Registries.CREATIVE_MODE_TAB, modid);
 		} else
 			throw new RuntimeException("Unsupported registry type.");
 	}

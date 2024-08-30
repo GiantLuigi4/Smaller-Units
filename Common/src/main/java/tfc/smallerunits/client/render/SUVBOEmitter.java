@@ -1,7 +1,6 @@
 package tfc.smallerunits.client.render;
 
 import com.mojang.blaze3d.vertex.*;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -11,13 +10,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import tfc.smallerunits.UnitSpace;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.render.storage.BufferStorage;
@@ -86,10 +86,9 @@ public class SUVBOEmitter {
 			return builder;
 		});
 		int upb = space.unitsPerBlock;
-		Minecraft.getInstance().getProfiler().push("draw_loop");
 		
-		for (int i = 0; i < RenderType.chunkBufferLayers().size(); i++) {
-			RenderType chunkBufferLayer = RenderType.chunkBufferLayers().get(i);
+		Minecraft.getInstance().getProfiler().push("draw_loop");
+		for (RenderType chunkBufferLayer : RenderType.chunkBufferLayers()) {
 			handleLayer(chunkBufferLayer, buffers, space.getRenderWorld(), stack, upb, space, dispatcher, states);
 		}
 		Minecraft.getInstance().getProfiler().popPush("finish");
@@ -104,43 +103,61 @@ public class SUVBOEmitter {
 	}
 	
 	private void handleLayer(RenderType chunkBufferLayer, DefaultedMap<RenderType, BufferBuilder> buffers, RenderWorld wld, PoseStack stack, int upb, UnitSpace space, BlockRenderDispatcher dispatcher, BlockState[] states) {
-		Object2IntMap<BlockState> map = null;
-		
+		Minecraft.getInstance().getProfiler().push("prepare");
 		VertexConsumer consumer = null;
 		TranslatingVertexBuilder vertexBuilder = null;
 		SectionPos chunkPos = SectionPos.of(new BlockPos(space.pos.getX() & 511, space.pos.getY() & 511, space.pos.getZ() & 511));
-		BlockPos chunkOffset = new BlockPos(chunkPos.minBlockX(), chunkPos.minBlockY(), chunkPos.minBlockZ());
+		int chunkX = chunkPos.minBlockX() * space.unitsPerBlock;
+		int chunkY = chunkPos.minBlockY() * space.unitsPerBlock;
+		int chunkZ = chunkPos.minBlockZ() * space.unitsPerBlock;
+		
 		PoseStack stk = new PoseStack();
 		stk.last().pose().set(stack.last().pose());
 		stk.last().normal().set(stack.last().normal());
 		BlockPos.MutableBlockPos blockPosMut = new BlockPos.MutableBlockPos();
 		
+		float scl = 1f / upb;
+		
+		Vector3f pTranslation = stack.last().pose().getTranslation(new Vector3f());
+		
+		RandomSource randomSource = new XoroshiroRandomSource(0);
+		Matrix4f pose = stk.last().pose();
+		Minecraft.getInstance().getProfiler().popPush("draw");
+		Minecraft.getInstance().getProfiler().push("iterate");
 		for (int x = 0; x < upb; x++) {
+			int xUpb = x * upb;
+			
 			for (int y = 0; y < upb; y++) {
+				int yUpb = (xUpb + y) * upb;
+				
 				for (int z = 0; z < upb; z++) {
-					blockPosMut.set(x, y, z);
-					int indx = (((x * upb) + y) * upb) + z;
+					int indx = yUpb + z;
+					
+//					Minecraft.getInstance().getProfiler().popPush("get_block");
 					BlockState block = states[indx];
-					if (block == null || block.isAir()) continue;
+//					Minecraft.getInstance().getProfiler().popPush("check_air");
+					if (block == null || block.isAir()) {
+//						Minecraft.getInstance().getProfiler().popPush("iterate");
+						continue;
+					}
 					
-					Block b = block.getBlock();
+					Minecraft.getInstance().getProfiler().popPush("space_pos");
+					BlockPos offsetPos = space.getOffsetPosMut(blockPosMut.set(x, y, z));
 					
-					BlockPos offsetPos = space.getOffsetPos(blockPosMut);
-					// for some reason
-					// this single line of code causes a lot of lag
-					// TODO: what???
-					FluidState fluid = b.getFluidState(block);
+					// render fluid
+					Minecraft.getInstance().getProfiler().popPush("fluid");
+					FluidState fluid = block.getFluidState();
 					if (!fluid.isEmpty()) {
 						RenderType rendertype = ItemBlockRenderTypes.getRenderLayer(fluid);
 						if (rendertype.equals(chunkBufferLayer)) {
 							if (vertexBuilder == null) {
 								if (consumer == null) consumer = buffers.get(chunkBufferLayer);
-								vertexBuilder = new TranslatingVertexBuilder(1f / upb, consumer);
+								vertexBuilder = new TranslatingVertexBuilder(scl, consumer);
 							}
 							vertexBuilder.offset = new Vec3(
-									(Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkOffset.getX() * space.unitsPerBlock,
-									(Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkOffset.getY() * space.unitsPerBlock,
-									(Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkOffset.getZ() * space.unitsPerBlock
+									(Math1D.getChunkOffset(offsetPos.getX(), 16)) * 16 - chunkX,
+									(Math1D.getChunkOffset(offsetPos.getY(), 16)) * 16 - chunkY,
+									(Math1D.getChunkOffset(offsetPos.getZ(), 16)) * 16 - chunkZ
 							);
 							dispatcher.renderLiquid(
 									offsetPos, wld, vertexBuilder,
@@ -149,29 +166,44 @@ public class SUVBOEmitter {
 						}
 					}
 					
-					if (b.getRenderShape(block) == RenderShape.MODEL) {
-						RandomSource randomSource = new XoroshiroRandomSource(offsetPos.asLong());
-						Object modelData = wld.getModelData(offsetPos);
+					// render block
+					Minecraft.getInstance().getProfiler().popPush("block");
+					if (block.getRenderShape() == RenderShape.MODEL) {
+						Minecraft.getInstance().getProfiler().push("prepare");
+						randomSource.setSeed(offsetPos.asLong());
 						BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
+						Minecraft.getInstance().getProfiler().popPush("get_data");
+						Object modelData = wld.getModelData(offsetPos);
+						Minecraft.getInstance().getProfiler().popPush("check_render");
 						if (PlatformUtils.canRenderIn(model, block, randomSource, modelData, chunkBufferLayer)) {
 							if (consumer == null) consumer = buffers.get(chunkBufferLayer);
-							stk.pushPose();
-							stk.translate(x, y, z);
-
+							
+							Minecraft.getInstance().getProfiler().popPush("translate");
+							pose.setTranslation(
+									pTranslation.x + x * scl,
+									pTranslation.y + y * scl,
+									pTranslation.z + z * scl
+							);
+							Minecraft.getInstance().getProfiler().popPush("render");
 							PlatformUtils.tesselate(dispatcher,
-									wld, dispatcher.getBlockModel(block),
+									wld, model,
 									block, offsetPos, stk,
 									consumer, true,
 									randomSource,
 									0, 0,
 									modelData, chunkBufferLayer
 							);
-							stk.popPose();
+							Minecraft.getInstance().getProfiler().popPush("reset");
+							pose.setTranslation(pTranslation);
 						}
+						Minecraft.getInstance().getProfiler().pop();
 					}
+					Minecraft.getInstance().getProfiler().popPush("iterate");
 				}
 			}
 		}
+		Minecraft.getInstance().getProfiler().pop();
+		Minecraft.getInstance().getProfiler().pop();
 	}
 	
 	@Deprecated(forRemoval = true)

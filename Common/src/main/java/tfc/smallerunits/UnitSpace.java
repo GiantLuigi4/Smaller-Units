@@ -346,6 +346,14 @@ public class UnitSpace {
 		return pos.offset(myPosInTheLevel);
 	}
 	
+	public BlockPos getOffsetPosMut(BlockPos.MutableBlockPos pos) {
+		return pos.set(
+				pos.getX() + myPosInTheLevel.getX(),
+				pos.getY() + myPosInTheLevel.getY(),
+				pos.getZ() + myPosInTheLevel.getZ()
+		);
+	}
+	
 	public void setFast(boolean allowSave, int x, int y, int z, BlockState state) {
 		BlockPos pz = getOffsetPos(new BlockPos(x, y, z));
 		BasicVerticalChunk vc = (BasicVerticalChunk) myLevel.getChunkAt(pz);

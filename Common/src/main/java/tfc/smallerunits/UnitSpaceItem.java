@@ -23,6 +23,7 @@ import tfc.smallerunits.simulation.level.ITickerLevel;
 import tfc.smallerunits.utils.config.ServerConfig;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class UnitSpaceItem extends AbstractItem {
 	public UnitSpaceItem() {
@@ -82,5 +83,13 @@ public class UnitSpaceItem extends AbstractItem {
 						.withStyle(ChatFormatting.GRAY)
 		);
 		super.appendHoverText(pStack, pLevel, pTooltipComponents, pIsAdvanced);
+	}
+	
+	public void populateTab(Consumer<ItemStack> out) {
+		for (int i = 2; i <= 16; i++) {
+			ItemStack stack = new ItemStack(this);
+			stack.getOrCreateTag().putInt("upb", i);
+			out.accept(stack);
+		}
 	}
 }

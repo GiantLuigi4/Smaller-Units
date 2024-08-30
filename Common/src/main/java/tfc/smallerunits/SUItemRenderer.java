@@ -45,8 +45,8 @@ public class SUItemRenderer extends BlockEntityWithoutLevelRenderer {
 		String text = "1/" + upb;
 		int scale = upb;
 		pPoseStack.translate(2 / 4f, 0.5, 1);
-		pPoseStack.scale(1f / scale, 1f / scale, 1f / scale);
-		pPoseStack.translate(0, 0.8, 0);
+		pPoseStack.scale(1f / 4, 1f / 4, 1f / 4);
+		pPoseStack.translate(-0.1, 0.8, 0.1);
 		pPoseStack.mulPose(new Quaternionf().fromAxisAngleDeg(1, 0, 0, 180));
 		pPoseStack.scale(1f / 4, 1f / 4, 1f / 4);
 		pPoseStack.translate(-Minecraft.getInstance().font.width("1/" + upb) / 2f, 0, 0);

@@ -26,7 +26,7 @@ public class Math1D {
 //		if (size == 16)
 //			return val >> 4;
 //		size -= 1;
-		if (val < 0) return -((((-val) - 1) / size) + 1);
+		if (val < 0) return -((-val - 1) / size + 1);
 		return val / size;
 	}
 	
