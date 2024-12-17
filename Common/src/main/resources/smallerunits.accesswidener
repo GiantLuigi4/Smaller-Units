@@ -1,7 +1,5 @@
 accessWidener	v1	named
 
-accessible method net/minecraft/client/renderer/LevelRenderer renderEntity (Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V
-
 accessible method net/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess <init> (Lnet/minecraft/world/level/storage/LevelStorageSource;Ljava/lang/String;Ljava/nio/file/Path;)V
 
 accessible field net/minecraft/world/entity/LivingEntity jumping Z
@@ -23,7 +21,12 @@ mutable    field net/minecraft/world/level/lighting/LevelLightEngine skyEngine L
 
 accessible class net/minecraft/world/level/lighting/BlockLightSectionStorage$BlockDataLayerStorageMap
 
+accessible class net/minecraft/client/renderer/LevelRenderer$RenderChunkInfo
+accessible field net/minecraft/client/renderer/LevelRenderer$RenderChunkInfo chunk Lnet/minecraft/client/renderer/chunk/ChunkRenderDispatcher$RenderChunk;
+
+accessible method net/minecraft/client/renderer/LevelRenderer renderEntity (Lnet/minecraft/world/entity/Entity;DDDFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;)V
 accessible field net/minecraft/client/renderer/LevelRenderer level Lnet/minecraft/client/multiplayer/ClientLevel;
+
 
 accessible field net/minecraft/server/level/ServerPlayerGameMode isDestroyingBlock Z
 

@@ -2,15 +2,20 @@ package tfc.smallerunits.mixin.data;
 
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
+import tfc.smallerunits.client.render.SUChunkRender;
 
 import java.lang.ref.WeakReference;
 
 @Mixin(ChunkRenderDispatcher.CompiledChunk.class)
 public class CompiledChunkMixin implements SUCompiledChunkAttachments {
+	@Unique
+	private SUChunkRender compChunk;
+
 	@Unique
 	private WeakReference<SUCapableChunk> chnk;
 	
@@ -24,5 +29,27 @@ public class CompiledChunkMixin implements SUCompiledChunkAttachments {
 	public void setSUCapable(SUCapableChunk chunk) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		chnk = new WeakReference<>(chunk);
+		compChunk = new SUChunkRender((LevelChunk) chunk);
+	}
+
+	boolean needsCull = true;
+
+	@Override
+	public void markForCull() {
+		needsCull = true;
+	}
+
+	@Override
+	public boolean needsCull() {
+		return needsCull;
+	}
+
+	public void markCulled()  {
+		needsCull = false;
+	}
+
+	@Override
+	public SUChunkRender SU$getChunkRender() {
+		return compChunk;
 	}
 }

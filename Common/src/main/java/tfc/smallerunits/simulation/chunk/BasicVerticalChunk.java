@@ -764,6 +764,6 @@ public class BasicVerticalChunk extends LevelChunk {
 
 	@Override
 	public FullChunkStatus getFullStatus() {
-		return FullChunkStatus.FULL;
+		return FullChunkStatus.ENTITY_TICKING;
 	}
 }

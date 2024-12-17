@@ -9,14 +9,13 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.game.ClientboundBundlePacket;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import sun.misc.Unsafe;
-import tfc.smallerunits.SmallerUnits;
 import tfc.smallerunits.data.access.PacketListenerAccessor;
 import tfc.smallerunits.data.access.SUScreenAttachments;
 import tfc.smallerunits.logging.Loggers;
@@ -34,6 +33,7 @@ import java.util.function.BiFunction;
 public class WrapperPacket extends tfc.smallerunits.plat.net.Packet {
     private static final Unsafe theUnsafe;
     public CompoundTag additionalInfo = null;
+    protected boolean isBundle = false;
 
     static {
         try {
@@ -77,9 +77,19 @@ public class WrapperPacket extends tfc.smallerunits.plat.net.Packet {
 
             pBuffer.writeByte(flow.ordinal());
             int id = ConnectionProtocol.PLAY.getPacketId(flow, (Packet<?>) wrapped);
-//			pBuffer.writeByteArray(wrapped.getClass().getName().getBytes(StandardCharsets.UTF_8));
-            pBuffer.writeInt(id);
-            ((Packet<?>) wrapped).write(pBuffer);
+            if (id == -1) {
+                pBuffer.writeInt(id);
+                if (wrapped.getClass().equals(ClientboundBundlePacket.class)) {
+                    pBuffer.writeBoolean(false);
+                    BundledPacketHandler.writeBundle((ClientboundBundlePacket) wrapped, pBuffer, ConnectionProtocol.PLAY, flow);
+                } else {
+                    pBuffer.writeBoolean(true);
+                    System.err.println("Writing invalid packet... what?");
+                }
+            } else {
+                pBuffer.writeInt(id);
+                ((Packet<?>) wrapped).write(pBuffer);
+            }
         }
     }
 
@@ -89,7 +99,17 @@ public class WrapperPacket extends tfc.smallerunits.plat.net.Packet {
             preRead(obj);
 
             this.flow = obj.readByte() == 0 ? PacketFlow.SERVERBOUND : PacketFlow.CLIENTBOUND;
-            wrapped = ConnectionProtocol.PLAY.createPacket(flow, obj.readInt(), obj);
+            int id = obj.readInt();
+            if (id == -1) {
+                if (obj.readBoolean()) {
+                    System.err.println("Received invalid packet... what?");
+                    return null;
+                }
+                wrapped = BundledPacketHandler.readBundle(obj, ConnectionProtocol.PLAY, flow);
+                isBundle = true;
+            } else {
+                wrapped = ConnectionProtocol.PLAY.createPacket(flow, id, obj);
+            }
             NetworkingHacks.increaseBlockPosPrecision.remove();
             return wrapped;
         } catch (Throwable err) {
@@ -208,7 +228,9 @@ public class WrapperPacket extends tfc.smallerunits.plat.net.Packet {
 
         try {
             PacketListener listener = ctx.getHandler();
-            if (context.pkt instanceof ClientboundCustomPayloadPacket clientboundCustomPayloadPacket) {
+            if (isBundle) {
+                ((BundledPacketHandler) wrapped).handle(listener, context);
+            } else if (context.pkt instanceof ClientboundCustomPayloadPacket clientboundCustomPayloadPacket) {
                 PlatformUtils.customPayload(clientboundCustomPayloadPacket, context, listener);
             } else {
                 context.pkt.handle(listener);

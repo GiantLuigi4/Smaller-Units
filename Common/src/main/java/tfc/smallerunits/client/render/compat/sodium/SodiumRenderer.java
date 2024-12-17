@@ -100,7 +100,7 @@ public class SodiumRenderer {
 				);
 				
 				SURenderManager.drawChunk(
-						chunk1,
+						chunk, chunk1,
 						level, pos, type,
 						su$Frustum,
 						camX, camY, camZ,

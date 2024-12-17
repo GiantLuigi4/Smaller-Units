@@ -1,9 +1,9 @@
 package tfc.smallerunits.client.render.compat.sodium;
 
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.LevelChunk;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
+import tfc.smallerunits.client.render.SUChunkRender;
 
 public class SodiumSUAttached implements SUCompiledChunkAttachments {
     ChunkAccess chunk;
@@ -20,5 +20,24 @@ public class SodiumSUAttached implements SUCompiledChunkAttachments {
     @Override
     public void setSUCapable(SUCapableChunk chunk) {
 
+    }
+
+    @Override
+    public void markForCull() {
+        throw new RuntimeException("TODO");
+    }
+
+    @Override
+    public boolean needsCull() {
+        return true;
+    }
+
+    public void markCulled()  {
+        throw new RuntimeException("TODO");
+    }
+
+    @Override
+    public SUChunkRender SU$getChunkRender() {
+        throw new RuntimeException("TODO");
     }
 }

@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
+import tfc.smallerunits.client.render.SUChunkRender;
 import tfc.smallerunits.client.render.compat.sodium.SodiumGridAttachments;
 
 import java.util.HashMap;
@@ -21,7 +22,7 @@ public class LevelMixin implements SodiumGridAttachments {
 
 	@Unique
 	HashMap<ChunkPos, SUCompiledChunkAttachments> renderChunksWithUnits = new HashMap<>();
-	
+
 	@Override
 	public HashMap<ChunkPos, SUCompiledChunkAttachments> getRenderChunks() {
 		return renderChunks;
@@ -40,9 +41,28 @@ public class LevelMixin implements SodiumGridAttachments {
 			public SUCapableChunk getSUCapable() {
 				return chk;
 			}
-			
+
 			@Override
 			public void setSUCapable(SUCapableChunk chunk) {
+			}
+
+			@Override
+			public void markForCull() {
+				throw new RuntimeException("TODO");
+			}
+
+			@Override
+			public boolean needsCull() {
+				return true;
+			}
+
+            public void markCulled()  {
+                throw new RuntimeException("TODO");
+            }
+
+			@Override
+			public SUChunkRender SU$getChunkRender() {
+				throw new RuntimeException("TODO");
 			}
 		});
 	}

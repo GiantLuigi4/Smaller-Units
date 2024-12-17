@@ -2,7 +2,6 @@ package tfc.smallerunits.client.access.tracking;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import tfc.smallerunits.client.render.SUChunkRender;
 
 import java.util.ArrayList;
 
@@ -15,11 +14,9 @@ public interface SUCapableChunk {
 	
 	void SU$markDirty(BlockPos pos);
 	
-	void SU$reset(ArrayList<BlockPos> done);
+	void SU$reset(ArrayList<BlockPos> notDone, ArrayList<BlockPos> notFree);
 	
 	void SU$markGone(BlockPos pos);
-	
-	SUChunkRender SU$getChunkRender();
 	
 	ArrayList<BlockEntity> getTiles();
 	

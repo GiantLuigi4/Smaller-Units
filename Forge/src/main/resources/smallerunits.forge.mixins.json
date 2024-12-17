@@ -29,7 +29,6 @@
     "core.LevelRendererMixinForge",
     "core.gui.client.ForgeHooksClientMixin",
     "core.gui.client.KeyboardHandlerMixin",
-    "core.gui.client.MinecraftMixin",
     "core.gui.client.MouseHandlerMixin",
     "core.gui.client.ScreenMixin",
     "core.gui.client.expansion.DebugScreenOverlayMixin",

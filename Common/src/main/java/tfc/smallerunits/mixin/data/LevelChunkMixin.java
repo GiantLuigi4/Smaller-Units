@@ -7,7 +7,6 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
-import tfc.smallerunits.client.render.SUChunkRender;
 import tfc.smallerunits.utils.asm.ModCompat;
 
 import java.util.ArrayList;
@@ -17,11 +16,9 @@ public abstract class LevelChunkMixin implements SUCapableChunk {
 	@Unique
 	private ArrayList<BlockPos> dirtyBlocks = new ArrayList<>();
 	@Unique
-	private final ArrayList<BlockPos> forRemoval = new ArrayList<>();
+	private ArrayList<BlockPos> forRemoval = new ArrayList<>();
 	@Unique
 	private final ArrayList<BlockEntity> renderableBlockEntities = new ArrayList<>();
-	@Unique
-	private final SUChunkRender compChunk = new SUChunkRender((LevelChunk) (Object) this);
 	
 	@Override
 	public BlockPos[] SU$dirty() {
@@ -68,18 +65,13 @@ public abstract class LevelChunkMixin implements SUCapableChunk {
 	}
 	
 	@Override
-	public void SU$reset(ArrayList<BlockPos> notDone) {
+	public void SU$reset(ArrayList<BlockPos> notDone, ArrayList<BlockPos> notFree) {
 		dirtyBlocks = notDone;
-		forRemoval.clear();
+		forRemoval = notFree;
 	}
 	
 	@Override
 	public void SU$markGone(BlockPos pos) {
 		forRemoval.add(pos);
-	}
-	
-	@Override
-	public SUChunkRender SU$getChunkRender() {
-		return compChunk;
 	}
 }

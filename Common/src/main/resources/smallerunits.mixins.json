@@ -53,6 +53,8 @@
     "core.MinecraftMixin",
     "core.MultiPlayerGameModeMixin",
     "core.access.ClientPacketListenerMixin",
+    "core.gui.client.MinecraftMixin",
+    "core.gui.client.SignsAreApparentlyStupid",
     "dangit.ClientLevelMixin",
     "data.AbstractClientPlayerMixin",
     "data.CompiledChunkMixin",

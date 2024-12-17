@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexBuffer;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -64,7 +65,8 @@ public abstract class LevelRendererMixinBlocks {
 	
 	@Shadow
 	protected abstract void renderChunkLayer(RenderType p_172994_, PoseStack p_172995_, double p_172996_, double p_172997_, double p_172998_, Matrix4f p_172999_);
-	
+
+	@Shadow @Final private ObjectArrayList<LevelRenderer.RenderChunkInfo> renderChunksInFrustum;
 	@Unique
 	double pCamX, pCamY, pCamZ;
 	
@@ -220,10 +222,19 @@ public abstract class LevelRendererMixinBlocks {
 			uniform.set((float) ((double) origin.getX() - pCamX), (float) ((double) origin.getY() - pCamY), (float) ((double) origin.getZ() - pCamZ));
 		
 		SU$Frustum.set(capturedFrustum != null ? capturedFrustum : cullingFrustum);
-		SURenderManager.drawChunk(((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, SU$Frustum, pCamX, pCamY, pCamZ, uniform);
+		SURenderManager.drawChunk(((SUCompiledChunkAttachments) chunk), ((LevelChunk) capable), level, IHateTheDistCleaner.currentRenderChunk.get().getOrigin(), pRenderType, SU$Frustum, pCamX, pCamY, pCamZ, uniform);
 		return instance.isEmpty(pRenderType);
 	}
-	
+
+	@Inject(at = @At("TAIL"), method = "applyFrustum")
+	private void postApply(Frustum $$0, CallbackInfo ci) {
+		for (LevelRenderer.RenderChunkInfo renderChunkInfo : renderChunksInFrustum) {
+			ChunkRenderDispatcher.RenderChunk rc = renderChunkInfo.chunk;
+			SUCompiledChunkAttachments cc = ((SUCompiledChunkAttachments) rc.getCompiledChunk());
+			cc.markForCull();
+		}
+	}
+
 	@Inject(at = @At("TAIL"), method = "renderChunkLayer")
 	public void postRenderLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix, CallbackInfo ci) {
 		ModCompatClient.postRenderLayer(renderType, poseStack, camX, camY, camZ, level);

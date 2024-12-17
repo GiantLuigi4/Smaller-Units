@@ -23,7 +23,6 @@
     "core.LevelRendererMixinFabric",
     "core.gui.client.GameRendererMixin",
     "core.gui.client.KeyboardHandlerMixin",
-    "core.gui.client.MinecraftMixin",
     "core.gui.client.MouseHandlerMixin",
     "core.gui.client.ScreenMixin",
     "core.gui.client.expansion.DebugScreenOverlayMixin",
