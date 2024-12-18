@@ -7,9 +7,12 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
+import tfc.smallerunits.client.render.SUChunkRender;
 import tfc.smallerunits.utils.asm.ModCompat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 @Mixin(LevelChunk.class)
 public abstract class LevelChunkMixin implements SUCapableChunk {
@@ -73,5 +76,15 @@ public abstract class LevelChunkMixin implements SUCapableChunk {
 	@Override
 	public void SU$markGone(BlockPos pos) {
 		forRemoval.add(pos);
+	}
+
+	Map<Integer, SUChunkRender> renderers = new HashMap<>();
+
+	@Override
+	public SUChunkRender SU$getRenderer(int yCoord) {
+		SUChunkRender chrdr = renderers.get(yCoord);
+		if (chrdr == null)
+			renderers.put(yCoord, chrdr = new SUChunkRender((LevelChunk) (Object) this));
+		return chrdr;
 	}
 }

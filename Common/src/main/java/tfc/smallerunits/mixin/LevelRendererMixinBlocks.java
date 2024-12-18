@@ -99,7 +99,7 @@ public abstract class LevelRendererMixinBlocks {
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
 		
 		if (capable == null)
-			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
+			((SUCompiledChunkAttachments) chunk).setSUCapable(origin.getY(), capable = ((SUCapableChunk) level.getChunk(origin)));
 		
 		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
 		if (capability == null) return instance.getCompiledChunk();
@@ -214,7 +214,7 @@ public abstract class LevelRendererMixinBlocks {
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) chunk).getSUCapable();
 		
 		if (capable == null)
-			((SUCompiledChunkAttachments) chunk).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
+			((SUCompiledChunkAttachments) chunk).setSUCapable(origin.getY(), capable = ((SUCapableChunk) level.getChunk(origin)));
 
 //		if (!capable.SU$getChunkRender().hasBuffers()) return instance.isEmpty(pRenderType);
 		

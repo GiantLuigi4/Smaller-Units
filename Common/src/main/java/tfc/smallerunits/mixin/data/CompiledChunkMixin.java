@@ -2,7 +2,6 @@ package tfc.smallerunits.mixin.data;
 
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
-import net.minecraft.world.level.chunk.LevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
@@ -26,10 +25,10 @@ public class CompiledChunkMixin implements SUCompiledChunkAttachments {
 	}
 	
 	@Override
-	public void setSUCapable(SUCapableChunk chunk) {
+	public void setSUCapable(int yCoord, SUCapableChunk chunk) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		chnk = new WeakReference<>(chunk);
-		compChunk = new SUChunkRender((LevelChunk) chunk);
+		compChunk = chunk.SU$getRenderer(yCoord);
 	}
 
 	boolean needsCull = true;

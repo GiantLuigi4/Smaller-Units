@@ -123,7 +123,7 @@ public class SodiumRenderer {
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) instance).getSUCapable();
 		
 		if (capable == null)
-			((SUCompiledChunkAttachments) instance).setSUCapable(capable = ((SUCapableChunk) level.getChunk(origin)));
+			((SUCompiledChunkAttachments) instance).setSUCapable(origin.getY(), capable = ((SUCapableChunk) level.getChunk(origin)));
 		
 		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
 		

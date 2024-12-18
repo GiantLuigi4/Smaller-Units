@@ -3,6 +3,7 @@ package tfc.smallerunits.mixin.compat.optimization.sodium;
 import me.jellysquid.mods.sodium.client.render.chunk.RenderSection;
 import net.minecraft.world.level.chunk.EmptyLevelChunk;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import tfc.smallerunits.client.access.tracking.SUCapableChunk;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.client.render.SUChunkRender;
@@ -12,6 +13,8 @@ import java.lang.ref.WeakReference;
 @Mixin(value = RenderSection.class, remap = false)
 public class RenderSectionMixin implements SUCompiledChunkAttachments {
 	WeakReference<SUCapableChunk> capableChunk;
+	@Unique
+	private SUChunkRender compChunk;
 	
 	@Override
 	public SUCapableChunk getSUCapable() {
@@ -20,9 +23,10 @@ public class RenderSectionMixin implements SUCompiledChunkAttachments {
 	}
 	
 	@Override
-	public void setSUCapable(SUCapableChunk chunk) {
+	public void setSUCapable(int yCoord, SUCapableChunk chunk) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		this.capableChunk = new WeakReference<>(chunk);
+		compChunk = chunk.SU$getRenderer(yCoord);
 	}
 
 	@Override
@@ -41,6 +45,6 @@ public class RenderSectionMixin implements SUCompiledChunkAttachments {
 
 	@Override
 	public SUChunkRender SU$getChunkRender() {
-		throw new RuntimeException("TODO");
+		return compChunk;
 	}
 }

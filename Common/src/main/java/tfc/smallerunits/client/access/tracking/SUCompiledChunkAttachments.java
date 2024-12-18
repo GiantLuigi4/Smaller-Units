@@ -5,7 +5,7 @@ import tfc.smallerunits.client.render.SUChunkRender;
 public interface SUCompiledChunkAttachments {
 	SUCapableChunk getSUCapable();
 	
-	void setSUCapable(SUCapableChunk chunk);
+	void setSUCapable(int yCoord, SUCapableChunk chunk);
 
 	void markForCull();
 

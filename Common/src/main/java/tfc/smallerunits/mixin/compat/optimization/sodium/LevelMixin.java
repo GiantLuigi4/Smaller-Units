@@ -43,7 +43,8 @@ public class LevelMixin implements SodiumGridAttachments {
 			}
 
 			@Override
-			public void setSUCapable(SUCapableChunk chunk) {
+			public void setSUCapable(int yCoord, SUCapableChunk chunk) {
+				throw new RuntimeException("TODO");
 			}
 
 			@Override

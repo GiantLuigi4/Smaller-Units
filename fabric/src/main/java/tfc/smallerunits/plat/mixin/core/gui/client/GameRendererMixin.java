@@ -23,11 +23,12 @@ public class GameRendererMixin {
 	@Unique
 	private static final ThreadLocal<Screen> currentScreen = new ThreadLocal<>();
 	
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;render(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"), method = "render")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;render(Lnet/minecraft/client/gui/GuiGraphics;F)V"), method = "render")
 	private void preDrawScreen(float f, long l, boolean bl, CallbackInfo ci) {
 		currentScreen.set(minecraft.screen);
 		if (Minecraft.getInstance().player != null) {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) minecraft.screen);
+			if (screenAttachments == null) return;
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				screenAttachments.update(Minecraft.getInstance().player);
@@ -37,10 +38,11 @@ public class GameRendererMixin {
 		}
 	}
 	
-	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/Screen;render(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V", shift = At.Shift.AFTER), method = "render")
+	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;render(Lnet/minecraft/client/gui/GuiGraphics;F)V", shift = At.Shift.AFTER), method = "render")
 	private void postDrawScreen(float f, long l, boolean bl, CallbackInfo ci) {
 		if (Minecraft.getInstance().player != null) {
 			SUScreenAttachments screenAttachments = ((SUScreenAttachments) minecraft.screen);
+			if (screenAttachments == null) return;
 			PositionalInfo info = screenAttachments.getPositionalInfo();
 			if (info != null) {
 				info.reset(Minecraft.getInstance().player);

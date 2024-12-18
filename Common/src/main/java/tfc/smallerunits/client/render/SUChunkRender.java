@@ -25,7 +25,7 @@ public class SUChunkRender {
 		this.chunk = chunk;
 	}
 
-	public void draw(BlockPos positionRendering, RenderType type, IFrustum frustum, AbstractUniform uniform) {
+	public void draw(RenderType type, AbstractUniform uniform) {
 		if (!isEmpty()) {
 			((Uniform) uniform).upload();
 
@@ -40,8 +40,6 @@ public class SUChunkRender {
                     buffer1.draw();
 				}
 			}
-
-			VertexBuffer.unbind();
 		}
 	}
 

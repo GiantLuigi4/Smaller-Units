@@ -159,7 +159,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 			String target = remapper.mapMethod(new Remapper.MappingInfo(
 					"net/minecraft/class_761",
 					"method_3251",
-					"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLnet/minecraft/class_1159;)V"
+					"(Lnet/minecraft/class_1921;Lnet/minecraft/class_4587;DDDLorg/joml/Matrix4f;)V"
 			));
 			String desc = "(" + target.split("\\(")[1];
 			target = target.split("\\(")[0];

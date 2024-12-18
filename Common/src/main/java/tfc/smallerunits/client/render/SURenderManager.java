@@ -57,7 +57,7 @@ public class SURenderManager {
 			}
 		}
 
-		render.draw(positionRendering, type, frustum, uniform);
+		render.draw(type, uniform);
 	}
 
 	public static void drawEntity(LevelRenderer renderer, Level lvl, PoseStack stk, Camera cam, float pct, MultiBufferSource buffers, Entity entity) {

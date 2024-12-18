@@ -8,7 +8,6 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
-import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -31,8 +30,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.BlockGetter;
@@ -199,12 +196,8 @@ public class PlatformUtils {
 	}
 	
 	// tabs
-	public static CreativeModeTab tab(String name, Supplier<Item> icon) {
-		return FabricItemGroup.builder().icon(() -> new ItemStack(icon.get())).displayItems((list, output) -> {
-			SU$fillItemCategory(list, output);
-			output.accept(new ItemStack(tfc.smallerunits.Registry.SHRINKER.get()));
-			output.accept(new ItemStack(tfc.smallerunits.Registry.GROWER.get()));
-		}).build();
+	public static SUTabBuilder tab(String name, Supplier<ItemStack> icon) {
+		return new SUTabBuilder(name, icon);
 	}
 	
 	private static void SU$fillItemCategory(CreativeModeTab.ItemDisplayParameters pItems, CreativeModeTab.Output output) {

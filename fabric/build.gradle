@@ -50,10 +50,12 @@ dependencies {
 
     implementation group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.1'
 
+    runtimeOnly(annotationProcessor("io.github.llamalad7:mixinextras-fabric:0.4.1"))
+
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.2.2"
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-world:5.2.2"
     modImplementation "dev.onyxstudios.cardinal-components-api:cardinal-components-chunk:5.2.2"
-    include(modImplementation "com.jamieswhiteshirt:reach-entity-attributes:2.3.0")
+    include(modImplementation "com.jamieswhiteshirt:reach-entity-attributes:2.4.0")
     modImplementation "curse.maven:pehkui-319596:4684391"
     modImplementation 'com.github.Virtuoel:KanosConfig:0.4.1'
 
@@ -61,7 +63,10 @@ dependencies {
     modCompileOnly "curse.maven:distant-horizons-508933:5649758"
 
     // cc:tweaked - cc:restitched died :>
-    modImplementation "curse.maven:cc-tweaked-282001:5644985"
+    modCompileOnly "curse.maven:cc-tweaked-282001:5644985"
+
+    modCompileOnly "curse.maven:alternate-current-548115:5665349"
+    modCompileOnly "maven.modrinth:sodium:mc1.20.1-0.5.11"
 
     compileOnly project(":Common")
 }
