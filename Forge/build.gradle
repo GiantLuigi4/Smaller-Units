@@ -15,7 +15,12 @@ mixin {
     config("smallerunits.mixins.json")
     config("smallerunits.forge.mixins.json")
 
-    disableTargetValidator = false
+    disableTargetValidator()
+    disableRefMapWarning()
+    overwriteErrorLevel(0)
+
+    disableTargetExport = true
+    disableAnnotationProcessorCheck = true
 }
 
 minecraft {
