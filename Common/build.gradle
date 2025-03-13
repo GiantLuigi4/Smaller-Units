@@ -51,7 +51,7 @@ repositories {
 dependencies {
     compileOnly group: 'org.spongepowered', name: 'mixin', version: '0.8.5'
     compileOnly project(":plat")
-    compileOnly "curse.maven:embeddium-908741:5630140"
+    compileOnly "curse.maven:embeddium-908741:5681725"
     compileOnly "curse.maven:alternate-current-548115:4721662"
     compileOnly "curse.maven:vivecraft-667903:5518169"
     compileOnly "curse.maven:oculus-581495:5299671"

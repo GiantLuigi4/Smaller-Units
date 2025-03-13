@@ -18,16 +18,20 @@ import tfc.smallerunits.client.access.tracking.SUCapableWorld;
 import tfc.smallerunits.client.access.tracking.SUCompiledChunkAttachments;
 import tfc.smallerunits.data.capability.ISUCapability;
 import tfc.smallerunits.data.capability.SUCapabilityManager;
+import tfc.smallerunits.mixin.client.access.LevelRendererAccessor;
 import tfc.smallerunits.utils.selection.MutableAABB;
 
 import java.util.ArrayList;
 
 public class SURenderManager {
 	public static void drawChunk(SUCompiledChunkAttachments attachments, LevelChunk chunk, Level world, BlockPos positionRendering, RenderType type, IFrustum frustum, double pCamX, double pCamY, double pCamZ, AbstractUniform uniform) {
+		SUChunkRender render = attachments.SU$getChunkRender();
+		drawChunk(render, attachments, chunk, world, positionRendering, type, frustum, pCamX, pCamY, pCamZ, uniform);
+	}
+	public static void drawChunk(SUChunkRender render, SUCompiledChunkAttachments attachments, LevelChunk chunk, Level world, BlockPos positionRendering, RenderType type, IFrustum frustum, double pCamX, double pCamY, double pCamZ, AbstractUniform uniform) {
 		if (chunk instanceof EmptyLevelChunk) return;
 		SUCapableChunk suCapable = ((SUCapableChunk) chunk);
 		ISUCapability capability = SUCapabilityManager.getCapability(chunk);
-		SUChunkRender render = attachments.SU$getChunkRender();
 
 		if (type.equals(RenderType.solid())) {
 			int yRL = positionRendering.getY();
@@ -38,7 +42,7 @@ public class SURenderManager {
 			ArrayList<BlockPos> notDrawn = new ArrayList<>();
 			ArrayList<BlockPos> notFreed = new ArrayList<>();
 			for (BlockPos pos : suCapable.SU$dirty()) {
-				if (pos.getY() >= yRL || pos.getY() < yRM) {
+				if (pos.getY() >= yRL && pos.getY() <= yRM) {
                     if (!frustum.test(new AABB(pos)))
                         notDrawn.add(pos);
                     else render.addBuffers(pos, vboEmitter.genBuffers(chunk, suCapable, capability, pos));
@@ -62,7 +66,7 @@ public class SURenderManager {
 
 	public static void drawEntity(LevelRenderer renderer, Level lvl, PoseStack stk, Camera cam, float pct, MultiBufferSource buffers, Entity entity) {
 		// TODO: glowing
-		renderer.renderEntity(
+		((LevelRendererAccessor)renderer).invokeRenderEntity(
 				entity,
 				0, 0, 0,
 				pct, stk,

@@ -44,6 +44,7 @@
   "client": [
     "LevelRendererMixin",
     "LevelRendererMixinBlocks",
+    "client.access.LevelRendererAccessor",
     "compat.optimization.sodium.LevelMixin",
     "compat.optimization.sodium.RenderSectionMixin",
     "compat.optimization.sodium.SodiumDebugOverlayMixin",

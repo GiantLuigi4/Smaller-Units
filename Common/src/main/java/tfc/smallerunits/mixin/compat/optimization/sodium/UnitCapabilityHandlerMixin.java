@@ -18,7 +18,7 @@ import tfc.smallerunits.client.render.compat.sodium.SodiumGridAttachments;
 import tfc.smallerunits.client.render.compat.sodium.SodiumSUAttached;
 import tfc.smallerunits.data.capability.SUCapability;
 
-@Mixin(value = SUCapability.class, remap = false)
+@Mixin(value = SUCapability.class)
 public class UnitCapabilityHandlerMixin {
 	@Shadow
 	@Final

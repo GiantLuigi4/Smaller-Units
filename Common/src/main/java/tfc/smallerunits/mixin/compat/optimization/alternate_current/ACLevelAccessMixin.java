@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import tfc.smallerunits.simulation.chunk.BasicVerticalChunk;
 import tfc.smallerunits.simulation.level.ITickerLevel;
 
-@Mixin(targets = "alternate.current.wire.LevelHelper", remap = false)
+@Mixin(targets = "alternate.current.wire.LevelHelper")
 public class ACLevelAccessMixin {
 	@Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/ChunkAccess;setUnsaved(Z)V"), method = "setWireState")
 	private static void preUpdate(ServerLevel level, BlockPos pos, BlockState state, boolean updateNeighborShapes, CallbackInfoReturnable<Boolean> cir) {

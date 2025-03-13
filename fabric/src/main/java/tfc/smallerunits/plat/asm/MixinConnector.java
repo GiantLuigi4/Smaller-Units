@@ -24,7 +24,7 @@ public class MixinConnector implements IMixinConfigPlugin {
 		
 		{
 			ArrayList<String> incompat = new ArrayList<>();
-			incompat.add("me.jellysquid.mods.sodium.mixin.features.chunk_rendering.MixinWorldRenderer");
+			incompat.add("me.jellysquid.mods.sodium.mixin.core.render.world.WorldRendererMixin");
 			incompatibilityMap.put("tfc.smallerunits.mixin.LevelRendererMixinBlocks", incompat);
 			
 			incompat = new ArrayList<>();

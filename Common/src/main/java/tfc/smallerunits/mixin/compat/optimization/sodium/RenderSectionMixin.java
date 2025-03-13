@@ -10,7 +10,7 @@ import tfc.smallerunits.client.render.SUChunkRender;
 
 import java.lang.ref.WeakReference;
 
-@Mixin(value = RenderSection.class, remap = false)
+@Mixin(value = RenderSection.class)
 public class RenderSectionMixin implements SUCompiledChunkAttachments {
 	WeakReference<SUCapableChunk> capableChunk;
 	@Unique

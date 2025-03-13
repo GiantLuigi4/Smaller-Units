@@ -15,6 +15,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.*;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -47,27 +48,35 @@ public class SodiumRenderer {
 		} else {
 			throw new RuntimeException("Sodium renderer not implemented yet");
 		}
-		
+
 		ModCompatClient.postRenderLayer(type, poseStack, camX, camY, camZ, level);
 	}
-	
+
 	public static void renderVanilla(RenderType type, IFrustum su$Frustum, ClientLevel level, PoseStack poseStack, double camX, double camY, double camZ) {
 		type.setupRenderState();
-		
+
 		ShaderInstance instance = RenderSystem.getShader();
 		// I don't want to know
 		instance.setSampler("Sampler0", RenderSystem.getShaderTexture(0));
 		instance.setSampler("Sampler2", RenderSystem.getShaderTexture(2));
 		if (instance.MODEL_VIEW_MATRIX != null) instance.MODEL_VIEW_MATRIX.set(poseStack.last().pose());
+//		if (instance.MODEL_VIEW_MATRIX != null) instance.MODEL_VIEW_MATRIX.set(new Matrix4f().identity());
+//		if (instance.PROJECTION_MATRIX != null) instance.PROJECTION_MATRIX.set(new Matrix4f().identity());
 		if (instance.PROJECTION_MATRIX != null) instance.PROJECTION_MATRIX.set(RenderSystem.getProjectionMatrix());
 		instance.apply();
-		
+		if (instance.MODEL_VIEW_MATRIX != null) instance.MODEL_VIEW_MATRIX.upload();
+		if (instance.PROJECTION_MATRIX != null) instance.PROJECTION_MATRIX.upload();
+
 		int min = level.getMinBuildHeight();
 		int max = level.getMaxBuildHeight();
-		
+
 		for (SUCompiledChunkAttachments chunk : ((SodiumGridAttachments) level).renderChunksWithUnits().values()) {
 			SUCapableChunk capableChunk = chunk.getSUCapable();
-			
+
+//			if (capable == null)
+//				((SUCompiledChunkAttachments) instance).setSUCapable(origin.getY(), capable = ((SUCapableChunk) level.getChunk(origin)));
+//			System.out.println(chunk);
+
 			LevelChunk chunk1 = ((LevelChunk) capableChunk);
 			if (!su$Frustum.test(
 					new AABB(
@@ -79,61 +88,62 @@ public class SodiumRenderer {
 							chunk1.getPos().getMaxBlockZ() + 1
 					)
 			)) continue;
-			
-			int sectY = chunk1.getMinBuildHeight();
+
+			int sectY = chunk1.getMinSection();
 			for (LevelChunkSection section : chunk1.getSections()) {
 				if (section.hasOnlyAir()) {
-					sectY += 16;
+					sectY++;
 					continue;
 				}
-				
+
 				BlockPos pos = new BlockPos(
 						chunk1.getPos().getMinBlockX(),
-						sectY,
+						SectionPos.sectionToBlockCoord(sectY),
 						chunk1.getPos().getMinBlockZ()
 				);
-				
+
 				instance.CHUNK_OFFSET.set(
 						(float) (pos.getX() - camX),
 						(float) (pos.getY() - camY),
 						(float) (pos.getZ() - camZ)
 				);
-				
+
 				SURenderManager.drawChunk(
+						((SodiumSUAttached) chunk).SU$getChunkRender(sectY),
 						chunk, chunk1,
 						level, pos, type,
 						su$Frustum,
 						camX, camY, camZ,
 						instance.CHUNK_OFFSET
 				);
-				
-				sectY += 16;
+
+				sectY++;
 			}
 		}
-		
+
 		instance.CHUNK_OFFSET.set(0f, 0, 0);
-		
+
 		instance.setSampler("Sampler0", null);
 		instance.setSampler("Sampler2", null);
 		instance.clear();
 		type.clearRenderState();
 	}
-	
+
 	public static void renderSection(BlockPos origin, RenderSection instance, PoseStack stk, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level) {
 		SUCapableChunk capable = ((SUCompiledChunkAttachments) instance).getSUCapable();
-		
+
 		if (capable == null)
 			((SUCompiledChunkAttachments) instance).setSUCapable(origin.getY(), capable = ((SUCapableChunk) level.getChunk(origin)));
-		
+
 		ISUCapability capability = SUCapabilityManager.getCapability((LevelChunk) capable);
-		
+
 		UnitSpace[] spaces = capability.getUnits();
 		// no reason to do SU related rendering in chunks where SU has not been used
 		if (spaces.length == 0) return;
-		
+
 		stk.pushPose();
 		stk.translate(origin.getX(), origin.getY(), origin.getZ());
-		
+
 		/* draw indicators */
 		RenderType.solid().setupRenderState();
 		ShaderInstance shader = GameRenderer.getPositionColorShader();
@@ -146,11 +156,11 @@ public class SodiumRenderer {
 			shader.PROJECTION_MATRIX.upload();
 		}
 		TileRendererHelper.markNewFrame();
-		
+
 		boolean hammerHeld = IHateTheDistCleaner.isHammerHeld();
 		for (UnitSpace unit : spaces) {
 			int y = unit.pos.getY();
-			
+
 			if (y < origin.getY() + 16 &&
 					y >= origin.getY()) {
 				if (unit != null) {
@@ -165,16 +175,16 @@ public class SodiumRenderer {
 				}
 			}
 		}
-		
+
 		if (shader.COLOR_MODULATOR != null) {
 			shader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
 			shader.COLOR_MODULATOR.upload();
 		}
-		
+
 		VertexBuffer.unbind();
 		shader.clear();
 		RenderType.solid().clearRenderState();
-		
+
 		/* breaking overlays */
 		for (UnitSpace unit : capability.getUnits()) {
 			if (unit != null) {
@@ -195,7 +205,7 @@ public class SodiumRenderer {
 			}
 		}
 		stk.popPose();
-		
+
 		synchronized (capable.getTiles()) {
 			BlockEntity[] bes = new BlockEntity[0];
 			// TODO: debug????
@@ -210,15 +220,15 @@ public class SodiumRenderer {
 				);
 		}
 	}
-	
+
 	public static void renderTEs(PoseStack matrices, RenderBuffers bufferBuilders, Long2ObjectMap<SortedSet<BlockDestructionProgress>> blockBreakingProgressions, Camera camera, float tickDelta, CallbackInfo ci, SodiumFrustum frustum, Minecraft client, ClientLevel level, RenderSectionManager renderSectionManager) {
 		BlockPos.MutableBlockPos origin = new BlockPos.MutableBlockPos();
 		Iterator<ChunkRenderList> lists = renderSectionManager.getRenderLists().iterator(false);
 		PoseStack stk = matrices;
-		
+
 		stk.pushPose();
 		stk.translate(-camera.getPosition().x, -camera.getPosition().y, -camera.getPosition().z);
-		
+
 		while (lists.hasNext()) {
 			ChunkRenderList chunkrenderlist = lists.next();
 			RenderRegion renderregion = chunkrenderlist.getRegion();
@@ -227,9 +237,9 @@ public class SodiumRenderer {
 				while (byteiterator.hasNext()) {
 					int i = byteiterator.nextByteAsInt();
 					RenderSection rendersection = renderregion.getSection(i);
-					
+
 					origin.set(rendersection.getChunkX() << 4, rendersection.getChunkY() << 4, rendersection.getChunkZ() << 4);
-					
+
 					renderSection(
 							origin, rendersection, stk,
 							bufferBuilders, blockBreakingProgressions,
